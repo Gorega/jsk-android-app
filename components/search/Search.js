@@ -1,7 +1,7 @@
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { TextInput, TouchableOpacity, View,StyleSheet,Text, ScrollView, SafeAreaView } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ModalPresentation from "../../components/ModalPresentation";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -23,7 +23,9 @@ export default function Search({
     setActiveDate,
     selectedDate,
     setSelectedDate,
-    onClearFilters
+    onClearFilters,
+    showScanButton = true,
+    addPaddingSpace
   }){
 
     const [showSpecificFilters,setShowSpecificFilters] = useState(false);
@@ -32,9 +34,9 @@ export default function Search({
     const [permission,requestPermission] = useCameraPermissions();
 
     return <>
-        <SafeAreaView style={styles.searchBox}>
+        <SafeAreaView style={[styles.searchBox,{paddingTop:addPaddingSpace ? 40 : 15}]}>
         <View style={styles.search}>
-            <View style={[styles.inputField,{width:(activeSearchBy || activeDate) ? "60%" : "70%"}]}>
+            <View style={[styles.inputField,{width:(activeSearchBy || activeDate ) ? "60%" : showScanButton ? "70%" : "80%"}]}>
                 <EvilIcons name="search" size={24} color="black" />
                 <TextInput
                     style={styles.input}
@@ -51,7 +53,7 @@ export default function Search({
             }}>
                 <MaterialIcons name="clear" size={20} color="red" />
             </TouchableOpacity>}
-            <TouchableOpacity onPress={()=> {
+            {showScanButton && <TouchableOpacity onPress={()=> {
               if(permission){
                 router.push("(camera)")
               }else{
@@ -59,7 +61,7 @@ export default function Search({
               }
             }}>
               <Ionicons name="scan" size={24} color="black" />
-            </TouchableOpacity>
+            </TouchableOpacity>}
             <TouchableOpacity onPress={()=> setShowSpecificFilters(true)}>
                 <AntDesign name="filter" size={20} color={activeSearchBy ? "#F8C332" : "black"} />
             </TouchableOpacity>
@@ -174,8 +176,7 @@ const styles = StyleSheet.create({
         backgroundColor:"white",
         boxShadow:"rgba(0, 0, 0, 0.16) 0px 1px 4px",
         display:"flex",
-        justifyContent:"flex-end",
-        paddingTop:40
+        justifyContent:"flex-end"
     },
     search:{
         display:"flex",

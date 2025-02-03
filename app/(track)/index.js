@@ -23,9 +23,9 @@ const TrackingOrder = ({order}) => {
       {/* Package Info */}
       <View style={styles.packageInfo}>
         <Feather name="package" size={50} color="#F8C332" />
-        <Text style={styles.packageName}>Package: {order.orderItems ? order.orderItems : "Unknown"}</Text>
-        <Text style={styles.packageDetails}>Quantity: {order.quantity}</Text>
-        <Text style={styles.packageDetails}>Weight: {order.weight} kg</Text>
+        <Text style={styles.packageName}>Package: {order?.orderItems ? order?.orderItems : "Unknown"}</Text>
+        <Text style={styles.packageDetails}>Quantity: {order?.quantity}</Text>
+        <Text style={styles.packageDetails}>Weight: {order?.weight} kg</Text>
       </View>
 
       {/* Delivery Status */}

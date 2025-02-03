@@ -101,7 +101,7 @@ export default function HomeScreen(){
                           {box.icon}
                         </View>
                         <View>
-                          <Text>{box.label}</Text>
+                          <Text style={{fontWeight:"600"}}>{box.label}</Text>
                           <Text>{box.numberOfOrders} of Orders</Text>
                           <Text>{box.money}₪</Text>
                         </View>
@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
     gap:15
   },
   boxHeadH2:{
-    fontWeight:500,
+    fontWeight:"600",
     width:120,
   },
   h2:{

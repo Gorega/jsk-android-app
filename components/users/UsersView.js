@@ -1,9 +1,9 @@
 import { View,Text,StyleSheet} from 'react-native';
-import Collection from './Collection';
 import FlatListData from '../FlatListData';
+import User from "./User";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
-export default function OrdersView({data,type,loadMoreData,loadingMore}){
+export default function UsersView({data,loadMoreData,loadingMore}){
 
     return data.length > 0
     ?
@@ -13,14 +13,14 @@ export default function OrdersView({data,type,loadMoreData,loadingMore}){
         loadingMore={loadingMore}
         children={(item)=> (
             <View style={styles.orders}>
-                <Collection type={type} collection={item} />
+                <User user={item} />
             </View>
         )}
     />
     :
     <View style={styles.empty}>
         <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>No Collections to show</Text>
+        <Text style={{fontWeight:500}}>No Users to show</Text>
     </View>
 }
 

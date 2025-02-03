@@ -1,13 +1,14 @@
 import {View,ActivityIndicator} from "react-native"
 import { useFonts } from 'expo-font';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { createContext, useContext, useEffect, useState } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { getToken, deleteToken } from "../utils/secureStore";
+import { getToken } from "../utils/secureStore";
+import useFetch from "@/utils/useFetch";
 
 
 const AuthContext = createContext();
@@ -19,7 +20,9 @@ SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [userRoleId, setUserRoleId] = useState(null);
+  const [userId, setUserId] = useState(null);
+  const [trackChanges,setTrackChanges] = useState({type:null});
+  const {getRequest,data:user} = useFetch();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -36,17 +39,19 @@ export default function RootLayout() {
           console.log("User is authenticated");
           setIsAuthenticated(true);
           if (storedUserId) { 
-            setUserRoleId(storedUserId);
+            setUserId(storedUserId);
           }
         } else {
           console.log("No token found");
           setIsAuthenticated(false);
-          setUserRoleId(null);
+          setUserId(null);
+          router.replace("/(auth)");
         }
       } catch (error) {
         console.error('Auth check failed:', error);
         setIsAuthenticated(false);
-        setUserRoleId(null);
+        setUserId(null);
+        router.replace("/(auth)");
       } finally {
         setLoading(false);
       }
@@ -61,6 +66,12 @@ export default function RootLayout() {
     }
   }, [loaded, loading]);
 
+  useEffect(()=>{
+    if(userId){
+      getRequest(`/api/users/${userId}`);
+    }
+  },[userId])
+
   if (!loaded || loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -70,7 +81,7 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated,userRoleId,setUserRoleId }}>
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated,user,userId, setUserId,trackChanges,setTrackChanges }}>
         <Stack
           screenOptions={{
             headerShown: false,

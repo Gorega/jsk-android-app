@@ -1,8 +1,8 @@
 import { View,StyleSheet} from 'react-native';
 import Search from '../../components/search/Search';
-import CollectionsView from '../../components/collections/CollectionsView';
-import { useEffect, useState,useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import {router, useLocalSearchParams} from "expo-router"
+import UsersView from '../../components/users/UsersView';
 
 
 export default function HomeScreen(){
@@ -15,51 +15,49 @@ export default function HomeScreen(){
     const [data,setData] = useState([]);
     const [page,setPage] = useState(1);
     const [loadingMore,setLoadingMore] = useState(false);
-    const params = useLocalSearchParams();
-    const { type,collectionIds } = params;
 
-    const filterByGroup = type === "returned" 
-    ? [
-        { name: "All", action: "" },
-        { name: "Returned In Branch", action: "returned_in_branch" },
-        { name: "Deleted", action: "deleted" },
-        { name: "Returned Out", action: "returned_out" },
-        { name: "Returned Delivered", action: "returned_delivered" },
-        { name: "Completed", action: "completed" }
-      ]
-    : type === "money"
-    ? [
-        { name: "All", action: "" },
-        { name: "Money In Branch", action: "money_in_branch" },
-        { name: "Deleted", action: "deleted" },
-        { name: "Money Out", action: "money_out" },
-        { name: "Paid", action: "paid" },
-        { name: "Completed", action: "completed" },
-      ]
-    : type === "dispatched"
-    ? [
-        { name: "All", action: "" },
-        { name: "Pending", action: "pending" },
-        { name: "Deleted", action: "deleted" },
-        { name: "In Dispatched To Branch", action: "in_dispatched_to_branch" },
-        { name: "Partial", action: "partial" },
-        { name: "Completed", action: "completed" },
-    ]
-    : type === "driver"
-    ? [
-        { name: "All", action: "" },
-        { name: "Paid", action: "paid" },
-        { name: "Returned Delivered", action: "returned_delivered" },
-        { name: "Completed", action: "completed" },
-      ]
-    : []
+    const filterByGroup = [{
+        name:"All",
+        action:"",
+    },{
+        name:"Active",
+        action:"true",
+    },{
+        name:"Inactive",
+        action:"false"
+    }]
 
-    const searchByGroup = [
-        { name: "Collection ID", action: "collection_id" },
-        { name: "Sender", action: "bussiness_name" },
-        (type === "driver" || type === "dispatched") ? { name: "Driver", action: "driver_name" } : { name: "Previous Driver", action: "previous_driver_name" },
-        { name: "Current Branch", action: "current_branch_name" }
-    ]
+    const searchByGroup = [{
+        name:"User ID",
+        action:"user_id"
+    },{
+        name:"Name",
+        action:"name"
+    },{
+        name:"Comercial Name",
+        action:"comercial_name"
+    },{
+        name:"Email",
+        action:"email"
+    },{
+        name:"Phone",
+        action:"phone"
+    },{
+        name:"Branch",
+        action:"branch"
+    },{
+        name:"Role",
+        action:"role"
+    },{
+        name:"City",
+        action:"city"
+    },{
+        name:"Area",
+        action:"area"
+    },{
+        name:"Address",
+        action:"address"
+    }]
 
     const searchByDateGroup = [{
         name:"Today",
@@ -82,21 +80,20 @@ export default function HomeScreen(){
     }]
 
     const clearFilters = () => {
-        router.setParams({ collectionIds: ""});
+        router.setParams("");
     };
 
     const fetchData = async (pageNumber = 1, isLoadMore = false)=>{
         try {
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            // if (collectionIds) queryParams.append('collection_ids', collectionIds)
-            if (activeFilter) queryParams.append('status', activeFilter);
+            if (activeFilter) queryParams.append('active_status', activeFilter);
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
             if (activeDate) queryParams.append("date_range", activeDate.action)
             if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
             if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
             queryParams.append('page', pageNumber);
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type}?${queryParams.toString()}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?${queryParams.toString()}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -146,11 +143,7 @@ export default function HomeScreen(){
     useEffect(() => {
         setPage(1);
         fetchData(1, false);
-        if(collectionIds){
-            setActiveSearchBy(searchByGroup[0]);
-            type = "money"
-        }
-    }, [type,searchValue, activeFilter,activeDate,collectionIds]);
+    }, [searchValue, activeFilter,activeDate]);
 
 
     return <View style={styles.main}>
@@ -169,11 +162,11 @@ export default function HomeScreen(){
         activeDate={activeDate}
         setActiveDate={setActiveDate}
         onClearFilters={clearFilters}
+        showScanButton={false}
     />
     <View style={styles.section}>
-        <CollectionsView
+        <UsersView
             data={data.data || []}
-            type={type}
             loadMoreData={loadMoreData}
             loadingMore={loadingMore}
         />

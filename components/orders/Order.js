@@ -3,6 +3,7 @@ import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import EvilIcons from '@expo/vector-icons/EvilIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useState } from 'react';
@@ -19,7 +20,7 @@ export default function Order({user,order}){
             <View style={styles.order}>
         <View style={styles.head}>
             <View style={styles.box}>
-                <Text style={{textAlign:"center"}}>{order.order_id}</Text>
+                <Text style={{textAlign:"center"}}># {order.order_id}</Text>
             </View>
             <View style={[styles.box,styles.status,{borderWidth:0,backgroundColor:
                             order.status === "waiting" && "#E4E6EF" ||
@@ -87,7 +88,7 @@ export default function Order({user,order}){
         <View style={styles.sec}>
             <View style={styles.in}>
                 <View style={styles.flexIn}>
-                    <EvilIcons name="location" size={24} color="#F8C332" />
+                    <Ionicons name="location-outline" size={24} color="#F8C332" />
                     <View style={styles.info}>
                         <Text style={styles.h2}>{order.receiver_city}</Text>
                         <Text style={styles.p}>{order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : null}</Text>
@@ -149,12 +150,12 @@ export default function Order({user,order}){
                 pathname: "(create)",
                 params: { orderId: order.order_id }
               })}>
-                <Feather name="edit" size={24} color="black" />
-                <Text>Edit</Text>
+                <Feather name="edit" size={20} color="black" />
+                <Text style={{fontWeight:"500"}}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.modalItem,{borderBottomWidth:0}]}>
-                <AntDesign name="printer" size={24} color="black" />
-                <Text>Print</Text>
+                <AntDesign name="printer" size={20} color="black" />
+                <Text style={{fontWeight:"500"}}>Print</Text>
             </TouchableOpacity>
         </View>
 
@@ -192,7 +193,8 @@ const styles = StyleSheet.create({
         display:"flex",
         flexDirection:"row",
         justifyContent:"space-between",
-        alignItems:"center"
+        alignItems:"center",
+        gap:10
     },
     box:{
         borderRadius:15,
@@ -204,7 +206,7 @@ const styles = StyleSheet.create({
         borderWidth:1
     },
     h2:{
-        fontWeight:600
+        fontWeight:"500"
     },
     sec:{
         marginTop:15,

@@ -10,7 +10,7 @@ import { saveToken,getToken } from "../../utils/secureStore";
 export default function HomeScreen(){
     const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const { isAuthenticated,setIsAuthenticated,setUserRoleId } = useAuth();
+    const { isAuthenticated,setIsAuthenticated,setUserId } = useAuth();
 
 
     const [loginForm,setLoginForm] = useState({
@@ -54,8 +54,8 @@ export default function HomeScreen(){
             }
 
             if (data.userId) {
-                await saveToken("userId", data.userRoleId.toString());
-                setUserRoleId(data.userRoleId);
+                await saveToken("userId", data.userId.toString());
+                setUserId(data.userId);
             }
             
             if (data.token) {

@@ -1,4 +1,5 @@
-import { View,Text,StyleSheet, FlatList,ActivityIndicator} from 'react-native';
+import { View,Text,StyleSheet} from 'react-native';
+import FlatListData from '../FlatListData';
 import Order from './Order';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
@@ -6,23 +7,15 @@ export default function OrdersView({data,metadata,loadMoreData,loadingMore}){
 
     return data.length > 0
     ?
-    <FlatList
-        style={styles.scrollView}
-        data={data || []} 
-        keyExtractor={(item,index) => index}
-        onEndReached={loadMoreData}
-        onEndReachedThreshold={0.5}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={10}
-        renderItem={({ item }) => (
-        <View style={styles.orders}>
-            <Order user={metadata} order={item} />
-        </View>
-      )}
-      ListFooterComponent={
-        loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
-      }
+    <FlatListData
+        list={data || []}
+        loadMoreData={loadMoreData}
+        loadingMore={loadingMore}
+        children={(item)=> (
+            <View style={styles.orders}>
+                 <Order user={metadata} order={item} />
+            </View>
+        )}
     />
     :
     <View style={styles.empty}>

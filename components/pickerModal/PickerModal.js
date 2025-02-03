@@ -1,5 +1,6 @@
-import { StyleSheet,Modal, View,Text, FlatList, Pressable, TouchableOpacity,ActivityIndicator, TextInput } from "react-native";
+import { StyleSheet,Modal, View,Text, Pressable, TouchableOpacity, TextInput } from "react-native";
 import EvilIcons from '@expo/vector-icons/EvilIcons';
+import FlatListData from "../FlatListData";
 
 export default function PickerModal({list,showPickerModal,setShowPickerModal,setSelectedValue,field,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
     const {name} = field;
@@ -23,15 +24,11 @@ export default function PickerModal({list,showPickerModal,setShowPickerModal,set
                         onChangeText={(input)=> setPickerSearchValue(input)}
                     />
                 </View>}
-                <FlatList
-                    data={list || []} 
-                    keyExtractor={(item,index) => index}
-                    onEndReached={loadMoreData}
-                    onEndReachedThreshold={0.5}
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={10}
-                    windowSize={10}
-                    renderItem={({ item }) => (
+                <FlatListData
+                    list={list || []}
+                    loadMoreData={loadMoreData}
+                    loadingMore={loadingMore}
+                    children={(item)=> (
                         <View style={styles.item}>
                             <TouchableOpacity onPress={()=> {
                                 setSelectedValue((selectedValue) => ({...selectedValue,[name]:item}))
@@ -40,10 +37,7 @@ export default function PickerModal({list,showPickerModal,setShowPickerModal,set
                                 <Text>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
                             </TouchableOpacity>
                         </View>
-                )}
-                ListFooterComponent={
-                    loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
-                }
+                    )}
                 />
                 <Pressable onPress={setShowPickerModal}>
                     <Text style={styles.quit}>Cancel</Text>

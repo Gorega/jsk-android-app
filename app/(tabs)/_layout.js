@@ -60,7 +60,7 @@ export default function TabLayout() {
     <Tabs.Screen
         name="collections"
         options={{
-          tabBarLabel: "collections",
+          tabBarLabel: "Collections",
           headerShown:false,
           tabBarButton:()=> (
             <TouchableOpacity style={{marginLeft:12,marginTop:5,display:"flex",justifyContent:"center",alignItems:"center",width:44,height:44}} onPress={()=> setShowModal(true)}>
@@ -77,7 +77,7 @@ export default function TabLayout() {
     <Tabs.Screen
         name="settings"
         options={{
-          tabBarLabel: "settings",
+          tabBarLabel: "Settings",
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="setting" size={size} color={color} />
           ),

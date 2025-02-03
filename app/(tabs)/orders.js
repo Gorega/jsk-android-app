@@ -3,6 +3,7 @@ import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import { useEffect, useState } from 'react';
 import {router, useLocalSearchParams} from "expo-router"
+import { useAuth } from '../_layout';
 
 export default function Orders(){
     const [data,setData] = useState([]);
@@ -14,6 +15,7 @@ export default function Orders(){
     const [activeDate,setActiveDate] = useState("");
     const [selectedDate,setSelectedDate] = useState("");
     const params = useLocalSearchParams();
+    const {trackChanges} = useAuth();
     const { orderId,orderIds } = params;
 
     const filterByGroup = [{
@@ -131,7 +133,7 @@ export default function Orders(){
         router.setParams({ orderIds: "", orderId: "" });
     };
 
-    const fetchData = async (pageNumber = 1, shouldAppend = false) => {        
+    const fetchData = async (pageNumber = 1, isLoadMore = false) => {        
         try {
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
@@ -152,11 +154,14 @@ export default function Orders(){
                 }
             });
             const newData = await res.json();
-            
-            setData(prevData => ({
-                ...newData,
-                data: shouldAppend ? [...prevData.data, ...newData.data] : newData.data
-            }));
+            if (isLoadMore) {
+                setData(prevData => ({
+                    ...prevData,
+                    data: [...prevData.data, ...newData.data],
+                }));
+            } else {
+                setData(newData);
+            }
         } catch(err) {
             console.log(err);
         } finally {
@@ -164,12 +169,25 @@ export default function Orders(){
         }
     }
 
-    const loadMoreData = () => {
+    const loadMoreData = async () => {
+        console.log("loadMoreData called");
         if (!loadingMore && data.data?.length > 0) {
+            // Check if there's more data to load
+            if (data.data.length >= data.metadata.total_records) {
+                console.log("No more data to load");
+                return;
+            }
+    
             setLoadingMore(true);
             const nextPage = page + 1;
             setPage(nextPage);
-            fetchData(nextPage, true);
+            try {
+                await fetchData(nextPage, true);
+            } catch (error) {
+                console.error("Error loading more data:", error);
+            } finally {
+                setLoadingMore(false);
+            }
         }
     };
 
@@ -179,7 +197,7 @@ export default function Orders(){
         if(orderIds){
             setActiveSearchBy(searchByGroup[0]);
         }
-    }, [searchValue, activeFilter,activeDate,orderIds]);
+    }, [searchValue, activeFilter,activeDate,orderIds,trackChanges]);
 
     useEffect(()=>{
         if(orderId){
@@ -205,9 +223,15 @@ export default function Orders(){
             setActiveDate={setActiveDate}
             showClearFilters={!!orderIds}
             onClearFilters={clearFilters}
+            addPaddingSpace={true}
         />
         <View style={styles.section}>
-            <OrdersView data={data.data || []} metadata={data.metadata} loadMoreData={loadMoreData} loadingMore={loadingMore} />
+            <OrdersView
+                data={data.data || []}
+                metadata={data.metadata}
+                loadMoreData={loadMoreData}
+                loadingMore={loadingMore}
+            />
         </View>
     </View>
 }
