@@ -29,14 +29,14 @@ export default function FlatListData({list,loadMoreData,loadingMore,children}){
     return <FlatList
             data={list || []} 
             keyExtractor={(item,index) => index.toString()}
-            onEndReached={handleLoadMore}
+            onEndReached={loadMoreData ? handleLoadMore : ()=>{}}
             onEndReachedThreshold={0.5}
             initialNumToRender={10}
             maxToRenderPerBatch={10}
             windowSize={10}
             renderItem={({ item }) => children(item)}
-        ListFooterComponent={
-            loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
-        }
+            ListFooterComponent={
+                loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
+             }
     />
 }

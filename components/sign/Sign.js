@@ -5,19 +5,17 @@ import Field from "./Field";
 export default function Sign({fields,submit,children,setSelectedValue}){
 
     return <View style={styles.container}>
-        <View style={styles.main}>
             <Image style={styles.logo} source={TayarLogo} />
-            <ScrollView>
-                <View style={styles.form}>
+            <View style={styles.main}>
+                <ScrollView style={{height:"60%"}}>
                     {fields?.map((field,index)=>{
                         return <Field key={index} field={field} setSelectedValue={setSelectedValue} />
                     })}
-                </View>
-            </ScrollView>
+                </ScrollView>
+            </View>
             <TouchableOpacity style={styles.button} onPress={submit.action}>
                 <Text style={styles.buttonText}>{submit.label}</Text>
             </TouchableOpacity>
-        </View>
         {children}
 </View>
 
@@ -27,21 +25,11 @@ export default function Sign({fields,submit,children,setSelectedValue}){
 const styles = StyleSheet.create({
     container:{
         padding:15,
-        display:"flex",
         justifyContent:"center",
         alignItems:"center",
         backgroundColor:"white",
-        height:"100%",
         width:"100%",
-    },
-    header:{
-        position:"absolute",
-        top:50,
-        width:"100%",
-        display:"flex",
-        flexDirection:"row",
-        justifyContent:"space-between",
-        alignItems:"center"
+        flex:1
     },
     label:{
         fontSize:22,
@@ -49,30 +37,27 @@ const styles = StyleSheet.create({
     },
     main:{
         width:"80%",
-        height:"75%"
     },
     logo:{
         width:120,
         height:120,
         margin:"auto",
-        marginBottom:40
+        marginBottom:40,
     },
     form:{
-        height:"100%",
-        textAlign:"center"
+        textAlign:"center",
     },
     button:{
-        marginTop:15,
+        marginBottom:15,
         backgroundColor:"#F8C332",
         textAlign:"center",
         width:"100%",
         height:40,
-        display:"flex",
         justifyContent:"center",
         alignItems:"center"
     },
     buttonText:{
-        color:"black",
-        fontWeight:600,
+        color:"white",
+        fontWeight:"600",
     }
 })

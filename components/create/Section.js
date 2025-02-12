@@ -2,16 +2,19 @@ import { View,Text,StyleSheet, Pressable } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from "react";
 import Field from "./Field";
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Section({section,setSelectedValue,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
     const [showFields,setShowFields] = useState(true);
+    const { language } = useLanguage();
+
 
     return <Pressable onPress={()=> setShowFields(!showFields)}>
             <View style={[styles.section,{display:section.visibility === "hidden" && "none"}]}>
-            <View style={styles.label}>
-                <View style={{display:"flex",flexDirection:"row",alignItems:"center",gap:7}}>
+            <View style={[styles.label,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                <View style={{alignItems:"center",gap:7,flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}}>
                     {section.icon}
-                    <Text>{section.label}</Text>
+                    <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{section.label}</Text>
                 </View>
                 <MaterialIcons style={showFields && styles.activeSection} name="arrow-right" size={24} color="#F8C332" />
             </View>
@@ -44,7 +47,6 @@ const styles = StyleSheet.create({
         gap:20
     },
     label:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         justifyContent:"space-between",

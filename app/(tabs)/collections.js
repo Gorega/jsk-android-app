@@ -6,25 +6,29 @@ import Feather from '@expo/vector-icons/Feather';
 import Octicons from '@expo/vector-icons/Octicons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useAuth } from "../_layout";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Collections({showModal,setShowModal}) {
 
   const {user} = useAuth()
+  const { language } = useLanguage();
 
-  const collections = [{
-    label:"Money Collections",
+
+  const collections = [user.role === "driver" ? {visibility:"hidden"} : {
+    label:translations[language].tabs.collections.options.money,
     link:"(collection)?type=money",
     icon:<FontAwesome name="money" size={24} color="#F8C332" />
   },user.role !== "business" ?{
-    label:"Driver Collections",
+    label:translations[language].tabs.collections.options.driver,
     link:"(collection)?type=driver",
     icon:<FontAwesome6 name="money-bill-trend-up" size={24} color="#F8C332" />
-  } : {visibility:"hidden"} ,{
-    label:"Returned Collections",
+  } : {visibility:"hidden"} ,user.role === "driver" ? {visibility:"hidden"} : {
+    label:translations[language].tabs.collections.options.returned,
     link:"(collection)?type=returned",
     icon:<Octicons name="package-dependencies" size={24} color="#F8C332" />
   },user.role !== "business" ? {
-    label:"Runsheet Collections",
+    label:translations[language].tabs.collections.options.runsheet,
     link:"(collection)?type=dispatched",
     icon:<Feather name="truck" size={24} color="#F8C332" />
   } : {visibility:"hidden"}]
@@ -36,11 +40,11 @@ export default function Collections({showModal,setShowModal}) {
     bottom:15,
   }}>
       <View style={styles.list}>
-        {user.role === "business" && <TouchableOpacity style={[styles.item,styles.active]}>
-          <Text style={{color:"white",fontWeight:"600"}}>Collect Your Money</Text>
+        {user.role === "business" && <TouchableOpacity style={[styles.item,styles.active,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+          <Text style={{color:"white",fontWeight:"600"}}>{translations[language].tabs.collections.options.collect}</Text>
         </TouchableOpacity>}
         {collections?.map((collection,index)=>{
-          return <TouchableOpacity style={[styles.item,{display:collection.visibility === "hidden" && "none"}]} key={index} onPress={()=> {
+          return <TouchableOpacity style={[styles.item,{display:collection.visibility === "hidden" && "none",flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} key={index} onPress={()=> {
             router.push(collection.link)
             setShowModal(false)
           }}>

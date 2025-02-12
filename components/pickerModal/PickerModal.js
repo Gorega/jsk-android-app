@@ -1,8 +1,11 @@
 import { StyleSheet,Modal, View,Text, Pressable, TouchableOpacity, TextInput } from "react-native";
 import EvilIcons from '@expo/vector-icons/EvilIcons';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import FlatListData from "../FlatListData";
 
 export default function PickerModal({list,showPickerModal,setShowPickerModal,setSelectedValue,field,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
+    const { language } = useLanguage();
     const {name} = field;
 
     return <Modal
@@ -14,33 +17,33 @@ export default function PickerModal({list,showPickerModal,setShowPickerModal,set
     >
         <View style={styles.container}>
             <View style={styles.main}>
-                <Text style={styles.label}>Choose a {field.label}</Text>
-                {field.showSearchBar && <View style={styles.inputField}>
+                <Text style={styles.label}>{translations[language].picker.choose} {field.label}</Text>
+                {field.showSearchBar && <View style={[styles.inputField,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <EvilIcons name="search" size={24} color="black" />
                     <TextInput
-                        style={{width:"88%",textAlign:"left"}}
-                        placeholder="Search"
+                        style={{width:"88%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}
+                        placeholder={translations[language].picker.searchPlaceholder}
                         value={prickerSearchValue}
                         onChangeText={(input)=> setPickerSearchValue(input)}
                     />
                 </View>}
                 <FlatListData
                     list={list || []}
-                    loadMoreData={loadMoreData}
-                    loadingMore={loadingMore}
+                    loadMoreData={loadMoreData ? loadMoreData : null}
+                    loadingMore={loadingMore ? loadingMore : false}
                     children={(item)=> (
                         <View style={styles.item}>
                             <TouchableOpacity onPress={()=> {
                                 setSelectedValue((selectedValue) => ({...selectedValue,[name]:item}))
                                 setShowPickerModal(false)
                             }}>
-                                <Text>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
+                                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                 />
                 <Pressable onPress={setShowPickerModal}>
-                    <Text style={styles.quit}>Cancel</Text>
+                    <Text style={styles.quit}>{translations[language].picker.cancel}</Text>
                 </Pressable>
             </View>
         </View>
@@ -78,8 +81,9 @@ const styles = StyleSheet.create({
         borderBottomWidth:1
     },
     quit:{
-        fontWeight:500,
-        textAlign:"right"
+        fontWeight:"500",
+        textAlign:"right",
+        marginTop:25
     },
     inputField:{
         borderWidth:1,

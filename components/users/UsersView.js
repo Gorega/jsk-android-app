@@ -1,9 +1,12 @@
 import { View,Text,StyleSheet} from 'react-native';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import FlatListData from '../FlatListData';
 import User from "./User";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function UsersView({data,loadMoreData,loadingMore}){
+    const { language } = useLanguage();
 
     return data.length > 0
     ?
@@ -20,7 +23,7 @@ export default function UsersView({data,loadMoreData,loadingMore}){
     :
     <View style={styles.empty}>
         <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>No Users to show</Text>
+        <Text style={{fontWeight:500}}>{translations[language].users.emptyArray}</Text>
     </View>
 }
 

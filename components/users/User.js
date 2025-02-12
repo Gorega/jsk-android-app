@@ -1,70 +1,51 @@
 import { View,StyleSheet,Text, TouchableOpacity, Pressable} from 'react-native';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {useAuth} from "../../app/_layout";
 import Entypo from '@expo/vector-icons/Entypo';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
+import UserBox from "../orders/userBox/UserBox";
 
 
 export default function User({user}){
+    const { language } = useLanguage();
     const [showControl,setShowControl] = useState(false);
-
-    const {userRoleId} = useAuth();
 
     return <>
         <Pressable onLongPress={()=> setShowControl(true)}>
             <View style={styles.user}>
-                <View style={styles.head}>
+                <View style={[styles.head,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <View style={styles.box}>
-                        <Text># {user?.user_id}</Text>
+                        <Text style={{textAlign:"center"}}># {user?.user_id}</Text>
                     </View>
-                    <View style={[styles.status,{borderWidth:0,backgroundColor:
-                            "green"
-                        }]}>
+                    <View style={[styles.status,{borderWidth:0,backgroundColor:"green",flexDirection:"row-reverse"}]}>
                         <Text style={{color:"white"}}>{user.activeStatus}</Text>
                     </View>
                 </View>
+                <UserBox styles={styles} box={{label:translations[language].users.user.name,userName:user?.name,phone:user?.phone}} />
                 <View style={styles.sec}>
-                    <View style={styles.in}>
-                        <View style={styles.flexIn}>
-                            <FontAwesome name="user-o" size={24} color="#F8C332" />
-                            <View style={styles.info}>
-                                <Text style={styles.h2}>Name</Text>
-                                <Text style={styles.p}>{user?.name}</Text>
-                            </View>
-                        </View>
-                        <View style={styles.icons}>
-                            <TouchableOpacity>
-                                <Entypo name="phone" size={20} color="green" />
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Feather name="message-square" size={20} color="green" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-                <View style={styles.sec}>
-                    <View style={styles.in}>
-                        <View style={styles.flexIn}>
+                    <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                        <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                             <Ionicons name="location-outline" size={24} color="#F8C332" />
                             <View style={styles.info}>
-                                <Text style={styles.h2}>{user?.city}</Text>
-                                <Text style={styles.p}>{user.area}{user.address ? `, ${user.address}` : null}</Text>
+                                <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user?.city}</Text>
+                                <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user.area}{user.address ? `, ${user.address}` : null}</Text>
                             </View>
                         </View>
                     </View>
                 </View>
                 <View style={styles.sec}>
-                    <View style={styles.in}>
-                        <View style={styles.flexIn}>
+                    <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                        <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                             <MaterialIcons name="admin-panel-settings" size={24} color="#F8C332" />
                             <View style={styles.info}>
-                                <Text style={styles.h2}>Role</Text>
-                                <Text style={styles.p}>{user?.role}</Text>
+                                <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].users.user.role}</Text>
+                                <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user?.role}</Text>
                             </View>
                         </View>
                     </View>
@@ -79,13 +60,13 @@ export default function User({user}){
      setShowModal={setShowControl}
      customStyles={{bottom:15}}
     >
-        <View style={styles.control}>
-            <TouchableOpacity style={styles.modalItem} onPress={()=> router.push({
+        <View style={[styles.control,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({
                 pathname: "(create_user)",
                 params: { userId: user.user_id }
               })}>
                 <Feather name="edit" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>Edit</Text>
+                <Text style={{fontWeight:"500"}}>{translations[language].users.user.edit}</Text>
             </TouchableOpacity>
         </View>
 
@@ -113,16 +94,10 @@ const styles = StyleSheet.create({
         padding:15
     },
     control:{
-        display:"flex",
         flexDirection:"row-reverse",
         alignItems:"center",
         gap:10,
         marginBottom:15,
-    },
-    cont:{
-        display:"flex",
-        flexDirection:"row",
-        gap:15
     },
     status:{
         flexDirection:"row",
@@ -133,7 +108,6 @@ const styles = StyleSheet.create({
         borderRadius:"50%"
     },
     head:{
-        display:"flex",
         flexDirection:"row",
         justifyContent:"space-between",
         alignItems:"center",
@@ -155,7 +129,6 @@ const styles = StyleSheet.create({
         borderBottomWidth:1
     },
     in:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         gap:15,
@@ -165,30 +138,19 @@ const styles = StyleSheet.create({
         justifyContent:"center",
     },
     flexIn:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         gap:15
     },
     icons:{
-        display:"flex",
         flexDirection:"row",
         gap:15
     },
     flexSec:{
         marginTop:20,
     },
-    action:{
-        display:"flex",
-        flexDirection:"row",
-        alignItems:"center",
-        gap:5,
-    },
     h2:{
         fontWeight:"500"
-    },
-    control:{
-        width:"100%"
     },
     modalItem:{
         padding:15,
@@ -196,7 +158,8 @@ const styles = StyleSheet.create({
         alignItems:"center",
         gap:10,
         borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1
+        borderBottomWidth:1,
+        width:"100%"
     }
 
 })

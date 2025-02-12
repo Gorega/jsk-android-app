@@ -2,11 +2,13 @@ import { View,StyleSheet} from 'react-native';
 import Search from '../../components/search/Search';
 import { useEffect, useState } from 'react';
 import {router, useLocalSearchParams} from "expo-router"
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import UsersView from '../../components/users/UsersView';
 
 
 export default function HomeScreen(){
-
+    const { language } = useLanguage();
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy,setActiveSearchBy] = useState("");
@@ -17,65 +19,65 @@ export default function HomeScreen(){
     const [loadingMore,setLoadingMore] = useState(false);
 
     const filterByGroup = [{
-        name:"All",
+        name:translations[language].users.filters.all,
         action:"",
     },{
-        name:"Active",
+        name:translations[language].users.filters.active,
         action:"true",
     },{
-        name:"Inactive",
+        name:translations[language].users.filters.inactive,
         action:"false"
     }]
 
     const searchByGroup = [{
-        name:"User ID",
+        name:translations[language].users.filters.userId,
         action:"user_id"
     },{
-        name:"Name",
+        name:translations[language].users.filters.name,
         action:"name"
     },{
-        name:"Comercial Name",
+        name:translations[language].users.filters.commercial,
         action:"comercial_name"
     },{
-        name:"Email",
+        name:translations[language].users.filters.email,
         action:"email"
     },{
-        name:"Phone",
+        name:translations[language].users.filters.phone,
         action:"phone"
     },{
-        name:"Branch",
+        name:translations[language].users.filters.branch,
         action:"branch"
     },{
-        name:"Role",
+        name:translations[language].users.filters.role,
         action:"role"
     },{
-        name:"City",
+        name:translations[language].users.filters.city,
         action:"city"
     },{
-        name:"Area",
+        name:translations[language].users.filters.area,
         action:"area"
     },{
-        name:"Address",
+        name:translations[language].users.filters.address,
         action:"address"
     }]
 
     const searchByDateGroup = [{
-        name:"Today",
+        name:translations[language].users.filters.today,
         action:"today"
     },{
-        name:"Yesterday",
+        name:translations[language].users.filters.yesterday,
         action:"yesterday"
     },{
-        name:"This Week",
+        name:translations[language].users.filters.thisWeek,
         action:"this_week"
     },{
-        name:"This Month",
+        name:translations[language].users.filters.thisMonth,
         action:"this_month"
     },{
-        name:"This Year",
+        name:translations[language].users.filters.thisYear,
         action:"this_year"
     },{
-        name:"Select a Date",
+        name:translations[language].users.filters.selectDate,
         action:"custom"
     }]
 

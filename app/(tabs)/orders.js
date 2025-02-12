@@ -2,10 +2,13 @@ import { View,StyleSheet} from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import { useEffect, useState } from 'react';
-import {router, useLocalSearchParams} from "expo-router"
+import {router, useLocalSearchParams} from "expo-router";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from '../_layout';
 
 export default function Orders(){
+    const { language } = useLanguage();
     const [data,setData] = useState([]);
     const [page,setPage] = useState(1);
     const [loadingMore,setLoadingMore] = useState(false);
@@ -19,113 +22,113 @@ export default function Orders(){
     const { orderId,orderIds } = params;
 
     const filterByGroup = [{
-        name:"All",
+        name:translations[language].tabs.orders.filters.all,
         action:"",
     },{
-        name:"Waiting",
+        name:translations[language].tabs.orders.filters.waiting,
         action:"waiting",
     },{
-        name:"rejected",
+        name:translations[language].tabs.orders.filters.rejected,
         action:"rejected"
     },{
-        name:"in Branch",
+        name:translations[language].tabs.orders.filters.inBranch,
         action:"in_branch"
     },{
-        name:"in Progress",
+        name:translations[language].tabs.orders.filters.inProgress,
         action:"in_progress"
     },{
-        name:"stuck",
+        name:translations[language].tabs.orders.filters.stuck,
         action:"stuck"
     },{
-        name:"Delayed",
+        name:translations[language].tabs.orders.filters.delayed,
         action:"delayed"
     },{
-        name:"On The Way",
+        name:translations[language].tabs.orders.filters.onTheWay,
         action:"on_the_way"
     },{
-        name:"Reschedule",
+        name:translations[language].tabs.orders.filters.rescheduled,
         action:"reschedule"
     },{
-        name:"Return Before Delivered Initiated",
+        name:translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
         action:"return_before_delivered_initiated"
     },{
-        name:"Return After Delivered Initiated",
+        name:translations[language].tabs.orders.filters.returnAfterDeliveredInitiated,
         action:"return_after_delivered_initiated"
     },{
-        name:"Retuned",
+        name:translations[language].tabs.orders.filters.returned,
         action:"returned"
     },{
-        name:"Returned In Branch",
+        name:translations[language].tabs.orders.filters.returnedInBranch,
         action:"returned_in_branch"
     },{
-        name:"Returned Out",
+        name:translations[language].tabs.orders.filters.returnedOut,
         action:"returned_out"
     },{
-        name:"Business Returned Delivered",
+        name:translations[language].tabs.orders.filters.businessReturnedDelivered,
         action:"business_returned_delivered"
     },{
-        name:"Delivered",
+        name:translations[language].tabs.orders.filters.delivered,
         action:"delivered"
     },{
-        name:"money In Branch",
+        name:translations[language].tabs.orders.filters.moneyInBranch,
         action:"money_in_branch"
     },{
-        name:"money Out",
+        name:translations[language].tabs.orders.filters.moneyOut,
         action:"money_out"
     },{
-        name:"business Paid",
+        name:translations[language].tabs.orders.filters.businessPaid,
         action:"business_paid"
     },{
-        name:"completed",
+        name:translations[language].tabs.orders.filters.completed,
         action:"completed"
     }]
 
     const searchByGroup = [{
-        name:"Order ID",
+        name:translations[language].tabs.orders.filters.orderId,
         action:"order_id"
     },{
-        name:"Reference ID",
+        name:translations[language].tabs.orders.filters.referenceID,
         action:"reference_id"
     },{
-        name:"Sender",
+        name:translations[language].tabs.orders.filters.sender,
         action:"sender"
     },{
-        name:"Receiver Name",
+        name:translations[language].tabs.orders.filters.receiverName,
         action:"receiver_name"
     },{
-        name:"Receiver Phone",
+        name:translations[language].tabs.orders.filters.receiverPhone,
         action:"receiver_phone"
     },{
-        name:"Receiver City",
+        name:translations[language].tabs.orders.filters.receiverCity,
         action:"receiver_city"
     },{
-        name:"Receiver Area",
+        name:translations[language].tabs.orders.filters.receiverArea,
         action:"receiver_area"
     },{
-        name:"Receiver Address",
+        name:translations[language].tabs.orders.filters.receiverAddress,
         action:"receiver_address"
     },{
-        name:"Driver Name",
+        name:translations[language].tabs.orders.filters.driverName,
         action:"driver"
     }]
 
     const searchByDateGroup = [{
-        name:"Today",
+        name:translations[language].tabs.orders.filters.today,
         action:"today"
     },{
-        name:"Yesterday",
+        name:translations[language].tabs.orders.filters.yesterday,
         action:"yesterday"
     },{
-        name:"This Week",
+        name:translations[language].tabs.orders.filters.thisWeek,
         action:"this_week"
     },{
-        name:"This Month",
+        name:translations[language].tabs.orders.filters.thisMonth,
         action:"this_month"
     },{
-        name:"This Year",
+        name:translations[language].tabs.orders.filters.thisYear,
         action:"this_year"
     },{
-        name:"Select a Date",
+        name:translations[language].tabs.orders.filters.selectDate,
         action:"custom"
     }]
 

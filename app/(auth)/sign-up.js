@@ -1,9 +1,12 @@
 import Sign from "@/components/sign/Sign";
 import { useEffect, useState } from "react";
+import { useLanguage } from '../../utils/languageContext';
+import { translations } from '../../utils/languageContext';
 
 export default function Login(){
 
     const [cities,setCities] = useState([]);
+    const { language } = useLanguage();
 
     const [selectedValue,setSelectedValue] = useState({
         role:"",
@@ -17,31 +20,30 @@ export default function Login(){
         city:"",
         area:"",
         address:"",
-        password:"",
-        confirmPassword:""
+        password:""
     })
 
     const fields = [{
         name:"username",
-        label:"Username",
+        label:translations[language].auth.username,
         type:"input",
         value:registerForm.username,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,username:value}))
     },{
         name:"phone",
-        label:"Mobile Number",
+        label:translations[language].auth.mobileNumber,
         type:"input",
         value:registerForm.phone,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,phone:value}))
     },{
         name:"email",
-        label:"Email",
+        label:translations[language].auth.email,
         type:"input",
         value:registerForm.email,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,email:value}))
     },{
         name:"role",
-        label:"Role",
+        label:translations[language].auth.role,
         type:"select",
         value:selectedValue.role.label,
         list: [{
@@ -53,7 +55,7 @@ export default function Login(){
         }]
     },{
         name:"city",
-        label:"City",
+        label:translations[language].auth.city,
         type:"select",
         value:selectedValue.city.label,
         list:cities?.map(city=> ({
@@ -62,28 +64,22 @@ export default function Login(){
         }))
     },{
         name:"area",
-        label:"Area",
+        label:translations[language].auth.area,
         type:"input",
         value:registerForm.area,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,area:value}))
     },{
         name:"address",
-        label:"Address",
+        label:translations[language].auth.address,
         type:"input",
         value:registerForm.address,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,address:value}))
     },{
         name:"password",
-        label:"Password",
+        label:translations[language].auth.password,
         type:"input",
         value:registerForm.password,
         onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,password:value}))
-    },{
-        name:"confirmPassword",
-        label:"Confirm Password",
-        type:"input",
-        value:registerForm.confirmPassword,
-        onChange:(value)=> setRegisterForm((registerForm)=> ({...registerForm,confirmPassword:value}))
     }]
 
     const registerHandler = async ()=>{
@@ -139,7 +135,7 @@ export default function Login(){
     return <Sign 
         fields={fields}
         submit={{
-            label:"Register",
+            label:translations[language].auth.register,
             action:registerHandler
         }}
         setSelectedValue={setSelectedValue}

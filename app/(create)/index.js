@@ -7,8 +7,11 @@ import Feather from '@expo/vector-icons/Feather';
 import { useLocalSearchParams } from "expo-router";
 import { useAuth } from "../_layout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function HomeScreen(){
+    const { language } = useLanguage();
     const [success,setSuccess] = useState(false);
     const [error,setError] = useState({});
     const [formSpinner,setFormSpinner] = useState({})
@@ -31,10 +34,10 @@ export default function HomeScreen(){
     const [isReplaced,setIsReplaced] = useState(false);
  
     const sections = [user.role !== "business" ? {
-        label:"Sender",
+        label:translations[language].tabs.orders.create.sections.sender.title,
         icon:<SimpleLineIcons name="user-follow" size={24} color="#F8C332" />,
         fields:[{
-            label:"Sender",
+            label:translations[language].tabs.orders.create.sections.sender.fields.sender,
             type:"select",
             name:"sender",
             value:selectedValue.sender.name,
@@ -42,78 +45,78 @@ export default function HomeScreen(){
             showSearchBar:true
         }]
     }:{visibility:"hidden"},{
-        label:"Client",
+        label:translations[language].tabs.orders.create.sections.client.title,
         icon:<FontAwesome name="user-o" size={24} color="#F8C332" />,
         fields:[{
-            label:"Client",
+            label:translations[language].tabs.orders.create.sections.client.fields.client,
             type:"input",
             value:form.receiverName || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverName:input}))
         },{
-            label:"Phone Number",
+            label:translations[language].tabs.orders.create.sections.client.fields.firstPhone,
             type:"input",
             value:form.receiverFirstPhone || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverFirstPhone:input}))
         },{
-            label:"Second Phone Number",
+            label:translations[language].tabs.orders.create.sections.client.fields.secondPhone,
             type:"input",
             value:form.receiverSecondPhone || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverSecondPhone:input}))
         },{
-            label:"City",
+            label:translations[language].tabs.orders.create.sections.client.fields.city,
             type:"select",
             name:"city",
             value:selectedValue.city.name,
             list:cities
         },{
-            label:"Area",
+            label:translations[language].tabs.orders.create.sections.client.fields.area,
             type:"input",
             value:form.receiverArea || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverArea:input}))
         },{
-            label:"Address",
+            label:translations[language].tabs.orders.create.sections.client.fields.address,
             type:"input",
             value:form.receiverAddress || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverAddress:input}))
         }]
     },{
-        label:"Cost",
+        label:translations[language].tabs.orders.create.sections.cost.title,
         icon:<MaterialIcons name="attach-money" size={24} color="#F8C332" />,
         fields:[{
-            label:"Package Cost",
+            label:translations[language].tabs.orders.create.sections.cost.fields.packageCost,
             type:"input",
             value:form.codValue || "",
             onChange:(input)=> setForm((form)=> ({...form,codValue:input}))
         },{
-            label:"Delivery Fee",
+            label:translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
             type:"input",
             value: deliveryFee || form.deliveryFee,
         },{
-            label:"Is Replaced ?",
+            label:translations[language].tabs.orders.create.sections.cost.fields.isReplaced,
             type:"checkbox",
             value:isReplaced,
             onChange:()=> setIsReplaced(!isReplaced)
         }]
     },{
-        label:"Order Details",
+        label:translations[language].tabs.orders.create.sections.details.title,
         icon:<Feather name="package" size={24} color="#F8C332" />,
         fields:[{
-            label:"Product",
+            label:translations[language].tabs.orders.create.sections.details.fields.product,
             type:"input",
             value:form.orderItems || "",
             onChange:(input)=> setForm((form)=> ({...form,orderItems:input}))
         },{
-            label:"Quantity",
+            label:translations[language].tabs.orders.create.sections.details.fields.quantity,
             type:"input",
             value:form.numberOfItems || "",
             onChange:(input)=> setForm((form)=> ({...form,numberOfItems:input}))
         },{
-            label:"Weight",
+            label:translations[language].tabs.orders.create.sections.details.fields.weight,
             type:"input",
             value:form.orderWeight || "",
             onChange:(input)=> setForm((form)=> ({...form,orderWeight:input}))
         },{
-            label:"Order Type",
+            label:translations[language].tabs.orders.create.sections.details.fields.orderType,
             type:"select",
             name:"order_type",
             list:[{

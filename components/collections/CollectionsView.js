@@ -2,8 +2,11 @@ import { View,Text,StyleSheet} from 'react-native';
 import Collection from './Collection';
 import FlatListData from '../FlatListData';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function OrdersView({data,type,loadMoreData,loadingMore}){
+    const { language } = useLanguage();
 
     return data.length > 0
     ?
@@ -12,7 +15,7 @@ export default function OrdersView({data,type,loadMoreData,loadingMore}){
         loadMoreData={loadMoreData}
         loadingMore={loadingMore}
         children={(item)=> (
-            <View style={styles.orders}>
+            <View style={styles.order}>
                 <Collection type={type} collection={item} />
             </View>
         )}
@@ -20,7 +23,7 @@ export default function OrdersView({data,type,loadMoreData,loadingMore}){
     :
     <View style={styles.empty}>
         <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>No Collections to show</Text>
+        <Text style={{fontWeight:500}}>{translations[language].collections.emptyArray}</Text>
     </View>
 }
 
@@ -34,10 +37,7 @@ const styles = StyleSheet.create({
       justifyContent:"center",
       alignItems:"center"
     },
-    scrollView:{
-        flex:1
-    },
-    orders:{
+    order:{
         padding:15,
     }
 

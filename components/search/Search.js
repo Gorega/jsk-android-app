@@ -8,6 +8,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Calendar } from 'react-native-calendars';
 import { router } from 'expo-router';
 import { useCameraPermissions } from 'expo-camera';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Search({
     searchValue,
@@ -28,6 +30,7 @@ export default function Search({
     addPaddingSpace
   }){
 
+    const { language } = useLanguage();
     const [showSpecificFilters,setShowSpecificFilters] = useState(false);
     const [showDateFilters,setShowDateFilters] = useState(false);
     const [showCalendar,setShowCalendar] = useState(false);
@@ -35,12 +38,12 @@ export default function Search({
 
     return <>
         <SafeAreaView style={[styles.searchBox,{paddingTop:addPaddingSpace ? 40 : 15}]}>
-        <View style={styles.search}>
-            <View style={[styles.inputField,{width:(activeSearchBy || activeDate ) ? "60%" : showScanButton ? "70%" : "80%"}]}>
+        <View style={[styles.search,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.inputField,{width:(activeSearchBy || activeDate ) ? "60%" : showScanButton ? "70%" : "80%",flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <EvilIcons name="search" size={24} color="black" />
                 <TextInput
-                    style={styles.input}
-                    placeholder={`Search ${activeSearchBy && `By ${activeSearchBy.name}`}`}
+                    style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}
+                    placeholder={`${translations[language].search.placeholder} ${activeSearchBy && `${translations[language].search.by} ${activeSearchBy.name}`}`}
                     value={searchValue}
                     onChangeText={setSearchValue}
                 />
@@ -55,7 +58,7 @@ export default function Search({
             </TouchableOpacity>}
             {showScanButton && <TouchableOpacity onPress={()=> {
               if(permission){
-                router.push("(camera)")
+                router.push("(camera)/lookupOrder")
               }else{
                 requestPermission()
               }
@@ -70,8 +73,8 @@ export default function Search({
             </TouchableOpacity>
         </View>
         <View style={styles.filter}>
-                <ScrollView style={styles.filterScrollView} horizontal={true} showsHorizontalScrollIndicator={false}>
-                    <View style={styles.filterBy}>
+                <ScrollView style={[styles.filterScrollView,["he", "ar"].includes(language) && {transform: [{ scaleX: -1 }]}]} horizontal={true} showsHorizontalScrollIndicator={false}>
+                    <View style={[styles.filterBy,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row",justifyContent: ["he", "ar"].includes(language) ? 'flex-end' : 'flex-start',transform: ["he", "ar"].includes(language) ? [{ scaleX: -1 }] : undefined}]}>
                         {filterByGroup?.map((filter,index)=>{
                             return <TouchableOpacity style={[styles.filterItem,activeFilter === filter.action && styles.activeFilter]} key={index} onPress={() => setActiveFilter(filter.action)}>
                                 <Text style={activeFilter === filter.action ? styles.activeFilterText : null}>{filter.name}</Text>
@@ -95,19 +98,19 @@ export default function Search({
           showModal={showSpecificFilters}
           setShowModal={setShowSpecificFilters}
         >
-          <Text style={styles.modalH2}>Search By</Text>
+          <Text style={styles.modalH2}>{translations[language].search.searchBy}</Text>
           <ScrollView>
             {searchByGroup?.map((item, index) => (
               <TouchableOpacity key={index} style={styles.modalItem} onPress={()=> {
                 setActiveSearchBy(item)
                 setShowSpecificFilters()
               }}>
-                <Text>{item.name}</Text>
+                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{item.name}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
           <TouchableOpacity style={styles.closeModal} onPress={setShowSpecificFilters}>
-                <Text>Cancel</Text>
+                <Text>{translations[language].search.cancel}</Text>
           </TouchableOpacity>
         </ModalPresentation>
     )}
@@ -116,7 +119,7 @@ export default function Search({
         showModal={showDateFilters}
         setShowModal={setShowDateFilters}
       >
-        <Text style={styles.modalH2}>Search By Date</Text>
+        <Text style={styles.modalH2}>{translations[language].search.searchByDate}</Text>
         <ScrollView>
           {searchByDateGroup?.map((item, index) => (
             <TouchableOpacity key={index} style={styles.modalItem} onPress={()=> {
@@ -127,12 +130,12 @@ export default function Search({
                 setShowDateFilters()
               }
             }}>
-              <Text>{item.name}</Text>
+              <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{item.name}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
         <TouchableOpacity style={styles.closeModal} onPress={setShowDateFilters}>
-              <Text>Cancel</Text>
+              <Text>{translations[language].search.cancel}</Text>
         </TouchableOpacity>
       </ModalPresentation>
     )}
@@ -159,10 +162,10 @@ export default function Search({
                 setShowDateFilters();
                 setActiveDate({action:"custom"})
             }}>
-                <Text style={{color:"#F8C332"}}>Confirm</Text>
+                <Text style={{color:"#F8C332"}}>{translations[language].search.confirm}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.closeModal} onPress={setShowCalendar}>
-                <Text>Cancel</Text>
+                <Text>{translations[language].search.cancel}</Text>
             </TouchableOpacity>
         </View>
       </ModalPresentation>
@@ -175,17 +178,14 @@ const styles = StyleSheet.create({
         padding:15,
         backgroundColor:"white",
         boxShadow:"rgba(0, 0, 0, 0.16) 0px 1px 4px",
-        display:"flex",
         justifyContent:"flex-end"
     },
     search:{
-        display:"flex",
         flexDirection:"row",
         justifyContent:"space-between",
         alignItems:"center",
     },
     inputField:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         borderColor:"rgba(0,0,0,.1)",
@@ -199,7 +199,6 @@ const styles = StyleSheet.create({
         marginTop:25,
     },
     filterBy:{
-        display:"flex",
         flexDirection:"row",
         gap:30
     },

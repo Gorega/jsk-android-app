@@ -3,15 +3,15 @@ import Section from "../../components/create/Section";
 import { useEffect, useState } from "react";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Feather from '@expo/vector-icons/Feather';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import { useLocalSearchParams } from "expo-router";
-import { useAuth } from "../_layout";
 
 export default function HomeScreen(){
     const { userId } = useLocalSearchParams();
+    const { language } = useLanguage();
     const [page,setPage] = useState(1);
     const [loadingMore,setLoadingMore] = useState(false);
-    const {userRoleId} = useAuth()
     const [cities,setCities] = useState([]);
     const [roles,setRoles] = useState([]);
     const [pricelists,setPricelists] = useState([]);
@@ -25,61 +25,61 @@ export default function HomeScreen(){
     const [form,setForm] = useState({})
  
     const sections = [{
-        label:"User",
+        label:translations[language].users.create.sections.user.title,
         icon:<FontAwesome name="user-o" size={24} color="#F8C332" />,
         fields:[{
-            label:"Name",
+            label:translations[language].users.create.sections.user.fields.name,
             type:"input",
             value:form.name || "",
             onChange:(input)=> setForm((form)=> ({...form,name:input}))
         },{
-            label:"Commercial Name",
+            label:translations[language].users.create.sections.user.fields.commercial,
             type:"input",
             value:form.comercialName || "",
             onChange:(input)=> setForm((form)=> ({...form,comercialName:input}))
         },{
-            label:"Phone Number",
+            label:translations[language].users.create.sections.user.fields.firstPhone,
             type:"input",
             value:form.firstPhone || "",
             onChange:(input)=> setForm((form)=> ({...form,firstPhone:input}))
         },{
-            label:"Second Phone Number",
+            label:translations[language].users.create.sections.user.fields.secondPhone,
             type:"input",
             value:form.secondPhone || "",
             onChange:(input)=> setForm((form)=> ({...form,secondPhone:input}))
         },{
-            label:"Affillator",
+            label:translations[language].users.create.sections.user.fields.affillator,
             type:"input",
             value:form.Affillator || "",
             onChange:(input)=> setForm((form)=> ({...form,Affillator:input}))
         },{
-            label:"City",
+            label:translations[language].users.create.sections.user.fields.city,
             type:"select",
             name:"city",
             value:selectedValue.city.name,
             list:cities
         },{
-            label:"Area",
+            label:translations[language].users.create.sections.user.fields.area,
             type:"input",
             value:form.area || "",
             onChange:(input)=> setForm((form)=> ({...form,area:input}))
         },{
-            label:"Address",
+            label:translations[language].users.create.sections.user.fields.address,
             type:"input",
             value:form.address || "",
             onChange:(input)=> setForm((form)=> ({...form,address:input}))
         }]
     },{
-        label:"Details",
+        label:translations[language].users.create.sections.details.title,
         icon:<MaterialIcons name="attach-money" size={24} color="#F8C332" />,
         fields:[{
-            label:"Role",
+            label:translations[language].users.create.sections.details.fields.role,
             type:"select",
             name:"role",
             value:selectedValue.role.name,
             list:roles
         },{
-            label:"Price List",
+            label:translations[language].users.create.sections.details.fields.pricelist,
             type:"select",
             name:"pricelist",
             value:selectedValue.pricelist.name,
@@ -315,7 +315,7 @@ export default function HomeScreen(){
                     setSelectedValue={setSelectedValue}
                     />
             })}
-            <Button color={"#F8C332"} title="Submit" />
+            <Button color={"#F8C332"} title={translations[language].users.create.submit} />
         </View>
     </ScrollView>
 }

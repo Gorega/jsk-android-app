@@ -1,18 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Text, View, StyleSheet } from 'react-native';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { router } from "expo-router";
+
 
 export default function CameraScanner() {
+  const { language } = useLanguage();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
+
 
   useEffect(() => {
     const requestCameraPermission = async () => {
       const { status } = await requestPermission();
       console.log("Camera permission status:", status);
       if (status !== 'granted') {
-        setError('Camera permission not granted');
+        setError(translations[language].camera.permission.notGranted);
       }
     };
 
@@ -22,8 +28,9 @@ export default function CameraScanner() {
   }, [requestPermission, permission]);
 
   const handleBarCodeScanned = ({ type, data }) => {
+    const parsedData = JSON.parse(data);
     setScanned(true);
-    alert(`Bar code with type ${type} and data ${data} has been scanned!`);
+    router.push({pathname:"/(tabs)/orders",params:{orderId:type === "code128" ? data : parsedData.order_id}})
   };
 
 
@@ -38,18 +45,17 @@ export default function CameraScanner() {
   if (!permission?.granted) {
     return (
       <View style={styles.container}>
-        <Text>Requesting camera permission...</Text>
+        <Text>{translations[language].camera.permission.request}</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-    
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing='back'
-        onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barCodeScannerSettings={{
             barCodeTypes: [
               'qr',
@@ -65,16 +71,8 @@ export default function CameraScanner() {
         <View style={styles.overlay}>
           <View style={styles.border} />
           <Text style={styles.scanText}>
-          {scanned ? 'Tap to Scan Again' : 'Position barcode within frame'}
+            {translations[language].camera.scanText}
           </Text>
-          {scanned && (
-            <Text
-              style={styles.rescanButton}
-              onPress={() => setScanned(false)}
-            >
-              Tap to Scan Again
-            </Text>
-          )}
         </View>
       </CameraView>
     </View>
@@ -93,8 +91,8 @@ const styles = StyleSheet.create({
   border: {
     width: 250,
     height: 250,
-    borderWidth: 2,
-    borderColor: 'white',
+    borderWidth: 1,
+    borderColor: '#F8C332',
     borderRadius: 10,
   },
   rescanButton: {

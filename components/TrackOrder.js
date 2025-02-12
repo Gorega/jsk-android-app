@@ -1,25 +1,28 @@
-import { View,Text,TextInput,TouchableOpacity,StyleSheet, Pressable } from "react-native"
+import { View,Text,TextInput,TouchableOpacity,StyleSheet } from "react-native"
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
 import { useState } from "react";
 import { useCameraPermissions } from 'expo-camera';
+import { translations } from '../utils/languageContext';
+import { useLanguage } from '../utils/languageContext';
 
 
 export default function TrackOrder(){
     const [value,setValue] = useState("");
     const [permission,requestPermission] = useCameraPermissions();
+    const { language } = useLanguage();
 
 
     return <View style={styles.track}>
-        <Text style={styles.h2}>Track Your Package</Text>
-        <Text style={styles.p}>Enter Order Number to Start Tracking</Text>
-        <View style={styles.flex}>
-            <View style={styles.inputBox}>
+        <Text style={[styles.h2,{fontWeight:["he", "ar"].includes(language) ? "600" : "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.title}</Text>
+        <Text style={[styles.p,{fontWeight:["he", "ar"].includes(language) && "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.desc}</Text>
+        <View style={[styles.flex,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.inputBox,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <Feather name="package" size={24} color="black" />
                 <TextInput
-                    style={styles.input}
-                    placeholder="for ex:12321411"
+                    style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}
+                    placeholder={translations[language].track.placeholder} 
                     value={value}
                     onChangeText={(input)=> setValue(input)}
                     returnKeyType="done"
@@ -31,7 +34,7 @@ export default function TrackOrder(){
             </View>
             <TouchableOpacity style={styles.button} onPress={()=> {
               if(permission){
-                router.push("(camera)")
+                router.push("(camera)/lookupOrder")
               }else{
                 requestPermission()
               }
@@ -47,14 +50,13 @@ const styles = StyleSheet.create({
     },
     h2:{
         fontSize:17,
-        fontWeight:500
+        fontWeight:"500"
     },
     p:{
-        fontSize:12,
-        marginTop:5
+        fontSize:13,
+        marginTop:5,
     },
     flex:{
-        display:"flex",
         flexDirection:"row",
         justifyContent:"center",
         flexWrap:"nowrap",
@@ -63,7 +65,6 @@ const styles = StyleSheet.create({
         marginTop:10,
     },
     inputBox:{
-        display:"flex",
         flexDirection:"row",
         justifyContent:"flex-start",
         alignItems:"center",

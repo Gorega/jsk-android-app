@@ -4,25 +4,27 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
 import { useAuth } from "@/app/_layout";
 import { useEffect, useState } from "react";
+import { translations } from '../utils/languageContext';
+import { useLanguage } from '../utils/languageContext';
 
 export default function Header(){
     const {user} = useAuth();
-
+    const { language } = useLanguage();
     const [greetingMsg, setGreetingMsg] = useState("");
 
     useEffect(() => {
         const currentHour = new Date().getHours();
     
         if (currentHour >= 5 && currentHour < 12) {
-            setGreetingMsg("Good Morning! ☀️");
+            setGreetingMsg(translations[language].greeting.morning);
         } else if (currentHour >= 12 && currentHour < 18) {
-            setGreetingMsg("Good Afternoon! 🌤️");
+            setGreetingMsg(translations[language].greeting.afternoon);
         } else {
-            setGreetingMsg("Good Evening! 🌙");
+            setGreetingMsg(translations[language].greeting.evening);
         }
-    }, []);
+    }, [language]);
 
-    return <SafeAreaView style={styles.main}>
+    return <SafeAreaView style={[styles.main,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
         <TouchableOpacity
             style={styles.avatarContainer}
             onPress={()=> router.push({pathname: "(create_user)",params: { userId: user.userId }})}>

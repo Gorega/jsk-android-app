@@ -1,8 +1,7 @@
-import { View,StyleSheet,Text, TouchableOpacity, Pressable} from 'react-native';
+import { View,StyleSheet,Text, TouchableOpacity, Pressable, TextInput} from 'react-native';
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -10,19 +9,86 @@ import { useState } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
+import PickerModal from "../pickerModal/PickerModal";
+import { useAuth } from '../../app/_layout';
+import UserBox from "./userBox/UserBox";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Order({user,order}){
 
+    const { language } = useLanguage();
+    const {user:authUser,setTrackChanges} = useAuth();
     const [showControl,setShowControl] = useState(false);
+    const [showStatusUpdateModal,setShowStatusUpdateModal] = useState(false);
+    const [showConfirmStatusChangeUpdateModal,setShowConfirmStatusChangeUpdateModal] = useState(false);
+    const [selectedValue,setSelectedValue] = useState({});
+    const [UpdatedStatusNote,setUpdatedStatusNote] = useState("");
+
+    const statusOptions = authUser.role === "driver" ? [{
+        label:translations[language].tabs.orders.order.states.pickedUp, value:"on_the_way"
+    },{
+        label:translations[language].tabs.orders.order.states.deliveredToDestinationBranch, value:"in_branch"
+    },{
+        label:translations[language].tabs.orders.order.states.reschedule, value:"reschedule"
+    },{
+        label:translations[language].tabs.orders.order.states.returnBeforeDeliveredInitiated, value:"return_before_delivered_initiated"
+    },{
+        label:translations[language].tabs.orders.order.states.returnAfterDeliveredInitiated, value:"return_after_delivered_initiated"
+    },{
+        label:translations[language].tabs.orders.order.states.returned, value:"returned"
+    },{
+        label:translations[language].tabs.orders.order.states.delivered, value:"delivered"
+    }]
+    :
+    [{
+        label:translations[language].tabs.orders.order.states.waiting, value:"waiting"
+    },{
+        label:translations[language].tabs.orders.order.states.inBranch, value:"in_branch"
+    },{
+        label:translations[language].tabs.orders.order.states.inProgress, value:"in_progress"
+    },{
+        label:translations[language].tabs.orders.order.states.rejected, value:"rejected"
+    },{
+        label:translations[language].tabs.orders.order.states.stuck, value:"stuck"
+    },{
+        label:translations[language].tabs.orders.order.states.delayed, value:"delayed"
+    }]
+
+    const handleStatusUpdate = (newStatus) => {
+        setSelectedValue(newStatus);
+        setShowConfirmStatusChangeUpdateModal(true)
+    };
+
+    const changeStatusHandler = async ()=>{
+            const updates = {
+                order_id:order.order_id,
+                status:selectedValue.status.value,
+                note_content:UpdatedStatusNote
+            }
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,{
+                method:"PUT",
+                headers:{
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials:"include",
+                body:JSON.stringify({updates})
+            });
+            const data = await response.json();
+            console.log(data)
+            setShowConfirmStatusChangeUpdateModal(false);
+            setTrackChanges({type:"ORDER_STATUS_UPDATED"})
+        }
 
     return <>
         <Pressable onPress={()=> router.push("(track)")} onLongPress={()=> setShowControl(true)}>
             <View style={styles.order}>
-        <View style={styles.head}>
+        <View style={[styles.head,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
             <View style={styles.box}>
                 <Text style={{textAlign:"center"}}># {order.order_id}</Text>
             </View>
-            <View style={[styles.box,styles.status,{borderWidth:0,backgroundColor:
+            <TouchableOpacity onPress={()=> authUser.role !== "business" && setShowStatusUpdateModal(true)} style={[styles.box,styles.status,{borderWidth:0,backgroundColor:
                             order.status === "waiting" && "#E4E6EF" ||
                             order.status === "in_branch" && "#E4E6EF" ||
                             order.status === "in_progress" && "#E4E6EF" ||
@@ -43,97 +109,43 @@ export default function Order({user,order}){
                             order.status === "business_paid" && "#4C95DD" ||
                             order.status === "completed" && "#3AB075"
                         }]}>
-                <MaterialIcons name="update" size={24} color="white" />
+                {authUser.role !== "business" && <MaterialIcons name="published-with-changes" size={24} color="white" />}
                 <Text style={{color:"white"}}>{order.status}</Text>
-            </View>
+            </TouchableOpacity>
         </View>
-        {(user?.user_role !== "business") && <View style={styles.sec}>
-            <View style={styles.in}>
-                <View style={styles.flexIn}>
-                    <SimpleLineIcons name="user" size={24} color="#F8C332" />
-                    <View style={styles.info}>
-                        <Text style={styles.h2}>Sender</Text>
-                        <Text style={styles.p}>{order.sender}</Text>
-                    </View>
-                </View>
-                <View style={styles.icons}>
-                    <TouchableOpacity>
-                        <Entypo name="phone" size={20} color="green" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Feather name="message-square" size={20} color="green" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>}
+        {authUser.role !== "business" && <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userSenderBoxLabel,userName:order.sender,phone:order.sender_mobile}} />}
+        <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userClientBoxLabel,userName:order.receiver_name,phone:order.receiver_mobile}} />
         <View style={styles.sec}>
-            <View style={styles.in}>
-                <View style={styles.flexIn}>
-                    <SimpleLineIcons name="user" size={24} color="#F8C332" />
-                    <View style={styles.info}>
-                        <Text style={styles.h2}>Client</Text>
-                        <Text style={styles.p}>{order.receiver_name}</Text>
-                    </View>
-                </View>
-                <View style={styles.icons}>
-                    <TouchableOpacity>
-                        <Entypo name="phone" size={20} color="green" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Feather name="message-square" size={20} color="green" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>
-        <View style={styles.sec}>
-            <View style={styles.in}>
-                <View style={styles.flexIn}>
+            <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <Ionicons name="location-outline" size={24} color="#F8C332" />
                     <View style={styles.info}>
-                        <Text style={styles.h2}>{order.receiver_city}</Text>
-                        <Text style={styles.p}>{order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : null}</Text>
+                        <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{order.receiver_city}</Text>
+                        <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : null}</Text>
                     </View>
                 </View>
             </View>
         </View>
-        <View style={styles.sec}>
-            <View style={styles.in}>
-                <View style={styles.flexIn}>
-                    <SimpleLineIcons name="user" size={24} color="#F8C332" />
-                    <View style={styles.info}>
-                        <Text style={styles.h2}>Driver</Text>
-                        <Text style={styles.p}>{order.driver ? order.driver : "Unknown"}</Text>
-                    </View>
-                </View>
-                <View style={styles.icons}>
-                    <TouchableOpacity>
-                        <Entypo name="phone" size={20} color="green" />
-                    </TouchableOpacity>
-                    <TouchableOpacity>
-                        <Feather name="message-square" size={20} color="green" />
-                    </TouchableOpacity>
-                </View>
-            </View>
-        </View>
+        <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : "Unknown",phone:order.driver_mobile ? order.driver_mobile : ""}} />
         <View style={styles.flexSec}>
-            <View style={styles.in}>
-                <View style={styles.cost}>
+            <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <Feather name="package" size={24} color="#F8C332" />
                     <Text>{order.cod_value}₪</Text>
                 </View>
-                <View style={styles.cost}>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <Feather name="truck" size={24} color="#F8C332" />
                     <Text>{order.delivery_fee}₪</Text>
                 </View>
-                <View style={styles.cost}>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <FontAwesome name="money" size={24} color="#F8C332" />
                     <Text>{order.net_value}₪</Text>
                 </View>
             </View>
         </View>
-        {order.note && <View style={styles.note}>
+        {order.note && <View style={[styles.note,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
             <FontAwesome name="sticky-note-o" size={24} color="black" />
-            <Text style={{width:"90%"}}>{order.note}</Text>
+            <Text style={{width:"90%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{order.note}</Text>
         </View>}
     </View>
     </Pressable>
@@ -145,18 +157,63 @@ export default function Order({user,order}){
      setShowModal={setShowControl}
      customStyles={{bottom:15}}
     >
-        <View style={styles.control}>
-            <TouchableOpacity style={styles.modalItem} onPress={()=> router.push({
+        <View style={[styles.control,{alignItems:["he", "ar"].includes(language) ? "flex-end" : "flex-start"}]}>
+            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({
                 pathname: "(create)",
                 params: { orderId: order.order_id }
               })}>
                 <Feather name="edit" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>Edit</Text>
+                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.edit}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalItem,{borderBottomWidth:0}]}>
+            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> setShowStatusUpdateModal(true)}>
+                <MaterialIcons name="published-with-changes" size={20} color="black" />
+                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatus}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <AntDesign name="printer" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>Print</Text>
+                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.print}</Text>
             </TouchableOpacity>
+        </View>
+
+    </ModalPresentation>}
+
+    {showStatusUpdateModal
+    &&
+    <PickerModal
+        list={statusOptions}
+        setSelectedValue={handleStatusUpdate}
+        showPickerModal={showStatusUpdateModal}
+        setShowPickerModal={setShowStatusUpdateModal}
+        field={{
+            name: 'status',
+            label: 'Status',
+            showSearchBar: false
+        }}
+    />}
+
+{showConfirmStatusChangeUpdateModal
+    &&
+    <ModalPresentation
+     showModal={showConfirmStatusChangeUpdateModal}
+     setShowModal={setShowConfirmStatusChangeUpdateModal}
+     customStyles={{bottom:15}}
+    >
+        <View style={{padding:15}}>
+            <Text style={{fontSize:14,fontWeight:"500",lineHeight:24,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{translations[language].tabs.orders.order.changeStatusAlert} <Text style={{color:"#F8C332",textTransform:"capitalize"}}>{selectedValue.status.label}</Text></Text>
+            <TextInput
+                style={{borderWidth:1,borderColor:"(rgba(0,0,0,.1)",marginTop:15,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}
+                placeholder={translations[language].tabs.orders.order.changeStatusAlertNote}
+                value={UpdatedStatusNote}
+                onChangeText={(input) => setUpdatedStatusNote(input)}
+            />
+            <View style={{marginTop:25,flexDirection:"row",justifyContent:"flex-end",gap:25}}>
+                <TouchableOpacity onPress={changeStatusHandler}>
+                    <Text style={{color:"#F8C332",fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatusAlertConfirm}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={()=> setShowConfirmStatusChangeUpdateModal(false)}>
+                    <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatusAlertCancel}</Text>
+                </TouchableOpacity>
+            </View>
         </View>
 
     </ModalPresentation>}
@@ -208,6 +265,9 @@ const styles = StyleSheet.create({
     h2:{
         fontWeight:"500"
     },
+    contorl:{
+        width:"100%"
+    },
     sec:{
         marginTop:15,
         paddingVertical:10,
@@ -230,7 +290,7 @@ const styles = StyleSheet.create({
     icons:{
         display:"flex",
         flexDirection:"row",
-        gap:15
+        gap:20
     },
     flexSec:{
         marginTop:20,
@@ -257,7 +317,8 @@ const styles = StyleSheet.create({
         alignItems:"center",
         gap:10,
         borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1
+        borderBottomWidth:1,
+        width:"100%"
     }
 
 })

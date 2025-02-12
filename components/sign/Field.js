@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { StyleSheet,TextInput,Text, Pressable } from "react-native";
 import PickerModal from "../pickerModal/PickerModal"
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Field({field,setSelectedValue}){
     const [showPickerModal,setShowPickerModal] = useState(false);
+    const { language } = useLanguage();
 
     return <>
         {field.type === "input"
@@ -16,7 +18,7 @@ export default function Field({field,setSelectedValue}){
         />
         :
         <Pressable onPress={()=> setShowPickerModal(true)} value={field.value}>
-            <Text style={styles.input}>{field.value ? field.value : field.label}</Text>
+            <Text style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{field.value ? field.value : field.label}</Text>
         </Pressable>
         }
 
@@ -37,6 +39,7 @@ const styles = StyleSheet.create({
         borderBottomWidth:1,
         marginBottom:25,
         paddingHorizontal:7,
-        paddingVertical:15
+        paddingVertical:15,
+        width:"100%"
     }
 })

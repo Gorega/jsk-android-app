@@ -1,6 +1,4 @@
 import { View,StyleSheet,Text, TouchableOpacity} from 'react-native';
-import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
-import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
@@ -8,48 +6,41 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import {useAuth} from "../../app/_layout";
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import UserBox from "../orders/userBox/UserBox";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Collection({type,collection}){
-
+    const { language } = useLanguage();
     const {user} = useAuth();
 
     const renderCollectionUser = ()=>{
         if((type === "money" || type === "returned") && user.role !== "business"){
-            return <View style={styles.in}>
-            <View style={styles.flexIn}>
-                <SimpleLineIcons name="user" size={24} color="#F8C332" />
-                <View style={styles.info}>
-                    <Text style={styles.h2}>Sender</Text>
-                    <Text style={styles.p}>{collection.business_name}</Text>
-                </View>
-            </View>
-            <View style={styles.icons}>
-                <Entypo name="phone" size={24} color="green" />
-                <Feather name="message-square" size={24} color="green" />
-            </View>
-        </View>
+            return <UserBox
+                styles={styles}
+                box=
+                {{  label:translations[language].tabs.orders.order.userSenderBoxLabel,
+                    userName:collection.business_name,
+                    phone:""
+                }}
+            />
         }
         if((type === "driver" || type === "dispatched") && user.role !== "driver"){
-            return <View style={styles.in}>
-            <View style={styles.flexIn}>
-                <SimpleLineIcons name="user" size={24} color="#F8C332" />
-                <View style={styles.info}>
-                    <Text style={styles.h2}>Driver</Text>
-                    <Text style={styles.p}>{collection.driver_name}</Text>
-                </View>
-            </View>
-            <View style={styles.icons}>
-                <Entypo name="phone" size={24} color="green" />
-                <Feather name="message-square" size={24} color="green" />
-            </View>
-        </View>
+            return <UserBox
+                styles={styles}
+                box=
+                {{  label:translations[language].tabs.orders.order.userDriverBoxLabel,
+                    userName:collection.driver_name,
+                    phone:""
+                }}
+            />
         }
     }
     
     return <View style={styles.order}>
         <View style={styles.head}>
             <View style={styles.box}>
-                <Text># {collection.collection_id}</Text>
+                <Text style={{textAlign:"center"}}># {collection.collection_id}</Text>
             </View>
             <View style={[styles.box,styles.status,{borderWidth:0,backgroundColor:
                             collection.status === "returned_in_branch" && "#634FD2" ||
@@ -64,87 +55,84 @@ export default function Collection({type,collection}){
                             collection.status === "in_dispatched_to_branch" && "#634FD2" ||
                             collection.status === "partial" && "#634FD2"
                         }]}>
-                <MaterialIcons name="update" size={24} color="white" />
                 <Text style={{color:"white"}}>{collection.status}</Text>
             </View>
     </View>
+    {renderCollectionUser()}
     <View style={styles.sec}>
-        {renderCollectionUser()}
-    </View>
-    <View style={styles.sec}>
-        <View style={styles.in}>
-            <View style={styles.flexIn}>
+        <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <Feather name="package" size={24} color="#F8C332" />
                 <View style={styles.info}>
-                    <Text style={styles.h2}>{type === "driver" ? "Number of Collections" : "Number of Orders"}</Text>
-                    <Text style={styles.p}>{type === "driver" ? collection.number_of_collections : collection.number_of_orders}</Text>
+                    <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{type === "driver" ? translations[language].collections.collection.numberOfCollections : translations[language].collections.collection.numberOfOrders}</Text>
+                    <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{type === "driver" ? collection.number_of_collections : collection.number_of_orders}</Text>
                 </View>
             </View>
         </View>
     </View>
     {type !== "returned" && <View style={styles.sec}>
-        <View style={styles.in}>
-            <View style={styles.flexIn}>
+        <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <MaterialIcons name="attach-money" size={24} color="#F8C332" />
                 <View style={styles.info}>
-                    <Text style={styles.h2}>{type === "driver" ? "Money to Deliver" : "Money to Collect"}</Text>
-                    <Text style={styles.p}>{type === "driver" ? collection.total_money_amount : collection.total_net_value}</Text>
+                    <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{type === "driver" ? translations[language].collections.collection.moneyToDeliver : translations[language].collections.collection.moneyToCollect}</Text>
+                    <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{type === "driver" ? collection.total_money_amount : collection.total_net_value}</Text>
                 </View>
             </View>
         </View>
     </View>}
     {type === "driver" && <View style={styles.sec}>
-        <View style={styles.in}>
-            <View style={styles.flexIn}>
+        <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <MaterialIcons name="attach-money" size={24} color="#F8C332" />
                 <View style={styles.info}>
-                    <Text style={styles.h2}>Checks to Deliver</Text>
-                    <Text style={styles.p}>{collection.total_checks_amount}</Text>
+                    <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].collections.collection.checksToDeliver}</Text>
+                    <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{collection.total_checks_amount}</Text>
                 </View>
             </View>
         </View>
     </View>}
     {(type === "returned" || type === "dispatched") && <View style={styles.sec}>
-        <View style={styles.in}>
-            <View style={styles.flexIn}>
+        <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <Ionicons name="git-branch-outline" size={24} color="#F8C332" />
                 <View style={styles.info}>
-                    <Text style={styles.h2}>Current Branch</Text>
-                    <Text style={styles.p}>{collection.current_branch_name}</Text>
+                    <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].collections.collection.currentBranch}</Text>
+                    <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{collection.current_branch_name}</Text>
                 </View>
             </View>
         </View>
     </View>}
     {type === "dispatched" && <View style={styles.sec}>
-        <View style={styles.in}>
-            <View style={styles.flexIn}>
+        <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <Ionicons name="git-branch-outline" size={24} color="#F8C332" />
                 <View style={styles.info}>
-                    <Text style={styles.h2}>To Branch</Text>
-                    <Text style={styles.p}>{collection.to_branch_name}</Text>
+                    <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].collections.collection.toBranch}</Text>
+                    <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{collection.to_branch_name}</Text>
                 </View>
             </View>
         </View>
     </View>}
     <View style={styles.flexSec}>
         <View style={[styles.in,styles.narrow]}>
-            <TouchableOpacity style={styles.action}>
+            <TouchableOpacity style={[styles.action,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                  <AntDesign name="printer" size={20} color="#F8C332" />
-                <Text>Print</Text>
+                <Text>{translations[language].collections.collection.print}</Text>
             </TouchableOpacity>
             <View>
                 <Text>|</Text>
             </View>
             {type === "driver"
             ?
-            <TouchableOpacity style={styles.action} onPress={()=> router.push({pathname:"/(collection)?type=money",params:{collectionIds:collection.collection_ids}})}>
+            <TouchableOpacity style={[styles.action,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({pathname:"/(collection)?type=money",params:{collectionIds:collection.collection_ids}})}>
                 <MaterialCommunityIcons name="package-variant" size={24} color="#F8C332" />
-                <Text>Collections</Text>
+                <Text>{translations[language].collections.collection.collections}</Text>
             </TouchableOpacity>
             :
-            <TouchableOpacity style={styles.action} onPress={()=> router.push({pathname:"/(tabs)/orders",params:{orderIds:collection.order_ids}})}>
+            <TouchableOpacity style={[styles.action,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({pathname:"/(tabs)/orders",params:{orderIds:collection.order_ids}})}>
                 <MaterialCommunityIcons name="package-variant" size={24} color="#F8C332" />
-                <Text>Orders</Text>
+                <Text>{translations[language].collections.collection.orders}</Text>
             </TouchableOpacity>}
         </View>
     </View>
@@ -153,23 +141,16 @@ export default function Collection({type,collection}){
 
 const styles = StyleSheet.create({
     main:{
-        height:"100%"
+        height:"100%",
     },
     section:{
         marginTop:15,
         flex:1
     },
-    scrollView:{
-        flex:1
-    },
-    orders:{
-        padding:15,
-    },
     order:{
         boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
         backgroundColor:"white",
-        marginBottom:30,
-        padding:15
+        padding:15,
     },
     control:{
         display:"flex",
@@ -212,7 +193,6 @@ const styles = StyleSheet.create({
         borderBottomWidth:1
     },
     in:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         gap:15,
@@ -222,13 +202,11 @@ const styles = StyleSheet.create({
         justifyContent:"center",
     },
     flexIn:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         gap:15
     },
     icons:{
-        display:"flex",
         flexDirection:"row",
         gap:15
     },
@@ -236,7 +214,6 @@ const styles = StyleSheet.create({
         marginTop:20,
     },
     action:{
-        display:"flex",
         flexDirection:"row",
         alignItems:"center",
         gap:5,

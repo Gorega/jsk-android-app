@@ -4,12 +4,14 @@ import { Link, useRouter,Redirect } from "expo-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../_layout";
 import { saveToken,getToken } from "../../utils/secureStore";
-
+import { useLanguage } from '../../utils/languageContext';
+import { translations } from '../../utils/languageContext';
 
 
 export default function HomeScreen(){
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const { language } = useLanguage();
     const { isAuthenticated,setIsAuthenticated,setUserId } = useAuth();
 
 
@@ -20,13 +22,13 @@ export default function HomeScreen(){
 
     const fields = [{
         name:"phone",
-        label:"Mobile Number",
+        label:translations[language].auth.mobileNumber,
         type:"input",
         value:loginForm.phone,
         onChange:(value)=> setLoginForm((loginForm)=> ({...loginForm,phone:value}))
     },{
         name:"password",
-        label:"Password",
+        label:translations[language].auth.password,
         type:"input",
         value:loginForm.password,
         onChange:(value)=> setLoginForm((loginForm)=> ({...loginForm,password:value}))
@@ -107,14 +109,14 @@ export default function HomeScreen(){
     return <Sign
         fields={fields}
         submit={{
-            label:"Login",
+            label:translations[language].auth.login,
             action:loginHandler
         }}
     >
         <Link style={styles.bottomLine} href={"/sign-up"} asChild>
             <TouchableOpacity>
-                <Text style={styles.line}>Don't Have Account?</Text>
-                <Text style={styles.line}>Register</Text>
+                <Text style={styles.line}>{translations[language].auth.dontHaveAccount}</Text>
+                <Text style={styles.line}>{translations[language].auth.register}</Text>
             </TouchableOpacity>
         </Link>
     </Sign>
@@ -125,10 +127,5 @@ const styles = StyleSheet.create({
         display:"flex",
         justifyContent:"space-between",
         alignItems:"center",
-        marginTop:40,
-    },
-    line:{
-        display:"flex",
-        marginTop:7
     }
 })

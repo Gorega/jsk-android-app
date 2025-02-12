@@ -1,18 +1,20 @@
 import { TextInput, View,Pressable,Text,StyleSheet } from "react-native";
 import PickerModal from "../pickerModal/PickerModal";
 import { useState } from "react";
+import { useLanguage } from '../../utils/languageContext';
 
 export default function Field({field,setSelectedValue,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
     const [showPickerModal,setShowPickerModal] = useState(false);
+    const { language } = useLanguage();
 
     return <>
         <View style={styles.inputField}>
-            {field.type === "input" && <TextInput style={{textAlign:"left"}} placeholder={field.label} value={field.value} onChangeText={field.onChange} />}
+            {field.type === "input" && <TextInput placeholder={field.label} value={field.value} onChangeText={field.onChange} />}
             {field.type === "select" && <Pressable style={styles.selectField} onPress={()=> setShowPickerModal(true)} value={field.value}>
-                <Text>{field.value ? field.value : field.label}</Text>
+                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{field.value ? field.value : field.label}</Text>
             </Pressable>}
-            {field.type === "checkbox" && <Pressable style={styles.flexInputField} onPress={field.onChange}>
-                <Text>{field.label}</Text>
+            {field.type === "checkbox" && <Pressable style={[styles.flexInputField,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={field.onChange}>
+                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{field.label}</Text>
                 <View style={[
                     styles.checkbox,
                     field.value && styles.checked

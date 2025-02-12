@@ -1,9 +1,12 @@
 import { View,Text,StyleSheet} from 'react-native';
 import FlatListData from '../FlatListData';
 import Order from './Order';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 export default function OrdersView({data,metadata,loadMoreData,loadingMore}){
+    const { language } = useLanguage();
 
     return data.length > 0
     ?
@@ -20,7 +23,7 @@ export default function OrdersView({data,metadata,loadMoreData,loadingMore}){
     :
     <View style={styles.empty}>
         <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>No Orders to show</Text>
+        <Text style={{fontWeight:500}}>{translations[language].tabs.orders.emptyArray}</Text>
     </View>
 }
 

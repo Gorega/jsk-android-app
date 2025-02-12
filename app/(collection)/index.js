@@ -1,12 +1,14 @@
 import { View,StyleSheet} from 'react-native';
 import Search from '../../components/search/Search';
 import CollectionsView from '../../components/collections/CollectionsView';
-import { useEffect, useState,useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import {router, useLocalSearchParams} from "expo-router"
-
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function HomeScreen(){
 
+    const { language } = useLanguage();
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy,setActiveSearchBy] = useState("");
@@ -20,64 +22,64 @@ export default function HomeScreen(){
 
     const filterByGroup = type === "returned" 
     ? [
-        { name: "All", action: "" },
-        { name: "Returned In Branch", action: "returned_in_branch" },
-        { name: "Deleted", action: "deleted" },
-        { name: "Returned Out", action: "returned_out" },
-        { name: "Returned Delivered", action: "returned_delivered" },
-        { name: "Completed", action: "completed" }
+        { name: translations[language].collections.filters.all, action: "" },
+        { name: translations[language].collections.filters.returnedInBranch, action: "returned_in_branch" },
+        { name: translations[language].collections.filters.deleted, action: "deleted" },
+        { name: translations[language].collections.filters.returnedOut, action: "returned_out" },
+        { name: translations[language].collections.filters.returnedDelivered, action: "returned_delivered" },
+        { name: translations[language].collections.filters.completed, action: "completed" }
       ]
     : type === "money"
     ? [
-        { name: "All", action: "" },
-        { name: "Money In Branch", action: "money_in_branch" },
-        { name: "Deleted", action: "deleted" },
-        { name: "Money Out", action: "money_out" },
-        { name: "Paid", action: "paid" },
-        { name: "Completed", action: "completed" },
+        { name: translations[language].collections.filters.all, action: "" },
+        { name: translations[language].collections.filters.moneyInBranch, action: "money_in_branch" },
+        { name: translations[language].collections.filters.deleted, action: "deleted" },
+        { name: translations[language].collections.filters.moneyOut, action: "money_out" },
+        { name: translations[language].collections.filters.paid, action: "paid" },
+        { name: translations[language].collections.filters.completed, action: "completed" },
       ]
     : type === "dispatched"
     ? [
-        { name: "All", action: "" },
-        { name: "Pending", action: "pending" },
-        { name: "Deleted", action: "deleted" },
-        { name: "In Dispatched To Branch", action: "in_dispatched_to_branch" },
-        { name: "Partial", action: "partial" },
-        { name: "Completed", action: "completed" },
+        { name: translations[language].collections.filters.all, action: "" },
+        { name: translations[language].collections.filters.pending, action: "pending" },
+        { name: translations[language].collections.filters.deleted, action: "deleted" },
+        { name: translations[language].collections.filters.inDispatchedToBranch, action: "in_dispatched_to_branch" },
+        { name: translations[language].collections.filters.partial, action: "partial" },
+        { name: translations[language].collections.filters.completed, action: "completed" },
     ]
     : type === "driver"
     ? [
-        { name: "All", action: "" },
-        { name: "Paid", action: "paid" },
-        { name: "Returned Delivered", action: "returned_delivered" },
-        { name: "Completed", action: "completed" },
+        { name: translations[language].collections.filters.all, action: "" },
+        { name: translations[language].collections.filters.paid, action: "paid" },
+        { name: translations[language].collections.filters.returnedDelivered, action: "returned_delivered" },
+        { name: translations[language].collections.filters.completed, action: "completed" },
       ]
     : []
 
     const searchByGroup = [
-        { name: "Collection ID", action: "collection_id" },
-        { name: "Sender", action: "bussiness_name" },
-        (type === "driver" || type === "dispatched") ? { name: "Driver", action: "driver_name" } : { name: "Previous Driver", action: "previous_driver_name" },
-        { name: "Current Branch", action: "current_branch_name" }
+        { name: translations[language].collections.filters.collectionId, action: "collection_id" },
+        { name: translations[language].collections.filters.sender, action: "bussiness_name" },
+        (type === "driver" || type === "dispatched") ? { name: translations[language].collections.filters.driver, action: "driver_name" } : { name: translations[language].collections.filters.prevDriver, action: "previous_driver_name" },
+        { name: translations[language].collections.filters.currentBranch, action: "current_branch_name" }
     ]
 
     const searchByDateGroup = [{
-        name:"Today",
+        name:translations[language].collections.filters.today,
         action:"today"
     },{
-        name:"Yesterday",
+        name:translations[language].collections.filters.yesterday,
         action:"yesterday"
     },{
-        name:"This Week",
+        name:translations[language].collections.filters.thisWeek,
         action:"this_week"
     },{
-        name:"This Month",
+        name:translations[language].collections.filters.thisMonth,
         action:"this_month"
     },{
-        name:"This Year",
+        name:translations[language].collections.filters.thisYear,
         action:"this_year"
     },{
-        name:"Select a Date",
+        name:translations[language].collections.filters.selectDate,
         action:"custom"
     }]
 

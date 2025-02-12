@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, Modal, View, Pressable, ScrollView } from "react-native";
+import { StyleSheet, Modal, View, Pressable } from "react-native";
 
 export default function ModalPresentation({ children, showModal, setShowModal, customStyles }) {
   return (
@@ -35,6 +35,6 @@ const styles = StyleSheet.create({
     width: "95%",
     maxHeight: "60%",
     borderRadius: 15,
-    padding: 10,
+    padding: 10
   }
 });

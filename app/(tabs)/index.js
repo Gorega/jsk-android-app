@@ -1,4 +1,6 @@
 import { StyleSheet,View,Text, ScrollView, TouchableOpacity } from "react-native";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
 import Feather from '@expo/vector-icons/Feather';
 import Entypo from '@expo/vector-icons/Entypo';
@@ -13,21 +15,23 @@ import { router } from "expo-router";
 export default function HomeScreen(){
 
   const {data:{data},getRequest} = useFetch();
+  const { language } = useLanguage();
+
 
   const columnBoxes = [{
-    label:"Today Orders",
+    label:translations[language].tabs.index.boxes.todayOrders,
     icon:<Feather name="package" size={24} color="white" />,
     numberOfOrders:data?.today_orders?.count,
     money:data?.today_orders?.cod_value,
     orderIds:data?.today_orders?.order_ids
   },{
-    label:"Money In Branches",
+    label:translations[language].tabs.index.boxes.moneyInBranches,
     icon:<MaterialIcons name="attach-money" size={24} color="white" />,
     numberOfOrders:data?.money_in_branch_orders?.count,
     money:data?.money_in_branch_orders?.cod_value,
     orderIds:data?.money_in_branch_orders?.order_ids
   },{
-    label:"Money With Drivers",
+    label:translations[language].tabs.index.boxes.moneyWithDrivers,
     icon:<Feather name="truck" size={24} color="white" />,
     numberOfOrders:data?.delivered_orders?.count,
     money:data?.delivered_orders?.cod_value,
@@ -36,49 +40,49 @@ export default function HomeScreen(){
 
 
   const boxes = [{
-    label:"In Waiting",
+    label:translations[language].tabs.index.boxes.inWaiting,
     icon:<MaterialIcons name="pending-actions" size={24} color="#F8C332" />,
     numberOfOrders:data?.waiting_orders?.count,
     money:data?.waiting_orders?.cod_value,
     orderIds:data?.waiting_orders?.order_ids
   },{
-    label:"In Branch",
+    label:translations[language].tabs.index.boxes.inBranch,
     icon:<Entypo name="flow-branch" size={24} color="#F8C332" />,
     numberOfOrders:data?.in_branch_orders?.count,
     money:data?.in_branch_orders?.cod_value,
     orderIds:data?.in_branch_orders?.order_ids
   },{
-    label:"On The Way",
+    label:translations[language].tabs.index.boxes.onTheWay,
     icon:<Feather name="truck" size={24} color="#F8C332" />,
     numberOfOrders:data?.on_the_way_orders?.count,
     money:data?.on_the_way_orders?.cod_value,
     orderIds:data?.on_the_way_orders?.order_ids
   },{
-    label:"Delivered",
+    label:translations[language].tabs.index.boxes.delivered,
     icon:<FontAwesome5 name="user-check" size={24} color="#F8C332" />,
     numberOfOrders:data?.delivered_orders?.count,
     money:data?.delivered_orders?.cod_value,
     orderIds:data?.delivered_orders?.order_ids
   },{
-    label:"Returned",
+    label:translations[language].tabs.index.boxes.returned,
     icon:<Octicons name="package-dependencies" size={24} color="#F8C332" />,
     numberOfOrders:data?.returned_orders?.count,
     money:data?.returned_orders?.cod_value,
     orderIds:data?.returned_orders?.order_ids
   },{
-    label:"Rescheduled",
+    label:translations[language].tabs.index.boxes.rescheduled,
     icon:<MaterialIcons name="update" size={24} color="#F8C332" />,
     numberOfOrders:data?.reschedule_orders?.count,
     money:data?.reschedule_orders?.cod_value,
     orderIds:data?.reschedule_orders?.order_ids
   },{
-    label:"Stuck",
+    label:translations[language].tabs.index.boxes.stuck,
     icon:<MaterialIcons name="running-with-errors" size={24} color="#F8C332" />,
     numberOfOrders:data?.stuck_orders?.count,
     money:data?.stuck_orders?.cod_value,
     orderIds:data?.stuck_orders?.order_ids
   },{
-    label:"Rejected",
+    label:translations[language].tabs.index.boxes.rejected,
     icon:<MaterialIcons name="error-outline" size={24} color="#F8C332" />,
     numberOfOrders:data?.rejected_orders?.count,
     money:data?.rejected_orders?.cod_value,
@@ -96,14 +100,14 @@ export default function HomeScreen(){
             <View style={styles.ColumnBoxes}>
                 {columnBoxes?.map((box,index)=>{
                   return <TouchableOpacity key={index} onPress={()=> router.push({pathname:"/(tabs)/orders",params:{orderIds:box.orderIds.length > 0 ? box.orderIds : "0"}})}>
-                      <View style={styles.ColumnBox}>
+                      <View style={[styles.ColumnBox,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                         <View style={styles.icon}>
                           {box.icon}
                         </View>
                         <View>
-                          <Text style={{fontWeight:"600"}}>{box.label}</Text>
-                          <Text>{box.numberOfOrders} of Orders</Text>
-                          <Text>{box.money}₪</Text>
+                          <Text style={{fontWeight:"600",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{box.label}</Text>
+                          <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{box.numberOfOrders} {translations[language].tabs.index.boxes.ofOrders}</Text>
+                          <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{box.money}₪</Text>
                         </View>
                      </View>
                   </TouchableOpacity>
@@ -111,14 +115,14 @@ export default function HomeScreen(){
             </View>
       </View>
       <View style={styles.section}>
-          <ScrollView style={styles.scrollView} horizontal={true} showsHorizontalScrollIndicator={false}>
-            <View style={styles.boxes}>
+          <ScrollView style={[styles.scrollView,["he", "ar"].includes(language) && {transform: [{ scaleX: -1 }]}]} horizontal={true} showsHorizontalScrollIndicator={false}>
+            <View style={[styles.boxes,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row",justifyContent: ["he", "ar"].includes(language) ? 'flex-end' : 'flex-start',transform: ["he", "ar"].includes(language) ? [{ scaleX: -1 }] : [{ scaleX: 1 }]}]}>
                 {boxes?.map((box,index)=>{
                   return <TouchableOpacity key={index} onPress={()=> router.push({pathname:"/(tabs)/orders",params:{orderIds:box.orderIds.length > 0 ? box.orderIds : "0"}})}>
                       <View style={styles.box}>
-                        <View style={styles.boxHead}>
+                        <View style={[styles.boxHead,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                           {box.icon}
-                          <Text style={styles.boxHeadH2}>{box.label}</Text>
+                          <Text style={[styles.boxHeadH2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{box.label}</Text>
                         </View>
                         <Text style={styles.h2}>{box.numberOfOrders}</Text>
                         <Text style={styles.p}>{box.money}₪</Text>
@@ -149,14 +153,12 @@ const styles = StyleSheet.create({
     flexDirection:"row"
   },
   boxes:{
-    display:"flex",
     flexDirection:"row",
     justifyContent:"space-between",
     alignItems:"center",
     gap:10,
   },
   box:{
-    display:"flex",
     justifyContent:"center",
     borderRadius:15,
     boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
@@ -167,7 +169,6 @@ const styles = StyleSheet.create({
     width:170
   },
   boxHead:{
-    display:"flex",
     flexDirection:"row",
     alignItems:"center",
     gap:15
@@ -186,12 +187,10 @@ const styles = StyleSheet.create({
     fontWeight:500
   },
   ColumnBoxes:{
-    display:"flex",
     flexDirection:"column",
     gap:15
   },
   ColumnBox:{
-    display:"flex",
     flexDirection:"row",
     alignItems:"center",
     gap:15,
