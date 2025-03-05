@@ -1,7 +1,7 @@
 import { View,StyleSheet} from 'react-native';
 import Search from '../../components/search/Search';
 import { useEffect, useState } from 'react';
-import {router, useLocalSearchParams} from "expo-router"
+import {router} from "expo-router"
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import UsersView from '../../components/users/UsersView';

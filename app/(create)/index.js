@@ -23,15 +23,23 @@ export default function HomeScreen(){
     const [loadingMore,setLoadingMore] = useState(false);
     const {user} = useAuth()
     const [cities,setCities] = useState([]);
+    const [orderTypes,setOrderTypes] = useState([]);
+    const [paymentTypes,setPaymentTypes] = useState([]);
+    const [currencyList,setCurrencyList] = useState([]);
+    const [checks, setChecks] = useState([]);
     const [prickerSearchValue,setPickerSearchValue] = useState("");
     const [deliveryFee,setDeliveryFee] = useState(0);
+    const [returnedOrdersMessage, setReturnedOrdersMessage] = useState('');
     const [selectedValue,setSelectedValue] = useState({
         sender:"",
         city:"",
+        orderType:orderId ? "" : { name: "Delivery", value: "delivery" },
+        paymentType: orderId ? "" : { name: "Cash", value: "cash" },
+        currency:orderId ? "" : { name: "ILS", value: "ILS" },
+        itemsType:orderId ? "" : { name: "Normal", value: "normal" },
     });
 
     const [form,setForm] = useState({})
-    const [isReplaced,setIsReplaced] = useState(false);
  
     const sections = [user.role !== "business" ? {
         label:translations[language].tabs.orders.create.sections.sender.title,
@@ -47,16 +55,21 @@ export default function HomeScreen(){
     }:{visibility:"hidden"},{
         label:translations[language].tabs.orders.create.sections.client.title,
         icon:<FontAwesome name="user-o" size={24} color="#F8C332" />,
-        fields:[{
+        fields:[returnedOrdersMessage ? {
+            label:"Found it automatically",
+            type: "message",
+            value: returnedOrdersMessage
+        } : {visibility:"hidden"},{
             label:translations[language].tabs.orders.create.sections.client.fields.client,
             type:"input",
             value:form.receiverName || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverName:input}))
         },{
-            label:translations[language].tabs.orders.create.sections.client.fields.firstPhone,
-            type:"input",
-            value:form.receiverFirstPhone || "",
-            onChange:(input)=> setForm((form)=> ({...form,receiverFirstPhone:input}))
+            label: translations[language].tabs.orders.create.sections.client.fields.firstPhone,
+            type: "input",
+            value: form.receiverFirstPhone || "",
+            onChange: (input) => setForm((form) => ({ ...form, receiverFirstPhone: input })),
+            onBlur: () => handleCheckPhone(form.receiverFirstPhone)
         },{
             label:translations[language].tabs.orders.create.sections.client.fields.secondPhone,
             type:"input",
@@ -83,24 +96,132 @@ export default function HomeScreen(){
         label:translations[language].tabs.orders.create.sections.cost.title,
         icon:<MaterialIcons name="attach-money" size={24} color="#F8C332" />,
         fields:[{
-            label:translations[language].tabs.orders.create.sections.cost.fields.packageCost,
-            type:"input",
-            value:form.codValue || "",
-            onChange:(input)=> setForm((form)=> ({...form,codValue:input}))
+            label:"Payment Type",
+            type:"select",
+            name:"paymentType",
+            placeholder:"Cash",
+            defaultValue:"cash",
+            value:selectedValue.paymentType.name,
+            list:paymentTypes
+        },
+        (selectedValue.paymentType?.value || form.paymentType) === "cash" ||
+        (selectedValue.paymentType?.value || form.paymentType) === "cash/check" ? {
+          label:translations[language].tabs.orders.create.sections.cost.fields.packageCost,
+          type:"input",
+          value:form.codValue || "",
+          onChange:(input)=> setForm((form)=> ({...form,codValue:input}))
+      } : {visibility:"hidden"},...((selectedValue.paymentType?.value || form.paymentType) === "check" ||
+        (selectedValue.paymentType?.value || form.paymentType) === "cash/check" 
+          ? [
+              {
+                value: "+ Add Check",
+                type: "button",
+                onPress: () => {
+                  setChecks(prev => [
+                    ...prev,
+                    { number: "", date: "", value: "", currency: "ILS" }
+                  ]);
+                }
+              },
+              ...checks.map((check, index) => [
+                {
+                  label: `Check #${index + 1} - Number`,
+                  type: "input",
+                  value: check.number || "",
+                  onChange: (input) => {
+                    setChecks(prev =>
+                      prev.map((c, i) =>
+                        i === index ? { ...c, number: input } : c
+                      )
+                    );
+                  }
+                },
+                {
+                  label: `Check #${index + 1} - Value`,
+                  type: "input",
+                  value: check.value || "",
+                  onChange: (input) => {
+                    setChecks(prev =>
+                      prev.map((c, i) =>
+                        i === index ? { ...c, value: input } : c
+                      )
+                    );
+                  }
+                },
+                {
+                  label: `Check #${index + 1} - Currency`,
+                  type: "select",
+                  name: `checkCurrency_${index}`,
+                  value: check.currency,
+                  list: currencyList,
+                  onSelect: (value) => {
+                    setChecks(prev =>
+                      prev.map((c, i) =>
+                        i === index ? { ...c, currency: value } : c
+                      )
+                    );
+                  }
+                },
+                {
+                  label: `Check #${index + 1} - Date`,
+                  type: "date",
+                  value: check.date || "",
+                  onChange: (date) => {
+                    setChecks(prev =>
+                      prev.map((c, i) =>
+                        i === index ? { ...c, date } : c
+                      )
+                    );
+                  }
+                },
+                {
+                  value: "x",
+                  type: "button",
+                  style: { backgroundColor: "red" },
+                  onPress: () => {
+                    setChecks(prev => prev.filter((_, i) => i !== index));
+                  }
+                }
+              ])
+            ]
+          : []),
+          ,{
+            label:"Currency",
+            type:"select",
+            name:"currency",
+            value:selectedValue.currency.name,
+            list:currencyList
         },{
             label:translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
             type:"input",
             value: deliveryFee || form.deliveryFee,
-        },{
-            label:translations[language].tabs.orders.create.sections.cost.fields.isReplaced,
-            type:"checkbox",
-            value:isReplaced,
-            onChange:()=> setIsReplaced(!isReplaced)
         }]
     },{
         label:translations[language].tabs.orders.create.sections.details.title,
         icon:<Feather name="package" size={24} color="#F8C332" />,
         fields:[{
+            label:"Order Type",
+            type:"select",
+            name:"orderType",
+            value:selectedValue.orderType.name,
+            list:orderTypes
+        },(selectedValue.orderType?.value || form.orderType) === "receive" ||
+        (selectedValue.orderType?.value || form.orderType) === "delivery/receive" ? {
+            label:"Received Items",
+            type:"input",
+            name:"receivedItems",
+            value:form.receivedItems || "",
+            onChange:(input)=> setForm((form)=> ({...form,receivedItems:input}))
+        } : {visibility:"hidden"},
+        (selectedValue.orderType?.value || form.orderType) === "receive" ||
+        (selectedValue.orderType?.value || form.orderType) === "delivery/receive" ? {
+            label:"Received Quantity",
+            type:"input",
+            name:"receivedQuantity",
+            value:form.receivedQuantity || "",
+            onChange:(input)=> setForm((form)=> ({...form,receivedQuantity:input}))
+        } : {visibility:"hidden"},
+        {
             label:translations[language].tabs.orders.create.sections.details.fields.product,
             type:"input",
             value:form.orderItems || "",
@@ -118,16 +239,90 @@ export default function HomeScreen(){
         },{
             label:translations[language].tabs.orders.create.sections.details.fields.orderType,
             type:"select",
-            name:"order_type",
+            name:"itemsType",
             list:[{
-                label:"normal",
-                action:"noraml"
+                name:"normal",
+                value:"noraml"
             }],
-            value:form.orderType || "",
+            value:form.itemsType || selectedValue.itemsType.name,
+        }]
+    },{
+        label:"Notes",
+        icon:<Feather name="package" size={24} color="#F8C332" />,
+        fields:[{
+            label:"Note",
+            type:"input",
+            value:form.noteContent || "",
+            onChange:(input)=> setForm((form)=> ({...form,noteContent:input}))
         }]
     }]
 
+    const handleCheckPhone = async (phone) => {
+        if (!phone) return;
+    
+        try {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/receivers/check-phone/${encodeURIComponent(phone)}`
+            );
+            
+            // First check if response is JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType?.includes('application/json')) {
+                const text = await response.text();
+                throw new Error(`Unexpected response: ${text.substring(0, 100)}`);
+            }
+    
+            const data = await response.json();
+    
+            if (!response.ok) {
+                throw new Error(data.error || 'Phone check failed');
+            }
+    
+            if (data.exists) {
+                // Auto-fill logic
+                setForm(prev => ({
+                    ...prev,
+                    receiverName: data.receiver.name,
+                    receiverSecondPhone: data.receiver.phone_2 || "",
+                    receiverArea: data.receiver.area,
+                    receiverAddress: data.receiver.address,
+                }));
+    
+                // Find and set city
+                const city = cities.find(c => c.city_id === data.receiver.city_id);
+                if (city) {
+                    setSelectedValue(prev => ({
+                        ...prev,
+                        city: { name: city.city_name, city_id: city.city_id }
+                    }));
+                }
+    
+                // Show warning if returned orders
+                setReturnedOrdersMessage(
+                    data.returnedOrdersCount > 0 
+                        ? `Warning: This client has ${data.returnedOrdersCount} returned orders`
+                        : ''
+                );
+            }
+        } catch (error) {
+            console.error('Phone check error:', error);
+            Alert.alert(
+                'Error',
+                error.message || 'Failed to check phone number'
+            );
+        }
+    };
+
     const handleCreateOrder = async (url,method)=>{
+
+        const formattedChecks = ["check", "cash/check"].includes(selectedValue.paymentType.value) && checks && checks.length > 0
+        ? checks.map(check => ({
+            number: check.number || '',
+            date: check.date || new Date().toISOString().split('T')[0],
+            value: parseFloat(check.value || 0),
+            currency: check.currency || 'ILS'
+        }))
+        : [];
         
         function sanitizeInput(input) {
             return input === undefined ? null : input;
@@ -154,13 +349,17 @@ export default function HomeScreen(){
                     title: form.orderItems,
                     quantity: form.numberOfItems,
                     description: form.description,
-                    cod_value:form.codValue,
-                    type: form.orderType,
+                    cod_value:["cash", "cash/check"].includes(selectedValue.paymentType.value) ? form.codValue : 0,
+                    type: selectedValue.itemsType.value,
                     weight: form.orderWeight,
                     item_price: form.codValue,
                     extra_cost: form.extraCost,
                     discount: form.discount,
-                    replacement_order: isReplaced,
+                    order_type: selectedValue.orderType.value,
+                    received_items: form.receivedItems,
+                    received_quantity: form.receivedQuantity,
+                    currency: selectedValue.currency.value,
+                    payment_type: selectedValue.paymentType.value,
                     receiver_name: form.receiverName,
                     receiver_first_mobile: form.receiverFirstPhone,
                     receiver_second_mobile: sanitizeInput(form.receiverSecondPhone),
@@ -168,7 +367,8 @@ export default function HomeScreen(){
                     receiver_city: selectedValue.city.city_id || form.senderCityId,
                     receiver_area: form.receiverArea,
                     receiver_address: form.receiverAddress, 
-                    note: form.noteContent
+                    note: form.noteContent,
+                    checks: formattedChecks
                 })
             })
             const data = await res.json();
@@ -240,7 +440,12 @@ export default function HomeScreen(){
             setSelectedValue((selectedValue)=> (
                 {...selectedValue,
                     sender:{name:orderData.sender,id:orderData.senderId},
-                    city:{name:orderData.senderCity,id:orderData.senderCityId}}
+                    city:{name:orderData.senderCity,id:orderData.senderCityId},
+                    orderType:{ name: orderData.orderType, value: orderData.orderType },
+                    paymentType: { name: orderData.paymentType, value: orderData.paymentType },
+                    currency:{ name: orderData.currency, value: orderData.currency },
+                    itemsType:{ name: orderData.itemsType, value: orderData.itemsType }
+                }
             ))
             setDeliveryFee(orderData.deliveryFee)
             setForm({
@@ -259,10 +464,12 @@ export default function HomeScreen(){
                 comission:orderData.comission,
                 orderItems:orderData.orderItems,
                 numberOfItems:orderData.numberOfItems,
-                orderType:orderData.orderType,
                 orderWeight:orderData.orderWeight,
+                receivedItems: orderData.receivedItems,
+                receivedQuantity: orderData.receivedQuantity,
+                noteContent:orderData.noteContent
             })
-            setIsReplaced(orderData.replacementOrder || false);
+            setChecks(orderData.checks)
         } catch (err) {
             console.log(err);
         }
@@ -310,6 +517,8 @@ export default function HomeScreen(){
             console.log(err);
         }
     }
+
+
 
     const fetchDeliveryFee = async ()=>{
         try {
@@ -360,6 +569,36 @@ export default function HomeScreen(){
         fetchCities();
         setPage(1);
         fetchSenders(1, false);
+        setOrderTypes([{
+            name:"Delivery",
+            value:"delivery"
+        },{
+            name:"Receive",
+            value:"receive"
+        },{
+            name:"Delivery / Recieve",
+            value:"delivery/receive"
+        }])
+        setCurrencyList([{
+            name:"ILS",
+            value:"ILS"
+        },{
+            name:"USD",
+            value:"USD"
+        },{
+            name:"JOD",
+            value:"JOD"
+        }]);
+        setPaymentTypes([{
+            name:"Cash",
+            value:"cash"
+        },{
+            name:"Check",
+            value:"check"
+        },{
+            name:"Cash/Check",
+            value:"cash/check"
+        }])
     },[prickerSearchValue])
 
     useEffect(() => {

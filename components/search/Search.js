@@ -42,6 +42,7 @@ export default function Search({
             <View style={[styles.inputField,{width:(activeSearchBy || activeDate ) ? "60%" : showScanButton ? "70%" : "80%",flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <EvilIcons name="search" size={24} color="black" />
                 <TextInput
+                    multiline
                     style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}
                     placeholder={`${translations[language].search.placeholder} ${activeSearchBy && `${translations[language].search.by} ${activeSearchBy.name}`}`}
                     value={searchValue}

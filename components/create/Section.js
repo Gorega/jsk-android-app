@@ -9,30 +9,30 @@ export default function Section({section,setSelectedValue,loadMoreData,loadingMo
     const { language } = useLanguage();
 
 
-    return <Pressable onPress={()=> setShowFields(!showFields)}>
-            <View style={[styles.section,{display:section.visibility === "hidden" && "none"}]}>
-            <View style={[styles.label,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                <View style={{alignItems:"center",gap:7,flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}}>
-                    {section.icon}
-                    <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{section.label}</Text>
-                </View>
-                <MaterialIcons style={showFields && styles.activeSection} name="arrow-right" size={24} color="#F8C332" />
+    return <View style={[styles.section,{display:section.visibility === "hidden" && "none"}]}>
+    <Pressable onPress={()=> setShowFields(!showFields)}>
+        <View style={[styles.label,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            <View style={{alignItems:"center",gap:7,flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}}>
+                {section.icon}
+                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{section.label}</Text>
             </View>
-            {showFields && <View style={styles.fields}>
-                    {section?.fields?.map((field,index)=>{
-                        return <Field
-                            field={field}
-                            key={index}
-                            setSelectedValue={setSelectedValue}
-                            loadMoreData={loadMoreData}
-                            loadingMore={loadingMore}
-                            prickerSearchValue={prickerSearchValue}
-                            setPickerSearchValue={setPickerSearchValue}
-                            />
-                    })}
-                </View>}
+            <MaterialIcons style={showFields && styles.activeSection} name="arrow-right" size={24} color="#F8C332" />
         </View>
     </Pressable>
+    {showFields && <View style={styles.fields}>
+        {section?.fields?.flat().map((field,index) => (
+            <Field
+                field={field}
+                key={index}
+                setSelectedValue={setSelectedValue}
+                loadMoreData={loadMoreData}
+                loadingMore={loadingMore}
+                prickerSearchValue={prickerSearchValue}
+                setPickerSearchValue={setPickerSearchValue}
+            />
+        ))}
+    </View>}
+</View>
 }
 
 const styles = StyleSheet.create({

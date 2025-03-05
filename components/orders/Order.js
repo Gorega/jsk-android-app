@@ -1,10 +1,9 @@
 import { View,StyleSheet,Text, TouchableOpacity, Pressable, TextInput} from 'react-native';
-import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
-import Entypo from '@expo/vector-icons/Entypo';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useState } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -82,7 +81,10 @@ export default function Order({user,order}){
         }
 
     return <>
-        <Pressable onPress={()=> router.push("(track)")} onLongPress={()=> setShowControl(true)}>
+        <Pressable onPress={()=> router.push({
+            pathname:"(track)",
+            params:{orderId:order.order_id}
+        })} onLongPress={()=> setShowControl(true)}>
             <View style={styles.order}>
         <View style={[styles.head,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
             <View style={styles.box}>
@@ -127,22 +129,41 @@ export default function Order({user,order}){
             </View>
         </View>
         <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : "Unknown",phone:order.driver_mobile ? order.driver_mobile : ""}} />
-        <View style={styles.flexSec}>
+        <View style={styles.sec}>
             <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                    <Feather name="package" size={24} color="#F8C332" />
-                    <Text>{order.cod_value}₪</Text>
-                </View>
-                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                    <Feather name="truck" size={24} color="#F8C332" />
-                    <Text>{order.delivery_fee}₪</Text>
-                </View>
-                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                    <FontAwesome name="money" size={24} color="#F8C332" />
-                    <Text>{order.net_value}₪</Text>
+                <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                    <MaterialCommunityIcons name="package-variant" size={24} color="#F8C332" />
+                    <View style={styles.info}>
+                        <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>Order Type</Text>
+                        <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{order.order_type}</Text>
+                    </View>
                 </View>
             </View>
         </View>
+        <View style={styles.flexSec}>
+            <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                    <Feather name="package" size={20} color="#F8C332" />
+                    <Text style={styles.costText}>{order.cod_value} {order.currency}</Text>
+                </View>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                    <Feather name="truck" size={20} color="#F8C332" />
+                    <Text style={styles.costText}>{order.delivery_fee} {order.currency}</Text>
+                </View>
+                <View style={[styles.cost,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                    <FontAwesome name="money" size={20} color="#F8C332" />
+                    <Text style={styles.costText}>{order.net_value} {order.currency}</Text>
+                </View>
+            </View>
+        </View>
+        {order.checks_value > 0 && <Pressable onPress={()=> router.push({
+            pathname:"(order_checks)",
+            params:{orderId:order.order_id}
+        })}>
+            <View style={[styles.checks,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+                <Text style={{width:"90%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>This Order contains checks of total amount: {order.checks_value} {order.currency}</Text>
+            </View>
+        </Pressable>}
         {order.note && <View style={[styles.note,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
             <FontAwesome name="sticky-note-o" size={24} color="black" />
             <Text style={{width:"90%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{order.note}</Text>
@@ -270,7 +291,7 @@ const styles = StyleSheet.create({
     },
     sec:{
         marginTop:15,
-        paddingVertical:10,
+        paddingVertical:5,
         borderBottomColor:"rgba(0,0,0,.1)",
         borderBottomWidth:1
     },
@@ -279,13 +300,13 @@ const styles = StyleSheet.create({
         flexDirection:"row",
         alignItems:"center",
         gap:15,
-        justifyContent:"space-between"
+        justifyContent:"space-between",
     },
     flexIn:{
         display:"flex",
         flexDirection:"row",
         alignItems:"center",
-        gap:15
+        gap:15,
     },
     icons:{
         display:"flex",
@@ -299,7 +320,10 @@ const styles = StyleSheet.create({
         display:"flex",
         flexDirection:"row",
         alignItems:"center",
-        gap:7
+        gap:7,
+    },
+    costText:{
+        fontSize:13
     },
     note:{
         flexDirection:"row",
@@ -310,6 +334,16 @@ const styles = StyleSheet.create({
         borderWidth:1,
         borderRadius:15,
         padding:15
+    },
+    checks:{
+        flexDirection:"row",
+        alignItems:"center",
+        gap:15,
+        marginTop:15,
+        borderColor:"red",
+        borderWidth:1,
+        borderRadius:15,
+        padding:15,
     },
     modalItem:{
         padding:15,

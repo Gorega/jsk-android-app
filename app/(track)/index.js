@@ -1,31 +1,49 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { FontAwesome5 } from '@expo/vector-icons';
 import Feather from '@expo/vector-icons/Feather';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useAuth } from '../_layout';
 
-const TrackingOrder = ({order}) => {
-  const statuses = [
-    { status: 'Package Picked Up', time: '9:00 AM', icon: 'box' },
-    { status: 'In Transit', time: '12:00 PM', icon: 'truck' },
-    { status: 'Arrived at Hub', time: '2:30 PM', icon: 'warehouse' },
-    { status: 'Out for Delivery', time: '4:00 PM', icon: 'truck-loading' },
-    { status: 'Delivered', time: '6:00 PM', icon: 'home' },
-  ];
+const TrackingOrder = ({}) => {
+  const {user:authUser} = useAuth();
+  const params = useLocalSearchParams();
+  const { orderId } = params;
+  const [order,setOrder] = useState({});
+
+  const fetchOrderData = async ()=>{
+    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+          'Accept': 'application/json',
+          "Content-Type": "application/json"
+      }
+  });
+  const data = await res.json();
+  setOrder(data);
+  }
+
+  useEffect(() => {
+    fetchOrderData();
+  }, []);
+
 
   return (
     <ScrollView style={styles.container}>
       {/* Order Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Order Tracking</Text>
-        <Text style={styles.orderNumber}>Order #123456</Text>
+        <Text style={styles.orderNumber}>Order #{orderId}</Text>
       </View>
 
       {/* Package Info */}
       <View style={styles.packageInfo}>
-        <Feather name="package" size={50} color="#F8C332" />
+        <Feather name="package" size={40} color="#F8C332" />
         <Text style={styles.packageName}>Package: {order?.orderItems ? order?.orderItems : "Unknown"}</Text>
-        <Text style={styles.packageDetails}>Quantity: {order?.quantity}</Text>
-        <Text style={styles.packageDetails}>Weight: {order?.weight} kg</Text>
+        <Text style={styles.packageDetails}>Quantity: {order?.numberOfItems}</Text>
+        <Text style={styles.packageDetails}>Weight: {order?.orderWeight} kg</Text>
+        {order.receivedItems && <Text style={styles.packageDetails}>Received Items: {order?.receivedItems}</Text>} 
+        {order.receivedQuantity && <Text style={styles.packageDetails}>Received Quantity: {order?.receivedQuantity}</Text>}
       </View>
 
       {/* Delivery Status */}
@@ -35,27 +53,32 @@ const TrackingOrder = ({order}) => {
         {/* Timeline */}
         <View style={styles.timelineContainer}>
           <View style={styles.timelineLine}></View>
-          {statuses.map((item, index) => (
+          {order.orderStatusHistory?.map((item, index) => (
             <View key={index} style={styles.timelineItem}>
-              <View style={[styles.timelineCircle, index === statuses.length - 1 && styles.timelineCircleLast]}>
-                <FontAwesome5 name={item.icon} size={20} color="white" />
+              <View style={[styles.timelineCircle, index === order.orderStatusHistory.length - 1 && styles.timelineCircleLast]}>
+                {/* <FontAwesome5 name={item.icon} size={20} color="white" /> */}
               </View>
               <View style={styles.statusTextContainer}>
-                <Text style={styles.timelineStatus}>{item.status}</Text>
-                <Text style={styles.timelineTime}>{item.time}</Text>
+                <Text style={styles.timelineStatus}>{item.new_status}</Text>
+                <Text style={styles.timelineTime}>Branch: {item.branch}</Text>
+                <Text style={styles.timelineTime}>{item.created_at?.slice(0,10)}</Text>
               </View>
             </View>
           ))}
         </View>
       </View>
 
-      {/* Contact Support */}
+      {authUser.role === "business" &&
       <View style={styles.supportContainer}>
-        <Text style={styles.supportText}>Need help? Contact Support</Text>
-        <TouchableOpacity>
-          <Text style={styles.supportLink}>Contact Us</Text>
+        <Text style={styles.supportText}>Have Issue? Apply a Complaint</Text>
+        <TouchableOpacity onPress={()=> router.push({
+            pathname:"/(complaints)/open_complaint",
+            params:{orderId:orderId}
+        })}>
+          <Text style={styles.supportLink}>Open a complaint</Text>
         </TouchableOpacity>
-      </View>
+      </View>}
+      
     </ScrollView>
   );
 };
@@ -119,7 +142,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 15,
     width: 2,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#F8C332',
   },
   timelineItem: {
     flexDirection: 'row',
@@ -136,7 +159,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   timelineCircleLast: {
-    backgroundColor: '#00BFAE',
+    backgroundColor: '#F8C332',
   },
   statusTextContainer: {
     marginLeft: 15,
