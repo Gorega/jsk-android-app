@@ -5,7 +5,7 @@ import { useLanguage } from '../../utils/languageContext';
 import ModalPresentation from "../ModalPresentation";
 import { Calendar } from "react-native-calendars";
 
-export default function Field({field, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue}) {
+export default function Field({field,error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue,setFieldErrors}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState("");
@@ -21,7 +21,7 @@ export default function Field({field, setSelectedValue, loadMoreData, loadingMor
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
             field.containerStyle,
-            { borderColor: "rgba(0,0,0,0.2)" }
+            { borderColor: error ? "red" : "rgba(0,0,0,0.2)" }
         ]}>
             {/* Field Label */}
             <Text style={[
@@ -38,16 +38,30 @@ export default function Field({field, setSelectedValue, loadMoreData, loadingMor
             {/* Input Field */}
             <View style={styles.inputContent}>
                 {field.type === "input" && (
+                    <>
                         <TextInput 
                         multiline
-                        style={styles.input}
+                        style={[styles.input,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}
                         placeholder=""
                         value={field.value}
                         onBlur={field.onBlur}
                         defaultValue={field.defaultValue}
-                        onChangeText={field.onChange}
+                        onChangeText={(text) => {
+                            if (field.onChange) {
+                                field.onChange(text);
+                            }
+                            // Clear error when user starts typing
+                            if (error && field.name) {
+                                setFieldErrors(prev => ({
+                                    ...prev,
+                                    [field.name]: null
+                                }));
+                            }
+                        }}
                         placeholderTextColor="#999"
                     />
+                    {error && <Text style={styles.errorText}>{error}</Text>}
+                    </>
                 )}
 
                 {field.type === "select" && (
@@ -55,7 +69,8 @@ export default function Field({field, setSelectedValue, loadMoreData, loadingMor
                         style={styles.selectField} 
                         onPress={() => setShowPickerModal(true)}
                     >
-                        <Text style={styles.selectText}>{field.value || field.placeholder}</Text>
+                        <Text style={[styles.selectText,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{field.value || field.placeholder}</Text>
+                        {error && <Text style={styles.errorText}>{error}</Text>}
                     </Pressable>
                 )}
 
@@ -82,16 +97,16 @@ export default function Field({field, setSelectedValue, loadMoreData, loadingMor
                 {/* Picker Modal */}
                 {showPickerModal && (
                     <PickerModal
-                        list={field.list}
-                        showPickerModal={showPickerModal}
-                        setShowPickerModal={() => setShowPickerModal(false)}
-                        setSelectedValue={setSelectedValue}
-                        field={field}
-                        loadMoreData={loadMoreData}
-                        loadingMore={loadingMore}
-                        prickerSearchValue={prickerSearchValue}
-                        setPickerSearchValue={setPickerSearchValue}
-                    />
+                    list={field.list}
+                    showPickerModal={showPickerModal}
+                    setShowPickerModal={() => setShowPickerModal(false)}
+                    setSelectedValue={setSelectedValue}
+                    field={field}
+                    loadMoreData={loadMoreData}
+                    loadingMore={loadingMore}
+                    prickerSearchValue={prickerSearchValue}
+                    setPickerSearchValue={setPickerSearchValue}
+                />
                 )}
 
                 {field.type === "date" && (
@@ -173,7 +188,7 @@ const styles = StyleSheet.create({
         paddingVertical: 2,
     },
     selectText: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#333',
     },
     button: {
@@ -219,5 +234,21 @@ const styles = StyleSheet.create({
         color: 'red',
         fontSize: 14,
         marginTop: 5,
-    }
+    },
+    inputError: {
+        borderColor: 'red',
+    },
+    errorText: {
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5,
+    },
+    fieldContainer: {
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginVertical: 8,
+        position: 'relative',
+    },
 });

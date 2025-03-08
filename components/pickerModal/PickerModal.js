@@ -37,7 +37,7 @@ export default function PickerModal({list,showPickerModal,setShowPickerModal,set
                                 setSelectedValue((selectedValue) => ({...selectedValue,[name]:item}))
                                 setShowPickerModal(false)
                             }}>
-                                <Text style={{textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
+                                <Text style={[styles.itemField,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -75,10 +75,13 @@ const styles = StyleSheet.create({
     },
     item:{
         margin:0,
-        paddingHorizontal:15,
-        paddingVertical:20,
         borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1
+        borderBottomWidth:1,
+    },
+    itemField:{
+    paddingHorizontal:15,
+    paddingVertical:20,
+    width:"100%",
     },
     quit:{
         fontWeight:"500",

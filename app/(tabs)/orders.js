@@ -141,12 +141,13 @@ export default function Orders(){
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             if (orderIds) queryParams.append('order_ids', orderIds)
-            if (activeFilter) queryParams.append('status', activeFilter);
+            if (activeFilter) queryParams.append('status_key', activeFilter);
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
             if (activeDate) queryParams.append("date_range", activeDate.action)
             if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
             if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
             queryParams.append('page', pageNumber);
+            queryParams.append('language_code',language);
 
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`, {
                 method: "GET",
@@ -200,7 +201,7 @@ export default function Orders(){
         if(orderIds){
             setActiveSearchBy(searchByGroup[0]);
         }
-    }, [searchValue, activeFilter,activeDate,orderIds,trackChanges]);
+    }, [searchValue, activeFilter,activeDate,orderIds,trackChanges,language]);
 
     useEffect(()=>{
         if(orderId){

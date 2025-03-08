@@ -8,8 +8,11 @@ import { useAuth } from "../_layout";
 import { router } from "expo-router";
 import Search from "../../components/search/Search";
 import FlatListData from "../../components/FlatListData";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function ComplaintsScreen() {
+  const { language } = useLanguage();
   const { user } = useAuth();
   const [complaints, setComplaints] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,37 +26,37 @@ export default function ComplaintsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const filterByGroup = [
-    { name: "All", action: "all" },
-    { name: "open", action: "open" },
-    { name: "closed", action: "closed" }
+    { name: translations[language].complaints.status.all, action: "all" },
+    { name: translations[language].complaints.status.open, action: "open" },
+    { name: translations[language].complaints.status.closed, action: "closed" }
   ];
 
   const searchByGroup = [
-    { name: "Complaint ID", action: "complaint_id" },
-    { name: "order ID", action: "order_id" },
-    { name: "Created By", action: "business_name" },
-    { name: "Support Agent", action: "employee_name" },
-    { name: "Subject", action: "subject" },
-    { name: "Description", action: "description" }
+    { name: translations[language].complaints.complaintId, action: "complaint_id" },
+    { name: translations[language].complaints.orderId, action: "order_id" },
+    { name: translations[language].complaints.createdBy, action: "business_name" },
+    { name: translations[language].complaints.employeeName, action: "employee_name" },
+    { name: translations[language].complaints.subject, action: "subject" },
+    { name:translations[language].complaints.description, action: "description" }
   ];
 
   const searchByDateGroup = [{
-          name:"Today",
+          name:translations[language].complaints.today,
           action:"today"
       },{
-          name:"Yesterday",
+          name:translations[language].complaints.yesterday,
           action:"yesterday"
       },{
-          name:"this Week",
+          name:translations[language].complaints.thisWeek,
           action:"this_week"
       },{
-          name:"this Month",
+          name:translations[language].complaints.thisMonth,
           action:"this_month"
       },{
-          name:"this Year",
+          name:translations[language].complaints.thisYear,
           action:"this_year"
       },{
-          name:"Custom",
+          name:translations[language].complaints.selectDate,
           action:"custom"
       }]
 
@@ -74,6 +77,7 @@ export default function ComplaintsScreen() {
         queryParams.append("end_date", selectedDate);
       }
       queryParams.append('page', pageNumber);
+      queryParams.append('language_code', language);
 
       const businessUserParam = user.role === "business" ? `business_user_id=${user.userId}&` : "";
       const response = await fetch(
@@ -119,11 +123,11 @@ export default function ComplaintsScreen() {
   useEffect(() => {
     setPage(1);
     fetchComplaints(1, false);
-  }, [searchValue, activeFilter, activeDate]);
+  }, [searchValue, activeFilter, activeDate,language]);
 
   const handleChangeStatus = async (item) => {
     try {
-      await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${item.complaint_id}`, {
+      await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${item.complaint_id}?language_code=${language}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -177,13 +181,13 @@ export default function ComplaintsScreen() {
             return <>
             <Pressable onLongPress={() => setShowControl(true)}>
               <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.subject}>{item.subject}</Text>
+                <View style={[styles.cardHeader,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+                  <Text style={[styles.subject]}>{item.subject}</Text>
                   <Text style={[styles.status, { color: getStatusColor(item.status) }]}>{item.status}</Text>
                 </View>
-                <Text style={styles.description}>{item.description}</Text>
-                <View style={styles.footer}>
-                  <Text style={styles.orderId}>Order ID: #{item.order_id}</Text>
+                <Text style={[styles.description,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{item.description}</Text>
+                <View style={[styles.footer,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+                  <Text style={styles.orderId}>{translations[language].complaints.orderId}: #{item.order_id}</Text>
                   <TouchableOpacity onPress={() =>
                     router.push({
                       pathname: `/(complaints)/complaint`,
@@ -207,7 +211,7 @@ export default function ComplaintsScreen() {
                     onPress={() => handleChangeStatus(item)}
                   >
                     <Ionicons name="checkmark-done-circle-outline" size={24} color="black" />
-                    <Text style={{ fontWeight: "500" }}>Resolved</Text>
+                    <Text style={{ fontWeight: "500" }}>{translations[language].complaints.resolved}</Text>
                   </TouchableOpacity>
                 </View>
               </ModalPresentation>

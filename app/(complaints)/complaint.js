@@ -12,8 +12,11 @@ import {
 import { useLocalSearchParams } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useAuth } from "../_layout";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 export default function ComplaintDetails() {
+  const { language } = useLanguage();
   const { complaintId } = useLocalSearchParams();
   const {user} = useAuth();
   const [complaint, setComplaint] = useState(null);
@@ -27,7 +30,7 @@ export default function ComplaintDetails() {
   const fetchComplaintDetails = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}?language_code=${language}`, {
         credentials: "include"
       });
       const data = await response.json();
@@ -43,7 +46,7 @@ export default function ComplaintDetails() {
 
   useEffect(() => {
     fetchComplaintDetails();
-  }, [complaintId]);
+  }, [complaintId,language]);
 
   // Pull-to-refresh functionality
   const onRefresh = useCallback(() => {
@@ -99,7 +102,7 @@ export default function ComplaintDetails() {
   if (!complaint) {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>Complaint not found</Text>
+        <Text style={styles.errorText}>{translations[language].complaints.notFound}</Text>
       </View>
     );
   }
@@ -108,18 +111,18 @@ export default function ComplaintDetails() {
     <View style={styles.container}>
       {/* Complaint Information Card */}
       <View style={styles.card}>
-        <Text style={styles.subject}>{complaint.subject}</Text>
-        <Text style={styles.description}>{complaint.description}</Text>
-        <View style={styles.row}>
-          <Text style={styles.label}>Order ID:</Text>
+        <Text style={[styles.subject,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{complaint.subject}</Text>
+        <Text style={[styles.description,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{complaint.description}</Text>
+        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+          <Text style={styles.label}>{translations[language].complaints.orderId}:</Text>
           <Text style={styles.value}>#{complaint.order_id}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Status:</Text>
+        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+          <Text style={styles.label}>{translations[language].complaints.status.title}:</Text>
           <Text style={[styles.status, { color: getStatusColor(complaint.status) }]}>{complaint.status}</Text>
         </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Created at:</Text>
+        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+          <Text style={styles.label}>{translations[language].complaints.createdAt}:</Text>
           <Text style={styles.value}>{new Date(complaint.created_at).toLocaleString()}</Text>
         </View>
       </View>
@@ -149,10 +152,10 @@ export default function ComplaintDetails() {
       />
 
       {/* Send New Message */}
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer]}>
         <TextInput
           style={styles.input}
-          placeholder="Type your message..."
+          placeholder={translations[language].complaints.messagePlaceholder}
           value={newMessage}
           onChangeText={setNewMessage}
         />

@@ -85,6 +85,20 @@ export const translations = {
           thisYear:"This Year",
           selectDate:"Select a Date",
         },
+        track:{
+          orderTracking:"Order Tracking",
+          order:"Order",
+          package:"Package",
+          quantity:"Quantity",
+          weight:"Weight",
+          receivedItems:"Received Items",
+          receivedQuantity:"Received Quantity",
+          deliveryStatus:"Delivery Status",
+          branch:"Branch",
+          issue:"Have an issue, Apply a complaint",
+          openCase:"Open a complaint",
+          unknown:"Unknown"
+        },
         order:{
           states:{
             pickedUp:"Picked Up",
@@ -101,6 +115,8 @@ export const translations = {
             stuck:"Stuck",
             delayed:"Delayed"
           },
+          orderType:"Order Type",
+          unknown:"Unknown",
           userSenderBoxLabel:"Sender",
           userClientBoxLabel:"Client",
           userDriverBoxLabel:"Driver",
@@ -156,6 +172,42 @@ export const translations = {
                 orderType:"Order Type"
               }
             },
+            orderTypes:{
+              title:"Order Type",
+              delivery:"Delivery",
+              receive:"Receive",
+              "delivery/receive":"Delivery / Recieve",
+              receivedItems:"Received Items",
+              receivedQuantity:"Received Quantity",
+            },
+            currencyList:{
+              title:"Currency",
+              ILS:"ILS",
+              USD:"USD",
+              JOD:"JOD"
+            },
+            paymentType:{
+              title:"Payment Method",
+              cash:"Cash",
+              check:"Check",
+              "cash/check":"Cash/Check"
+            },
+            itemsCotnentType:{
+              title:"Items Content Type",
+              normal:"Noraml"
+            },
+            notes:{
+              title:"Notes",
+              note:"Note"
+            },
+            checks:{
+              add:"Add Check",
+              check:"Check",
+              number:"Number",
+              value:"Value",
+              currency:"Currency",
+              date:"Date"
+            }
           }
         }
       },
@@ -181,6 +233,7 @@ export const translations = {
               he:"Hebrew"
             }
           },
+          complaints:"Complaints",
           changePassword:"Change Password",
           contactUs:"Contact Us",
           aboutUs:"About Us",
@@ -275,6 +328,10 @@ export const translations = {
         edit:"Edit User",
         create:"Create User",
         submit:"Submit",
+        loading:"Loading...",
+        error:"Error",
+        errorValidationMsg:"Please check the highlighted fields",
+        errorMsg:"An unexpected error occurred, Please call the support agent to help",
         sections:{
           user:{
             title:"user",
@@ -297,6 +354,46 @@ export const translations = {
             }
           }
         }
+      }
+    },
+
+    complaints:{
+      title:"Complaints",
+      complaint:"Complaint",
+      complaintId:"Complaint ID",
+      createdBy:"Created By",
+      supportAgent:"Support Agent",
+      submit_complaint:"Submit Complaint",
+      openComplaint:"Open a Complaint for order",
+      subject:"Subject",
+      description:"Description",
+      describe:"Describe your complaint...",
+      submit:"Send",
+      success:"Success",
+      error:"Error",
+      employeeName:"Employee Name",
+      successMsg:"Complaint submitted successfully.",
+      errorMsg:"Failed to submit complaint.",
+      errorFailed:"Something went wrong.",
+      errorValidationMsg:"Please fill in all fields",
+      orderId:"Order ID",
+      resolved:"Resolved",
+      status:"Status",
+      createdAt:"Created At",
+      messagePlaceholder:"Type your message...",
+      notFound:"Complaint not found",
+      //searchByDateGroup
+      today:"Today",
+      yesterday:"Yesterday",
+      thisWeek:"This Week",
+      thisMonth:"This Month",
+      thisYear:"This Year",
+      selectDate:"Select a Date",
+      status:{
+        title: "Status",
+        all:"All",
+        open:"Open",
+        closed:"Closed"
       }
     },
 
@@ -405,7 +502,7 @@ export const translations = {
     auth: {
       login: "تسجيل الدخول",
       dontHaveAccount: "ليس لديك حساب؟",
-      register: "إنشاء حساب",
+      register: "تسجيل",
       username: "اسم المستخدم",
       mobileNumber: "رقم الهاتف",
       email: "البريد الإلكتروني",
@@ -413,385 +510,481 @@ export const translations = {
       city: "المدينة",
       area: "المنطقة",
       address: "العنوان",
-      role:"الدور"
+      role: "الدور"
     },
+
     // (tabs)
-    tabs:{
-      index:{
-        title:"الرئيسية",
-        boxes:{
-          todayOrders:"طلبات اليوم",
-          moneyInBranches:"الأموال في الفروع",
-          moneyInBranch:"الأموال في الفرع",
-          moneyWithDrivers:"الأموال مع السائقين",
-          moneyWithDriver:"الأموال مع السائق",
-          inWaiting:"في الانتظار",
-          inBranch:"في الفرع",
-          onTheWay:"في الطريق",
-          delivered:"تم التسليم",
-          returned:"تم الإرجاع",
-          rescheduled:"تم إعادة الجدولة",
-          stuck:"عالق",
-          rejected:"مرفوض",
-          ofOrders:"من الطلبات"
+    tabs: {
+      index: {
+        title: "لوحة التحكم",
+        boxes: {
+          todayOrders: "طلبات اليوم",
+          moneyInBranches: "النقود في الفروع",
+          moneyInBranch: "النقود في الفرع",
+          moneyWithDrivers: "النقود مع السائقين",
+          moneyWithDriver: "النقود مع السائق",
+          inWaiting: "في الانتظار",
+          inBranch: "في الفرع",
+          onTheWay: "في الطريق",
+          delivered: "تم التسليم",
+          returned: "مرتجع",
+          rescheduled: "معاد جدولته",
+          stuck: "عالق",
+          rejected: "مرفوض",
+          ofOrders: "من الطلبات"
         }
       },
-      orders:{
-        title:"الطلبات",
-        emptyArray:"لا توجد طلبات لعرضها",
-        filters:{
+      orders: {
+        title: "الطلبات",
+        emptyArray: "لا توجد طلبات لعرضها",
+        filters: {
           // filterByGroup
-          all:"الكل",
-          waiting:"في الانتظار",
-          rejected:"مرفوض",
-          inBranch:"في الفرع",
-          inProgress:"قيد التنفيذ",
-          stuck:"عالق",
-          delayed:"متأخر",
-          onTheWay:"في الطريق",
-          rescheduled:"تم إعادة الجدولة",
-          returnBeforeDeliveredInitiated:"إرجاع قبل بدء التسليم",
-          returnAfterDeliveredInitiated:"إرجاع بعد بدء التسليم",
-          returned:"تم الإرجاع",
-          returnedInBranch:"تم الإرجاع في الفرع",
-          returnedOut:"تم الإرجاع خارج الفرع",
-          businessReturnedDelivered:"تم إرجاع وتسليم الأعمال",
-          delivered:"تم التسليم",
-          moneyInBranch:"الأموال في الفرع",
-          moneyOut:"الأموال خارج الفرع",
-          businessPaid:"تم الدفع للأعمال",
-          completed:"مكتمل",
+          all: "الكل",
+          waiting: "في الانتظار",
+          rejected: "مرفوض",
+          inBranch: "في الفرع",
+          inProgress: "قيد التنفيذ",
+          stuck: "عالق",
+          delayed: "متأخر",
+          onTheWay: "في الطريق",
+          rescheduled: "معاد جدولته",
+          returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
+          returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
+          returned: "مرتجع",
+          returnedInBranch: "مرتجع في الفرع",
+          returnedOut: "مرتجع خارجي",
+          businessReturnedDelivered: "مرتجع تم تسليمه للأعمال",
+          delivered: "تم التسليم",
+          moneyInBranch: "النقود في الفرع",
+          moneyOut: "النقود خارجة",
+          businessPaid: "تم الدفع للأعمال",
+          completed: "مكتمل",
           // searchByGroup
-          orderId:"رقم الطلب",
-          referenceID:"رقم المرجع",
-          sender:"المرسل",
-          receiverName:"اسم المستلم",
-          receiverPhone:"هاتف المستلم",
-          receiverCity:"مدينة المستلم",
-          receiverArea:"منطقة المستلم",
-          receiverAddress:"عنوان المستلم",
-          driverName:"اسم السائق",
+          orderId: "معرف الطلب",
+          referenceID: "معرف المرجع",
+          sender: "المرسل",
+          receiverName: "اسم الزبون",
+          receiverPhone: "هاتف الزبون",
+          receiverCity: "مدينة الزبون",
+          receiverArea: "منطقة الزبون",
+          receiverAddress: "عنوان الزبون",
+          driverName: "اسم السائق",
           // searchByDateGroup
-          today:"اليوم",
-          yesterday:"أمس",
-          thisWeek:"هذا الأسبوع",
-          thisMonth:"هذا الشهر",
-          thisYear:"هذا العام",
-          selectDate:"اختر تاريخًا",
+          today: "اليوم",
+          yesterday: "الأمس",
+          thisWeek: "هذا الأسبوع",
+          thisMonth: "هذا الشهر",
+          thisYear: "هذا العام",
+          selectDate: "اختر تاريخًا"
         },
-        order:{
-          states:{
-            pickedUp:"تم الاستلام",
-            deliveredToDestinationBranch:"تم التسليم إلى فرع الوجهة",
-            reschedule:"إعادة الجدولة",
-            returnBeforeDeliveredInitiated:"إرجاع قبل بدء التسليم",
-            returnAfterDeliveredInitiated:"إرجاع بعد بدء التسليم",
-            returned:"تم الإرجاع",
-            delivered:"تم التسليم",
-            waiting:"في الانتظار",
-            inBranch:"في الفرع",
-            inProgress:"قيد التنفيذ",
-            rejected:"مرفوض",
-            stuck:"عالق",
-            delayed:"متأخر"
+        track: {
+          orderTracking: "تتبع الطلب",
+          order: "الطلب",
+          package: "الحزمة",
+          quantity: "الكمية",
+          weight: "الوزن",
+          receivedItems: "العناصر المستلمة",
+          receivedQuantity: "الكمية المستلمة",
+          deliveryStatus: "حالة التوصيل",
+          branch: "الفرع",
+          issue: "هل لديك مشكلة؟ قدم شكوى",
+          openCase: "فتح شكوى",
+          unknown: "غير معروف"
+        },
+        order: {
+          states: {
+            pickedUp: "تم الاستلام",
+            deliveredToDestinationBranch: "تم التسليم إلى فرع الوجهة",
+            reschedule: "إعادة جدولة",
+            returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
+            returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
+            returned: "مرتجع",
+            delivered: "تم التسليم",
+            waiting: "في الانتظار",
+            inBranch: "في الفرع",
+            inProgress: "قيد التنفيذ",
+            rejected: "مرفوض",
+            stuck: "عالق",
+            delayed: "متأخر"
           },
-          userSenderBoxLabel:"المرسل",
-          userClientBoxLabel:"العميل",
-          userDriverBoxLabel:"السائق",
-          userBoxPhoneContactLabel:"اتصال",
-          userBoxMessageContactLabel:"رسالة",
-          contactPhone:"هاتف",
-          contactWhatsapp:"واتساب",
-          edit:"تعديل",
-          changeStatus:"تغيير الحالة",
-          changeStatusAlert:"أنت على وشك تغيير حالة هذا الطلب إلى",
-          changeStatusAlertNote:"اترك ملاحظة...",
-          changeStatusAlertConfirm:"تأكيد",
-          changeStatusAlertCancel:"إلغاء",
-          print:"طباعة"
+          orderType: "نوع الطلب",
+          unknown: "غير معروف",
+          userSenderBoxLabel: "المرسل",
+          userClientBoxLabel: "الزبون",
+          userDriverBoxLabel: "السائق",
+          userBoxPhoneContactLabel: "اتصال",
+          userBoxMessageContactLabel: "رسالة",
+          contactPhone: "الهاتف",
+          contactWhatsapp: "واتساب",
+          edit: "تعديل",
+          changeStatus: "تغيير الحالة",
+          changeStatusAlert: "أنت على وشك تغيير حالة هذا الطلب إلى",
+          changeStatusAlertNote: "اترك ملاحظة...",
+          changeStatusAlertConfirm: "تأكيد",
+          changeStatusAlertCancel: "إلغاء",
+          print: "طباعة"
         },
         // (create)
-        create:{
-          edit:"تعديل طرد",
-          create:"إنشاء طرد",
-          submit:"انشاء",
-          sections:{
-            sender:{
-              title:"المرسل",
-              fields:{
-                sender:"المرسل",
+        create: {
+          edit: "تعديل الطلب",
+          create: "إنشاء طلب",
+          submit: "إرسال",
+          sections: {
+            sender: {
+              title: "المرسل",
+              fields: {
+                sender: "المرسل"
               }
             },
-            client:{
-              title:"العميل",
-              fields:{
-                client:"العميل",
-                firstPhone:"رقم الهاتف",
-                secondPhone:"رقم الهاتف الثاني",
-                city:"المدينة",
-                area:"المنطقة",
-                address:"العنوان"
+            client: {
+              title: "الزبون",
+              fields: {
+                client: "الزبون",
+                firstPhone: "رقم الهاتف",
+                secondPhone: "رقم الهاتف الثاني",
+                city: "المدينة",
+                area: "المنطقة",
+                address: "العنوان"
               }
             },
-            cost:{
-              title:"التكلفة",
-              fields:{
-                packageCost:"تكلفة الطرد",
-                deliveryFee:"رسوم التوصيل",
-                isReplaced:"تم الاستبدال",
+            cost: {
+              title: "التكلفة",
+              fields: {
+                packageCost: "تكلفة الحزمة",
+                deliveryFee: "رسوم التوصيل",
+                isReplaced: "تم استبداله"
               }
             },
-            details:{
-              title:"تفاصيل الطرد",
-              fields:{
-                product:"المنتج",
-                quantity:"الكمية",
-                weight:"الوزن",
-                orderType:"نوع الطرد"
+            details: {
+              title: "تفاصيل الطلب",
+              fields: {
+                product: "المنتج",
+                quantity: "الكمية",
+                weight: "الوزن",
+                orderType: "نوع الطلب"
               }
             },
+            orderTypes: {
+              title: "نوع الطلب",
+              delivery: "توصيل",
+              receive: "استلام",
+              "delivery/receive": "توصيل / استلام",
+              receivedItems: "العناصر المستلمة",
+              receivedQuantity: "الكمية المستلمة"
+            },
+            currencyList: {
+              title: "العملة",
+              ILS: "شيكل",
+              USD: "دولار",
+              JOD: "دينار"
+            },
+            paymentType: {
+              title: "طريقة الدفع",
+              cash: "نقدًا",
+              check: "شيك",
+              "cash/check": "نقدًا/شيك"
+            },
+            itemsCotnentType: {
+              title: "نوع محتوى العناصر",
+              normal: "عادي"
+            },
+            notes: {
+              title: "ملاحظات",
+              note: "ملاحظة"
+            },
+            checks:{
+              add:"اضافة شيك",
+              check:"شيك",
+              number:"الرقم",
+              value:"المبلغ",
+              currency:"العملة",
+              date:"التاريخ"
+            }
           }
         }
       },
-      collections:{
-        title:"الكشوفات",
-        options:{
-          collect:"أطلب تحصيل أموالك",
-          money:"تحصيل الأموال",
-          driver:"كشف توزيع التحصيلات",
-          returned:"كشف المرتجعات",
-          runsheet:"كشف التوزيع",
+      collections: {
+        title: "التجميعات",
+        options: {
+          collect: "اجمع نقودك",
+          money: "تجميعات النقود",
+          driver: "تجميعات السائق",
+          returned: "تجميعات المرتجعات",
+          runsheet: "تجميعات ورقة التسليم"
         }
       },
-      settings:{
-        title:"الإعدادات",
-        options:{
-          users:"المستخدمين",
-          language:{
-            title:"اللغة",
-            options:{
-              ar:"العربية",
-              en:"الإنجليزية",
-              he:"العبرية"
+      settings: {
+        title: "الإعدادات",
+        options: {
+          users: "المستخدمون",
+          language: {
+            title: "اللغة",
+            options: {
+              ar: "العربية",
+              en: "الإنجليزية",
+              he: "العبرية"
             }
           },
-          changePassword:"تغيير كلمة المرور",
-          contactUs:"اتصل بنا",
-          aboutUs:"عنا",
-          locations:"المواقع",
-          logout:"تسجيل الخروج"
+          complaints: "الشكاوى",
+          changePassword: "تغيير كلمة المرور",
+          contactUs: "اتصل بنا",
+          aboutUs: "عنّا",
+          locations: "المواقع",
+          logout: "تسجيل الخروج"
         }
       }
     },
 
     // (collection)
-    collections:{
-      title:"التحصيلات",
-      emptyArray:"لا توجد تحصيلات لعرضها",
-      filters:{
-        //filterByGroup
-        all:"الكل",
-        returnedInBranch:"تم الإرجاع في الفرع",
-        deleted:"تم الحذف",
-        returnedOut:"تم الإرجاع خارج الفرع",
-        returnedDelivered:"تم إرجاع وتسليم",
-        completed:"مكتمل",
-        moneyInBranch:"الأموال في الفرع",
-        moneyOut:"الأموال خارج الفرع",
-        paid:"تم الدفع",
-        pending:"قيد الانتظار",
-        inDispatchedToBranch:"في طريقها إلى الفرع",
-        partial:"جزئي",
-        returnedDelivered:"تم إرجاع وتسليم",
+    collections: {
+      title: "التجميعات",
+      emptyArray: "لا توجد تجميعات لعرضها",
+      filters: {
+        // filterByGroup
+        all: "الكل",
+        returnedInBranch: "مرتجع في الفرع",
+        deleted: "محذوف",
+        returnedOut: "مرتجع خارجي",
+        returnedDelivered: "تم تسليم المرتجع",
+        completed: "مكتمل",
+        moneyInBranch: "النقود في الفرع",
+        moneyOut: "النقود خارجة",
+        paid: "مدفوع",
+        pending: "معلق",
+        inDispatchedToBranch: "في مرحلة الإرسال إلى الفرع",
+        partial: "جزئي",
+        returnedDelivered: "تم تسليم المرتجع",
         // searchByGroup
-        collectionId:"رقم التحصيل",
-        sender:"المرسل",
-        driver:"السائق",
-        prevDriver:"السائق السابق",
-        currentBranch:"الفرع الحالي",
+        collectionId: "معرف التجميعة",
+        sender: "المرسل",
+        driver: "السائق",
+        prevDriver: "السائق السابق",
+        currentBranch: "الفرع الحالي",
         // searchByDateGroup
-        today:"اليوم",
-        yesterday:"أمس",
-        thisWeek:"هذا الأسبوع",
-        thisMonth:"هذا الشهر",
-        thisYear:"هذا العام",
-        selectDate:"اختر تاريخًا"
+        today: "اليوم",
+        yesterday: "الأمس",
+        thisWeek: "هذا الأسبوع",
+        thisMonth: "هذا الشهر",
+        thisYear: "هذا العام",
+        selectDate: "اختر تاريخًا"
       },
-      collection:{
-        numberOfOrders:"عدد الطلبات",
-        numberOfCollections:"عدد التحصيلات",
-        moneyToDeliver:"الأموال للتسليم",
-        moneyToCollect:"الأموال للتحصيل",
-        checksToDeliver:"الشيكات للتسليم",
-        currentBranch:"الفرع الحالي",
-        toBranch:"إلى الفرع",
-        print:"طباعة",
-        collections:"التحصيلات",
-        orders:"الطلبات",
+      collection: {
+        numberOfOrders: "عدد الطلبات",
+        numberOfCollections: "عدد التجميعات",
+        moneyToDeliver: "النقود للتسليم",
+        moneyToCollect: "النقود للجمع",
+        checksToDeliver: "الشيكات للتسليم",
+        currentBranch: "الفرع الحالي",
+        toBranch: "الفرع المرسل إليه",
+        print: "طباعة",
+        collections: "التجميعات",
+        orders: "الطلبات"
       }
     },
 
     // (users)
-    users:{
-      title:"المستخدمين",
-      emptyArray:"لا توجد مستخدمين لعرضها",
-      filters:{
+    users: {
+      title: "المستخدمون",
+      emptyArray: "لا توجد مستخدمين لعرضهم",
+      filters: {
         // filterByGroup
-        all:"الكل",
-        active:"نشط",
-        inactive:"غير نشط",
-        //searchByGroup
-        userId:"رقم المستخدم",
-        name:"الاسم",
-        commercial:"الاسم التجاري",
-        email:"البريد الإلكتروني",
-        phone:"الهاتف",
-        branch:"الفرع",
-        role:"الدور",
-        city:"المدينة",
-        area:"المنطقة",
-        address:"العنوان",
-        //searchByDateGroup
-        today:"اليوم",
-        yesterday:"أمس",
-        thisWeek:"هذا الأسبوع",
-        thisMonth:"هذا الشهر",
-        thisYear:"هذا العام",
-        selectDate:"اختر تاريخًا",
+        all: "الكل",
+        active: "نشط",
+        inactive: "غير نشط",
+        // searchByGroup
+        userId: "معرف المستخدم",
+        name: "الاسم",
+        commercial: "الاسم التجاري",
+        email: "البريد الإلكتروني",
+        phone: "الهاتف",
+        branch: "الفرع",
+        role: "الدور",
+        city: "المدينة",
+        area: "المنطقة",
+        address: "العنوان",
+        // searchByDateGroup
+        today: "اليوم",
+        yesterday: "الأمس",
+        thisWeek: "هذا الأسبوع",
+        thisMonth: "هذا الشهر",
+        thisYear: "هذا العام",
+        selectDate: "اختر تاريخًا"
       },
-      user:{
-        name:"الاسم",
-        role:"الدور",
-        edit:"تعديل"
+      user: {
+        name: "الاسم",
+        role: "الدور",
+        edit: "تعديل"
       },
-      //(create_user)
-      create:{
-        edit:"تعديل المستخدم",
-        create:"إنشاء مستخدم",
-        submit:"إرسال",
-        sections:{
-          user:{
-            title:"المستخدم",
-            fields:{
-              name:"الاسم",
-              commercial:"الاسم التجاري",
-              firstPhone:"رقم الهاتف",
-              secondPhone:"رقم الهاتف الثاني",
-              affillator:"الموزع",
-              city:"المدينة",
-              area:"المنطقة",
-              address:"العنوان",
+      // (create_user)
+      create: {
+        edit: "تعديل المستخدم",
+        create: "إنشاء مستخدم",
+        submit: "إرسال",
+        loading: "جارٍ التحميل...",
+        error: "خطأ",
+        errorValidationMsg: "يرجى التحقق من الحقول المميزة",
+        errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
+        sections: {
+          user: {
+            title: "المستخدم",
+            fields: {
+              name: "الاسم",
+              commercial: "الاسم التجاري",
+              firstPhone: "رقم الهاتف",
+              secondPhone: "رقم الهاتف الثاني",
+              affillator: "الشريك",
+              city: "المدينة",
+              area: "المنطقة",
+              address: "العنوان"
             }
           },
-          details:{
-            title:"التفاصيل",
-            fields:{
-              role:"الدور",
-              pricelist:"قائمة الأسعار"
+          details: {
+            title: "التفاصيل",
+            fields: {
+              role: "الدور",
+              pricelist: "قائمة الأسعار"
             }
           }
         }
       }
     },
 
+    complaints: {
+      title: "الشكاوى",
+      complaint: "شكوى",
+      complaintId: "معرف الشكوى",
+      createdBy: "تم الإنشاء بواسطة",
+      supportAgent: "وكيل الدعم",
+      submit_complaint: "تقديم شكوى",
+      openComplaint: "فتح شكوى للطلب",
+      subject: "الموضوع",
+      description: "الوصف",
+      describe: "صف شكواك...",
+      submit: "إرسال",
+      success: "نجاح",
+      error: "خطأ",
+      employeeName: "اسم الموظف",
+      successMsg: "تم تقديم الشكوى بنجاح.",
+      errorMsg: "فشل في تقديم الشكوى.",
+      errorFailed: "حدث خطأ ما.",
+      errorValidationMsg: "يرجى ملء جميع الحقول",
+      orderId: "معرف الطلب",
+      resolved: "تم الحل",
+      createdAt: "تم الإنشاء في",
+      messagePlaceholder: "اكتب رسالتك...",
+      notFound: "الشكوى غير موجودة",
+      // searchByDateGroup
+      today: "اليوم",
+      yesterday: "الأمس",
+      thisWeek: "هذا الأسبوع",
+      thisMonth: "هذا الشهر",
+      thisYear: "هذا العام",
+      selectDate: "اختر تاريخًا",
+      status: {
+        title: "الحالة",
+        all: "الكل",
+        open: "قيد المعالجة",
+        closed: "مغلق"
+      }
+    },
     // Search
-    search:{
-      placeholder:"بحث",
-      by:"بواسطة",
-      searchBy:"بحث بواسطة",
-      searchByDate:"بحث بالتاريخ",
-      cancel:"إلغاء",
-      confirm:"تأكيد"
+    search: {
+      placeholder: "بحث",
+      by: "حسب",
+      searchBy: "البحث حسب",
+      searchByDate: "البحث حسب التاريخ",
+      cancel: "إلغاء",
+      confirm: "تأكيد"
     },
 
     // pickerModal
-    picker:{
-      choose:"اختر",
-      cancel:"إلغاء",
-      searchPlaceholder:"بحث"
+    picker: {
+      choose: "اختر",
+      cancel: "إلغاء",
+      searchPlaceholder: "بحث"
     },
 
     // (camera)
-    camera:{
-      permission:{
-        notGranted:"لم يتم منح إذن الكاميرا",
-        request:"طلب إذن الكاميرا...",
+    camera: {
+      permission: {
+        notGranted: "لم يتم منح إذن الكاميرا",
+        request: "جارٍ طلب إذن الكاميرا..."
       },
-      scanText:"ضع الباركود داخل الإطار",
-      scanDuplicateTextError:"تم مسح العنصر مسبقًا",
-      scanInvalidTextError:"تنسيق المسح غير صالح",
-      scanAgainTapText:"انقر للمسح مرة أخرى",
-      note:"اترك ملاحظة...",
-      fromBranch:"من الفرع",
-      toBranch:"إلى الفرع",
-      confirm:"تأكيد",
-      cancel:"إلغاء",
-      totalScanned:"إجمالي المسح"
+      scanText: "ضع الباركود داخل الإطار",
+      scanDuplicateTextError: "العنصر تم مسحه مسبقًا",
+      scanInvalidTextError: "تنسيق مسح غير صالح",
+      scanAgainTapText: "اضغط للمسح مرة أخرى",
+      note: "اترك ملاحظة...",
+      fromBranch: "من الفرع",
+      toBranch: "إلى الفرع",
+      confirm: "تأكيد",
+      cancel: "إلغاء",
+      totalScanned: "إجمالي الممسوح"
     },
 
     // (change_password)
-    chnagePassword:{
-      title:"تغيير كلمة المرور",
-      currentPass:"كلمة المرور الحالية",
-      currentPassHint:"أدخل كلمة المرور الحالية المستخدمة لتسجيل الدخول",
-      newPass:"كلمة المرور الجديدة",
-      changePass:"تغيير كلمة المرور"
+    chnagePassword: {
+      title: "تغيير كلمة المرور",
+      currentPass: "كلمة المرور الحالية",
+      currentPassHint: "أدخل كلمة المرور الحالية المستخدمة لتسجيل الدخول",
+      newPass: "كلمة المرور الجديدة",
+      changePass: "تغيير كلمة المرور"
     },
 
     // (contact_us)
-    contact:{
-      title:"اتصل بنا",
-      open:"نعمل",
-      closed:"لا نعمل",
-      weAre:"نحن",
-      now:"الآن",
-      local:"محلي",
-      facebook:"فيسبوك",
-      messenger:"ماسنجر",
-      whatsapp:"واتساب",
-      visitSite:"زيارة موقعنا"
+    contact: {
+      title: "اتصل بنا",
+      open: "مفتوح",
+      closed: "مغلق",
+      weAre: "نحن",
+      now: "الآن",
+      local: "محلي",
+      facebook: "فيسبوك",
+      messenger: "ماسنجر",
+      whatsapp: "واتساب",
+      visitSite: "زيارة موقعنا الإلكتروني"
     },
 
     // (about_us)
-    about:{
-      title:"عنا",
-      aboutLabel:"عن شركة طيار",
-      aboutDesc:"في طيار، نختص بتوصيل الطرود عالية الجودة في جميع أنحاء الضفة الغربية والقدس وأرض 48. مهمتنا هي توفير حلول شحن سريعة وموثوقة وآمنة مصممة خصيصًا لاحتياجاتك. سواء كانت توصيلات الأعمال أو الشحنات الشخصية، نضمن وصول كل طرد إلى وجهته بأمان وفي الوقت المحدد. مع التزامنا بالتميز ورضا العملاء، طيار هي شريكك الموثوق به في الخدمات اللوجستية السلسة. جرب التوصيل بدون متاعب مع فريق يعطي الأولوية للكفاءة والرعاية.",
+    about: {
+      title: "عنّا",
+      aboutLabel: "عن شركة طيار",
+      aboutDesc: "في طيار، نحن متخصصون في توصيل الحزم عالية الجودة عبر الضفة الغربية والقدس وأراضي 48. مهمتنا هي تقديم حلول شحن سريعة وموثوقة وآمنة مصممة حسب احتياجاتك. سواء كانت توصيلات تجارية أو شحنات شخصية، نحن نضمن وصول كل حزمة إلى وجهتها بأمان وفي الوقت المحدد. مع التزامنا بالتميز ورضا الزبائن، طيار هو شريكك الموثوق لتجربة لوجستية سلسة. جرب التوصيل بدون متاعب مع فريق يعطي الأولوية للكفاءة والعناية."
     },
 
     // (locations)
-    locations:{
-      title:"المواقع",
-      tulkarm:{
-        title:"طولكرم",
-        desc:"المركز الرئيسي"
+    locations: {
+      title: "المواقع",
+      tulkarm: {
+        title: "طولكرم",
+        desc: "المركز الرئيسي"
       },
-      hebron:{
-        title:"الخليل",
-        desc:"مركز التوصيل في الخليل"
+      hebron: {
+        title: "الخليل",
+        desc: "مركز التوصيل في الخليل"
       },
-      ramallah:{
-        title:"رام الله",
-        desc:"مركز التوصيل في رام الله"
+      ramallah: {
+        title: "رام الله",
+        desc: "مركز التوصيل في رام الله"
       },
-      jenin:{
-        title:"جنين",
-        desc:"مركز التوصيل في جنين"
+      jenin: {
+        title: "جنين",
+        desc: "مركز التوصيل في جنين"
       }
     },
 
     // greeting
-    greeting:{
-      morning:"صباح الخير! ☀️",
-      afternoon:"مساء الخير! 🌤️",
-      evening:"مساء الخير! 🌙"
+    greeting: {
+      morning: "صباح الخير! ☀️",
+      afternoon: "مساء الخير! 🌤️",
+      evening: "مساء الخير! 🌙"
     },
 
     // track
-    track:{
-      title:"تتبع طردك",
-      desc:"أدخل رقم الطلب لبدء التتبع",
-      placeholder:"مثال: 12321411",
+    track: {
+      title: "تتبع حزمتك",
+      desc: "أدخل رقم الطلب لبدء التتبع",
+      placeholder: "مثال: 12321411"
     }
   },
   he: {
@@ -944,6 +1137,24 @@ export const translations = {
                 orderType:"סוג ההזמנה"
               }
             },
+            orderTypes:{
+              delivery:"Delivery",
+              receive:"Receive",
+              "delivery/receive":"Delivery / Recieve"
+            },
+            currencyList:{
+              ILS:"ILS",
+              USD:"USD",
+              JOD:"JOD"
+            },
+            paymentType:{
+              cash:"Cash",
+              check:"Check",
+              "cash/check":"Cash/Check"
+            },
+            itemsCotnentType:{
+              normal:"Noraml"
+            }
           }
         }
       },

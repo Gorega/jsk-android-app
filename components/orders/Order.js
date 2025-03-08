@@ -91,25 +91,25 @@ export default function Order({user,order}){
                 <Text style={{textAlign:"center"}}># {order.order_id}</Text>
             </View>
             <TouchableOpacity onPress={()=> authUser.role !== "business" && setShowStatusUpdateModal(true)} style={[styles.box,styles.status,{borderWidth:0,backgroundColor:
-                            order.status === "waiting" && "#E4E6EF" ||
-                            order.status === "in_branch" && "#E4E6EF" ||
-                            order.status === "in_progress" && "#E4E6EF" ||
-                            order.status === "rejected" && "#E66430" ||
-                            order.status === "stuck" && "#FAB500" ||
-                            order.status === "delayed" && "#FAB500" ||
-                            order.status === "on_the_way" && "#634FD2" ||
-                            order.status === "reschedule" && "FAB500" ||
-                            order.status === "return_before_delivered_initiated" && "#E66430" ||
-                            order.status === "return_after_delivered_initiated" && "#E66430" ||
-                            order.status === "returned" && "##4C95DD" ||
-                            order.status === "returned_in_branch" && "#4C95DD" ||
-                            order.status === "returned_out" && "#4C95DD" ||
-                            order.status === "business_returned_delivered" && "#3AB075" ||
-                            order.status === "delivered" && "#4C95DD" ||
-                            order.status === "money_in_branch" && "#4C95DD" ||
-                            order.status === "money_out" && "#4C95DD" ||
-                            order.status === "business_paid" && "#4C95DD" ||
-                            order.status === "completed" && "#3AB075"
+                            order.status_key === "waiting" && "#E4E6EF" ||
+                            order.status_key === "in_branch" && "#E4E6EF" ||
+                            order.status_key === "in_progress" && "#E4E6EF" ||
+                            order.status_key === "rejected" && "#E66430" ||
+                            order.status_key === "stuck" && "#FAB500" ||
+                            order.status_key === "delayed" && "#FAB500" ||
+                            order.status_key === "on_the_way" && "#634FD2" ||
+                            order.status_key === "reschedule" && "FAB500" ||
+                            order.status_key === "return_before_delivered_initiated" && "#E66430" ||
+                            order.status_key === "return_after_delivered_initiated" && "#E66430" ||
+                            order.status_key === "returned" && "#4C95DD" ||
+                            order.status_key === "returned_in_branch" && "#4C95DD" ||
+                            order.status_key === "returned_out" && "#4C95DD" ||
+                            order.status_key === "business_returned_delivered" && "#3AB075" ||
+                            order.status_key === "delivered" && "#4C95DD" ||
+                            order.status_key === "money_in_branch" && "#4C95DD" ||
+                            order.status_key === "money_out" && "#4C95DD" ||
+                            order.status_key === "business_paid" && "#4C95DD" ||
+                            order.status_key === "completed" && "#3AB075"
                         }]}>
                 {authUser.role !== "business" && <MaterialIcons name="published-with-changes" size={24} color="white" />}
                 <Text style={{color:"white"}}>{order.status}</Text>
@@ -128,13 +128,13 @@ export default function Order({user,order}){
                 </View>
             </View>
         </View>
-        <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : "Unknown",phone:order.driver_mobile ? order.driver_mobile : ""}} />
+        <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : translations[language].tabs.orders.order.unknown,phone:order.driver_mobile ? order.driver_mobile : ""}} />
         <View style={styles.sec}>
             <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                     <MaterialCommunityIcons name="package-variant" size={24} color="#F8C332" />
                     <View style={styles.info}>
-                        <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>Order Type</Text>
+                        <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].tabs.orders.order.orderType}</Text>
                         <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{order.order_type}</Text>
                     </View>
                 </View>
@@ -186,14 +186,14 @@ export default function Order({user,order}){
                 <Feather name="edit" size={20} color="black" />
                 <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.edit}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> setShowStatusUpdateModal(true)}>
+            {authUser.role === "business" || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> setShowStatusUpdateModal(true)}>
                 <MaterialIcons name="published-with-changes" size={20} color="black" />
                 <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatus}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            </TouchableOpacity>}
+            {authUser.role === "business" || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <AntDesign name="printer" size={20} color="black" />
                 <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.print}</Text>
-            </TouchableOpacity>
+            </TouchableOpacity>}
         </View>
 
     </ModalPresentation>}

@@ -26,7 +26,7 @@ export default function Settings() {
             icon: <FontAwesome name="user-o" size={24} color="#F8C332" />
         } : null,
         (["manager","admin", "business"].includes(user.role)) ? {
-            label: "Complaints",
+            label: translations[language].tabs.settings.options.complaints,
             onPress: () => router.push("(complaints)"),
             icon:<MaterialIcons name="fmd-bad" size={24} color="#F8C332" />
         } : null,

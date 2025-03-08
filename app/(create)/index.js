@@ -1,10 +1,10 @@
-import { View,StyleSheet, ScrollView,Button } from "react-native";
+import { View,StyleSheet, ScrollView,Button, Alert } from "react-native";
 import Section from "../../components/create/Section";
 import { useEffect, useState } from "react";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
-import { useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../_layout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { translations } from '../../utils/languageContext';
@@ -33,10 +33,10 @@ export default function HomeScreen(){
     const [selectedValue,setSelectedValue] = useState({
         sender:"",
         city:"",
-        orderType:orderId ? "" : { name: "Delivery", value: "delivery" },
-        paymentType: orderId ? "" : { name: "Cash", value: "cash" },
-        currency:orderId ? "" : { name: "ILS", value: "ILS" },
-        itemsType:orderId ? "" : { name: "Normal", value: "normal" },
+        orderType:orderId ? "" : { name: translations[language].tabs.orders.create.sections.orderTypes?.delivery, value: "delivery" },
+        paymentType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.paymentType?.cash, value: "cash" },
+        currency:orderId ? "" : { name: translations[language].tabs.orders.create.sections.currencyList?.ILS, value: "ILS" },
+        itemsType:orderId ? "" : { name: translations[language].tabs.orders.create.sections.itemsCotnentType?.normal, value: "normal" },
     });
 
     const [form,setForm] = useState({})
@@ -60,35 +60,41 @@ export default function HomeScreen(){
             type: "message",
             value: returnedOrdersMessage
         } : {visibility:"hidden"},{
+            name:"receiver_name",
             label:translations[language].tabs.orders.create.sections.client.fields.client,
             type:"input",
             value:form.receiverName || "",
-            onChange:(input)=> setForm((form)=> ({...form,receiverName:input}))
+            onChange:(input)=> setForm((form)=> ({...form,receiverName:input})),
         },{
             label: translations[language].tabs.orders.create.sections.client.fields.firstPhone,
             type: "input",
+            name:"receiver_first_mobile",
             value: form.receiverFirstPhone || "",
             onChange: (input) => setForm((form) => ({ ...form, receiverFirstPhone: input })),
-            onBlur: () => handleCheckPhone(form.receiverFirstPhone)
+            onBlur: () => handleCheckPhone(form.receiverFirstPhone),
         },{
             label:translations[language].tabs.orders.create.sections.client.fields.secondPhone,
             type:"input",
+            name:"receiver_second_mobile",
             value:form.receiverSecondPhone || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverSecondPhone:input}))
         },{
             label:translations[language].tabs.orders.create.sections.client.fields.city,
             type:"select",
+            name:"receiver_city",
             name:"city",
-            value:selectedValue.city.name,
+            value:selectedValue.city ? selectedValue.city.name : form.receiverCity,
             list:cities
         },{
             label:translations[language].tabs.orders.create.sections.client.fields.area,
             type:"input",
+            name:"receiver_area",
             value:form.receiverArea || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverArea:input}))
         },{
             label:translations[language].tabs.orders.create.sections.client.fields.address,
             type:"input",
+            name:"receiver_address",
             value:form.receiverAddress || "",
             onChange:(input)=> setForm((form)=> ({...form,receiverAddress:input}))
         }]
@@ -96,25 +102,25 @@ export default function HomeScreen(){
         label:translations[language].tabs.orders.create.sections.cost.title,
         icon:<MaterialIcons name="attach-money" size={24} color="#F8C332" />,
         fields:[{
-            label:"Payment Type",
+            label:translations[language].tabs.orders.create.sections.paymentType.title,
             type:"select",
             name:"paymentType",
-            placeholder:"Cash",
             defaultValue:"cash",
             value:selectedValue.paymentType.name,
             list:paymentTypes
         },
-        (selectedValue.paymentType?.value || form.paymentType) === "cash" ||
-        (selectedValue.paymentType?.value || form.paymentType) === "cash/check" ? {
+        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
+        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ? {
           label:translations[language].tabs.orders.create.sections.cost.fields.packageCost,
           type:"input",
+          name:"cod_value",
           value:form.codValue || "",
           onChange:(input)=> setForm((form)=> ({...form,codValue:input}))
-      } : {visibility:"hidden"},...((selectedValue.paymentType?.value || form.paymentType) === "check" ||
-        (selectedValue.paymentType?.value || form.paymentType) === "cash/check" 
+      } : {visibility:"hidden"},...((selectedValue.paymentType?.value || form.paymentTypeId) === "check" ||
+        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" 
           ? [
               {
-                value: "+ Add Check",
+                value: translations[language].tabs.orders.create.sections.checks.add,
                 type: "button",
                 onPress: () => {
                   setChecks(prev => [
@@ -125,7 +131,7 @@ export default function HomeScreen(){
               },
               ...checks.map((check, index) => [
                 {
-                  label: `Check #${index + 1} - Number`,
+                  label: `${translations[language].tabs.orders.create.sections.checks.check} #${index + 1} - ${translations[language].tabs.orders.create.sections.checks.number}`,
                   type: "input",
                   value: check.number || "",
                   onChange: (input) => {
@@ -137,7 +143,7 @@ export default function HomeScreen(){
                   }
                 },
                 {
-                  label: `Check #${index + 1} - Value`,
+                  label: `${translations[language].tabs.orders.create.sections.checks.check} #${index + 1} - ${translations[language].tabs.orders.create.sections.checks.value}`,
                   type: "input",
                   value: check.value || "",
                   onChange: (input) => {
@@ -149,7 +155,7 @@ export default function HomeScreen(){
                   }
                 },
                 {
-                  label: `Check #${index + 1} - Currency`,
+                  label: `${translations[language].tabs.orders.create.sections.checks.check} #${index + 1} - ${translations[language].tabs.orders.create.sections.checks.currency}`,
                   type: "select",
                   name: `checkCurrency_${index}`,
                   value: check.currency,
@@ -163,7 +169,7 @@ export default function HomeScreen(){
                   }
                 },
                 {
-                  label: `Check #${index + 1} - Date`,
+                  label: `${translations[language].tabs.orders.create.sections.checks.check} #${index + 1} - ${translations[language].tabs.orders.create.sections.checks.date}`,
                   type: "date",
                   value: check.date || "",
                   onChange: (date) => {
@@ -186,7 +192,7 @@ export default function HomeScreen(){
             ]
           : []),
           ,{
-            label:"Currency",
+            label:translations[language].tabs.orders.create.sections.currencyList.title,
             type:"select",
             name:"currency",
             value:selectedValue.currency.name,
@@ -194,30 +200,31 @@ export default function HomeScreen(){
         },{
             label:translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
             type:"input",
+            name:"delivery_fee",
             value: deliveryFee || form.deliveryFee,
         }]
     },{
         label:translations[language].tabs.orders.create.sections.details.title,
         icon:<Feather name="package" size={24} color="#F8C332" />,
         fields:[{
-            label:"Order Type",
+            label:translations[language].tabs.orders.create.sections.orderTypes.title,
             type:"select",
             name:"orderType",
             value:selectedValue.orderType.name,
             list:orderTypes
-        },(selectedValue.orderType?.value || form.orderType) === "receive" ||
-        (selectedValue.orderType?.value || form.orderType) === "delivery/receive" ? {
-            label:"Received Items",
+        },(selectedValue.orderType?.value || form.orderTypeId) === "receive" ||
+        (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
+            label:translations[language].tabs.orders.create.sections.orderTypes.receivedItems,
             type:"input",
-            name:"receivedItems",
+            name:"received_items",
             value:form.receivedItems || "",
             onChange:(input)=> setForm((form)=> ({...form,receivedItems:input}))
         } : {visibility:"hidden"},
-        (selectedValue.orderType?.value || form.orderType) === "receive" ||
-        (selectedValue.orderType?.value || form.orderType) === "delivery/receive" ? {
-            label:"Received Quantity",
+        (selectedValue.orderType?.value || form.orderTypeId) === "receive" ||
+        (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
+            label:translations[language].tabs.orders.create.sections.orderTypes.receivedQuantity,
             type:"input",
-            name:"receivedQuantity",
+            name:"received_quantity",
             value:form.receivedQuantity || "",
             onChange:(input)=> setForm((form)=> ({...form,receivedQuantity:input}))
         } : {visibility:"hidden"},
@@ -229,15 +236,17 @@ export default function HomeScreen(){
         },{
             label:translations[language].tabs.orders.create.sections.details.fields.quantity,
             type:"input",
+            name:"quantity",
             value:form.numberOfItems || "",
             onChange:(input)=> setForm((form)=> ({...form,numberOfItems:input}))
         },{
             label:translations[language].tabs.orders.create.sections.details.fields.weight,
             type:"input",
+            name:"weight",
             value:form.orderWeight || "",
             onChange:(input)=> setForm((form)=> ({...form,orderWeight:input}))
         },{
-            label:translations[language].tabs.orders.create.sections.details.fields.orderType,
+            label:translations[language].tabs.orders.create.sections.itemsCotnentType.title,
             type:"select",
             name:"itemsType",
             list:[{
@@ -247,10 +256,10 @@ export default function HomeScreen(){
             value:form.itemsType || selectedValue.itemsType.name,
         }]
     },{
-        label:"Notes",
+        label:translations[language].tabs.orders.create.sections.notes.title,
         icon:<Feather name="package" size={24} color="#F8C332" />,
         fields:[{
-            label:"Note",
+            label:translations[language].tabs.orders.create.sections.notes.note,
             type:"input",
             value:form.noteContent || "",
             onChange:(input)=> setForm((form)=> ({...form,noteContent:input}))
@@ -293,7 +302,7 @@ export default function HomeScreen(){
                 if (city) {
                     setSelectedValue(prev => ({
                         ...prev,
-                        city: { name: city.city_name, city_id: city.city_id }
+                        city: { name: city.name, city_id: city.city_id }
                     }));
                 }
     
@@ -305,7 +314,6 @@ export default function HomeScreen(){
                 );
             }
         } catch (error) {
-            console.error('Phone check error:', error);
             Alert.alert(
                 'Error',
                 error.message || 'Failed to check phone number'
@@ -338,14 +346,14 @@ export default function HomeScreen(){
                 credentials:"include",
                 headers: {
                     "Content-Type": "application/json",
-                    'Accept-Language': "en"
+                    'Accept-Language': language
                 },
                 body:JSON.stringify({
                     reference_id: form.referenceId,
                     delivery_fee: deliveryFee ? deliveryFee : form.deliveryFee,
-                    sender_id: selectedValue.sender.user_id,
-                    business_branch_id: selectedValue.sender.branch_id,
-                    current_branch_id: selectedValue.sender.branch_id,
+                    sender_id: selectedValue.sender.user_id || user.userId,
+                    business_branch_id: selectedValue.sender.branch_id || user.branch_id,
+                    current_branch_id: selectedValue.sender.branch_id || user.branch_id,
                     title: form.orderItems,
                     quantity: form.numberOfItems,
                     description: form.description,
@@ -382,7 +390,7 @@ export default function HomeScreen(){
             setFormSpinner({status:false})
             setSuccess(true)
             setTrackChanges({type:"ORDER"})
-            console.log(data);
+            router.push("(tabs)/orders")
         }catch(err){
             setFormSpinner({status:false});
             if (err.type === 'VALIDATION_ERROR' && err.details) {
@@ -392,12 +400,12 @@ export default function HomeScreen(){
                     errors[error.field] = error.message;
                 });
                 setFieldErrors(errors);
-                
                 // Set general error message
                 setError({
                     status: true,
                     msg: "Please check the highlighted fields"
                 });
+                Alert.alert(translations[language].tabs.orders.create.error, translations[language].tabs.orders.create.errorValidationMsg);
             } else {
                 // Handle other types of errors
                 const errorMessages = {
@@ -419,8 +427,8 @@ export default function HomeScreen(){
                     status: true,
                     msg: errorMessages[err.type] || "An unexpected error occurred"
                 });
+                Alert.alert(translations[language].tabs.orders.create.error, translations[language].tabs.orders.create.errorMsg);
             }
-            console.log(err)
             throw err;
         }
     }
@@ -428,7 +436,7 @@ export default function HomeScreen(){
 
     const fetchOrderData = async () => {
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -439,10 +447,10 @@ export default function HomeScreen(){
             const orderData = await res.json();
             setSelectedValue((selectedValue)=> (
                 {...selectedValue,
-                    sender:{name:orderData.sender,id:orderData.senderId},
-                    city:{name:orderData.senderCity,id:orderData.senderCityId},
-                    orderType:{ name: orderData.orderType, value: orderData.orderType },
-                    paymentType: { name: orderData.paymentType, value: orderData.paymentType },
+                    sender:{name:orderData.sender,value:orderData.senderId},
+                    city:{name:orderData.receiverCity,value:orderData.receiverCityId},
+                    orderType:{ name: orderData.orderType, value: orderData.orderTypeId },
+                    paymentType: { name: orderData.paymentType, value: orderData.paymentTypeId },
                     currency:{ name: orderData.currency, value: orderData.currency },
                     itemsType:{ name: orderData.itemsType, value: orderData.itemsType }
                 }
@@ -460,6 +468,8 @@ export default function HomeScreen(){
                 senderCityId:orderData.senderCityId,
                 receiverCityId:orderData.receiverCityId,
                 deliveryFee:orderData.deliveryFee,
+                paymentTypeId:form.paymentTypeId,
+                orderTypeId:form.orderTypeId,
                 codValue:orderData.codValue,
                 comission:orderData.comission,
                 orderItems:orderData.orderItems,
@@ -471,13 +481,12 @@ export default function HomeScreen(){
             })
             setChecks(orderData.checks)
         } catch (err) {
-            console.log(err);
         }
     };
 
     const fetchSenders = async (pageNumber = 1, isLoadMore = false)=>{
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?page=${pageNumber}&role=business&np=${prickerSearchValue}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?page=${pageNumber}&language_code=${language}&role_id=2&np=${prickerSearchValue}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -495,7 +504,7 @@ export default function HomeScreen(){
                 setSenders(newData);
             }
         } catch (err) {
-            console.log(err);
+
         }finally {
             setLoadingMore(false);
         }
@@ -503,7 +512,7 @@ export default function HomeScreen(){
 
     const fetchCities = async ()=>{
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/addresses/cities`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/addresses/cities?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -514,15 +523,14 @@ export default function HomeScreen(){
             const data = await res.json();
             setCities(data.data);
         } catch (err) {
-            console.log(err);
+
         }
     }
 
 
-
     const fetchDeliveryFee = async ()=>{
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${"normal"}&senderId=${selectedValue.sender.user_id || form.senderId}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${"normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -533,7 +541,7 @@ export default function HomeScreen(){
             const data = await res.json();
             setDeliveryFee(data.data)
         } catch (err) {
-            console.log(err);
+
         }
     }
 
@@ -552,7 +560,7 @@ export default function HomeScreen(){
             try {
                 await fetchSenders(nextPage, true);
             } catch (error) {
-                console.error("Error loading more data:", error);
+
             } finally {
                 setLoadingMore(false);
             }
@@ -563,48 +571,47 @@ export default function HomeScreen(){
         if (orderId) {
             fetchOrderData();
         }
-    }, [orderId]);
+    }, [orderId,language]);
 
     useEffect(()=>{
         fetchCities();
         setPage(1);
         fetchSenders(1, false);
         setOrderTypes([{
-            name:"Delivery",
+            name:translations[language].tabs.orders.create.sections.orderTypes?.delivery,
             value:"delivery"
         },{
-            name:"Receive",
+            name:translations[language].tabs.orders.create.sections.orderTypes?.receive,
             value:"receive"
         },{
-            name:"Delivery / Recieve",
+            name:translations[language].tabs.orders.create.sections.orderTypes["delivery/receive"],
             value:"delivery/receive"
         }])
         setCurrencyList([{
-            name:"ILS",
+            name:translations[language].tabs.orders.create.sections.currencyList.ILS,
             value:"ILS"
         },{
-            name:"USD",
+            name:translations[language].tabs.orders.create.sections.currencyList.USD,
             value:"USD"
         },{
-            name:"JOD",
+            name:translations[language].tabs.orders.create.sections.currencyList.JOD,
             value:"JOD"
         }]);
         setPaymentTypes([{
-            name:"Cash",
+            name:translations[language].tabs.orders.create.sections.paymentType.cash,
             value:"cash"
         },{
-            name:"Check",
+            name:translations[language].tabs.orders.create.sections.paymentType.check,
             value:"check"
         },{
-            name:"Cash/Check",
+            name:translations[language].tabs.orders.create.sections.paymentType["cash/check"],
             value:"cash/check"
         }])
-    },[prickerSearchValue])
+    },[prickerSearchValue,language])
 
     useEffect(() => {
         fetchDeliveryFee();
 }, [selectedValue]);
-
 
     return <ScrollView>
             <View style={styles.main}>
@@ -617,9 +624,16 @@ export default function HomeScreen(){
                     loadingMore={loadingMore}
                     prickerSearchValue={prickerSearchValue}
                     setPickerSearchValue={setPickerSearchValue}
+                    fieldErrors={fieldErrors}
+                    setFieldErrors={setFieldErrors}
                     />
             })}
-            <Button color={"#F8C332"} title="Submit" onPress={()=> orderId ? handleCreateOrder(`/api/orders/${orderId}`,"PUT") : handleCreateOrder('/api/orders',"POST")} />
+            <Button 
+                color={"#F8C332"} 
+                title={formSpinner.status ? translations[language].tabs.orders.create.loading :  translations[language].tabs.orders.create.submit} 
+                onPress={()=> orderId ? handleCreateOrder(`/api/orders/${orderId}`,"PUT") : handleCreateOrder('/api/orders',"POST")}
+                disabled={formSpinner.status}
+            />
         </View>
     </ScrollView>
 }

@@ -1,6 +1,7 @@
 import { View,StyleSheet,SafeAreaView,Image,Text, TouchableOpacity } from "react-native";
 import avatar from "../assets/images/avatar2.jpg"
 import Ionicons from '@expo/vector-icons/Ionicons';
+import Notifications from "./Notifications";
 import { router } from "expo-router";
 import { useAuth } from "@/app/_layout";
 import { useEffect, useState } from "react";
@@ -11,6 +12,8 @@ export default function Header(){
     const {user} = useAuth();
     const { language } = useLanguage();
     const [greetingMsg, setGreetingMsg] = useState("");
+    const [showNotifications, setShowNotifications] = useState(false);
+
 
     useEffect(() => {
         const currentHour = new Date().getHours();
@@ -34,9 +37,14 @@ export default function Header(){
           <Text style={styles.h2}>{greetingMsg}</Text>
           <Text style={styles.p}>{user?.name}</Text>
         </View>
-        <TouchableOpacity style={styles.notification}>
+        <TouchableOpacity style={styles.notification} onPress={() => setShowNotifications(!showNotifications)}>
             <Ionicons name="notifications" size={24} color={"#F8C332"} />
         </TouchableOpacity>
+
+        <Notifications 
+        showNotifications={showNotifications}
+        setShowNotifications={setShowNotifications}
+      />
     </SafeAreaView>
 }
 

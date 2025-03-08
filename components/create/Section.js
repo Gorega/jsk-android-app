@@ -4,7 +4,7 @@ import { useState } from "react";
 import Field from "./Field";
 import { useLanguage } from '../../utils/languageContext';
 
-export default function Section({section,setSelectedValue,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
+export default function Section({section,setSelectedValue,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue,fieldErrors,setFieldErrors}){
     const [showFields,setShowFields] = useState(true);
     const { language } = useLanguage();
 
@@ -29,6 +29,8 @@ export default function Section({section,setSelectedValue,loadMoreData,loadingMo
                 loadingMore={loadingMore}
                 prickerSearchValue={prickerSearchValue}
                 setPickerSearchValue={setPickerSearchValue}
+                error={fieldErrors?.[field.name]}
+                setFieldErrors={setFieldErrors}
             />
         ))}
     </View>}

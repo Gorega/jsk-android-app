@@ -3,15 +3,20 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import Feather from '@expo/vector-icons/Feather';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../_layout';
+import { useLanguage } from '../../utils/languageContext';
+import { translations } from '../../utils/languageContext';
 
 const TrackingOrder = ({}) => {
   const {user:authUser} = useAuth();
   const params = useLocalSearchParams();
   const { orderId } = params;
   const [order,setOrder] = useState({});
+  const { language } = useLanguage();
+  const isRTL = language === 'ar' || language === 'he';
+  
 
   const fetchOrderData = async ()=>{
-    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
+    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -25,43 +30,50 @@ const TrackingOrder = ({}) => {
 
   useEffect(() => {
     fetchOrderData();
-  }, []);
+  }, [language]);
 
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[
+      styles.container, 
+      { direction: isRTL ? 'rtl' : 'ltr' }
+    ]}>
       {/* Order Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Order Tracking</Text>
-        <Text style={styles.orderNumber}>Order #{orderId}</Text>
+        <Text style={styles.title}>{translations[language].tabs.orders.track.orderTracking}</Text>
+        <Text style={styles.orderNumber}>{translations[language].tabs.orders.track.order} #{orderId}</Text>
       </View>
 
       {/* Package Info */}
       <View style={styles.packageInfo}>
         <Feather name="package" size={40} color="#F8C332" />
-        <Text style={styles.packageName}>Package: {order?.orderItems ? order?.orderItems : "Unknown"}</Text>
-        <Text style={styles.packageDetails}>Quantity: {order?.numberOfItems}</Text>
-        <Text style={styles.packageDetails}>Weight: {order?.orderWeight} kg</Text>
-        {order.receivedItems && <Text style={styles.packageDetails}>Received Items: {order?.receivedItems}</Text>} 
-        {order.receivedQuantity && <Text style={styles.packageDetails}>Received Quantity: {order?.receivedQuantity}</Text>}
+        <Text style={styles.packageName}>{translations[language].tabs.orders.track.package}: {order?.orderItems ? order?.orderItems : translations[language].tabs.orders.track.unknown}</Text>
+        <Text style={styles.packageDetails}>{translations[language].tabs.orders.track.quantity}: {order?.numberOfItems}</Text>
+        <Text style={styles.packageDetails}>{translations[language].tabs.orders.track.weight}: {order?.orderWeight} kg</Text>
+        {order.receivedItems && <Text style={styles.packageDetails}>{translations[language].tabs.orders.track.receivedItems}: {order?.receivedItems}</Text>} 
+        {order.receivedQuantity && <Text style={styles.packageDetails}>{translations[language].tabs.orders.track.receivedQuantity}: {order?.receivedQuantity}</Text>}
       </View>
 
-      {/* Delivery Status */}
-      <View style={styles.statusContainer}>
-        <Text style={styles.statusTitle}>Delivery Status</Text>
+     {/* Delivery Status */}
+     <View style={[styles.statusContainer]}>
+        <Text style={[styles.statusTitle]}>
+          {translations[language].tabs.orders.track.deliveryStatus}
+        </Text>
 
         {/* Timeline */}
-        <View style={styles.timelineContainer}>
-          <View style={styles.timelineLine}></View>
+        <View style={[styles.timelineContainer, { paddingLeft: isRTL ? 0 : 30, paddingRight: isRTL ? 30 : 0 }]}>
+          <View style={[styles.timelineLine, { left: isRTL ? undefined : 15, right: isRTL ? 15 : undefined }]}></View>
           {order.orderStatusHistory?.map((item, index) => (
-            <View key={index} style={styles.timelineItem}>
+            <View key={index} style={[styles.timelineItem, { flexDirection: isRTL ? 'row' : 'row' }]}>
               <View style={[styles.timelineCircle, index === order.orderStatusHistory.length - 1 && styles.timelineCircleLast]}>
                 {/* <FontAwesome5 name={item.icon} size={20} color="white" /> */}
               </View>
-              <View style={styles.statusTextContainer}>
-                <Text style={styles.timelineStatus}>{item.new_status}</Text>
-                <Text style={styles.timelineTime}>Branch: {item.branch}</Text>
-                <Text style={styles.timelineTime}>{item.created_at?.slice(0,10)}</Text>
+              <View style={[styles.statusTextContainer, { marginLeft: isRTL ? 0 : 15, marginRight: isRTL ? 15 : 0 }]}>
+                <Text style={[styles.timelineStatus]}>{item.new_status}</Text>
+                <Text style={[styles.timelineTime]}>
+                  {translations[language].tabs.orders.track.branch}: {item.branch}
+                </Text>
+                <Text style={[styles.timelineTime]}>{item.created_at?.slice(0,10)}</Text>
               </View>
             </View>
           ))}
@@ -70,12 +82,12 @@ const TrackingOrder = ({}) => {
 
       {authUser.role === "business" &&
       <View style={styles.supportContainer}>
-        <Text style={styles.supportText}>Have Issue? Apply a Complaint</Text>
+        <Text style={styles.supportText}>{translations[language].tabs.orders.track.issue}</Text>
         <TouchableOpacity onPress={()=> router.push({
             pathname:"/(complaints)/open_complaint",
             params:{orderId:orderId}
         })}>
-          <Text style={styles.supportLink}>Open a complaint</Text>
+          <Text style={styles.supportLink}>{translations[language].tabs.orders.track.openCase}</Text>
         </TouchableOpacity>
       </View>}
       
@@ -140,7 +152,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     bottom: 0,
-    left: 15,
     width: 2,
     backgroundColor: '#F8C332',
   },
@@ -176,6 +187,7 @@ const styles = StyleSheet.create({
   supportContainer: {
     alignItems: 'center',
     marginTop: 20,
+    marginBottom:36
   },
   supportText: {
     fontSize: 16,

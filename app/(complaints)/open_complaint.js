@@ -3,8 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet,
 import Feather from '@expo/vector-icons/Feather';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../_layout';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
 
 const SubmitComplaint = () => {
+  const { language } = useLanguage();
   const params = useLocalSearchParams();
   const { orderId } = params;
   const [subject, setSubject] = useState('');
@@ -13,13 +16,13 @@ const SubmitComplaint = () => {
 
   const submitComplaint = async () => {
     if (!subject.trim() || !description.trim()) {
-      Alert.alert("Error", "Please fill in all fields.");
+      Alert.alert(translations[language].complaints.error, translations[language].complaints.errorValidationMsg);
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints`, {
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints?language_code=${language}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -33,16 +36,14 @@ const SubmitComplaint = () => {
 
       const result = await response.json();
       if (response.ok) {
-        Alert.alert("Success", "Complaint submitted successfully.");
+        Alert.alert(translations[language].complaints.success, translations[language].complaints.successMsg);
         setSubject('');
         setDescription('');
       } else {
-        console.error("Error from backend:", result);
-        Alert.alert("Error", "Failed to submit complaint.");
+        Alert.alert(translations[language].complaints.error,translations[language].complaints.errorMsg);
       }
     } catch (error) {
-      console.error("Error submitting complaint:", error);
-      Alert.alert("Error", "Something went wrong.");
+      Alert.alert(translations[language].complaints.error, translations[language].complaints.errorFailed);
     } finally {
       setLoading(false);
     }
@@ -50,12 +51,12 @@ const SubmitComplaint = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Open a Complaint for order #{orderId}</Text>
+      <Text style={[styles.title,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{translations[language].complaints.openComplaint} #{orderId}</Text>
 
       {/* Subject Input */}
       <TextInput
         style={styles.input}
-        placeholder="Subject"
+        placeholder={translations[language].complaints.subject}
         value={subject}
         onChangeText={setSubject}
       />
@@ -63,7 +64,7 @@ const SubmitComplaint = () => {
       {/* Description Input */}
       <TextInput
         style={[styles.input, styles.textArea]}
-        placeholder="Describe your complaint..."
+        placeholder={translations[language].complaints.describe}
         multiline
         numberOfLines={4}
         value={description}
@@ -77,7 +78,7 @@ const SubmitComplaint = () => {
         ) : (
           <>
             <Feather name="send" size={18} color="#fff" />
-            <Text style={styles.buttonText}>Submit</Text>
+            <Text style={styles.buttonText}>{translations[language].complaints.submit}</Text>
           </>
         )}
       </TouchableOpacity>
