@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable } from "react-native";
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import ModalPresentation from "../../components/ModalPresentation";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -10,8 +9,10 @@ import Search from "../../components/search/Search";
 import FlatListData from "../../components/FlatListData";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useSocket } from '../../utils/socketContext';
 
 export default function ComplaintsScreen() {
+  const socket = useSocket();
   const { language } = useLanguage();
   const { user } = useAuth();
   const [complaints, setComplaints] = useState(null);
@@ -66,10 +67,11 @@ export default function ComplaintsScreen() {
 
   // Fetch complaints from the backend
   const fetchComplaints = async (pageNumber = 1, isLoadMore = false) => {
+    if (!isLoadMore) setLoading(true);
     try {
       const queryParams = new URLSearchParams();
       if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-      if (activeFilter) queryParams.append('status', activeFilter === "all" ? "" : activeFilter);
+      if (activeFilter) queryParams.append('status_key', activeFilter === "all" ? "" : activeFilter);
       if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue);
       if (activeDate) queryParams.append("date_range", activeDate.action);
       if (activeDate.action === "custom") {
@@ -94,7 +96,6 @@ export default function ComplaintsScreen() {
         setComplaints(newData);
       }
     } catch (error) {
-      console.error("Error fetching complaints:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -106,7 +107,6 @@ export default function ComplaintsScreen() {
     if (!loadingMore && complaints?.data?.length > 0) {
       // Check if there's more data to load based on metadata
       if (complaints.data.length >= complaints.metadata.total_records) {
-        console.log("No more data to load");
         return;
       }
       setLoadingMore(true);
@@ -115,7 +115,6 @@ export default function ComplaintsScreen() {
       try {
         await fetchComplaints(nextPage, true);
       } catch (error) {
-        console.error("Error loading more data:", error);
       }
     }
   };
@@ -137,9 +136,31 @@ export default function ComplaintsScreen() {
       // Refresh the list after updating the status
       fetchComplaints(1, false);
     } catch (err) {
-      console.log(err);
     }
   };
+
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleComplaintUpdate = (notification) => {
+      switch (notification.type) {
+        case 'COMPLAINT_CREATED':
+        case 'COMPLAINT_UPDATED':
+        case 'COMPLAINT_MESSAGE_CREATED':
+          // Refresh the complaints list
+          fetchComplaints(1, false);
+          break;
+      }
+    };
+
+    socket.on('complaintUpdate', handleComplaintUpdate);
+
+    return () => {
+      socket.off('complaintUpdate', handleComplaintUpdate);
+    };
+  }, [socket]);
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -150,7 +171,13 @@ export default function ComplaintsScreen() {
     }
   };
 
-  if (loading) return <ActivityIndicator size="large" color="#F8C332" style={styles.loader} />;
+  if (loading){
+    return <View style={styles.overlay}>
+        <View style={styles.spinnerContainer}>
+            <ActivityIndicator size="large" color="#F8C332" />
+        </View>
+    </View>
+  }
 
   return (
     <View style={styles.container}>
@@ -277,4 +304,28 @@ const styles = StyleSheet.create({
   control: {
     padding: 20,
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+},
+spinnerContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+        width: 0,
+        height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+}
 });

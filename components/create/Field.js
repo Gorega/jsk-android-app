@@ -1,4 +1,4 @@
-import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
 import PickerModal from "../pickerModal/PickerModal";
 import { useState } from "react";
 import { useLanguage } from '../../utils/languageContext';
@@ -21,6 +21,7 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
             field.containerStyle,
+            field.type === "toggle" && [styles.toggleContainer,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}],
             { borderColor: error ? "red" : "rgba(0,0,0,0.2)" }
         ]}>
             {/* Field Label */}
@@ -155,6 +156,22 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
                     </ModalPresentation>
                 </>
             )}
+
+                {field.type === "toggle" && (
+                    <View style={[styles.toggleWrapper]}>
+                        <Switch
+                            value={field.value}
+                            onValueChange={(value) => {
+                                if (field.onChange) {
+                                    field.onChange(value);
+                                }
+                            }}
+                            disabled={field.disabled}
+                            trackColor={{ false: "#767577", true: "#F8C332" }}
+                            thumbColor={field.value ? "#fff" : "#f4f3f4"}
+                        />
+                    </View>
+                )}
             </View>
         </View>
     );
@@ -250,5 +267,25 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         marginVertical: 8,
         position: 'relative',
+    },
+    toggleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        marginVertical: 8,
+    },
+    toggleLabel: {
+        position: 'relative',
+        top: 0,
+        fontSize: 14,
+        color: '#333',
+        backgroundColor: 'transparent',
+    },
+    toggleWrapper: {
+        alignItems: 'flex-end',
     },
 });

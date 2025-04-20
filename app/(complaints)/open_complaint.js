@@ -5,8 +5,10 @@ import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../_layout';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useSocket } from '../../utils/socketContext';
 
 const SubmitComplaint = () => {
+  const socket = useSocket();
   const { language } = useLanguage();
   const params = useLocalSearchParams();
   const { orderId } = params;
@@ -36,6 +38,12 @@ const SubmitComplaint = () => {
 
       const result = await response.json();
       if (response.ok) {
+        if (socket) {
+          socket.emit('complaintUpdate', {
+            type: 'COMPLAINT_CREATED',
+            complaintId: result.complaint_id
+          });
+        }
         Alert.alert(translations[language].complaints.success, translations[language].complaints.successMsg);
         setSubject('');
         setDescription('');

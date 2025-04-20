@@ -2,12 +2,15 @@ import { View,Text, TouchableOpacity,StyleSheet,Image, ScrollView } from "react-
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import Field from "./Field";
 
-export default function Sign({fields,submit,children,setSelectedValue}){
+export default function Sign({fields,submit,children,setSelectedValue,error}){
 
     return <View style={styles.container}>
             <Image style={styles.logo} source={TayarLogo} />
             <View style={styles.main}>
-                <ScrollView style={{height:"60%"}}>
+                <ScrollView style={{height:"60%"}} showsVerticalScrollIndicator={false}>
+                    {error && (
+                        <Text style={styles.errorMessage}>{error}</Text>
+                    )}
                     {fields?.map((field,index)=>{
                         return <Field key={index} field={field} setSelectedValue={setSelectedValue} />
                     })}
@@ -59,5 +62,10 @@ const styles = StyleSheet.create({
     buttonText:{
         color:"white",
         fontWeight:"600",
+    },
+    errorMessage: {
+        color: "red",
+        textAlign: "center",
+        marginBottom: 10
     }
 })

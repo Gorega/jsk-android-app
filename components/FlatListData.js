@@ -11,7 +11,7 @@ const debounce = (func, delay) => {
     };
 };
 
-export default function FlatListData({list,loadMoreData,loadingMore,children}){
+export default function FlatListData({list,loadMoreData,loadingMore,children,refreshControl}){
     const [isFetching, setIsFetching] = useState(false);
 
     const handleLoadMore = useCallback(
@@ -38,5 +38,6 @@ export default function FlatListData({list,loadMoreData,loadingMore,children}){
             ListFooterComponent={
                 loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
              }
+            refreshControl={refreshControl}
     />
 }

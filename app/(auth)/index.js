@@ -1,4 +1,4 @@
-import { StyleSheet,Text, TouchableOpacity } from "react-native";
+import { Alert, StyleSheet,Text, TouchableOpacity } from "react-native";
 import Sign from "../../components/sign/Sign";
 import { Link, useRouter,Redirect } from "expo-router";
 import { useEffect, useState } from "react";
@@ -9,7 +9,8 @@ import { translations } from '../../utils/languageContext';
 
 
 export default function HomeScreen(){
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const router = useRouter();
     const { language } = useLanguage();
     const { isAuthenticated,setIsAuthenticated,setUserId } = useAuth();
@@ -20,22 +21,37 @@ export default function HomeScreen(){
         password:""
     })
 
+    const [formErrors, setFormErrors] = useState({
+        phone: "",
+        password: ""
+    });
+
+
     const fields = [{
-        name:"phone",
-        label:translations[language].auth.mobileNumber,
-        type:"input",
-        value:loginForm.phone,
-        onChange:(value)=> setLoginForm((loginForm)=> ({...loginForm,phone:value}))
-    },{
-        name:"password",
-        label:translations[language].auth.password,
-        type:"input",
-        value:loginForm.password,
-        onChange:(value)=> setLoginForm((loginForm)=> ({...loginForm,password:value}))
-    }]
+        name: "phone",
+        label: translations[language].auth.mobileNumber,
+        type: "input",
+        value: loginForm.phone,
+        error: formErrors.phone || "",
+        onChange: (value) => {
+            setFormErrors(prev => ({...prev, phone: ""}));
+            setLoginForm(prev => ({...prev, phone: value}));
+        }
+    }, {
+        name: "password",
+        label: translations[language].auth.password,
+        type: "input",
+        value: loginForm.password,
+        error: formErrors.password || "",
+        onChange: (value) => {
+            setFormErrors(prev => ({...prev, password: ""}));
+            setLoginForm(prev => ({...prev, password: value}));
+        }
+    }];
 
     const loginHandler = async () => {
         try {
+            setFormErrors({});
             setLoading(true);
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/login`, {
                 method: "POST",
@@ -45,14 +61,22 @@ export default function HomeScreen(){
                 }),
                 headers: {
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language
                 },
                 credentials: "include"
             });
             const data = await response.json();
             
             if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+                if (data.type === 'VALIDATION_ERROR') {
+                    const errors = {};
+                    data.details.forEach(error => {
+                        errors[error.field] = error.message;
+                    });
+                    setFormErrors(errors);
+                }
+                throw new Error(data.message);
             }
 
             if (data.userId) {
@@ -73,8 +97,10 @@ export default function HomeScreen(){
                 throw new Error('No token received');
             }
         } catch (err) {
-            console.error('Login error:', err);
-            Alert.alert("Login Failed", err.message || 'An error occurred during login');
+            Alert.alert(
+                translations[language].auth.loginFailed,
+                err.message
+            );
         } finally {
             setLoading(false);
         }
@@ -85,33 +111,34 @@ export default function HomeScreen(){
             try {
                 const token = await getToken("userToken");
                 if (token) {
-                    console.log("Token found in HomeScreen:", token);
                     setIsAuthenticated(true);
                 }
             } catch (error) {
-                console.error("Error checking auth:", error);
+                
             } finally {
                 setLoading(false);
             }
         };
         
         checkAuth();
-    }, []);
+    }, [setIsAuthenticated]);
+    
+    if (loading) {
+        return null;
+    }
 
     if (isAuthenticated) {
         return <Redirect href="/(tabs)" />;
-    }
-
-    if (loading) {
-        return null;
     }
 
     return <Sign
         fields={fields}
         submit={{
             label:translations[language].auth.login,
-            action:loginHandler
+            action:loginHandler,
+            loading: loading
         }}
+        error={error}
     >
         <Link style={styles.bottomLine} href={"/sign-up"} asChild>
             <TouchableOpacity>

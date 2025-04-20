@@ -9,6 +9,7 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getToken } from "../utils/secureStore";
 import useFetch from "@/utils/useFetch";
+import { SocketProvider } from '@/utils/socketContext';
 
 
 const AuthContext = createContext();
@@ -83,6 +84,7 @@ export default function RootLayout() {
   return (
     <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated,user,userId, setUserId,trackChanges,setTrackChanges }}>
         <LanguageProvider>
+        <SocketProvider isAuthenticated={isAuthenticated}>
           <Stack
             screenOptions={{
               headerShown: false,
@@ -106,6 +108,7 @@ export default function RootLayout() {
             )}
             <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
           </Stack>
+        </SocketProvider>
         </LanguageProvider>
         <StatusBar backgroundColor='black' style="auto" />
       </AuthContext.Provider>

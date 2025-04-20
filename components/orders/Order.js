@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { router } from 'expo-router';
@@ -15,9 +15,8 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 
 export default function Order({user,order}){
-
     const { language } = useLanguage();
-    const {user:authUser,setTrackChanges} = useAuth();
+    const {user:authUser} = useAuth();
     const [showControl,setShowControl] = useState(false);
     const [showStatusUpdateModal,setShowStatusUpdateModal] = useState(false);
     const [showConfirmStatusChangeUpdateModal,setShowConfirmStatusChangeUpdateModal] = useState(false);
@@ -38,6 +37,10 @@ export default function Order({user,order}){
         label:translations[language].tabs.orders.order.states.returned, value:"returned"
     },{
         label:translations[language].tabs.orders.order.states.delivered, value:"delivered"
+    },{
+        label:translations[language].tabs.orders.order.states.received, value:"received"
+    },{
+        label:translations[language].tabs.orders.order.states.delivered_received, value:"delivered/received"
     }]
     :
     [{
@@ -65,7 +68,7 @@ export default function Order({user,order}){
                 status:selectedValue.status.value,
                 note_content:UpdatedStatusNote
             }
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,{
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,{
                 method:"PUT",
                 headers:{
                     'Accept': 'application/json',
@@ -74,10 +77,9 @@ export default function Order({user,order}){
                 credentials:"include",
                 body:JSON.stringify({updates})
             });
-            const data = await response.json();
-            console.log(data)
-            setShowConfirmStatusChangeUpdateModal(false);
-            setTrackChanges({type:"ORDER_STATUS_UPDATED"})
+            if(!res.error){
+                setShowConfirmStatusChangeUpdateModal(false);
+            }
         }
 
     return <>
@@ -128,7 +130,7 @@ export default function Order({user,order}){
                 </View>
             </View>
         </View>
-        <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : translations[language].tabs.orders.order.unknown,phone:order.driver_mobile ? order.driver_mobile : ""}} />
+        {!["driver","business"].includes(authUser.role) && <UserBox styles={styles} box={{label:translations[language].tabs.orders.order.userDriverBoxLabel,userName:order.driver ? order.driver : translations[language].tabs.orders.order.unknown,phone:order.driver_mobile ? order.driver_mobile : ""}} />}
         <View style={styles.sec}>
             <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
@@ -177,23 +179,23 @@ export default function Order({user,order}){
      showModal={showControl}
      setShowModal={setShowControl}
      customStyles={{bottom:15}}
-    >
+    > 
         <View style={[styles.control,{alignItems:["he", "ar"].includes(language) ? "flex-end" : "flex-start"}]}>
-            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({
+            {["delivered","returned","business_returned_delivered","received","delivered/received","money_in_branch","money_out","business_paid","completed","returned_out","returned_in_branch"].includes(order.status_key) || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({
                 pathname: "(create)",
                 params: { orderId: order.order_id }
               })}>
                 <Feather name="edit" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.edit}</Text>
-            </TouchableOpacity>
+                <Text style={{fontWeight:"bold"}}>{translations[language].tabs.orders.order.edit}</Text>
+            </TouchableOpacity>}
             {authUser.role === "business" || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> setShowStatusUpdateModal(true)}>
                 <MaterialIcons name="published-with-changes" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatus}</Text>
+                <Text style={{fontWeight:"bold"}}>{translations[language].tabs.orders.order.changeStatus}</Text>
             </TouchableOpacity>}
-            {authUser.role === "business" || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+            {/* {authUser.role === "business" || <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <AntDesign name="printer" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.print}</Text>
-            </TouchableOpacity>}
+                <Text style={{fontWeight:"bold"}}>{translations[language].tabs.orders.order.print}</Text>
+            </TouchableOpacity>} */}
         </View>
 
     </ModalPresentation>}
@@ -220,7 +222,7 @@ export default function Order({user,order}){
      customStyles={{bottom:15}}
     >
         <View style={{padding:15}}>
-            <Text style={{fontSize:14,fontWeight:"500",lineHeight:24,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{translations[language].tabs.orders.order.changeStatusAlert} <Text style={{color:"#F8C332",textTransform:"capitalize"}}>{selectedValue.status.label}</Text></Text>
+            <Text style={{fontSize:14,fontWeight:"bold",lineHeight:24,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{translations[language].tabs.orders.order.changeStatusAlert} <Text style={{color:"#F8C332",textTransform:"capitalize"}}>{selectedValue.status.label}</Text></Text>
             <TextInput
                 style={{borderWidth:1,borderColor:"(rgba(0,0,0,.1)",marginTop:15,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}
                 placeholder={translations[language].tabs.orders.order.changeStatusAlertNote}
@@ -229,10 +231,10 @@ export default function Order({user,order}){
             />
             <View style={{marginTop:25,flexDirection:"row",justifyContent:"flex-end",gap:25}}>
                 <TouchableOpacity onPress={changeStatusHandler}>
-                    <Text style={{color:"#F8C332",fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatusAlertConfirm}</Text>
+                    <Text style={{color:"#F8C332",fontWeight:"bold"}}>{translations[language].tabs.orders.order.changeStatusAlertConfirm}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={()=> setShowConfirmStatusChangeUpdateModal(false)}>
-                    <Text style={{fontWeight:"500"}}>{translations[language].tabs.orders.order.changeStatusAlertCancel}</Text>
+                    <Text style={{fontWeight:"bold"}}>{translations[language].tabs.orders.order.changeStatusAlertCancel}</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -284,7 +286,7 @@ const styles = StyleSheet.create({
         borderWidth:1
     },
     h2:{
-        fontWeight:"500"
+        fontWeight:"bold"
     },
     contorl:{
         width:"100%"

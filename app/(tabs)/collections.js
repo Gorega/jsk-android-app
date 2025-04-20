@@ -14,21 +14,29 @@ export default function Collections({showModal,setShowModal}) {
   const {user} = useAuth()
   const { language } = useLanguage();
 
-
-  const collections = [user.role === "driver" ? {visibility:"hidden"} : {
-    label:translations[language].tabs.collections.options.money,
-    link:"(collection)?type=money",
+  const collections = [user.role === "business" ? {visibility:"hidden"} : {
+    label:translations[language].tabs.collections.options.driver_money_collections,
+    link:"(collection)?type=driver_money",
+    icon:<FontAwesome name="money" size={24} color="#F8C332" />
+  },user.role === "driver" ? {visibility:"hidden"} : {
+    label:user.role === "business" ? translations[language].tabs.collections.options.my_money_collections : translations[language].tabs.collections.options.business_money_collections,
+    link:"(collection)?type=business_money",
     icon:<FontAwesome name="money" size={24} color="#F8C332" />
   },user.role !== "business" ?{
-    label:translations[language].tabs.collections.options.driver,
-    link:"(collection)?type=driver",
+    label:translations[language].tabs.collections.options.sent_collections,
+    link:"(collection)?type=sent",
     icon:<FontAwesome6 name="money-bill-trend-up" size={24} color="#F8C332" />
-  } : {visibility:"hidden"} ,user.role === "driver" ? {visibility:"hidden"} : {
-    label:translations[language].tabs.collections.options.returned,
-    link:"(collection)?type=returned",
+  } : {visibility:"hidden"},
+  user.role === "driver" ? {visibility:"hidden"} : {
+    label:translations[language].tabs.collections.options.driver_returned_collections,
+    link:"(collection)?type=driver_returned",
+    icon:<Octicons name="package-dependencies" size={24} color="#F8C332" />
+  },user.role === "business" ? {visibility:"hidden"} : {
+    label:user.role === "business" ? translations[language].tabs.collections.options.my_returned_collections : translations[language].tabs.collections.options.business_returned_collections,
+    link:"(collection)?type=business_returned",
     icon:<Octicons name="package-dependencies" size={24} color="#F8C332" />
   },user.role !== "business" ? {
-    label:translations[language].tabs.collections.options.runsheet,
+    label:translations[language].tabs.collections.options.runsheet_collections,
     link:"(collection)?type=dispatched",
     icon:<Feather name="truck" size={24} color="#F8C332" />
   } : {visibility:"hidden"}]
@@ -40,9 +48,6 @@ export default function Collections({showModal,setShowModal}) {
     bottom:15,
   }}>
       <View style={styles.list}>
-        {user.role === "business" && <TouchableOpacity style={[styles.item,styles.active,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-          <Text style={{color:"white",fontWeight:"600"}}>{translations[language].tabs.collections.options.collect}</Text>
-        </TouchableOpacity>}
         {collections?.map((collection,index)=>{
           return <TouchableOpacity style={[styles.item,{display:collection.visibility === "hidden" && "none",flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} key={index} onPress={()=> {
             router.push(collection.link)
@@ -61,10 +66,11 @@ const styles = StyleSheet.create({
   item:{
     borderBottomColor:"rgba(0,0,0,.1)",
     borderBottomWidth:1,
-    padding:15,
+    paddingHorizontal:7,
+    paddingVertical:15,
     flexDirection:"row",
     alignItems:"center",
-    gap:10
+    gap:5,
   },
   active:{
     backgroundColor:"#F9AF39",

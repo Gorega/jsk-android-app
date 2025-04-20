@@ -42,6 +42,17 @@ export default function TabLayout() {
         ),
         tabBarActiveTintColor: "#F8C332",
         tabBarInactiveTintColor: "#6c757d",
+        tabBarButton: (props) => (
+          <TouchableOpacity
+            {...props}
+            onPress={() => {
+              router.push({
+                pathname: "/(tabs)/orders",
+                params: { fromTab: true }
+              });
+            }}
+          />
+        ),
       },
     },
     {

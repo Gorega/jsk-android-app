@@ -1,4 +1,4 @@
-import { View,StyleSheet} from 'react-native';
+import { View,StyleSheet, ActivityIndicator } from 'react-native';
 import Search from '../../components/search/Search';
 import { useEffect, useState } from 'react';
 import {router} from "expo-router"
@@ -17,16 +17,17 @@ export default function HomeScreen(){
     const [data,setData] = useState([]);
     const [page,setPage] = useState(1);
     const [loadingMore,setLoadingMore] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const filterByGroup = [{
         name:translations[language].users.filters.all,
         action:"",
     },{
         name:translations[language].users.filters.active,
-        action:"true",
+        action:1,
     },{
         name:translations[language].users.filters.inactive,
-        action:"false"
+        action:0
     }]
 
     const searchByGroup = [{
@@ -86,6 +87,7 @@ export default function HomeScreen(){
     };
 
     const fetchData = async (pageNumber = 1, isLoadMore = false)=>{
+        if (!isLoadMore) setIsLoading(true);
         try {
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
@@ -95,6 +97,7 @@ export default function HomeScreen(){
             if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
             if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
             queryParams.append('page', pageNumber);
+            queryParams.append('language_code', language);
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?${queryParams.toString()}`, {
                 method: "GET",
                 credentials: "include",
@@ -116,11 +119,11 @@ export default function HomeScreen(){
             console.log(err);
         } finally {
             setLoadingMore(false);
+            setIsLoading(false);
         }
     }
 
     const loadMoreData = async () => {
-        console.log("loadMoreData called");
         if (!loadingMore && data.data?.length > 0) {
             // Check if there's more data to load
             if (data.data.length >= data.metadata.total_records) {
@@ -134,7 +137,6 @@ export default function HomeScreen(){
             try {
                 await fetchData(nextPage, true);
             } catch (error) {
-                console.error("Error loading more data:", error);
             } finally {
                 setLoadingMore(false);
             }
@@ -148,32 +150,44 @@ export default function HomeScreen(){
     }, [searchValue, activeFilter,activeDate]);
 
 
-    return <View style={styles.main}>
-    <Search
-        searchValue={searchValue}
-        setSearchValue={(input)=> setSearchValue(input)}
-        filterByGroup={filterByGroup}
-        searchByGroup={searchByGroup}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
-        activeSearchBy={activeSearchBy}
-        setActiveSearchBy={setActiveSearchBy}
-        searchByDateGroup={searchByDateGroup}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        activeDate={activeDate}
-        setActiveDate={setActiveDate}
-        onClearFilters={clearFilters}
-        showScanButton={false}
-    />
-    <View style={styles.section}>
-        <UsersView
-            data={data.data || []}
-            loadMoreData={loadMoreData}
-            loadingMore={loadingMore}
-        />
+    return <View style={{ flex: 1 }}>
+        <View style={styles.main}>
+            <Search
+                searchValue={searchValue}
+                setSearchValue={(input)=> setSearchValue(input)}
+                filterByGroup={filterByGroup}
+                searchByGroup={searchByGroup}
+                activeFilter={activeFilter}
+                setActiveFilter={setActiveFilter}
+                activeSearchBy={activeSearchBy}
+                setActiveSearchBy={setActiveSearchBy}
+                searchByDateGroup={searchByDateGroup}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                activeDate={activeDate}
+                setActiveDate={setActiveDate}
+                onClearFilters={clearFilters}
+                showScanButton={false}
+            />
+            <View style={styles.section}>
+                <UsersView
+                    data={data.data || []}
+                    loadMoreData={loadMoreData}
+                    loadingMore={loadingMore}
+                    isLoading={isLoading}
+                />
+            </View>
+        </View>
+
+        {/* Loading Spinner */}
+        {isLoading && (
+            <View style={styles.overlay}>
+                <View style={styles.spinnerContainer}>
+                    <ActivityIndicator size="large" color="#F8C332" />
+                </View>
+            </View>
+        )}
     </View>
-</View>
 }
 
 const styles = StyleSheet.create({
@@ -183,6 +197,29 @@ const styles = StyleSheet.create({
     section:{
         marginTop:15,
         flex:1
+    },
+    overlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    spinnerContainer: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+        elevation: 5,
     }
-
 })

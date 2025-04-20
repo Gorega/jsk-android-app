@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity,TextInput } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity,TextInput, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -23,6 +23,7 @@ export default function CameraScanner() {
   const [showPickerModal,setShowPickerModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [note,setNote] = useState("");
+  const [manualOrderId, setManualOrderId] = useState("");
   const [selectedValue,setSelectedValue] = useState({
     fromBranch:"",
     toBranch:""
@@ -41,20 +42,23 @@ export default function CameraScanner() {
           credentials:"include",
           headers: {
               "Content-Type": "application/json",
+              'Accept-Language': language
           },
           body:JSON.stringify({
               type_id: 4,
               orders: formattedOrders,
               driver_id:user?.userId,
-              current_branch_id: selectedValue.fromBranch?.branch_id,
               to_branch_id:selectedValue.toBranch?.branch_id,
               note_content:note
             })
       })
       const responseData = await res.json();
-      console.log(responseData)
       if (!res.ok) {
           setFormSpinner({status:false})
+          Alert.alert(
+            translations[language].errors.error,
+            responseData.message
+          )
           throw new Error(responseData.error || 'Failed to create collection');
       }else{
         router.back();
@@ -64,12 +68,14 @@ export default function CameraScanner() {
       }catch(err){
           setFormSpinner({status:false})
           console.log(err)
-      }
+      }finally {
+        setLoading(false);
+    }
   }
 
   const fetchBranches = async () => {
     try{
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches`,{
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`,{
         method:"GET",
         credentials:"include",
         headers: {
@@ -80,7 +86,6 @@ export default function CameraScanner() {
       const data = await res.json();
       setBranches(data.data)
     }catch(err){
-      console.log(err)
     }
 };
 
@@ -90,6 +95,20 @@ const branchHandler = (fieldType)=>{
   setCurrentField(fieldType);
 }
 
+const handleManualOrderAdd = () => {
+  if (!manualOrderId.trim()) return;
+
+  const stringifiedItem = String(manualOrderId);
+  const isDuplicate = scannedItems.some(item => String(item) === stringifiedItem);
+
+  if (!isDuplicate) {
+    setScannedItems(prev => [...prev, manualOrderId]);
+    setManualOrderId(""); // Clear input after adding
+  } else {
+    setError(translations[language].camera.scanDuplicateTextError);
+    setTimeout(() => setError(null), 2000);
+  }
+};
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -185,7 +204,7 @@ const branchHandler = (fieldType)=>{
           {error && (
             <Text style={{color:"red",fontWeight:"500"}}>{error}</Text>
           )}
-          {scanned && (
+          {(scanned && !showCreateDispatchedCollectionModal) && (
             <Text
               style={styles.rescanButton}
               onPress={() => setScanned(false)}
@@ -199,7 +218,7 @@ const branchHandler = (fieldType)=>{
       {showCreateDispatchedCollectionModal
       ?
       <View style={styles.scannedItemsContainer}>
-          <TouchableOpacity style={{marginBottom:10}} onPress={()=> setShowCreateDispatchedCollectionModal(false)}>
+          <TouchableOpacity style={{marginBottom:10,transform:["he", "ar"].includes(language) ? [{ scaleX: -1 }] : [],flexDirection:["ar","he"].includes(language) ? "row" : "row-reverse"}} onPress={()=> setShowCreateDispatchedCollectionModal(false)}>
             <MaterialIcons name="arrow-back" size={20} color="black" />
           </TouchableOpacity>
           <TextInput
@@ -208,13 +227,10 @@ const branchHandler = (fieldType)=>{
             value={note}
             onChangeText={(input)=> setNote(input)}
           />
-          <TouchableOpacity style={styles.pickerBox} onPress={()=> branchHandler('fromBranch')}>
-            <Text>{selectedValue.fromBranch.name ? selectedValue.fromBranch.name : translations[language].camera.fromBranch}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.pickerBox} onPress={()=> branchHandler('toBranch')}>
-          <Text>{selectedValue.toBranch.name ? selectedValue.toBranch.name : translations[language].camera.toBranch}</Text>
+            <Text style={{textAlign:["ar","he"].includes(language) ? "right" : "left"}}>{selectedValue.toBranch.name ? selectedValue.toBranch.name : translations[language].camera.toBranch}</Text>
           </TouchableOpacity>
-          <View style={styles.submit}>
+          <View style={[styles.submit,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
             <TouchableOpacity onPress={createDispatchedCollection}>
               <Text style={{color:"#F8C332"}}>{translations[language].camera.confirm}</Text>
             </TouchableOpacity>
@@ -225,17 +241,32 @@ const branchHandler = (fieldType)=>{
       </View>
       :
       <View style={styles.scannedItemsContainer}>
-        <View style={{flexDirection:"row",alignItems:"center",justifyContent:"space-between"}}>
+        <View style={{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row",alignItems:"center",justifyContent:"space-between"}}>
           <Text style={styles.totalText}>
           {translations[language].camera.totalScanned}: {scannedItems.length}
           </Text>
-          {scannedItems.length > 0 && <TouchableOpacity onPress={()=> setShowCreateDispatchedCollectionModal(true)}>
-            <MaterialIcons name="playlist-add-check" size={30} color="#F8C332" />
+          {scannedItems.length > 0 && <TouchableOpacity style={{padding:0,margin:0}} onPress={()=> setShowCreateDispatchedCollectionModal(true)}>
+            <AntDesign name="checkcircleo" size={26} color="#F8C332" />
           </TouchableOpacity>}
+        </View>
+        {/* Add manual input section */}
+        <View style={[styles.manualInputContainer,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
+          <TextInput
+            style={[styles.manualInput,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}
+            placeholder={translations[language].camera.enterOrderId}
+            value={manualOrderId}
+            onChangeText={setManualOrderId}
+          />
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={handleManualOrderAdd}
+          >
+            <Text style={styles.addButtonText}>{translations[language].camera.add}</Text>
+          </TouchableOpacity>
         </View>
         <ScrollView contentContainerStyle={styles.itemsList}>
           {scannedItems.map((item, index) => (
-            <View key={index} style={styles.itemText}>
+            <View key={index} style={[styles.itemText,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
               <Text>
               {item}
               </Text>
@@ -305,7 +336,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: 'white',
     padding: 15,
-    height: '36%',
+    height: '40%',
     boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
   },
   totalText: {
@@ -315,7 +346,7 @@ const styles = StyleSheet.create({
     color:"#F8C332",
   },
   itemsList: {
-    flex: 1,
+    flexGrow: 1,
     marginTop:15
   },
   itemText: {
@@ -344,5 +375,28 @@ const styles = StyleSheet.create({
     justifyContent:"flex-end",
     gap:25,
     marginTop:2
-  }
+  },
+  manualInputContainer: {
+    flexDirection: 'row',
+    marginBottom: 10,
+    gap: 10,
+    marginTop:10
+  },
+  manualInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,.1)',
+    padding: 10,
+    borderRadius: 5,
+  },
+  addButton: {
+    backgroundColor: '#F8C332',
+    padding: 10,
+    borderRadius: 5,
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '500',
+  },
 });

@@ -1,12 +1,20 @@
-import { View,Text,StyleSheet} from 'react-native';
+import { View,Text,StyleSheet, ActivityIndicator} from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import FlatListData from '../FlatListData';
 import User from "./User";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
-export default function UsersView({data,loadMoreData,loadingMore}){
+export default function UsersView({data,loadMoreData,loadingMore,isLoading}){
     const { language } = useLanguage();
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#F8C332" />
+            </View>
+        );
+    }
 
     return data.length > 0
     ?
@@ -42,6 +50,10 @@ const styles = StyleSheet.create({
     },
     orders:{
         padding:15,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
     }
-
 })

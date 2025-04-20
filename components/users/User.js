@@ -3,8 +3,6 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Entypo from '@expo/vector-icons/Entypo';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import ModalPresentation from '../ModalPresentation';
@@ -23,7 +21,7 @@ export default function User({user}){
                     <View style={styles.box}>
                         <Text style={{textAlign:"center"}}># {user?.user_id}</Text>
                     </View>
-                    <View style={[styles.status,{borderWidth:0,backgroundColor:"green",flexDirection:"row-reverse"}]}>
+                    <View style={[styles.status,{borderWidth:0,backgroundColor:user.active_status_key ? "green":"red",flexDirection:"row-reverse"}]}>
                         <Text style={{color:"white"}}>{user.activeStatus}</Text>
                     </View>
                 </View>
@@ -103,8 +101,8 @@ const styles = StyleSheet.create({
         flexDirection:"row",
         alignItems:"center",
         justifyContent:"center",
-        width:20,
-        height:20,
+        width:14,
+        height:14,
         borderRadius:"50%"
     },
     head:{

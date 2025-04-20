@@ -18,7 +18,20 @@ export const translations = {
       city:"City",
       area:"Area",
       address:"Address",
-      role:"Role"
+      comercialName:"Comercial Name",
+      registerSuccess:"You have created your account successfully, please login now",
+      registrationFailed:"Faild",
+      loginFailed:"Login Failed",
+      role:{
+        title:"Role",
+        business:"Business",
+        driver:"Driver"
+      }
+    },
+
+    errors:{
+      error:"Error",
+      success:"Success"
     },
 
     // (tabs)
@@ -28,6 +41,8 @@ export const translations = {
         boxes:{
           todayOrders:"Today Orders",
           moneyInBranches:"Money in Branches",
+          readyMoney:"Ready Money to Receive",
+          readyOrders:"Returned/exchanged packages ready for collection",
           moneyInBranch:"Money in Branch",
           moneyWithDrivers:"Money With Drivers",
           moneyWithDriver:"Money With Driver",
@@ -67,6 +82,9 @@ export const translations = {
           moneyOut:"money Out",
           businessPaid:"Business Paid",
           completed:"completed",
+          received:"Received",
+          "delivered/received":"Delivered / Received",
+          dispatched_to_branch:"Dispatched to Branch",
           // searchByGroup
           orderId:"Order ID",
           referenceID:"Reference ID",
@@ -137,17 +155,27 @@ export const translations = {
           edit:"Edit Order",
           create:"Create Order",
           submit:"Submit",
+          loading:"Loading...",
+          success:"Success",
+          successMsg:"Your order have been completed successfully",
+          error:"Error",
+          errorValidationMsg:"Please check the highlighted fields",
+          errorMsg:"An unexpected error occurred, Please call the support agent to help",
           sections:{
             sender:{
               title:"Sender",
               fields:{
                 sender:"Sender",
+                my_balance_deduct:"Deduct from my balance",
+                sender_deduct:"Deduct from sender balance"
               }
             },
             client:{
               title:"Client",
               fields:{
+                found:"Found it automatically",
                 client:"Client",
+                name:"Name",
                 firstPhone:"Phone Number",
                 secondPhone:"Second Phone Number",
                 city:"City",
@@ -161,6 +189,11 @@ export const translations = {
                 packageCost:"Package Cost",
                 deliveryFee:"Delivery Fee",
                 isReplaced:"Is Replaced",
+                insufficient_balance:"Insufficient Balance",
+                balance:"Current balance",
+                insufficient_balance_alert:"is not sufficient for this transaction",
+                missing_fields:"Missing Fields",
+                fields_required:"Receiver, delivery fee, or COD value are required"
               }
             },
             details:{
@@ -214,11 +247,14 @@ export const translations = {
       collections:{
         title:"Collections",
         options:{
-          collect:"Collect Your Money",
-          money:"Money Collections",
-          driver:"Driver Collections",
-          returned:"Returned Collections",
-          runsheet:"Runsheet Collections",
+          "driver_money_collections":"Driver Money Collections",
+          "business_money_collections":"Busienss Money Collections",
+          "driver_returned_collections":"Driver Returned/Received Collections",
+          "business_returned_collections":"Business Returned/Recieved Collections",
+          "runsheet_collections":"Runsheet Collections",
+          "sent_collections":"Sent Collections",
+          "my_money_collections":"My Money Collections",
+          "my_returned_collections":"My Returned/Received Collections",
         }
       },
       settings:{
@@ -287,6 +323,16 @@ export const translations = {
         print:"Print",
         collections:"Collections",
         orders:"Orders",
+        request_money:"Request your Money",
+        prepare_money:"Prepare my Money",
+        send_money:"Send the money to me",
+        request_package:"Request your Package",
+        prepare_package:"Prepare my Package",
+        send_package:"Send the package to me",
+        confirmPaymentMessage:"By making this process, you are confirming that you received the money, and the company is no longer holding any responsibility about later complaints",
+        cancel:"Cancel",
+        confirm:"Confirm",
+        confirmReturnedMessage:"By doing this, you confirm that you have received the package, and that the company no longer bears any responsibility for subsequent complaints regarding its receipt."
       }
     },
 
@@ -397,6 +443,14 @@ export const translations = {
       }
     },
 
+    // Notifications
+    notifications:{
+      title:"Notifications",
+      deleteAll:"Delete All",
+      noNotifications:"No Notifications",
+      order:"Order"
+    },
+
     // Search
     search:{
       placeholder:"Search",
@@ -429,7 +483,9 @@ export const translations = {
       toBranch:"To Branch",
       confirm:"Confirm",
       cancel:"Cancel",
-      totalScanned:"Total Scanned"
+      totalScanned:"Total Scanned",
+      enterOrderId:"Ebter order ID",
+      add:"Add",
     },
 
     // (change_password)
@@ -510,7 +566,20 @@ export const translations = {
       city: "المدينة",
       area: "المنطقة",
       address: "العنوان",
-      role: "الدور"
+      comercialName:"الاسم التجاري",
+      registerSuccess:"لقد قمت بإنشاء حسابك بنجاح، يرجى تسجيل الدخول الآن",
+      registrationFailed:"لم يتم انشاء حسابك بنجاح",
+      loginFailed:"لم يتم تسجيل الدخول بنجاح",
+      role:{
+        title:"الدور",
+        business:"تاجر",
+        driver:"سائق"
+      }
+    },
+
+    errors:{
+      error:"خطأ",
+      success:"تم بنجاح"
     },
 
     // (tabs)
@@ -520,22 +589,24 @@ export const translations = {
         boxes: {
           todayOrders: "طلبات اليوم",
           moneyInBranches: "النقود في الفروع",
+          readyMoney:"المال الجاهز للاستلام",
+          readyOrders:"الطرود المرتجع/المستبدل الجاهزة للاستلام",
           moneyInBranch: "النقود في الفرع",
           moneyWithDrivers: "النقود مع السائقين",
-          moneyWithDriver: "النقود مع السائق",
+          moneyWithDriver: "النقود التي بحوزتي",
           inWaiting: "في الانتظار",
           inBranch: "في الفرع",
           onTheWay: "في الطريق",
-          delivered: "تم التسليم",
+          delivered: "تم التوصيل",
           returned: "مرتجع",
           rescheduled: "معاد جدولته",
           stuck: "عالق",
           rejected: "مرفوض",
-          ofOrders: "من الطلبات"
+          ofOrders: "من الطرود"
         }
       },
       orders: {
-        title: "الطلبات",
+        title: "الطرود",
         emptyArray: "لا توجد طلبات لعرضها",
         filters: {
           // filterByGroup
@@ -554,13 +625,16 @@ export const translations = {
           returnedInBranch: "مرتجع في الفرع",
           returnedOut: "مرتجع خارجي",
           businessReturnedDelivered: "مرتجع تم تسليمه للأعمال",
-          delivered: "تم التسليم",
+          delivered: "تم التوصيل",
           moneyInBranch: "النقود في الفرع",
           moneyOut: "النقود خارجة",
           businessPaid: "تم الدفع للأعمال",
           completed: "مكتمل",
+          received:"تم الاستلام",
+          "delivered/received":"تم التوصيل والاستلام",
+          dispatched_to_branch:"نقل الى الفرع المرسل اليه",
           // searchByGroup
-          orderId: "معرف الطلب",
+          orderId: "معرف الطرد",
           referenceID: "معرف المرجع",
           sender: "المرسل",
           receiverName: "اسم الزبون",
@@ -578,8 +652,8 @@ export const translations = {
           selectDate: "اختر تاريخًا"
         },
         track: {
-          orderTracking: "تتبع الطلب",
-          order: "الطلب",
+          orderTracking: "تتبع الطرد",
+          order: "الطرد",
           package: "الحزمة",
           quantity: "الكمية",
           weight: "الوزن",
@@ -599,7 +673,9 @@ export const translations = {
             returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
             returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
             returned: "مرتجع",
-            delivered: "تم التسليم",
+            delivered: "تم التوصيل",
+            received:"تم الاستلام",
+            delivered_received:"تم التوصيل / الاستلام",
             waiting: "في الانتظار",
             inBranch: "في الفرع",
             inProgress: "قيد التنفيذ",
@@ -607,7 +683,7 @@ export const translations = {
             stuck: "عالق",
             delayed: "متأخر"
           },
-          orderType: "نوع الطلب",
+          orderType: "نوع الطرد",
           unknown: "غير معروف",
           userSenderBoxLabel: "المرسل",
           userClientBoxLabel: "الزبون",
@@ -618,7 +694,7 @@ export const translations = {
           contactWhatsapp: "واتساب",
           edit: "تعديل",
           changeStatus: "تغيير الحالة",
-          changeStatusAlert: "أنت على وشك تغيير حالة هذا الطلب إلى",
+          changeStatusAlert: "أنت على وشك تغيير حالة هذا الطرد إلى",
           changeStatusAlertNote: "اترك ملاحظة...",
           changeStatusAlertConfirm: "تأكيد",
           changeStatusAlertCancel: "إلغاء",
@@ -626,19 +702,29 @@ export const translations = {
         },
         // (create)
         create: {
-          edit: "تعديل الطلب",
+          edit: "تعديل الطرد",
           create: "إنشاء طلب",
           submit: "إرسال",
+          loading: "جارٍ التحميل...",
+          success:"نجحت العملية",
+          successMsg:"تم تسجيل طردك بنجاح",
+          error: "خطأ",
+          errorValidationMsg: "يرجى التحقق من الحقول المشار اليها بخطأ",
+          errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
           sections: {
             sender: {
               title: "المرسل",
               fields: {
-                sender: "المرسل"
+                sender: "المرسل",
+                my_balance_deduct:"الخصم من رصيدي",
+                sender_deduct:"الخصم من رصيد التاجر"
               }
             },
             client: {
               title: "الزبون",
               fields: {
+                found:"تم ايجاده تلقائيا",
+                name:"الاسم",
                 client: "الزبون",
                 firstPhone: "رقم الهاتف",
                 secondPhone: "رقم الهاتف الثاني",
@@ -650,22 +736,27 @@ export const translations = {
             cost: {
               title: "التكلفة",
               fields: {
-                packageCost: "تكلفة الحزمة",
-                deliveryFee: "رسوم التوصيل",
-                isReplaced: "تم استبداله"
+                "packageCost": "تكلفة الطرد",
+                "deliveryFee": "رسوم التوصيل",
+                "isReplaced": "تم استبداله",
+                "insufficient_balance": "رصيد غير كافٍ",
+                "balance": "الرصيد الحالي",
+                "insufficient_balance_alert": "غير كافٍ لإتمام هذه العملية",
+                "missing_fields": "حقول ناقصة",
+                "fields_required": "يجب إدخال بيانات المستلم أو رسوم التوصيل أو قيمة الدفع عند الاستلام"
               }
             },
             details: {
-              title: "تفاصيل الطلب",
+              title: "تفاصيل الطرد",
               fields: {
                 product: "المنتج",
                 quantity: "الكمية",
                 weight: "الوزن",
-                orderType: "نوع الطلب"
+                orderType: "نوع الطرد"
               }
             },
             orderTypes: {
-              title: "نوع الطلب",
+              title: "نوع الطرد",
               delivery: "توصيل",
               receive: "استلام",
               "delivery/receive": "توصيل / استلام",
@@ -677,6 +768,13 @@ export const translations = {
               ILS: "شيكل",
               USD: "دولار",
               JOD: "دينار"
+            },
+            itemsContentTypeList:{
+              "normal": "عادي",
+              "large": "كبير",
+              "extra_large": "كبير جداً",
+              "fragile": "قابل للكسر",
+              "high_value": "ذو قيمة عالية"
             },
             paymentType: {
               title: "طريقة الدفع",
@@ -706,11 +804,14 @@ export const translations = {
       collections: {
         title: "التجميعات",
         options: {
-          collect: "اجمع نقودك",
-          money: "تجميعات النقود",
-          driver: "تجميعات السائق",
-          returned: "تجميعات المرتجعات",
-          runsheet: "تجميعات ورقة التسليم"
+          "driver_money_collections": "التحصيلات المالية من السائقين",
+          "business_money_collections": "التحصيلات المالية للتجار",
+          "driver_returned_collections": "تجميعات المرتجعات/المستلم من السائقين",
+          "business_returned_collections": "تجميعات المرتجعات/المستلم للتجار",
+          "runsheet_collections": "تجميعات جاري التوصيل",
+          "sent_collections": "التحصيلات المرسلة مع السائقين",
+          "my_money_collections":"تحصيلاتي المالية",
+          "my_returned_collections":"تجميعات المرتجعات/المستلم"
         }
       },
       settings: {
@@ -769,7 +870,7 @@ export const translations = {
         selectDate: "اختر تاريخًا"
       },
       collection: {
-        numberOfOrders: "عدد الطلبات",
+        numberOfOrders: "عدد الطرود",
         numberOfCollections: "عدد التجميعات",
         moneyToDeliver: "النقود للتسليم",
         moneyToCollect: "النقود للجمع",
@@ -778,7 +879,17 @@ export const translations = {
         toBranch: "الفرع المرسل إليه",
         print: "طباعة",
         collections: "التجميعات",
-        orders: "الطلبات"
+        orders: "الطرود",
+        "request_money": "اطلب أموالك",
+        "prepare_money": "تجهيز اموالي",
+        "send_money": "أرسل الأموال إلي",
+        "request_package": "اطلب طردك",
+        "prepare_package": "تجهيز طردي",
+        "send_package": "أرسل الطرد إلي",
+        "confirmPaymentMessage": "بإتمام هذه العملية، فإنك تؤكد أنك استلمت المبلغ، وأن الشركة لم تعد مسؤولة عن أي شكاوى لاحقة",
+        "cancel": "إلغاء",
+        "confirm": "تأكيد",
+        "confirmReturnedMessage": "بإجراء هذا، فإنك تؤكد أنك استلمت الطرد، وأن الشركة لم تعد تتحمل أي مسؤولية بخصوص أي شكاوى لاحقة حول استلامه."
       }
     },
 
@@ -868,7 +979,7 @@ export const translations = {
       errorMsg: "فشل في تقديم الشكوى.",
       errorFailed: "حدث خطأ ما.",
       errorValidationMsg: "يرجى ملء جميع الحقول",
-      orderId: "معرف الطلب",
+      orderId: "معرف الطرد",
       resolved: "تم الحل",
       createdAt: "تم الإنشاء في",
       messagePlaceholder: "اكتب رسالتك...",
@@ -887,6 +998,15 @@ export const translations = {
         closed: "مغلق"
       }
     },
+
+    // Notifications
+    notifications:{
+      title:"الاشعارات",
+      deleteAll:"مسح الكل",
+      noNotifications:"لا يوجد اشعارات",
+      order:"طلب"
+    },
+
     // Search
     search: {
       placeholder: "بحث",
@@ -919,7 +1039,9 @@ export const translations = {
       toBranch: "إلى الفرع",
       confirm: "تأكيد",
       cancel: "إلغاء",
-      totalScanned: "إجمالي الممسوح"
+      totalScanned: "إجمالي الممسوح",
+      enterOrderId:"ادخل الرقم التسلسلي للطرد",
+      add:"اضافة",
     },
 
     // (change_password)
@@ -983,7 +1105,7 @@ export const translations = {
     // track
     track: {
       title: "تتبع حزمتك",
-      desc: "أدخل رقم الطلب لبدء التتبع",
+      desc: "أدخل رقم الطرد لبدء التتبع",
       placeholder: "مثال: 12321411"
     }
   },
@@ -1146,6 +1268,13 @@ export const translations = {
               ILS:"ILS",
               USD:"USD",
               JOD:"JOD"
+            },
+            itemsContentTypeList:{
+              "normal":"Noraml",
+              "large":"Large",
+              "extra_large":"Extra Large",
+              "fragile":"Fragile",
+              "high_value":"high_value"
             },
             paymentType:{
               cash:"Cash",

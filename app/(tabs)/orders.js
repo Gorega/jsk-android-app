@@ -1,27 +1,73 @@
-import { View,StyleSheet} from 'react-native';
+import { View,StyleSheet,RefreshControl} from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {router, useLocalSearchParams} from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from '../_layout';
+import { useSocket } from '../../utils/socketContext';
 
 export default function Orders(){
+    const socket = useSocket();
     const { language } = useLanguage();
     const [data,setData] = useState([]);
     const [page,setPage] = useState(1);
     const [loadingMore,setLoadingMore] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy,setActiveSearchBy] = useState("");
     const [activeDate,setActiveDate] = useState("");
     const [selectedDate,setSelectedDate] = useState("");
     const params = useLocalSearchParams();
-    const {trackChanges} = useAuth();
-    const { orderId,orderIds } = params;
+    const {user} = useAuth();
+    const { orderId,orderIds,fromTab } = params;
+    const [refreshing, setRefreshing] = useState(false);
 
-    const filterByGroup = [{
+    const onRefresh = useCallback(async () => {
+        try {
+            setRefreshing(true);
+            setPage(1);
+            await fetchData(1, false);
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            setRefreshing(false);
+        }
+    }, [language,fromTab]);
+
+    const filterByGroup = ["driver","delivery_company"].includes(user.role) ? [{
+        name:translations[language].tabs.orders.filters.all,
+        action:"",
+    },{
+        name:translations[language].tabs.orders.filters.onTheWay,
+        action:"on_the_way"
+    },{
+        name:translations[language].tabs.orders.filters.rescheduled,
+        action:"reschedule"
+    },{
+        name:translations[language].tabs.orders.filters.dispatched_to_branch,
+        action:"dispatched_to_branch"
+    },{
+        name:translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
+        action:"return_before_delivered_initiated"
+    },{
+        name:translations[language].tabs.orders.filters.returnAfterDeliveredInitiated,
+        action:"return_after_delivered_initiated"
+    },{
+        name:translations[language].tabs.orders.filters.returned,
+        action:"returned"
+    },{
+        name:translations[language].tabs.orders.filters.delivered,
+        action:"delivered"
+    },{
+        name:translations[language].tabs.orders.filters.received,
+        action:"received"
+    },{
+        name:translations[language].tabs.orders.filters["delivered/received"],
+        action:"delivered/received"
+    }] : [{
         name:translations[language].tabs.orders.filters.all,
         action:"",
     },{
@@ -49,6 +95,9 @@ export default function Orders(){
         name:translations[language].tabs.orders.filters.rescheduled,
         action:"reschedule"
     },{
+        name:translations[language].tabs.orders.filters.dispatched_to_branch,
+        action:"dispatched_to_branch"
+    },{
         name:translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
         action:"return_before_delivered_initiated"
     },{
@@ -69,6 +118,12 @@ export default function Orders(){
     },{
         name:translations[language].tabs.orders.filters.delivered,
         action:"delivered"
+    },{
+        name:translations[language].tabs.orders.filters.received,
+        action:"received"
+    },{
+        name:translations[language].tabs.orders.filters["delivered/received"],
+        action:"delivered/received"
     },{
         name:translations[language].tabs.orders.filters.moneyInBranch,
         action:"money_in_branch"
@@ -137,6 +192,7 @@ export default function Orders(){
     };
 
     const fetchData = async (pageNumber = 1, isLoadMore = false) => {        
+        if (!isLoadMore) setIsLoading(true);
         try {
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
@@ -170,6 +226,7 @@ export default function Orders(){
             console.log(err);
         } finally {
             setLoadingMore(false);
+            setIsLoading(false);
         }
     }
 
@@ -195,13 +252,53 @@ export default function Orders(){
         }
     };
 
+    useEffect(()=>{
+        if (!socket) return;
+
+        const handleOrderUpdate = (notification) => {
+            switch (notification.type) {
+                case 'ORDER_CREATED':
+                case 'ORDER_UPDATED':
+                case 'COLLECTION_CREATED':
+                case 'COLLECTION_UPDATED':
+                case 'COLLECTION_DELETED':
+                case 'STATUS_UPDATED':
+                    fetchData(1,false);
+                    break;
+                default:
+                    break;
+            }
+          };
+      
+        socket.on('orderUpdate', handleOrderUpdate);
+        socket.on('collectionUpdate', handleOrderUpdate);
+      
+          return () => {
+            socket.off('orderUpdate', handleOrderUpdate);
+            socket.off('collectionUpdate', handleOrderUpdate);
+          };
+    },[socket])
+
+    useEffect(()=>{
+        const shouldResetFilters = fromTab === "true"; // Convert string param to boolean
+        if (shouldResetFilters) {
+            // Clear filters only when coming from tab navigation
+            setSearchValue("");
+            setActiveFilter("");
+            setActiveSearchBy("");
+            setActiveDate("");
+            setSelectedDate("");
+        }
+    },[fromTab])
+
     useEffect(() => {
         setPage(1);
         fetchData(1, false);
         if(orderIds){
             setActiveSearchBy(searchByGroup[0]);
         }
-    }, [searchValue, activeFilter,activeDate,orderIds,trackChanges,language]);
+    }, [searchValue, activeFilter,activeDate,orderIds,language]);
+
 
     useEffect(()=>{
         if(orderId){
@@ -235,6 +332,15 @@ export default function Orders(){
                 metadata={data.metadata}
                 loadMoreData={loadMoreData}
                 loadingMore={loadingMore}
+                isLoading={isLoading}
+                refreshControl={
+                <RefreshControl
+                    refreshing={refreshing}
+                    onRefresh={onRefresh}
+                    colors={["#F8C332"]} // Android
+                    tintColor="#F8C332" // iOS
+                />
+                }
             />
         </View>
     </View>

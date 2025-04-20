@@ -14,8 +14,10 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useAuth } from "../_layout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useSocket } from '../../utils/socketContext';
 
 export default function ComplaintDetails() {
+  const socket = useSocket();
   const { language } = useLanguage();
   const { complaintId } = useLocalSearchParams();
   const {user} = useAuth();
@@ -38,7 +40,6 @@ export default function ComplaintDetails() {
       setComplaint(data);
       setMessages(data.messages || []);
     } catch (error) {
-      console.error("Error fetching complaint details:", error);
     } finally {
       setLoading(false);
     }
@@ -64,6 +65,27 @@ export default function ComplaintDetails() {
     }
   };
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleComplaintUpdate = (notification) => {
+      if (notification.complaintId === complaintId) {
+        switch (notification.type) {
+          case 'COMPLAINT_UPDATED':
+          case 'COMPLAINT_MESSAGE_CREATED':
+            fetchComplaintDetails();
+            break;
+        }
+      }
+    };
+
+    socket.on('complaintUpdate', handleComplaintUpdate);
+
+    return () => {
+      socket.off('complaintUpdate', handleComplaintUpdate);
+    };
+  }, [socket, complaintId]);
+
   // Send a new message (uses the complaintMessageSchema defined in your backend)
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
@@ -84,6 +106,13 @@ export default function ComplaintDetails() {
         // Append the new message to the current list
         setMessages((prev) => [...prev, newMsg]);
         setNewMessage("");
+        if (socket) {
+          socket.emit('complaintUpdate', {
+            type: 'COMPLAINT_MESSAGE_CREATED',
+            complaintId: complaintId,
+            messageId: newMsg.message_id
+          });
+        }
       } else {
         const errorData = await response.json();
         console.error("Error sending message:", errorData);
@@ -95,8 +124,12 @@ export default function ComplaintDetails() {
     }
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color="#F8C332" style={styles.loader} />;
+  if (loading){
+    return <View style={styles.overlay}>
+        <View style={styles.spinnerContainer}>
+            <ActivityIndicator size="large" color="#F8C332" />
+        </View>
+    </View>
   }
 
   if (!complaint) {
@@ -276,4 +309,28 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+},
+spinnerContainer: {
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+        width: 0,
+        height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+}
 });
