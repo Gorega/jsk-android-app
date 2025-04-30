@@ -21,14 +21,14 @@ export default function Collections({ showModal, setShowModal }) {
 
     const collections = [
         user.role === "business" ? { visibility: "hidden" } : {
-            label: translations[language].tabs.collections.options.driver_money_collections,
+            label: user.role === "driver" ? translations[language].tabs.collections.options.driver_own_collections : translations[language].tabs.collections.options.driver_money_collections,
             link: "(collection)?type=driver_money",
             icon: <FontAwesome name="money" size={22} color="#4361EE" />,
             iconBackground: "#EEF2FF",
             iconColor: "#4361EE"
         },
         user.role === "driver" ? { visibility: "hidden" } : {
-            label: user.role === "business" ? 
+            label: ["business"].includes(user.role) ? 
                 translations[language].tabs.collections.options.my_money_collections : 
                 translations[language].tabs.collections.options.business_money_collections,
             link: "(collection)?type=business_money",
@@ -37,7 +37,7 @@ export default function Collections({ showModal, setShowModal }) {
             iconColor: "#4361EE"
         },
         user.role !== "business" ? {
-            label: translations[language].tabs.collections.options.sent_collections,
+            label: user.role === "driver" ? translations[language].tabs.collections.options.driver_own_sent_collections : translations[language].tabs.collections.options.sent_collections,
             link: "(collection)?type=sent",
             icon: <FontAwesome6 name="money-bill-trend-up" size={22} color="#4361EE" />,
             iconBackground: "#EEF2FF",
@@ -50,8 +50,8 @@ export default function Collections({ showModal, setShowModal }) {
             iconBackground: "#EEF2FF",
             iconColor: "#4361EE"
         },
-        user.role === "business" ? { visibility: "hidden" } : {
-            label: user.role === "business" ? 
+        user.role === "driver" ? { visibility: "hidden" } : {
+            label: ["business"].includes(user.role) ? 
                 translations[language].tabs.collections.options.my_returned_collections : 
                 translations[language].tabs.collections.options.business_returned_collections,
             link: "(collection)?type=business_returned",

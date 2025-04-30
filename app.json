@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "tayar-android-app",
-    "slug": "tayar-android-app",
+    "name": "tayar",
+    "slug": "tayar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "We need access to your camera."
-      }
+        "NSCameraUsageDescription": "We need access to your camera.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.tayar.app"
     },
     "android": {
       "package": "com.tayar.app",
@@ -25,7 +27,9 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "web": {
@@ -65,8 +69,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "255d2140-dedf-4ca2-ba1c-564d3fc62fcf"
+        "projectId": "0ad3306c-7b23-4cef-aa55-059750d7623a"
       }
-    }
+    },
+    "owner": "tayarexpress"
   }
 }

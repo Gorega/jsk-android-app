@@ -284,7 +284,10 @@ export const translations = {
                 "highOrderVolume": "High Order Volume",
                 "technicalIssue": "Technical Issue"
               }
-            }
+            },
+            "delivered":"Delivered",
+            "received":"Received",
+            "delivered_received":"Delivered / Received"
           },
           "missingStatus": "Missing status value",
           "selectReason": "Select Reason",
@@ -318,6 +321,7 @@ export const translations = {
           "note": "Note",
           "add_currency": "Add Another Currency",
           "orderActions": "Order Actions",
+          "to_branch":"To Branch",
           "orderChecks": {
             "title": "Order Checks",
             "orderId": "Order ID",
@@ -440,6 +444,8 @@ export const translations = {
           "sent_collections":"Sent Collections",
           "my_money_collections":"My Money Collections",
           "my_returned_collections":"My Returned/Received Collections",
+          "driver_own_collections":"My Money collections collected from businesses",
+          "driver_own_sent_collections":"My Sent collection to businesses"
         }
       },
       settings:{
@@ -1047,7 +1053,10 @@ export const translations = {
                 "highOrderVolume": "كمية طلبات كبيرة",
                 "technicalIssue": "مشكلة تقنية"
               }
-            }
+            },
+            "delivered": "تم التوصيل",
+            "received": "تم الاستلام",
+            "delivered_received": "تم التوصيل / تم الاستلام"
           },
           "missingStatus": "لم يتم تحديد حالة",
           "selectReason": "اختر السبب",
@@ -1073,6 +1082,7 @@ export const translations = {
           "changeStatusAlertCancel": "إلغاء",
           "print": "طباعة",
           "location": "الموقع",
+          "to_branch":"مرسل الى الفرع",
           "financialDetails": "التفاصيل المالية",
           "codValue": "تكلفة الطرد",
           "netValue": "المطلوب من التاجر",
@@ -1209,7 +1219,9 @@ export const translations = {
           "runsheet_collections": "تجميعات جاري التوصيل",
           "sent_collections": "التحصيلات المرسلة مع السائقين",
           "my_money_collections":"تحصيلاتي المالية",
-          "my_returned_collections":"تجميعات المرتجعات/المستلم"
+          "my_returned_collections":"تجميعات المرتجعات/المستلم",
+          "driver_own_collections":"تحصيلات أموالي المجمعة من التجار",
+          "driver_own_sent_collections":"تحصيلات مرسلة للتجار"
         }
       },
       settings: {

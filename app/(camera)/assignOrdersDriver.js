@@ -556,7 +556,7 @@ export default function CameraScanner() {
                               {item.receiver_name}
                             </Text>
                             <Text style={[styles.itemDetailText, isRTL && styles.rtlText]}>
-                              {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}
+                              {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
                             </Text>
                           </>
                         )}

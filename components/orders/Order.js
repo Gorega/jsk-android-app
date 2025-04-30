@@ -92,85 +92,83 @@ export default function Order({ user, order }) {
     }, [isRTL]);
 
     const statusOptions = authUser.role === "driver" ? [{
-        label: translations[language].tabs.orders.order.states.pickedUp, value: "on_the_way"
-    }, {
         label: translations[language].tabs.orders.order.states.deliveredToDestinationBranch, value: "in_branch",
         requiresBranch: true
     }, {
-        label: translations[language].tabs.orders.order.states.reschedule.tile, value: "reschedule",
+        label: translations[language].tabs.orders.order.states.rescheduleReasons?.title, value: "reschedule",
         requiresReason: true,
         reasons: [
-            { value: 'receiver_request', label: translations[language].tabs.orders.order.states.rescheduleReasons?.receiverRequest || "Receiver Request" },
-            { value: 'customer_unavailable', label: translations[language].tabs.orders.order.states.rescheduleReasons?.receiverUnavailable || "Customer Unavailable" },
-            { value: 'incorrect_timing', label: translations[language].tabs.orders.order.states.rescheduleReasons?.incorrectTiming || "Incorrect Timing" },
-            { value: 'business_request', label: translations[language].tabs.orders.order.states.rescheduleReasons?.businessRequest || "Business Request" },
-            { value: 'delivery_overload', label: translations[language].tabs.orders.order.states.rescheduleReasons?.deliveryOverload || "Delivery Overload" }
+            { value: 'receiver_request', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverRequest || "Receiver Request" },
+            { value: 'customer_unavailable', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverUnavailable || "Customer Unavailable" },
+            { value: 'incorrect_timing', label: translations[language].tabs?.orders.order?.states?.rescheduleReasons?.incorrectTiming || "Incorrect Timing" },
+            { value: 'business_request', label: translations[language].tabs?.orders.order?.states?.rescheduleReasons?.businessRequest || "Business Request" },
+            { value: 'delivery_overload', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.deliveryOverload || "Delivery Overload" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.return_before_delivered_initiated.tile, value: "return_before_delivered_initiated",
+        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.title, value: "return_before_delivered_initiated",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs.orders.order.states.return_before_delivered_initiated?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs.orders.order.states.return_before_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'address_error', label: translations[language].tabs.orders.order.states.return_before_delivered_initiated?.addressRrror || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs.orders.order.states.return_before_delivered_initiated?.noResponse || "No Response" }
+            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states.return_before_delivered_initiated?.businessCancellation || "Business Cancellation" },
+            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states.return_before_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
+            { value: 'address_error', label: translations[language].tabs?.orders.order?.states?.return_before_delivered_initiated?.addressRrror || "Address Error" },
+            { value: 'no_response', label: translations[language].tabs?.orders.order?.states?.return_before_delivered_initiated?.noResponse || "No Response" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.return_after_delivered_initiated.title, value: "return_after_delivered_initiated",
+        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.title, value: "return_after_delivered_initiated",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs.orders.states.order.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs.orders.states.order.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'payment_failure', label: translations[language].tabs.orders.order.states.return_after_delivered_initiated?.paymentFailure || "Payment Failure" },
-            { value: 'address_error', label: translations[language].tabs.orders.order.states.return_after_delivered_initiated?.addressError || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs.orders.order.states.return_after_delivered_initiated?.noResponse || "No Response" },
-            { value: 'package_issue', label: translations[language].tabs.orders.order.states.return_after_delivered_initiated?.packageIssue || "Package Issue" }
+            { value: 'business_cancellation', label: translations[language].tabs?.orders?.states?.order?.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
+            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.states?.order?.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
+            { value: 'payment_failure', label: translations[language].tabs?.orders.order?.states.return_after_delivered_initiated?.paymentFailure || "Payment Failure" },
+            { value: 'address_error', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.addressError || "Address Error" },
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.noResponse || "No Response" },
+            { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.packageIssue || "Package Issue" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.returned.title, value: "returned",
+        label: translations[language].tabs?.orders?.order.states?.returned?.title, value: "returned",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs.orders.order.states.returned?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs.orders.order.states.returned?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'payment_failure', label: translations[language].tabs.orders.order.states.returned?.paymentFailure || "Payment Failure" },
-            { value: 'address_error', label: translations[language].tabs.orders.order.states.returned?.addressError || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs.orders.order.states.returned?.noResponse || "No Response" },
-            { value: 'package_issue', label: translations[language].tabs.orders.order.states.returned?.packageIssue || "Package Issue" }
+            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states.returned?.businessCancellation || "Business Cancellation" },
+            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states.returned?.receiverCancellation || "Receiver Cancellation" },
+            { value: 'payment_failure', label: translations[language].tabs?.orders?.order.states?.returned?.paymentFailure || "Payment Failure" },
+            { value: 'address_error', label: translations[language].tabs?.orders?.order?.states?.returned?.addressError || "Address Error" },
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.returned?.noResponse || "No Response" },
+            { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states?.returned?.packageIssue || "Package Issue" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.delivered, value: "delivered"
+        label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }, {
-        label: translations[language].tabs.orders.order.states.received, value: "received"
+        label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
     }, {
-        label: translations[language].tabs.orders.order.states.delivered_received, value: "delivered/received"
+        label: translations[language].tabs?.orders?.order?.states?.delivered_received, value: "delivered/received"
     }]
     :
     [{
-        label: translations[language].tabs.orders.order.states.waiting, value: "waiting"
+        label: translations[language].tabs.orders.order?.states?.waiting, value: "waiting"
     }, {
-        label: translations[language].tabs.orders.order.states.inBranch, value: "in_branch",
+        label: translations[language].tabs?.orders?.order?.states?.inBranch, value: "in_branch",
         requiresBranch: true
     }, {
-        label: translations[language].tabs.orders.order.states.rejected.title, value: "rejected",
+        label: translations[language].tabs?.orders?.order?.states?.rejected?.title, value: "rejected",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs.orders.order.states.rejected?.rejectionReasons.businessCancellation || "Business Cancellation" },
-            { value: 'invalid_order', label: translations[language].tabs.orders.order.states.rejected?.rejectionReasons.invalidOrder || "Invalid Order" }
+            { value: 'business_cancellation', label: translations[language].tabs.orders?.order?.states?.rejected?.rejectionReasons?.businessCancellation || "Business Cancellation" },
+            { value: 'invalid_order', label: translations[language].tabs.orders?.order?.states?.rejected?.rejectionReasons?.invalidOrder || "Invalid Order" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.stuck.title, value: "stuck",
+        label: translations[language].tabs?.orders?.order?.states?.stuck?.title, value: "stuck",
         requiresReason: true,
         reasons: [
-            { value: 'payment_issue', label: translations[language].tabs.orders.order.states.stuck?.stuckReasons.paymentIssue || "Payment Issue" },
-            { value: 'incorrect_address', label: translations[language].tabs.orders.order.states.stuck?.stuckReasons.incorrectAddress || "Incorrect Address" }
+            { value: 'payment_issue', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.paymentIssue || "Payment Issue" },
+            { value: 'incorrect_address', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.incorrectAddress || "Incorrect Address" }
         ]
     }, {
-        label: translations[language].tabs.orders.order.states.delayed.title, value: "delayed",
+        label: translations[language].tabs?.orders?.order?.states?.delayed?.title, value: "delayed",
         requiresReason: true,
         reasons: [
-            { value: 'sorting_delay', label: translations[language].tabs.orders.order.states.delayed?.delayReasons.sortingDelay || "Sorting Delay" },
-            { value: 'high_order_volume', label: translations[language].tabs.orders.order.states.delayed?.delayReasons.highOrderVolume || "High Order Volume" },
-            { value: 'technical_issue', label: translations[language].tabs.orders.order.states.delayed?.delayReasons.technicalIssue || "Technical Issue" }
+            { value: 'sorting_delay', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.sortingDelay || "Sorting Delay" },
+            { value: 'high_order_volume', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.highOrderVolume || "High Order Volume" },
+            { value: 'technical_issue', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.technicalIssue || "Technical Issue" }
         ]
     }];
 
@@ -522,6 +520,27 @@ export default function Order({ user, order }) {
                                     </View>
                                 </View>
                             </View>
+
+                            {/* sent to branch section */}
+                            {(order.to_branch && ["driver","delivery_company"].includes(authUser.role)) && <View style={styles.orderTypeSection}>
+                                <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                                    <View style={[
+                                        styles.iconWrapper, 
+                                        { backgroundColor: '#7209B7' },
+                                        isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                    ]}>
+                                        <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
+                                    </View>
+                                    <View style={styles.sectionContent}>
+                                        <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                            {translations[language].tabs.orders.order.to_branch}
+                                        </Text>
+                                        <Text style={[styles.orderTypeText, { textAlign: getTextAlign(isRTL) }]}>
+                                            {order.to_branch}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </View>}
                             
                             {/* Order type section */}
                             <View style={styles.orderTypeSection}>
@@ -704,7 +723,7 @@ export default function Order({ user, order }) {
                     </View>
                     
                     <View style={styles.controlContainer}>
-                        {!["delivered", "returned", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && (
+                        {(!["delivered", "returned", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["business","driver","delivery_company"].includes(authUser.role)) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
@@ -728,7 +747,7 @@ export default function Order({ user, order }) {
                             </TouchableOpacity>
                         )}
                         
-                        {authUser.role !== "business" && (
+                        {!["business"].includes(authUser.role) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
