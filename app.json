@@ -49,6 +49,12 @@
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera"
         }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Allow app to use Face ID for authentication"
+        }
       ]
     ],
     "experiments": {

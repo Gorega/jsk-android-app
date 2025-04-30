@@ -1,119 +1,305 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity,TextInput, Alert } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {useAuth} from "../_layout";
+import Feather from '@expo/vector-icons/Feather';
+import { useAuth } from "../_layout";
 import PickerModal from '../../components/pickerModal/PickerModal';
 import { router } from 'expo-router';
-import AntDesign from '@expo/vector-icons/AntDesign';
+import { getToken } from '../../utils/secureStore';
+import { Audio } from 'expo-av';
 
 export default function CameraScanner() {
-  const {user,setTrackChanges} = useAuth();
+  const { user, setTrackChanges } = useAuth();
   const { language } = useLanguage();
+  const isRTL = ["ar", "he"].includes(language);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
-  const [formSpinner,setFormSpinner] = useState({status:false});
-  const [success,setSuccess] = useState(false);
+  const [formSpinner, setFormSpinner] = useState({ status: false });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [scannedItems, setScannedItems] = useState([]);
-  const [branches,setBranches] = useState([]);
-  const [showCreateDispatchedCollectionModal,setShowCreateDispatchedCollectionModal] = useState(false);
-  const [showPickerModal,setShowPickerModal] = useState(false);
+  const [branches, setBranches] = useState([]);
+  const [showCreateDispatchedCollectionModal, setShowCreateDispatchedCollectionModal] = useState(false);
+  const [showPickerModal, setShowPickerModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
-  const [note,setNote] = useState("");
+  const [note, setNote] = useState("");
   const [manualOrderId, setManualOrderId] = useState("");
-  const [selectedValue,setSelectedValue] = useState({
-    fromBranch:"",
-    toBranch:""
+  const [selectedValue, setSelectedValue] = useState({
+    toBranch: null
   });
+  const [processingBarcode, setProcessingBarcode] = useState(false);
 
-  const createDispatchedCollection = async ()=>{
-        try{
-          setFormSpinner({status: true});
-          
-          const ids = scannedItems || [];
-          // Format orders array based on collection type
-          const formattedOrders = ids.map(id => ({ order_id: id }));
+  // Simple vibration function instead of sound to avoid file errors
+  const vibrate = (pattern) => {
+    if (pattern === 'success') {
+      // Short vibration for success
+      try {
+        Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        const soundObject = new Audio.Sound();
+        soundObject.setOnPlaybackStatusUpdate(null);
+        soundObject.loadAsync(require('../../assets/sound/success.mp3')).then(() => {
+          soundObject.playAsync();
+        }).catch(error => {
+          console.log("Error playing sound", error);
+        });
+      } catch (error) {
+        console.log("Error with audio", error);
+      }
+    } else if (pattern === 'error') {
+      // Longer vibration for error
+      try {
+        Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        const soundObject = new Audio.Sound();
+        soundObject.setOnPlaybackStatusUpdate(null);
+        soundObject.loadAsync(require('../../assets/sound/failure.mp3')).then(() => {
+          soundObject.playAsync();
+        }).catch(error => {
+          console.log("Error playing sound", error);
+        });
+      } catch (error) {
+        console.log("Error with audio", error);
+      }
+    }
+  };
 
-          const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`,{
-          method:"POST",
-          credentials:"include",
-          headers: {
-              "Content-Type": "application/json",
-              'Accept-Language': language
-          },
-          body:JSON.stringify({
-              type_id: 4,
-              orders: formattedOrders,
-              driver_id:user?.userId,
-              to_branch_id:selectedValue.toBranch?.branch_id,
-              note_content:note
-            })
-      })
+  const playSuccessSound = async () => {
+    vibrate('success');
+  };
+
+  const playErrorSound = async () => {
+    vibrate('error');
+  };
+
+  const createDispatchedCollection = async () => {
+
+    try {
+      setFormSpinner({ status: true });
+      
+      const ids = scannedItems || [];
+      if (ids.length === 0) {
+        Alert.alert(
+          translations[language].errors.error,
+          translations[language].camera.noItemsScanned
+        );
+        setFormSpinner({ status: false });
+        return;
+      }
+
+      // Format orders array based on collection type
+      const formattedOrders = ids.map(id => {
+        const orderId = typeof id === 'object' ? id.order_id : id;
+        return { order_id: orderId };
+      });
+
+      console.log(formattedOrders)
+      
+      const token = await getToken("userToken");
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          'Accept-Language': language,
+          "Cookie": token ? `token=${token}` : ""
+        },
+        body: JSON.stringify({
+          type_id: 6,
+          orders: formattedOrders,
+          driver_id: user?.userId,
+          to_branch_id: selectedValue.toBranch?.branch_id ? selectedValue.toBranch?.branch_id : null,
+          note_content: note
+        })
+      });
+      
       const responseData = await res.json();
       if (!res.ok) {
-          setFormSpinner({status:false})
-          Alert.alert(
-            translations[language].errors.error,
-            responseData.message
-          )
-          throw new Error(responseData.error || 'Failed to create collection');
-      }else{
+        console.log(responseData)
+        setFormSpinner({ status: false });
+        Alert.alert(
+          translations[language].errors.error,
+          responseData.message
+        );
+        throw new Error(responseData.error || 'Failed to create collection');
+      } else {
         router.back();
-        setTrackChanges({type:"COLLECTION_CREATED"})
         setSuccess(true);
       }
-      }catch(err){
-          setFormSpinner({status:false})
-          console.log(err)
-      }finally {
-        setLoading(false);
+    } catch (err) {
+      setFormSpinner({ status: false });
+      console.log(err);
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   const fetchBranches = async () => {
-    try{
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`,{
-        method:"GET",
-        credentials:"include",
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`, {
+        method: "GET",
+        credentials: "include",
         headers: {
-            'Accept': 'application/json',
-            "Content-Type": "application/json"
-          }
-      })
+          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
+        }
+      });
       const data = await res.json();
-      setBranches(data.data)
-    }catch(err){
+      setBranches(data.data);
+    } catch (err) {
+      console.error('Error fetching branches:', err);
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].camera.branchesError
+      );
     }
-};
+  };
 
-const branchHandler = (fieldType)=>{
-  setShowPickerModal(true)
-  fetchBranches();
-  setCurrentField(fieldType);
-}
+  const branchHandler = (fieldType) => {
+    setShowPickerModal(true);
+    fetchBranches();
+    setCurrentField(fieldType);
+  };
 
-const handleManualOrderAdd = () => {
-  if (!manualOrderId.trim()) return;
+  const fetchOrderDetails = async (orderId) => {
+    try {
+      setLoading(true);
+      const token = await getToken("userToken");
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/basic_info?language_code=${language}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
+        }
+      });
+      
+      // Check for non-JSON responses first
+      const contentType = res.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        setError(translations[language].camera.orderNotFoundError);
+        setTimeout(() => setError(null), 2000);
+        return null;
+      }
+      
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseError) {
+        setError(translations[language].camera.orderNotFoundError);
+        setTimeout(() => setError(null), 2000);
+        return null;
+      }
+      
+      if (!res.ok) {
+        setError(data.message || translations[language].camera.orderNotFoundError);
+        setTimeout(() => setError(null), 2000);
+        return null;
+      }
+      
+      return data.data;
+    } catch (err) {
+      console.error('Error fetching order details:', err);
+      setError(translations[language].camera.orderLookupError);
+      setTimeout(() => setError(null), 2000);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const stringifiedItem = String(manualOrderId);
-  const isDuplicate = scannedItems.some(item => String(item) === stringifiedItem);
+  const handleManualOrderAdd = async () => {
+    if (!manualOrderId.trim()) return;
 
-  if (!isDuplicate) {
-    setScannedItems(prev => [...prev, manualOrderId]);
-    setManualOrderId(""); // Clear input after adding
-  } else {
-    setError(translations[language].camera.scanDuplicateTextError);
-    setTimeout(() => setError(null), 2000);
-  }
-};
+    const stringifiedItem = String(manualOrderId);
+    const isDuplicate = scannedItems.some(item => 
+      String(item.order_id) === stringifiedItem || String(item.reference_id) === stringifiedItem
+    );
+
+    if (isDuplicate) {
+      setError(translations[language].camera.scanDuplicateTextError);
+      playErrorSound();
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
+
+    // Fetch order details
+    const orderDetails = await fetchOrderDetails(manualOrderId);
+    
+    if (orderDetails) {
+      setScannedItems(prev => [...prev, orderDetails]);
+      setManualOrderId(""); // Clear input after adding
+      playSuccessSound();
+    } else {
+      playErrorSound();
+    }
+  };
+
+  const handleBarCodeScanned = async ({ type, data }) => {
+    // Prevent duplicate scans by checking if we're already processing a barcode
+    if (processingBarcode) return;
+    
+    setProcessingBarcode(true);
+    
+    try {
+      let itemToAdd = data;
+      
+      if (type === 'qr') {
+        try {
+          // Try parsing as JSON first
+          const parsedData = JSON.parse(data);
+          itemToAdd = parsedData;
+        } catch (parseError) {
+          // If parsing fails, use the raw data
+          itemToAdd = data;
+        }
+      }
+
+      // Convert to string for comparison
+      const stringifiedItem = String(itemToAdd);
+      const isDuplicate = scannedItems.some(item => 
+        String(item.order_id) === stringifiedItem || String(item.reference_id) === stringifiedItem
+      );
+
+      if (isDuplicate) {
+        setError(translations[language].camera.scanDuplicateTextError);
+        playErrorSound();
+        setTimeout(() => setError(null), 5000);
+        setProcessingBarcode(false);
+        return;
+      }
+
+      // Fetch order details
+      const orderDetails = await fetchOrderDetails(stringifiedItem);
+      
+      if (orderDetails) {
+        setScannedItems(prev => [...prev, orderDetails]);
+        setScanned(true);
+        playSuccessSound();
+      } else {
+        playErrorSound();
+      }
+    } catch (err) {
+      console.error('Error processing scan:', err);
+      setError(translations[language].camera.scanInvalidTextError);
+      playErrorSound();
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      // Allow new scan after a short delay
+      setTimeout(() => {
+        setProcessingBarcode(false);
+      }, 1500);
+    }
+  };
 
   useEffect(() => {
     const requestCameraPermission = async () => {
       const { status } = await requestPermission();
-      console.log("Camera permission status:", status);
       if (status !== 'granted') {
         setError(translations[language].camera.permission.notGranted);
       }
@@ -124,178 +310,298 @@ const handleManualOrderAdd = () => {
     }
   }, [requestPermission, permission]);
 
-  const handleBarCodeScanned = ({ type, data }) => {
-    try {
-      let itemToAdd;
-      if (type === 'qr') {
-        // For QR codes, try to parse and get order_id
-        const parsedData = JSON.parse(data);
-        itemToAdd = parsedData.order_id;
-      } else {
-        // For barcodes, use the raw data
-        itemToAdd = data;
-      }
-
-      // // validate scanned order
-      // fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/collections/4/validate?order_ids=${itemToAdd}`,{credentials:"include"})
-      // .then(async (res)=>{
-      //     const data = await res.json();
-      //     if(data.error){
-      //       setError('This order already picked up by other driver');
-      //     }else{
-            
-      //     }
-      // })
-
-      // Convert both the new item and existing items to strings for comparison
-      const stringifiedItem = String(itemToAdd);
-      const isDuplicate = scannedItems.some(item => String(item) === stringifiedItem);
-
-      if (!isDuplicate) {
-        setScannedItems(prev => [...prev, itemToAdd]);
-        setScanned(true);
-      } else {
-        setError(translations[language].camera.scanDuplicateTextError);
-        // Clear error after 2 seconds
-        setTimeout(() => setError(null), 2000);
-      }
-    } catch (err) {
-      console.error('Error processing scan:', err);
-      setError(translations[language].camera.scanInvalidTextError);
-      // Clear error after 2 seconds
-      setTimeout(() => setError(null), 2000);
-    }
-  };
-
-
   if (!permission?.granted) {
     return (
-      <View style={styles.container}>
-        <Text>{translations[language].camera.permission.request}</Text>
-      </View>
+      <SafeAreaView style={styles.permissionContainer}>
+        <View style={styles.permissionContent}>
+          <Feather name="camera-off" size={50} color="#4361EE" />
+          <Text style={styles.permissionText}>
+            {translations[language].camera.permission.request}
+          </Text>
+          <TouchableOpacity 
+            style={styles.permissionButton}
+            onPress={requestPermission}
+          >
+            <Text style={styles.permissionButtonText}>
+              {translations[language]?.grantPermission || 'Grant Permission'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <>
       <View style={styles.container}>
-      <CameraView
-        style={[StyleSheet.absoluteFillObject, { height: '70%' }]}
-        active={!showCreateDispatchedCollectionModal}
-        facing='back'
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        barCodeScannerSettings={{
-          barCodeTypes: [
-            'qr',
-            'ean-13',
-            'ean-8',
-            'code-128',
-            'code-39',
-            'upc-e',
-            'codabar'
-          ],
-        }}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.border} />
-          <Text style={styles.scanText}>
-            {!scanned && translations[language].camera.scanText}
-          </Text>
-          {error && (
-            <Text style={{color:"red",fontWeight:"500"}}>{error}</Text>
-          )}
-          {(scanned && !showCreateDispatchedCollectionModal) && (
-            <Text
-              style={styles.rescanButton}
-              onPress={() => setScanned(false)}
-            >
-              {translations[language].camera.scanAgainTapText}
-            </Text>
-          )}
-        </View>
-      </CameraView>
-      
-      {showCreateDispatchedCollectionModal
-      ?
-      <View style={styles.scannedItemsContainer}>
-          <TouchableOpacity style={{marginBottom:10,transform:["he", "ar"].includes(language) ? [{ scaleX: -1 }] : [],flexDirection:["ar","he"].includes(language) ? "row" : "row-reverse"}} onPress={()=> setShowCreateDispatchedCollectionModal(false)}>
-            <MaterialIcons name="arrow-back" size={20} color="black" />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder={translations[language].camera.note}
-            value={note}
-            onChangeText={(input)=> setNote(input)}
-          />
-          <TouchableOpacity style={styles.pickerBox} onPress={()=> branchHandler('toBranch')}>
-            <Text style={{textAlign:["ar","he"].includes(language) ? "right" : "left"}}>{selectedValue.toBranch.name ? selectedValue.toBranch.name : translations[language].camera.toBranch}</Text>
-          </TouchableOpacity>
-          <View style={[styles.submit,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-            <TouchableOpacity onPress={createDispatchedCollection}>
-              <Text style={{color:"#F8C332"}}>{translations[language].camera.confirm}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={()=> router.back()}>
-              <Text>{translations[language].camera.cancel}</Text>
-            </TouchableOpacity>
-          </View>
-      </View>
-      :
-      <View style={styles.scannedItemsContainer}>
-        <View style={{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row",alignItems:"center",justifyContent:"space-between"}}>
-          <Text style={styles.totalText}>
-          {translations[language].camera.totalScanned}: {scannedItems.length}
-          </Text>
-          {scannedItems.length > 0 && <TouchableOpacity style={{padding:0,margin:0}} onPress={()=> setShowCreateDispatchedCollectionModal(true)}>
-            <AntDesign name="checkcircleo" size={26} color="#F8C332" />
-          </TouchableOpacity>}
-        </View>
-        {/* Add manual input section */}
-        <View style={[styles.manualInputContainer,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-          <TextInput
-            style={[styles.manualInput,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}
-            placeholder={translations[language].camera.enterOrderId}
-            value={manualOrderId}
-            onChangeText={setManualOrderId}
-          />
-          <TouchableOpacity 
-            style={styles.addButton}
-            onPress={handleManualOrderAdd}
-          >
-            <Text style={styles.addButtonText}>{translations[language].camera.add}</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView contentContainerStyle={styles.itemsList}>
-          {scannedItems.map((item, index) => (
-            <View key={index} style={[styles.itemText,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-              <Text>
-              {item}
+        <CameraView
+          style={[StyleSheet.absoluteFillObject, { height: '60%' }]}
+          active={!showCreateDispatchedCollectionModal}
+          facing='back'
+          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          barCodeScannerSettings={{
+            barCodeTypes: [
+              'qr',
+              'ean-13',
+              'ean-8',
+              'code-128',
+              'code-39',
+              'upc-e',
+              'codabar'
+            ],
+          }}
+        >
+          <View style={styles.overlay}>
+            {/* Scanner frame with animated border */}
+            <View style={styles.frameBorder}>
+              <View style={styles.cornerTL} />
+              <View style={styles.cornerTR} />
+              <View style={styles.cornerBL} />
+              <View style={styles.cornerBR} />
+            </View>
+          
+            {/* Instructions text */}
+            <View style={styles.instructionsContainer}>
+              <Text style={styles.scanText}>
+                {!scanned && translations[language].camera.scanText}
               </Text>
-              <TouchableOpacity onPress={()=> {
-                const updatedItems = scannedItems.filter((_, i) => i !== index);
-                setScannedItems(updatedItems);
-              }}>
-                <AntDesign name="delete" size={20} color="red" />
+              
+              {error && (
+                <View style={styles.errorBanner}>
+                  <MaterialIcons name="error-outline" size={20} color="white" />
+                  <Text style={styles.errorBannerText}>
+                    {error}
+                  </Text>
+                </View>
+              )}
+              
+              {(scanned && !showCreateDispatchedCollectionModal) && (
+                <TouchableOpacity
+                  style={styles.rescanButton}
+                  onPress={() => setScanned(false)}
+                >
+                  <Feather name="refresh-cw" size={16} color="white" style={{marginRight: 8}} />
+                  <Text style={styles.rescanButtonText}>
+                    {translations[language].camera.scanAgainTapText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </CameraView>
+      
+        {showCreateDispatchedCollectionModal ? (
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {translations[language].camera.createCollection}
+              </Text>
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={() => setShowCreateDispatchedCollectionModal(false)}
+              >
+                <Feather 
+                  name={isRTL ? "chevron-right" : "chevron-left"} 
+                  size={24} 
+                  color="#4361EE" 
+                />
               </TouchableOpacity>
             </View>
-          ))}
-        </ScrollView>
+            
+            <View style={styles.modalContent}>
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                  {translations[language].camera.note}
+                </Text>
+                <TextInput
+                  style={[styles.textInput, isRTL && styles.rtlInput]}
+                  placeholder={translations[language].camera.notePlaceholder}
+                  value={note}
+                  onChangeText={(input) => setNote(input)}
+                  multiline={true}
+                  numberOfLines={3}
+                  textAlignVertical="top"
+                  placeholderTextColor="#94A3B8"
+                />
+              </View>
+              
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                  {translations[language].camera.toBranch}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.pickerButton} 
+                  onPress={() => branchHandler('toBranch')}
+                >
+                  <Text style={[
+                    styles.pickerButtonText, 
+                    selectedValue.toBranch?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
+                    isRTL && styles.rtlText
+                  ]}>
+                    {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
+                  </Text>
+                  <Feather name="chevron-down" size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.actionButtons}>
+                <TouchableOpacity 
+                  style={styles.cancelButton} 
+                  onPress={() => setShowCreateDispatchedCollectionModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>
+                    {translations[language].camera.cancel}
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.confirmButton} 
+                  onPress={createDispatchedCollection}
+                  disabled={formSpinner.status}
+                >
+                  {formSpinner.status ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.confirmButtonText}>
+                      {translations[language].camera.confirm}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.scannedItemsContainer}>
+            <View style={styles.scannedHeaderContainer}>
+              <View style={[
+                styles.scannedHeader,
+                { flexDirection: isRTL ? "row-reverse" : "row" }
+              ]}>
+                <View style={styles.totalContainer}>
+                  <Text style={styles.totalLabel}>
+                    {translations[language].camera.totalScanned}:
+                  </Text>
+                  <View style={styles.totalBadge}>
+                    <Text style={styles.totalValue}>{scannedItems.length}</Text>
+                  </View>
+                </View>
+                
+                {scannedItems.length > 0 && (
+                  <TouchableOpacity 
+                    style={styles.nextButton} 
+                    onPress={() => setShowCreateDispatchedCollectionModal(true)}
+                  >
+                    <Text style={styles.nextButtonText}>
+                      {translations[language].camera.next}
+                    </Text>
+                    <Feather 
+                      name={isRTL ? "chevron-left" : "chevron-right"} 
+                      size={16} 
+                      color="#FFFFFF" 
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+            
+            {/* Add manual input section */}
+            <View style={styles.manualInputContainer}>
+              <TextInput
+                style={[styles.manualInput, isRTL && styles.rtlInput]}
+                placeholder={translations[language].camera.enterOrderId}
+                value={manualOrderId}
+                onChangeText={setManualOrderId}
+                placeholderTextColor="#94A3B8"
+              />
+              <TouchableOpacity 
+                style={styles.addButton}
+                onPress={handleManualOrderAdd}
+              >
+                <Feather name="plus" size={16} color="#FFFFFF" />
+                <Text style={styles.addButtonText}>{translations[language].camera.add}</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Scanned items list */}
+            {scannedItems.length > 0 ? (
+              <ScrollView 
+                style={styles.itemsScrollView}
+                contentContainerStyle={styles.itemsList}
+              >
+                {scannedItems.map((item, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.itemContainer,
+                      { flexDirection: isRTL ? "row-reverse" : "row" }
+                    ]}
+                  >
+                    <View style={[
+                      styles.itemContent,
+                      { flexDirection: isRTL ? "row-reverse" : "row" }
+                    ]}>
+                      <View style={[
+                        styles.itemIconContainer,
+                        isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                      ]}>
+                        <Feather name="package" size={16} color="#4361EE" />
+                      </View>
+                      <View style={styles.itemTextContainer}>
+                        <Text style={[styles.itemText, isRTL && styles.rtlText]}>
+                          {typeof item === 'object' ? item.order_id : item}
+                        </Text>
+                        {typeof item === 'object' && (
+                          <>
+                            <Text style={[styles.itemDetailText, isRTL && styles.rtlText]}>
+                              {item.receiver_name}
+                            </Text>
+                            <Text style={[styles.itemDetailText, isRTL && styles.rtlText]}>
+                              {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}
+                            </Text>
+                          </>
+                        )}
+                      </View>
+                    </View>
+                    
+                    <TouchableOpacity 
+                      style={styles.deleteButton}
+                      onPress={() => {
+                        const updatedItems = scannedItems.filter((_, i) => i !== index);
+                        setScannedItems(updatedItems);
+                      }}
+                    >
+                      <Feather name="trash-2" size={18} color="#EF4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <View style={styles.emptyContainer}>
+                <Feather name="inbox" size={40} color="#94A3B8" />
+                <Text style={styles.emptyText}>
+                  {translations[language].camera.noItemsYet}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
-      }
-    </View>
 
-    {showPickerModal
-    &&
-    <PickerModal
-        list={branches}
-        setSelectedValue={setSelectedValue}
-        showPickerModal={showPickerModal}
-        setShowPickerModal={setShowPickerModal}
-        field={{
+      {showPickerModal && (
+        <PickerModal
+          list={branches}
+          setSelectedValue={setSelectedValue}
+          showPickerModal={showPickerModal}
+          setShowPickerModal={setShowPickerModal}
+          field={{
             name: currentField,
-            label: currentField === 'fromBranch' ? translations[language].camera.fromBranch : translations[language].camera.toBranch,
-            showSearchBar: false
-        }}
-    />}
+            label: currentField === 'fromBranch' 
+              ? translations[language].camera.fromBranch 
+              : translations[language].camera.toBranch,
+            showSearchBar: true
+          }}
+        />
+      )}
     </>
   );
 }
@@ -303,100 +609,424 @@ const handleManualOrderAdd = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f8f9fa',
   },
   overlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  border: {
+  frameBorder: {
     width: 250,
     height: 250,
-    borderWidth: 1,
-    borderColor: '#F8C332',
-    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  rescanButton: {
-    fontSize: 16,
-    color: 'white',
-    backgroundColor: '#F8C332',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
+  cornerTL: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#4361EE',
+    borderTopLeftRadius: 12,
+  },
+  cornerTR: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#4361EE',
+    borderTopRightRadius: 12,
+  },
+  cornerBL: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: '#4361EE',
+    borderBottomLeftRadius: 12,
+  },
+  cornerBR: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: '#4361EE',
+    borderBottomRightRadius: 12,
+  },
+  instructionsContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   scanText: {
     color: 'white',
     fontSize: 16,
-    marginTop: 15,
+    fontWeight: '500',
+    textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 20,
   },
+  rescanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4361EE',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 30,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  rescanButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(239, 68, 68, 0.9)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    color: 'white',
+    fontWeight: '500',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  // Scanned items container styles
   scannedItemsContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: 'white',
-    padding: 15,
-    height: '40%',
-    boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
+    height: '50%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 8,
+    paddingBottom: 10,
   },
-  totalText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color:"#F8C332",
+  scannedHeaderContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
-  itemsList: {
-    flexGrow: 1,
-    marginTop:15
+  scannedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  itemText: {
+  totalContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  totalLabel: {
     fontSize: 16,
-    marginBottom: 5,
-    borderWidth:1,
-    borderColor:"rgba(0,0,0,.1)",
-    padding:15,
-    flexDirection:"row",
-    alignItems:"center",
-    justifyContent:"space-between"
+    fontWeight: '600',
+    color: '#1F2937',
+    marginRight: 8,
   },
-  pickerBox:{
-    marginBottom:15,
-    borderWidth:1,
-    borderColor:"rgba(0,0,0,.1)",
-    padding:15
+  totalBadge: {
+    backgroundColor: '#4361EE',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  input:{
-    borderBottomColor:"rgba(0,0,0,.1)",
-    borderBottomWidth:1,
-    marginBottom:15
+  totalValue: {
+    color: 'white',
+    fontWeight: '700',
+    fontSize: 14,
   },
-  submit:{
-    flexDirection:"row",
-    justifyContent:"flex-end",
-    gap:25,
-    marginTop:2
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4361EE',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+  },
+  nextButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+    marginRight: 4,
   },
   manualInputContainer: {
     flexDirection: 'row',
-    marginBottom: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     gap: 10,
-    marginTop:10
   },
   manualInput: {
     flex: 1,
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,.1)',
-    padding: 10,
-    borderRadius: 5,
+    borderColor: 'rgba(0,0,0,0.1)',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  rtlInput: {
+    textAlign: 'right',
+  },
+  rtlText: {
+    textAlign: 'right',
   },
   addButton: {
-    backgroundColor: '#F8C332',
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: '#4361EE',
+    padding: 12,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   addButtonText: {
     color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  itemsScrollView: {
+    flex: 1,
+  },
+  itemsList: {
+    padding: 16,
+  },
+  itemContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  itemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  itemIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(67, 97, 238, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  itemTextContainer: {
+    flex: 1,
+  },
+  itemText: {
+    fontSize: 15,
+    color: '#1F2937',
+  },
+  itemDetailText: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emptyText: {
+    marginTop: 12,
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  // Modal styles
+  modalContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '50%',
+    backgroundColor: 'white',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    padding: 16,
+    position: 'relative',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    padding: 4,
+  },
+  modalContent: {
+    padding: 16,
+    flex: 1,
+  },
+  fieldContainer: {
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    fontSize: 14,
     fontWeight: '500',
+    color: '#64748B',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+    fontSize: 14,
+    color: '#1F2937',
+    minHeight: 100,
+  },
+  pickerButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: '#F9FAFB',
+  },
+  pickerButtonText: {
+    fontSize: 14,
+  },
+  pickerPlaceholderText: {
+    color: '#94A3B8',
+  },
+  pickerSelectedText: {
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 'auto',
+    paddingBottom: 16,
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  cancelButtonText: {
+    color: '#64748B',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  confirmButton: {
+    backgroundColor: '#4361EE',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    shadowColor: '#4361EE',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  permissionContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  permissionContent: {
+    padding: 24,
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    width: '80%',
+  },
+  permissionText: {
+    fontSize: 16,
+    color: '#1F2937',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  permissionButton: {
+    backgroundColor: '#4361EE',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+  },
+  permissionButtonText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });

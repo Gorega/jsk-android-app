@@ -1,29 +1,39 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { useLanguage } from '../utils/languageContext';
 import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from '@/app/_layout';
 import { router } from 'expo-router';
 import FlatListData from './FlatListData';
 import { useSocket } from '../utils/socketContext';
+import { getToken } from '../utils/secureStore';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Notifications() {
   const socket = useSocket();
   const { language } = useLanguage();
-  const {user} = useAuth();
-  const [notificationsData,setNotificationsData] = useState([]);
+  const { user } = useAuth();
+  const [notificationsData, setNotificationsData] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  
+  const isRTL = useMemo(() => ["he", "ar"].includes(language), [language]);
 
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
+      if (pageNum === 1) setIsLoading(true);
+      const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications?user_id=${user.userId}&page=${pageNum}&language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
         }
       });
 
@@ -41,78 +51,77 @@ export default function Notifications() {
       return data.data.length > 0;
     } catch (error) {
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const loadMoreNotifications = async () => {
     if (!loadingMore && notificationsData?.length > 0) {
-        // Check if there's more data to load based on the current page size
-        if (notificationsData.length < 10 * page) {
-            console.log("No more data to load");
-            return;
-        }
+      // Check if there's more data to load based on the current page size
+      if (notificationsData.length < 10 * page) {
+        return;
+      }
 
-        setLoadingMore(true);    
-        const hasMore = await fetchNotificationsData(page + 1);
-        if (hasMore) {
-            setPage(prev => prev + 1);
-        }
-        setLoadingMore(false);
+      setLoadingMore(true);    
+      const hasMore = await fetchNotificationsData(page + 1);
+      if (hasMore) {
+        setPage(prev => prev + 1);
+      }
+      setLoadingMore(false);
     }
-};
+  };
 
   const handleNotificationItemClick = async (notificationId, notificationType, notificationOrderId) => {
     try {
-
-      if (notificationType === "order") {
+      // Navigate FIRST before starting the async operation
+      if (notificationType === "order" && notificationOrderId) {
         router.push({
-          pathname: "(track)",
+          pathname: "/(track)",
           params: { orderId: notificationOrderId }
         });
       }
-
+      
+      // Then mark as read (this happens in the background)
+      const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
         })
       });
-
+  
       if (!res.ok) {
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-
+  
       setNotificationsData(prev => 
         prev.map(n => n.notification_id === notificationId 
           ? {...n, is_read: true} 
           : n
         )
       );
-
-      socket.emit('notification', {
-        type: 'UPDATE_COUNT',
-        user_id: Number(user.userId),
-        timestamp: Date.now()
-      });
-
-      // No need to emit socket event as the server will handle it
     } catch (error) {
+      console.error("Error marking notification as read:", error);
     }
   };
 
   const deleteAllNotifications = async () => {
     try {
+      const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/all`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -124,20 +133,20 @@ export default function Notifications() {
       }
 
       setNotificationsData([]);
-      // No need to emit socket event as the server will handle it
     } catch (error) {
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      console.log('Deleting notification:', notificationId);
+      const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -151,7 +160,6 @@ export default function Notifications() {
       setNotificationsData(prev => 
         prev.filter(n => n.notification_id !== notificationId)
       );
-      // No need to emit socket event as the server will handle it
     } catch (error) {
     }
   };
@@ -159,88 +167,65 @@ export default function Notifications() {
   useEffect(() => {
     if (!socket || !user) return;
 
-    const handleNotification = (notification) => {
-        console.log('Received notification in list:', notification);
-        
-        // Ensure we're working with numbers for comparison
-        const currentUserId = Number(user.userId);
-        const notificationUserId = Number(notification.user_id);
-        
-        if (currentUserId !== notificationUserId) {
-            return;
+    const handleNotification = (notification) => {        
+      // Ensure we're working with numbers for comparison
+      const currentUserId = Number(user.userId);
+      const notificationUserId = Number(notification.user_id);
+      
+      if (currentUserId !== notificationUserId) {
+        return;
+      }
+
+      try {
+        switch (notification.type) {
+          case 'NEW_NOTIFICATION':
+            // Ensure we have all required fields
+            const newNotification = {
+              notification_id: notification.notification_id,
+              message: notification.message,
+              is_read: false,
+              is_read_count: false,
+              created_at: new Date().toISOString(), // Use current time if timestamp not provided
+              user_id: notificationUserId,
+              type: notification.notificationType || 'order', // Default to 'order' if not specified
+              order_id: notification.orderId
+            };
+            
+            setNotificationsData(prev => {
+              const exists = prev.some(n => n.notification_id === newNotification.notification_id);
+              if (exists) {
+                return prev;
+              }
+              return [newNotification, ...prev];
+            });
+            break;
+              
+          case 'NOTIFICATION_UPDATED':
+            setNotificationsData(prev =>
+              prev.map(n => n.notification_id === notification.notification_id
+                ? { ...n, is_read: true }
+                : n
+              )
+            );
+            break;
+
+          case 'NOTIFICATION_DELETED':
+            setNotificationsData(prev => {
+              const filtered = prev.filter(n => n.notification_id !== notification.notification_id);
+              return filtered;
+            });
+            break;
+
+          case 'ALL_NOTIFICATIONS_DELETED':
+            setNotificationsData([]);
+            break;
+
+          default:
+            break;
         }
-
-        try {
-            switch (notification.type) {
-                case 'NEW_NOTIFICATION':
-                    // Ensure we have all required fields
-                    const newNotification = {
-                        notification_id: notification.notification_id,
-                        message: notification.message,
-                        is_read: false,
-                        is_read_count: false,
-                        created_at: new Date().toISOString(), // Use current time if timestamp not provided
-                        user_id: notificationUserId,
-                        type: notification.notificationType || 'order', // Default to 'order' if not specified
-                        order_id: notification.orderId
-                    };
-                    
-                    setNotificationsData(prev => {
-                      const exists = prev.some(n => n.notification_id === newNotification.notification_id);
-                      if (exists) {
-                          return prev;
-                      }
-                      return [newNotification, ...prev];
-                  });
-
-                  // Emit UPDATE_COUNT event with additional data
-                  socket.emit('notification', {
-                      type: 'UPDATE_COUNT',
-                      user_id: currentUserId,
-                      notification_id: notification.notification_id,
-                      is_read: false,
-                      timestamp: Date.now()
-                  });
-                  break;
-                    
-
-                case 'NOTIFICATION_UPDATED':
-                    console.log('Updating notification:', notification.notification_id);
-                    setNotificationsData(prev =>
-                        prev.map(n => n.notification_id === notification.notification_id
-                            ? { ...n, is_read: true }
-                            : n
-                        )
-                    );
-                    break;
-
-                case 'NOTIFICATION_DELETED':
-                  setNotificationsData(prev => {
-                    const filtered = prev.filter(n => n.notification_id !== notification.notification_id);
-                    // Emit UPDATE_COUNT event after deleting
-                    socket.emit('notification', {
-                        type: 'UPDATE_COUNT',
-                        user_id: currentUserId,
-                        timestamp: Date.now()
-                    });
-                    return filtered;
-                });
-                break;
-
-                case 'ALL_NOTIFICATIONS_DELETED':
-                  setNotificationsData([]);
-                  // Emit UPDATE_COUNT event after clearing all
-                  socket.emit('notification', {
-                      type: 'UPDATE_COUNT',
-                      user_id: currentUserId,
-                      timestamp: Date.now()
-                  });
-                  break;
-
-                default:
-            }
-        } catch (error) {
-        }
+      } catch (error) {
+        console.error("Error handling notification:", error);
+      }
     };
 
     // Remove existing listeners before adding new one
@@ -251,70 +236,212 @@ export default function Notifications() {
     fetchNotificationsData();
 
     return () => {
-        socket.off('notification', handleNotification);
+      socket.off('notification', handleNotification);
     };
-}, [socket, user]);
-
+  }, [socket, user]);
 
   const getIcon = (type) => {
     switch (type) {
       case 'order':
-        return <MaterialIcons name="shopping-bag" size={24} color="#F8C332" />;
+        return (
+          <LinearGradient
+            colors={['#4CC9F0', '#4361EE']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.notificationIconGradient}
+          >
+            <MaterialIcons name="shopping-bag" size={20} color="white" />
+          </LinearGradient>
+        );
       case 'delivery':
-        return <MaterialIcons name="local-shipping" size={24} color="#4CAF50" />;
+        return (
+          <LinearGradient
+            colors={['#7209B7', '#F72585']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.notificationIconGradient}
+          >
+            <MaterialIcons name="local-shipping" size={20} color="white" />
+          </LinearGradient>
+        );
       default:
-        return <MaterialIcons name="notifications" size={24} color="#2196F3" />;
+        return (
+          <LinearGradient
+            colors={['#3A0CA3', '#480CA8']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.notificationIconGradient}
+          >
+            <MaterialIcons name="notifications" size={20} color="white" />
+          </LinearGradient>
+        );
     }
   };
 
+  const formatDate = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    
+    // Check if it's today
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Check if it's yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return translations[language]?.notifications?.yesterday || 'Yesterday';
+    }
+    
+    // Otherwise return formatted date
+    return date.toLocaleDateString(language, { day: 'numeric', month: 'short' });
+  };
+
   const renderNotification = (notification) => (
-    <View key={notification.notification_id} style={[styles.notificationItem, !notification.is_read && styles.unread, {flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+    <View 
+      key={notification.notification_id} 
+      style={[
+        styles.notificationItem, 
+        !notification.is_read && styles.unread
+      ]}
+    >
       <TouchableOpacity 
-        style={[styles.notificationContent,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}
+        style={[
+          styles.notificationContent,
+          { flexDirection: isRTL ? "row-reverse" : "row" }
+        ]}
         onPress={() => handleNotificationItemClick(notification.notification_id, notification.type, notification.order_id)}
+        activeOpacity={0.7}
       >
-        <View style={[styles.iconContainer,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+        <View style={styles.iconContainer}>
           {getIcon(notification.type)}
+          {!notification.is_read && <View style={styles.unreadIndicator} />}
         </View>
-        <View style={styles.contentContainer}>
-          <Text style={[styles.title,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{`${translations[language].notifications.order} #${notification.order_id}`}</Text>
-          <Text style={[styles.message,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{notification.translated_message}</Text>
-          <Text style={[styles.time,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>
-            {new Date(notification.created_at).toLocaleDateString(language, {hour: '2-digit',minute: '2-digit'})}
+        
+        <View style={[
+          styles.contentContainer,
+          { paddingLeft: isRTL ? 0 : 12, paddingRight: isRTL ? 12 : 0 }
+        ]}>
+          <View style={[
+            styles.notificationHeader,
+            { flexDirection: isRTL ? "row-reverse" : "row" }
+          ]}>
+            <Text style={[
+              styles.title,
+              { textAlign: isRTL ? "right" : "left" }
+            ]} numberOfLines={1}>
+              {`${translations[language].notifications.order} #${notification.order_id}`}
+            </Text>
+            <Text style={styles.time}>
+              {formatDate(notification.created_at)}
+            </Text>
+          </View>
+          
+          <Text 
+            style={[
+              styles.message,
+              { textAlign: isRTL ? "right" : "left" },
+              !notification.is_read && styles.unreadText
+            ]} 
+            numberOfLines={2}
+          >
+            {notification.translated_message}
           </Text>
         </View>
       </TouchableOpacity>
+      
       <TouchableOpacity 
         onPress={() => deleteNotification(notification.notification_id)}
         style={styles.deleteButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <MaterialIcons name="delete" size={20} color="#FF6B6B" />
+        <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
       </TouchableOpacity>
     </View>
   );
 
-return (
-  <View style={styles.container}>
-    <View style={[styles.header,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-      <View style={[styles.headerTitleContianer,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <MaterialIcons style={{transform:["he", "ar"].includes(language) ? [{ scaleX: -1 }] : []}} name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{translations[language].notifications.title}</Text>
-      </View>
-        <View style={styles.headerButtons}>
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Image 
+        source={""} 
+        style={styles.emptyImage}
+        resizeMode="contain"
+      />
+      <Text style={styles.emptyTitle}>
+        {translations[language]?.notifications?.noNotificationsTitle || 'No Notifications'}
+      </Text>
+      <Text style={styles.emptyText}>
+        {translations[language]?.notifications?.noNotifications || "You don't have any notifications yet."}
+      </Text>
+    </View>
+  );
+
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#4361EE" />
+      <Text style={styles.loadingText}>
+        {translations[language]?.loading || 'Loading notifications...'}
+      </Text>
+    </View>
+  );
+
+  return (
+    <View style={styles.container}>
+      <LinearGradient
+        colors={['#ffffff', '#f8f9fa']}
+        style={styles.headerGradient}
+      >
+        <View style={[
+          styles.header,
+          { flexDirection: isRTL ? "row-reverse" : "row" }
+        ]}>
+          <View style={[
+            styles.headerTitleContainer,
+            { flexDirection: isRTL ? "row-reverse" : "row" }
+          ]}>
+            <TouchableOpacity 
+              onPress={() => router.back()}
+              style={styles.backButton}
+              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+            >
+              <MaterialIcons 
+                style={{ transform: isRTL ? [{ scaleX: -1 }] : [] }}
+                name="arrow-back-ios" 
+                size={22} 
+                color="#1F2937" 
+              />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>
+              {translations[language]?.notifications?.title || 'Notifications'}
+            </Text>
+          </View>
+          
           {notificationsData.length > 0 && (
             <TouchableOpacity 
               style={styles.deleteAllButton}
               onPress={deleteAllNotifications}
+              activeOpacity={0.7}
             >
-              <Text style={styles.deleteAllText}>{translations[language].notifications.deleteAll}</Text>
+              <LinearGradient
+                colors={['#F72585', '#7209B7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.deleteAllGradient}
+              >
+                <Text style={styles.deleteAllText}>
+                  {translations[language]?.notifications?.deleteAll || 'Clear All'}
+                </Text>
+              </LinearGradient>
             </TouchableOpacity>
           )}
         </View>
-    </View>
-    {notificationsData.length === 0 ? (
-        <Text style={styles.noNotifications}>{translations[language].notifications.noNotifications}</Text>
+      </LinearGradient>
+
+      {isLoading ? (
+        renderLoading()
+      ) : notificationsData.length === 0 ? (
+        renderEmptyState()
       ) : (
         <FlatListData
           list={notificationsData}
@@ -324,103 +451,172 @@ return (
           {renderNotification}
         </FlatListData>
       )}
-  </View>
-);
+    </View>
+  );
 }
 
-
-
 const styles = StyleSheet.create({
-    container: {
-        borderRadius: 12,
-        flex:1,
-        backgroundColor: 'white',
-      },
-      scrollView: {
-        flex: 1, // Added to allow scrolling
-    },
-      header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 15,
-        borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-      },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-    },
-    headerTitleContianer:{
-      flexDirection:"row",
-      alignItems:"center",
-      gap:12
-    },
-    noNotifications: {
-        flexDirection: 'row',
-        padding: 25,
-        backgroundColor: 'white',
-        textAlign:"center"
-    },
-    unread: {
-        backgroundColor: '#f0f9ff',
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f5f5f5',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    contentContainer: {
-        flex: 1,
-    },
-    title: {
-        fontSize: 16,
-        fontWeight: '500',
-        marginBottom: 4,
-    },
-    message: {
-        fontSize: 14,
-        color: '#666',
-        marginBottom: 4,
-    },
-    time: {
-        fontSize: 12,
-        color: '#999',
-    },
-    headerButtons: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    deleteAllButton: {
-      backgroundColor: '#FF6B6B',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 5,
-    },
-    deleteAllText: {
-      color: 'white',
-      fontSize: 14,
-      fontWeight: '500',
-    },
-    notificationContent: {
-      flex: 1,
-      flexDirection: 'row',
-      gap:10
-    },
-    deleteButton: {
-      padding: 10,
-      justifyContent: 'center',
-    },
-    notificationItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 15,
-      borderBottomWidth: 1,
-      borderBottomColor: '#eee',
-      backgroundColor: 'white',
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  headerGradient: {
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 4,
+    zIndex: 10,
+  },
+  header: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  headerTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  backButton: {
+    marginRight: 16,
+    marginLeft: 4,
+  },
+  deleteAllButton: {
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  deleteAllGradient: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  deleteAllText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  unread: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#4361EE',
+  },
+  iconContainer: {
+    position: 'relative',
+  },
+  notificationIconGradient: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  unreadIndicator: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#F72585',
+    borderWidth: 1.5,
+    borderColor: 'white',
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  notificationHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    flex: 1,
+  },
+  time: {
+    fontSize: 12,
+    color: '#94A3B8',
+    marginLeft: 8,
+  },
+  message: {
+    fontSize: 14,
+    color: '#64748B',
+    lineHeight: 20,
+  },
+  unreadText: {
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  notificationContent: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyImage: {
+    width: 160,
+    height: 160,
+    marginBottom: 24,
+    opacity: 0.8,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#4B5563',
+  },
 });

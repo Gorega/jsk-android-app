@@ -5,7 +5,7 @@ export default function RootLayout(){
 
 return <Stack>
   <Stack.Screen name="index" options={{
-    title:"Order Checks",
+    title:"index",
     header:()=>{
         return <Header />
       },

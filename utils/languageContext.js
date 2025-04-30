@@ -22,6 +22,58 @@ export const translations = {
       registerSuccess:"You have created your account successfully, please login now",
       registrationFailed:"Faild",
       loginFailed:"Login Failed",
+      phonePlaceholder:"Enter your phone number",
+      passwordPlaceholder:"Enter your password",
+      biometricLoginFailed:"Biometric Login Failed",
+      noPreviousLogin:"Please login with your credentials first to enable biometric login",
+      biometricPrompt:"Login with biometrics",
+      cancel:"Cancel",
+      biometricFailed:"Authentication failed",
+      credentialsNotFound:"Saved credentials not found",
+      phoneRequired:"Phone number is required",
+      passwordRequired:"Password is required",
+      welcome:"Welcome Back",
+      signMessage:"Sign in to your account",
+      loginWithBiometric:"login With Biometric",
+      or:"Or",
+      forgotPassword:"Forget Password",
+      register:"Register",
+      usernamePlaceholder:"Enter your full name",
+      emailPlaceholder:"Enter your email (optional)",
+      phonePlaceholder:"Enter your phone number",
+      passwordPlaceholder:"Create a password",
+      confirmPasswordPlaceholder:"Confirm your password",
+      comercialNamePlaceholder:"Enter your business name",
+      businessActivity:"Business Activity",
+      businessActivityPlaceholder:"What do you sell/provide? (optional)",
+      cityPlaceHolder:"Select your city",
+      areaPlaceholder:"Enter your area",
+      secondPhone:"Second Phone",
+      secondPhonePlaceholder:"Enter alternate phone (optional)",
+      website:"Website",
+      websitePlaceholder:"Enter your website URL (optional)",
+      tiktok:"Tiktok",
+      facebook:"Facebook",
+      instagram:"Instagram",
+      tiktokPlaceholder:"Enter your TikTok handle (optional)",
+      facebookPlaceholder:"Enter your Facebook page (optional)",
+      instagramPlaceholder:"Enter your Instagram handle (optional)",
+      personalInfo:"Personal Information",
+      businessDetails:"Business Details",
+      socialMedia:"Social Media",
+      nameRequired:"Name is required",
+      passwordValidation:"Password must be at least 6 characters",
+      passwordConfirmation:"Please confirm your password",
+      passwordMismatch:"Passwords do not match",
+      businessNameRequired:"Business name is required",
+      cityRequired:"City is required",
+      noFields:"No fields available for this step",
+      successRegiser:"Registration Successful",
+      back:"Back",
+      next:"Next",
+      createAccount:"Create Account",
+      step:"Step",
+      of:"of",
       role:{
         title:"Role",
         business:"Business",
@@ -34,10 +86,23 @@ export const translations = {
       success:"Success"
     },
 
+    balance:{
+      balanceHistory:"Balance History",
+      paymentType:"Payment",
+      transaction:"Transaction",
+      adjustment:"Adjustment",
+      balanceAfter:"Balance",
+      currentBalance:"Current Balance",
+      noTransactions:"No Transactions Found",
+      loading:"Loading"
+    },
+
     // (tabs)
     tabs:{
       index:{
         title:"Dashboard",
+        summaryTitle:"Orders Summary",
+        statusTitle:"Status Overview",
         boxes:{
           todayOrders:"Today Orders",
           moneyInBranches:"Money in Branches",
@@ -55,6 +120,10 @@ export const translations = {
           stuck:"Stuck",
           rejected:"Rejected",
           ofOrders:"of Orders"
+        },
+        balanceTitle:"Your Balance",
+        balance:{
+          available:"Available",
         }
       },
       orders:{
@@ -115,40 +184,155 @@ export const translations = {
           branch:"Branch",
           issue:"Have an issue, Apply a complaint",
           openCase:"Open a complaint",
-          unknown:"Unknown"
-        },
-        order:{
-          states:{
-            pickedUp:"Picked Up",
-            deliveredToDestinationBranch:"delivered to Destination Branch",
-            reschedule:"reschedule",
-            returnBeforeDeliveredInitiated:"Return Before Delivered Initiated",
-            returnAfterDeliveredInitiated:"Return After Delivered Initiated",
-            returned:"Returned",
-            delivered:"Delivered",
-            waiting:"Waiting",
-            inBranch:"In Branch",
-            inProgress:"In Progress",
-            rejected:"Rejected",
-            stuck:"Stuck",
-            delayed:"Delayed"
-          },
-          orderType:"Order Type",
           unknown:"Unknown",
-          userSenderBoxLabel:"Sender",
-          userClientBoxLabel:"Client",
-          userDriverBoxLabel:"Driver",
-          userBoxPhoneContactLabel:"Call",
-          userBoxMessageContactLabel:"Message",
-          contactPhone:"Phone",
-          contactWhatsapp:"Whatsapp",
-          edit:"Edit",
-          changeStatus:"Change Status",
-          changeStatusAlert:"You are going to change this order status into",
-          changeStatusAlertNote:"Leave a note...",
-          changeStatusAlertConfirm:"Confirm",
-          changeStatusAlertCancel:"Cancel",
-          print:"Print"
+          loading:"Loading...",
+          errorTitle:"Oops!",
+          orderNotFound:"Order not found or could not be loaded",
+          goBack:"Go Back",
+          tryAgain:"Try Again",
+          receiverInfo:"Receiver Info",
+          name:"Name",
+          mobile:"mobile",
+          secondMobile:"Second Mobile",
+          location:"Location",
+          address:"Address",
+          senderInfo:"Sender Info",
+          orderDetails:"Order Details",
+          orderType:"Order Type",
+          paymentType:"Payment Type",
+          referenceId:"Reference ID",
+          itemType:"Item Type",
+          driver:"Driver",
+          financialDetails:"Financial Details",
+          codValue:"COD Value",
+          deliveryFee:"Delivery Fee",
+          netValue:"Net Value",
+          checks:"Checks",
+          checkNumber:"Check Number",
+          checkValue:"Check Value",
+          checkDate:"Check Date",
+          notes:"Notes",
+          packageDetails:"Package Details",
+          package:"package",
+          quantity:"Quantity",
+          weight:"Weight",
+          receivedItems:"Received Items",
+          receivedQuantity:"Received Quantity",
+          deliveryStatus:"Delivery Status",
+          needHelp:"Need Help",
+          openCase:"Open Case"
+        },
+        "order": {
+          "states": {
+            "pickedUp": "Picked Up",
+            "deliveredToDestinationBranch": "Delivered to Destination Branch",
+            "rescheduleReasons": {
+              "title": "Reschedule",
+              "receiverRequest": "Receiver Requested",
+              "receiverUnavailable": "Receiver Unavailable",
+              "incorrectTiming": "Incorrect Timing",
+              "businessRequest": "Business Requested",
+              "deliveryOverload": "Delivery Overload"
+            },
+            "return_before_delivered_initiated": {
+              "title": "Return Initiated Before Delivery",
+              "businessCancellation": "Cancelled by Business",
+              "receiverCancellation": "Cancelled by Receiver",
+              "addressRrror": "Incorrect Address",
+              "noResponse": "No Response"
+            },
+            "return_after_delivered_initiated": {
+              "title": "Return Initiated After Delivery",
+              "businessCancellation": "Cancelled by Business",
+              "receiverCancellation": "Cancelled by Receiver",
+              "paymentFailure": "Payment Failure",
+              "addressError": "Incorrect Address",
+              "noResponse": "No Response",
+              "packageIssue": "Issue with Package"
+            },
+            "returned": {
+              "title": "Returned",
+              "businessCancellation": "Cancelled by Business",
+              "receiverCancellation": "Cancelled by Receiver",
+              "paymentFailure": "Payment Failure",
+              "addressError": "Incorrect Address",
+              "noResponse": "No Response",
+              "packageIssue": "Issue with Package"
+            },
+            "delivered": "Delivered",
+            "waiting": "Waiting",
+            "inBranch": "In Branch",
+            "inProgress": "In Progress",
+            "rejected": {
+              "title": "Rejected",
+              "rejectionReasons": {
+                "businessCancellation": "Cancelled by Business",
+                "invalidOrder": "Invalid Order"
+              }
+            },
+            "stuck": {
+              "title": "Stuck",
+              "stuckReasons": {
+                "paymentIssue": "Payment Issue",
+                "incorrectAddress": "Incorrect Address"
+              }
+            },
+            "delayed": {
+              "title": "Delayed",
+              "delayReasons": {
+                "sortingDelay": "Sorting Delay",
+                "highOrderVolume": "High Order Volume",
+                "technicalIssue": "Technical Issue"
+              }
+            }
+          },
+          "missingStatus": "Missing status value",
+          "selectReason": "Select Reason",
+          "statusChangeSuccess": "Status updated successfully",
+          "statusChangeError": "Failed to update status",
+          "selectBranch": "Select Branch",
+          "reason": "Reason",
+          "branch": "Branch",
+          "orderType": "Order Type",
+          "unknown": "Unknown",
+          "userSenderBoxLabel": "Sender",
+          "userClientBoxLabel": "Client",
+          "userDriverBoxLabel": "Driver",
+          "userBoxPhoneContactLabel": "Call",
+          "userBoxMessageContactLabel": "Message",
+          "contactPhone": "Phone",
+          "contactWhatsapp": "WhatsApp",
+          "edit": "Edit",
+          "changeStatus": "Change Status",
+          "changeStatusAlert": "You are about to change this order's status to",
+          "changeStatusAlertNote": "Leave a note...",
+          "changeStatusAlertConfirm": "Confirm",
+          "changeStatusAlertCancel": "Cancel",
+          "print": "Print",
+          "location": "Location",
+          "financialDetails": "Financial Details",
+          "codValue": "Parcel Cost",
+          "netValue": "Amount Due to Merchant",
+          "deliveryFee": "Delivery Fee",
+          "checksAvailable": "Available Checks",
+          "note": "Note",
+          "add_currency": "Add Another Currency",
+          "orderActions": "Order Actions",
+          "orderChecks": {
+            "title": "Order Checks",
+            "orderId": "Order ID",
+            "loading": "Loading...",
+            "totalChecks": "Total Checks",
+            "totalValue": "Total Value",
+            "check": "Check",
+            "value": "Value",
+            "currency": "Currency",
+            "date": "Date",
+            "noChecks": "No Checks Found",
+            "noChecksMessage": "There are no checks associated with this order.",
+            "backToOrder": "Back",
+            "checkDetails": "Check Details"
+          }
         },
         // (create)
         create:{
@@ -246,6 +430,7 @@ export const translations = {
       },
       collections:{
         title:"Collections",
+        close:"Close",
         options:{
           "driver_money_collections":"Driver Money Collections",
           "business_money_collections":"Busienss Money Collections",
@@ -274,7 +459,10 @@ export const translations = {
           contactUs:"Contact Us",
           aboutUs:"About Us",
           locations:"Locations",
-          logout:"Logout"
+          logout:"Logout",
+          preferences:"Preference",
+          support:"Support",
+          account:"Account"
         }
       }
     },
@@ -316,7 +504,7 @@ export const translations = {
         numberOfOrders:"Number of Orders",
         numberOfCollections:"Number of Collections",
         moneyToDeliver:"Money to Deliver",
-        moneyToCollect:"Money to Collect",
+        moneyToCollect:"Total COD Value",
         checksToDeliver:"Checks to Deliver",
         currentBranch:"Current Branch",
         toBranch:"To Branch",
@@ -378,6 +566,8 @@ export const translations = {
         error:"Error",
         errorValidationMsg:"Please check the highlighted fields",
         errorMsg:"An unexpected error occurred, Please call the support agent to help",
+        success:"Success",
+        successMsg:"User have been created Successfully",
         sections:{
           user:{
             title:"user",
@@ -396,7 +586,9 @@ export const translations = {
             title:"Details",
             fields:{
               role:"Role",
-              pricelist:"Price List"
+              pricelist:"Price List",
+              branch:"Branch",
+              manager:"Manager"
             }
           }
         }
@@ -440,7 +632,27 @@ export const translations = {
         all:"All",
         open:"Open",
         closed:"Closed"
-      }
+      },
+      ok:"Ok",
+      order:"Order",
+      subjectPlaceholder:"Enter subject",
+      describePlaceholder:"Describe your issue",
+      noComplaints:"No Complaints Found",
+      noComplaintsDesc:"There are no complaints matching your filters.",
+      newComplaint:"New Complaint",
+      actions:"Actions",
+      markAsResolved:"Mark as Resolved",
+      respond:"Respond to Complaint",
+      viewDetails:"View Details",
+      loading:"Loading...",
+      notFoundTitle:"Not Found",
+      goBack:"Go Back",
+      issue:"Issue",
+      conversation:"Conversation",
+      noMessages:"No messages yet",
+      startConversation:"Start the conversation by sending a message",
+      you:"You",
+      supportAgent:"Support Agent"
     },
 
     // Notifications
@@ -508,7 +720,10 @@ export const translations = {
       facebook:"Facebook",
       messenger:"Messenger",
       whatsapp:"Whatsapp",
-      visitSite:"Visit Out Website"
+      visitSite:"Visit Out Website",
+      openingHours:"Opening hours: 9:00 AM - 10:00 PM",
+      closingHours:"We'll be back tomorrow at 9:00 AM",
+      connectWithUs:"Connect With Us"
     },
 
     // (about_us)
@@ -570,6 +785,58 @@ export const translations = {
       registerSuccess:"لقد قمت بإنشاء حسابك بنجاح، يرجى تسجيل الدخول الآن",
       registrationFailed:"لم يتم انشاء حسابك بنجاح",
       loginFailed:"لم يتم تسجيل الدخول بنجاح",
+      phonePlaceholder: "أدخل رقم هاتفك",
+      passwordPlaceholder: "أدخل كلمة المرور",
+      biometricLoginFailed: "فشل تسجيل الدخول بالبصمة",
+      noPreviousLogin: "يرجى تسجيل الدخول باستخدام بياناتك أولاً لتفعيل تسجيل الدخول بالبصمة",
+      biometricPrompt: "تسجيل الدخول باستخدام البصمة",
+      cancel: "إلغاء",
+      biometricFailed: "فشل التحقق",
+      credentialsNotFound: "لم يتم العثور على بيانات تسجيل الدخول المحفوظة",
+      phoneRequired: "رقم الهاتف مطلوب",
+      passwordRequired: "كلمة المرور مطلوبة",
+      welcome: "مرحباً بعودتك",
+      signMessage: "سجّل الدخول إلى حسابك",
+      loginWithBiometric: "تسجيل الدخول بالبصمة",
+      or: "أو",
+      forgotPassword: "نسيت كلمة المرور؟",
+      register: "تسجيل حساب",
+      usernamePlaceholder: "أدخل اسمك الكامل",
+      emailPlaceholder: "أدخل بريدك الإلكتروني (اختياري)",
+      phonePlaceholder: "أدخل رقم هاتفك",
+      passwordPlaceholder: "أنشئ كلمة مرور",
+      confirmPasswordPlaceholder: "أكد كلمة المرور",
+      comercialNamePlaceholder: "أدخل اسم نشاطك التجاري",
+      businessActivity: "نوع النشاط التجاري",
+      businessActivityPlaceholder: "ماذا تبيع / تقدم؟ (اختياري)",
+      cityPlaceHolder: "اختر مدينتك",
+      areaPlaceholder: "أدخل منطقتك",
+      secondPhone: "رقم هاتف إضافي",
+      secondPhonePlaceholder: "أدخل رقم هاتف بديل (اختياري)",
+      website: "الموقع الإلكتروني",
+      websitePlaceholder: "أدخل رابط موقعك الإلكتروني (اختياري)",
+      tiktok: "تيك توك",
+      facebook: "فيسبوك",
+      instagram: "انستغرام",
+      tiktokPlaceholder: "أدخل اسم مستخدم تيك توك (اختياري)",
+      facebookPlaceholder: "أدخل صفحة الفيسبوك الخاصة بك (اختياري)",
+      instagramPlaceholder: "أدخل حسابك على انستغرام (اختياري)",
+      personalInfo: "المعلومات الشخصية",
+      businessDetails: "تفاصيل النشاط التجاري",
+      socialMedia: "مواقع التواصل الاجتماعي",
+      nameRequired: "الاسم مطلوب",
+      passwordValidation: "يجب أن تكون كلمة المرور مكونة من 6 أحرف على الأقل",
+      passwordConfirmation: "يرجى تأكيد كلمة المرور",
+      passwordMismatch: "كلمتا المرور غير متطابقتين",
+      businessNameRequired: "اسم النشاط التجاري مطلوب",
+      cityRequired: "المدينة مطلوبة",
+      noFields: "لا توجد حقول متاحة في هذه الخطوة",
+      successRegiser: "تم التسجيل بنجاح",
+      back: "السابق",
+      next: "التالي",
+      createAccount: "إنشاء حساب",
+      step: "الخطوة",
+      of: "من",
       role:{
         title:"الدور",
         business:"تاجر",
@@ -582,10 +849,23 @@ export const translations = {
       success:"تم بنجاح"
     },
 
+    balance:{
+      balanceHistory:"سجل الحركات",
+      "paymentType": "عملية دفع",
+      "transactionType": "معاملة",
+      "otherType": "تعديل",
+      "balanceAfter": "الرصيد بعد العملية",
+      "currentBalance": "الرصيد الحالي",
+      "noTransactions": "لم يتم العثور على معاملات",
+      "loading": "جارٍ التحميل"
+    },
+
     // (tabs)
     tabs: {
       index: {
-        title: "لوحة التحكم",
+        title: "الرئيسية",
+        summaryTitle:"ملخص الطرود",
+        statusTitle:"نظرة عامة",
         boxes: {
           todayOrders: "طلبات اليوم",
           moneyInBranches: "النقود في الفروع",
@@ -603,6 +883,10 @@ export const translations = {
           stuck: "عالق",
           rejected: "مرفوض",
           ofOrders: "من الطرود"
+        },
+        balanceTitle:"رصيدك",
+        balance:{
+          available:"الرصيد الحالي",
         }
       },
       orders: {
@@ -624,7 +908,7 @@ export const translations = {
           returned: "مرتجع",
           returnedInBranch: "مرتجع في الفرع",
           returnedOut: "مرتجع خارجي",
-          businessReturnedDelivered: "مرتجع تم تسليمه للأعمال",
+          businessReturnedDelivered: "مرتجع تم تسليمه للتاجر",
           delivered: "تم التوصيل",
           moneyInBranch: "النقود في الفرع",
           moneyOut: "النقود خارجة",
@@ -663,42 +947,155 @@ export const translations = {
           branch: "الفرع",
           issue: "هل لديك مشكلة؟ قدم شكوى",
           openCase: "فتح شكوى",
-          unknown: "غير معروف"
-        },
-        order: {
-          states: {
-            pickedUp: "تم الاستلام",
-            deliveredToDestinationBranch: "تم التسليم إلى فرع الوجهة",
-            reschedule: "إعادة جدولة",
-            returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
-            returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
-            returned: "مرتجع",
-            delivered: "تم التوصيل",
-            received:"تم الاستلام",
-            delivered_received:"تم التوصيل / الاستلام",
-            waiting: "في الانتظار",
-            inBranch: "في الفرع",
-            inProgress: "قيد التنفيذ",
-            rejected: "مرفوض",
-            stuck: "عالق",
-            delayed: "متأخر"
-          },
-          orderType: "نوع الطرد",
           unknown: "غير معروف",
-          userSenderBoxLabel: "المرسل",
-          userClientBoxLabel: "الزبون",
-          userDriverBoxLabel: "السائق",
-          userBoxPhoneContactLabel: "اتصال",
-          userBoxMessageContactLabel: "رسالة",
-          contactPhone: "الهاتف",
-          contactWhatsapp: "واتساب",
-          edit: "تعديل",
-          changeStatus: "تغيير الحالة",
-          changeStatusAlert: "أنت على وشك تغيير حالة هذا الطرد إلى",
-          changeStatusAlertNote: "اترك ملاحظة...",
-          changeStatusAlertConfirm: "تأكيد",
-          changeStatusAlertCancel: "إلغاء",
-          print: "طباعة"
+          "loading": "جارٍ التحميل...",
+          "errorTitle": "عذرًا!",
+          "orderNotFound": "لم يتم العثور على الطلب أو تعذر تحميله",
+          "goBack": "العودة",
+          "tryAgain": "حاول مرة أخرى",
+          "receiverInfo": "معلومات المستلم",
+          "name": "الاسم",
+          "mobile": "الجوال",
+          "secondMobile": "جوال إضافي",
+          "location": "الموقع",
+          "address": "العنوان",
+          "senderInfo": "معلومات المرسل",
+          "orderDetails": "تفاصيل الطلب",
+          "orderType": "نوع الطلب",
+          "paymentType": "طريقة الدفع",
+          "referenceId": "الرقم المرجعي",
+          "itemType": "نوع الطرد",
+          "driver": "السائق",
+          "financialDetails": "التفاصيل المالية",
+          "codValue": "تكلفة الدفع عند الاستلام",
+          "deliveryFee": "تكلفة التوصيل",
+          "netValue": "الصافي للتاجر",
+          "checks": "الشيكات",
+          "checkNumber": "رقم الشيك",
+          "checkValue": "قيمة الشيك",
+          "checkDate": "تاريخ الشيك",
+          "notes": "ملاحظات",
+          "packageDetails": "تفاصيل الطرد",
+          "package": "الطرد",
+          "quantity": "الكمية",
+          "weight": "الوزن",
+          "receivedItems": "العناصر المستلمة",
+          "receivedQuantity": "الكمية المستلمة",
+          "deliveryStatus": "حالة التوصيل",
+          "needHelp": "تحتاج إلى مساعدة",
+          "openCase": "فتح بلاغ"
+        },
+        "order": {
+          "states": {
+            "pickedUp": "تم الاستلام",
+            "deliveredToDestinationBranch": "تم التوصيل إلى الفرع الوجهة",
+            "rescheduleReasons": {
+              "title": "مؤجل",
+              "receiverRequest": "بطلب من المستلم",
+              "receiverUnavailable": "المستلم غير متاح",
+              "incorrectTiming": "توقيت غير مناسب",
+              "businessRequest": "بطلب من التاجر",
+              "deliveryOverload": "زيادة عدد الطلبات"
+            },
+            "return_before_delivered_initiated": {
+              "title": "إرجاع قبل التوصيل",
+              "businessCancellation": "إلغاء من التاجر",
+              "receiverCancellation": "إلغاء من المستلم",
+              "addressRrror": "خطأ في العنوان",
+              "noResponse": "لا يوجد رد"
+            },
+            "return_after_delivered_initiated": {
+              "title": "إرجاع بعد التوصيل",
+              "businessCancellation": "إلغاء من التاجر",
+              "receiverCancellation": "إلغاء من المستلم",
+              "paymentFailure": "فشل في الدفع",
+              "addressError": "خطأ في العنوان",
+              "noResponse": "لا يوجد رد",
+              "packageIssue": "مشكلة في الطرد"
+            },
+            "returned": {
+              "title": "تم الإرجاع",
+              "businessCancellation": "إلغاء من التاجر",
+              "receiverCancellation": "إلغاء من المستلم",
+              "paymentFailure": "فشل في الدفع",
+              "addressError": "خطأ في العنوان",
+              "noResponse": "لا يوجد رد",
+              "packageIssue": "مشكلة في الطرد"
+            },
+            "delivered": "تم التوصيل",
+            "waiting": "في الانتظار",
+            "inBranch": "في الفرع",
+            "inProgress": "قيد التنفيذ",
+            "rejected": {
+              "title": "مرفوض",
+              "rejectionReasons": {
+                "businessCancellation": "إلغاء من التاجر",
+                "invalidOrder": "طلب غير صالح"
+              }
+            },
+            "stuck": {
+              "title": "متوقف",
+              "stuckReasons": {
+                "paymentIssue": "مشكلة في الدفع",
+                "incorrectAddress": "عنوان غير صحيح"
+              }
+            },
+            "delayed": {
+              "title": "تأخير",
+              "delayReasons": {
+                "sortingDelay": "تأخير في الفرز",
+                "highOrderVolume": "كمية طلبات كبيرة",
+                "technicalIssue": "مشكلة تقنية"
+              }
+            }
+          },
+          "missingStatus": "لم يتم تحديد حالة",
+          "selectReason": "اختر السبب",
+          "statusChangeSuccess": "تم تحديث الحالة بنجاح",
+          "statusChangeError": "فشل في تحديث الحالة",
+          "selectBranch": "اختر الفرع",
+          "reason": "السبب",
+          "branch": "الفرع",
+          "orderType": "نوع الطرد",
+          "unknown": "غير معروف",
+          "userSenderBoxLabel": "المرسل",
+          "userClientBoxLabel": "العميل",
+          "userDriverBoxLabel": "السائق",
+          "userBoxPhoneContactLabel": "اتصال",
+          "userBoxMessageContactLabel": "رسالة",
+          "contactPhone": "الهاتف",
+          "contactWhatsapp": "واتساب",
+          "edit": "تعديل",
+          "changeStatus": "تغيير الحالة",
+          "changeStatusAlert": "أنت على وشك تغيير حالة الطرد إلى",
+          "changeStatusAlertNote": "اكتب ملاحظة...",
+          "changeStatusAlertConfirm": "تأكيد",
+          "changeStatusAlertCancel": "إلغاء",
+          "print": "طباعة",
+          "location": "الموقع",
+          "financialDetails": "التفاصيل المالية",
+          "codValue": "تكلفة الطرد",
+          "netValue": "المطلوب من التاجر",
+          "deliveryFee": "تكلفة التوصيل",
+          "checksAvailable": "الشيكات المتاحة",
+          "note": "ملاحظة",
+          "add_currency": "إضافة عملة أخرى",
+          "orderActions": "إجراءات الطلب",
+          "orderChecks": {
+            "title": "شيكات الطلب",
+            "orderId": "رقم الطلب",
+            "loading": "جاري التحميل...",
+            "totalChecks": "إجمالي الشيكات",
+            "totalValue": "القيمة الإجمالية",
+            "check": "شيك",
+            "value": "القيمة",
+            "currency": "العملة",
+            "date": "التاريخ",
+            "noChecks": "لا توجد شيكات",
+            "noChecksMessage": "لا توجد شيكات مرتبطة بهذا الطلب.",
+            "backToOrder": "رجوع",
+            "checkDetails": "تفاصيل الشيك"
+          }
         },
         // (create)
         create: {
@@ -803,6 +1200,7 @@ export const translations = {
       },
       collections: {
         title: "التجميعات",
+        close:"اغلاق",
         options: {
           "driver_money_collections": "التحصيلات المالية من السائقين",
           "business_money_collections": "التحصيلات المالية للتجار",
@@ -873,7 +1271,7 @@ export const translations = {
         numberOfOrders: "عدد الطرود",
         numberOfCollections: "عدد التجميعات",
         moneyToDeliver: "النقود للتسليم",
-        moneyToCollect: "النقود للجمع",
+        moneyToCollect: "مجموع التحصيل المالي",
         checksToDeliver: "الشيكات للتسليم",
         currentBranch: "الفرع الحالي",
         toBranch: "الفرع المرسل إليه",
@@ -935,6 +1333,8 @@ export const translations = {
         error: "خطأ",
         errorValidationMsg: "يرجى التحقق من الحقول المميزة",
         errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
+        success:"نجحت العملية",
+        successMsg:"تم إنشاء المستخدم بنجاح",
         sections: {
           user: {
             title: "المستخدم",
@@ -943,7 +1343,7 @@ export const translations = {
               commercial: "الاسم التجاري",
               firstPhone: "رقم الهاتف",
               secondPhone: "رقم الهاتف الثاني",
-              affillator: "الشريك",
+              affillator: "التوقيع",
               city: "المدينة",
               area: "المنطقة",
               address: "العنوان"
@@ -953,7 +1353,9 @@ export const translations = {
             title: "التفاصيل",
             fields: {
               role: "الدور",
-              pricelist: "قائمة الأسعار"
+              pricelist: "قائمة الأسعار",
+              branch:"الفرع",
+              manager:"مدير الحساب"
             }
           }
         }
@@ -996,7 +1398,27 @@ export const translations = {
         all: "الكل",
         open: "قيد المعالجة",
         closed: "مغلق"
-      }
+      },
+      ok:"موافق",
+      order:"طرد",
+      subjectPlaceholder:"أدخل عنوان الشكوى",
+      describePlaceholder:"أدخل وصف مشكلتك",
+      "noComplaints": "لا توجد شكاوى",
+      "noComplaintsDesc": "لا توجد شكاوى تطابق الفلاتر الخاصة بك.",
+      "newComplaint": "شكوى جديدة",
+      "actions": "الإجراءات",
+      "markAsResolved": "تمييز كمحلولة",
+      "respond": "الرد على الشكوى",
+      "viewDetails": "عرض التفاصيل",
+      "loading": "جارٍ التحميل...",
+      "notFoundTitle": "غير موجود",
+      "goBack": "العودة",
+      "issue": "المشكلة",
+      "conversation": "المحادثة",
+      "noMessages": "لا توجد رسائل بعد",
+      "startConversation": "ابدأ المحادثة بإرسال رسالة",
+      "you": "أنت",
+      "supportAgent": "وكيل الدعم"
     },
 
     // Notifications
@@ -1056,15 +1478,18 @@ export const translations = {
     // (contact_us)
     contact: {
       title: "اتصل بنا",
-      open: "مفتوح",
-      closed: "مغلق",
-      weAre: "نحن",
+      open: "تعمل",
+      closed: "مغلقة",
+      weAre: "مكاتبنا",
       now: "الآن",
       local: "محلي",
       facebook: "فيسبوك",
       messenger: "ماسنجر",
       whatsapp: "واتساب",
-      visitSite: "زيارة موقعنا الإلكتروني"
+      visitSite: "زيارة موقعنا الإلكتروني",
+      openingHours:"ساعات العمل: 9:00 صباحًا - 10:00 مساءً",
+      closingHours:"سنعود غدًا الساعة 9:00 صباحًا",
+      connectWithUs:""
     },
 
     // (about_us)
@@ -1092,7 +1517,8 @@ export const translations = {
       jenin: {
         title: "جنين",
         desc: "مركز التوصيل في جنين"
-      }
+      },
+      loading:"جاري التحميل..."
     },
 
     // greeting

@@ -1,47 +1,136 @@
 import { Tabs, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import React, { useState } from 'react';
-import { Text, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from 'react';
+import { Text, TouchableOpacity, View, Platform, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Header from "../../components/Header";
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Collections from './collections';
 import { useAuth } from '../_layout';
 import FixedHeader from "../../components/FixedHeader";
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabLayout() {
   const { language } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const { user } = useAuth();
+  const isRTL = language === 'ar' || language === 'he';
+  const addButtonScale = new Animated.Value(1);
 
-  const isRTL = ["he", "ar"].includes(language);
+  // Animation for the add button
+  const animateAddButton = () => {
+    Animated.sequence([
+      Animated.timing(addButtonScale, {
+        toValue: 0.9,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(addButtonScale, {
+        toValue: 1.1,
+        duration: 150,
+        useNativeDriver: true,
+      }),
+      Animated.timing(addButtonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
+  const handleAddPress = () => {
+    animateAddButton();
+    setTimeout(() => {
+      if (user.role === "driver") {
+        router.push("/(camera)/assignOrdersDriver");
+      } else {
+        router.push("(create)");
+      }
+    }, 200);
+  };
+
+  const handleCollectionsPress = () => {
+    animateAddButton();
+    setTimeout(() => {
+      setShowModal(true);
+    }, 150);
+  };
+
+  // First, let's create a complete TabLabel component for better organization
+  const TabLabel = ({ focused, label, isRTL }) => (
+    <View style={{
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%', 
+      paddingHorizontal: 4,
+      marginTop: -4,
+    }}>
+      <Text 
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        style={{
+          fontSize: 11,
+          color: focused ? "#4361EE" : "#94A3B8",
+          fontWeight: focused ? '600' : '400',
+          textAlign: 'center',
+          maxWidth: '100%',
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+
+  // Update the createTabBarIcon function for better spacing
+  const createTabBarIcon = (Component, name, focused) => {
+    return (
+      <View style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 28,
+        marginBottom: 3,
+      }}>
+        <Component 
+          name={name} 
+          size={focused ? 24 : 22} 
+          color={focused ? "#4361EE" : "#94A3B8"} 
+        />
+      </View>
+    );
+  };
+
+  // Update the tab array with these changes
   const tabs = [
     {
       name: "index",
       options: {
         header: () => <Header />,
-        tabBarLabel: translations[language].tabs.index.title,
-        tabBarIcon: ({ color, size }) => (
-          <Ionicons name="home-outline" size={size} color={color} />
+        tabBarLabel: ({focused}) => (
+          <TabLabel
+            focused={focused}
+            label={translations[language].tabs.index.title}
+            isRTL={isRTL}
+          />
         ),
-        tabBarActiveTintColor: "#F8C332",
-        tabBarInactiveTintColor: "#6c757d",
+        tabBarIcon: ({focused}) => createTabBarIcon(Ionicons, "home-outline", focused),
       },
     },
     {
       name: "orders",
       options: {
-        tabBarLabel: translations[language].tabs.orders.title,
-        headerShown: false,
-        tabBarIcon: ({ color, size }) => (
-          <Feather name="package" size={size} color={color} />
+        tabBarLabel: ({focused}) => (
+          <TabLabel
+            focused={focused}
+            label={translations[language].tabs.orders.title}
+            isRTL={isRTL}
+          />
         ),
-        tabBarActiveTintColor: "#F8C332",
-        tabBarInactiveTintColor: "#6c757d",
+        headerShown: false,
+        tabBarIcon: ({focused}) => createTabBarIcon(Feather, "package", focused),
         tabBarButton: (props) => (
           <TouchableOpacity
             {...props}
@@ -60,74 +149,64 @@ export default function TabLayout() {
       options: {
         tabBarButton: () => (
           <TouchableOpacity
-            style={{
-              marginLeft: isRTL ? 0 : 12,
-              marginRight: isRTL ? 12 : 0,
-              marginTop: 3,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              flexDirection: "row",
-              borderColor: "#F8C332",
-              borderWidth: 1,
-              width: 44,
-              height: 44,
-              borderRadius: 50,
-            }}
-            onPress={() =>
-              user.role === "driver"
-                ? router.push("/(camera)/assignOrdersDriver")
-                : router.push("(create)")
-            }
+            style={[
+              styles.addButtonContainer,
+              { marginHorizontal: Platform.OS === 'ios' ? 20 : 12 }
+            ]}
+            onPress={handleAddPress}
+            activeOpacity={0.85}
           >
-            <FontAwesome6 name="add" size={24} color={"black"} />
+            <Animated.View
+              style={[
+                styles.addButtonWrapper,
+                { transform: [{ scale: addButtonScale }] }
+              ]}
+            >
+              <LinearGradient
+                colors={['#4361EE', '#3A0CA3']}
+                style={styles.addButton}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <FontAwesome6 name="plus" size={22} color="#FFFFFF" />
+              </LinearGradient>
+            </Animated.View>
           </TouchableOpacity>
         ),
-        tabBarActiveTintColor: "#F8C332",
-        tabBarInactiveTintColor: "#6c757d",
       },
     },
     {
       name: "collections",
       options: {
-        tabBarLabel: translations[language].tabs.collections.title,
-        headerShown: false,
-        tabBarButton: () => (
-          <TouchableOpacity
-            style={{
-              marginLeft: isRTL ? 0 : 12,
-              marginRight: isRTL ? 12 : 0,
-              marginTop: 5,
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              width: 44,
-              height: 44,
-            }}
-            onPress={() => setShowModal(true)}
-          >
-            <Ionicons name="newspaper-outline" size={24} color={"black"} />
-            <Text style={{ fontSize: 9 }}>
-              {translations[language].tabs.collections.title}
-            </Text>
-          </TouchableOpacity>
+        tabBarLabel: ({focused}) => (
+          <TabLabel
+            focused={focused}
+            label={translations[language].tabs.collections.title}
+            isRTL={isRTL}
+          />
         ),
-        tabBarActiveTintColor: "#F8C332",
-        tabBarInactiveTintColor: "#6c757d",
+        headerShown: false,
+        tabBarIcon: ({focused}) => createTabBarIcon(MaterialCommunityIcons, "text-box-outline", focused),
+        tabBarButton: (props) => (
+          <TouchableOpacity
+            {...props}
+            onPress={handleCollectionsPress}
+          />
+        ),
       },
     },
     {
       name: "settings",
       options: {
-        header:()=>{
-          return <FixedHeader title={translations[language].tabs.settings.title} showBackButton={false} />
-        },
-        tabBarLabel: translations[language].tabs.settings.title,
-        tabBarIcon: ({ color, size }) => (
-          <AntDesign name="setting" size={size} color={color} />
+        header: () => <FixedHeader title={translations[language].tabs.settings.title} showBackButton={false} />,
+        tabBarLabel: ({focused}) => (
+          <TabLabel
+            focused={focused}
+            label={translations[language].tabs.settings.title}
+            isRTL={isRTL}
+          />
         ),
-        tabBarActiveTintColor: "#F8C332",
-        tabBarInactiveTintColor: "#6c757d",
+        tabBarIcon: ({focused}) => createTabBarIcon(AntDesign, "setting", focused),
       },
     },
   ];
@@ -137,12 +216,29 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           tabBarStyle: {
-            backgroundColor: "#f8f9fa",
-            flexDirection: isRTL ? "row-reverse" : "row",
+            backgroundColor: '#FFFFFF',
+            flexDirection: isRTL ? 'row-reverse' : 'row',
+            height: Platform.OS === 'ios' ? 88 : 72,
+            paddingTop: Platform.OS === 'ios' ? 10 : 8,
+            paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(0,0,0,0.06)',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.07,
+            shadowRadius: 3,
+            elevation: 10,
           },
           tabBarItemStyle: {
-            flexDirection: isRTL ? "row-reverse" : "row",
+            paddingHorizontal: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingTop: 5,
+            flex: 1,
           },
+          tabBarShowLabel: true,
+          tabBarHideOnKeyboard: true,
+          headerShown: true,
         }}
       >
         {isRTL
@@ -165,3 +261,34 @@ export default function TabLayout() {
     </>
   );
 }
+
+const styles = {
+  addButtonContainer: {
+    top: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 50,
+    width: Platform.OS === 'ios' ? 70 : 60,
+  },
+  addButtonWrapper: {
+    borderRadius: 30,
+    shadowColor: '#4361EE',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 8,
+  },
+  addButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#4361EE',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+  },
+};

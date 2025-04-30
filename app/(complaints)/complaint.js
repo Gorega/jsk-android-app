@@ -7,39 +7,55 @@ import {
   FlatList, 
   TextInput, 
   TouchableOpacity,
-  RefreshControl 
+  RefreshControl,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  Image
 } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import Feather from "@expo/vector-icons/Feather";
 import { useAuth } from "../_layout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
+import { getToken } from "../../utils/secureStore";
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function ComplaintDetails() {
   const socket = useSocket();
   const { language } = useLanguage();
   const { complaintId } = useLocalSearchParams();
-  const {user} = useAuth();
+  const { user } = useAuth();
   const [complaint, setComplaint] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  
+  const isRTL = ["ar", "he"].includes(language);
 
   // Fetch complaint details along with its messages
   const fetchComplaintDetails = async () => {
     try {
       setLoading(true);
+      const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}?language_code=${language}`, {
-        credentials: "include"
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
+        }
       });
       const data = await response.json();
       // The backend returns the complaint details and an array of messages.
       setComplaint(data);
       setMessages(data.messages || []);
     } catch (error) {
+      console.error("Error fetching complaint details:", error);
     } finally {
       setLoading(false);
     }
@@ -47,7 +63,7 @@ export default function ComplaintDetails() {
 
   useEffect(() => {
     fetchComplaintDetails();
-  }, [complaintId,language]);
+  }, [complaintId, language]);
 
   // Pull-to-refresh functionality
   const onRefresh = useCallback(() => {
@@ -55,13 +71,33 @@ export default function ComplaintDetails() {
     fetchComplaintDetails().then(() => setRefreshing(false));
   }, [complaintId]);
 
-  // Map complaint status to colors
-  const getStatusColor = (status) => {
+  // Map complaint status to colors and gradients
+  const getStatusInfo = (status) => {
     switch (status) {
-      case "open": return "#FF9800";
-      case "in_progress": return "#3F51B5";
-      case "closed": return "#4CAF50";
-      default: return "#9E9E9E";
+      case "open":
+        return { 
+          color: "#FF9800", 
+          icon: "timer-outline",
+          gradient: ['#FF9800', '#F57C00']
+        };
+      case "in_progress":
+        return { 
+          color: "#3F51B5", 
+          icon: "trending-up",
+          gradient: ['#3F51B5', '#303F9F']
+        };
+      case "closed":
+        return { 
+          color: "#4CAF50", 
+          icon: "checkmark-circle-outline",
+          gradient: ['#4CAF50', '#388E3C']
+        };
+      default:
+        return { 
+          color: "#9E9E9E", 
+          icon: "help-circle-outline",
+          gradient: ['#9E9E9E', '#757575']
+        };
     }
   };
 
@@ -86,15 +122,34 @@ export default function ComplaintDetails() {
     };
   }, [socket, complaintId]);
 
+  // Format date in a user-friendly way
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    
+    // If it's today, just show the time
+    if (date.toDateString() === now.toDateString()) {
+      return date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Otherwise show date and time
+    return date.toLocaleDateString(language, { day: 'numeric', month: 'short' }) + ' ' + 
+           date.toLocaleTimeString(language, { hour: '2-digit', minute: '2-digit' });
+  };
+
   // Send a new message (uses the complaintMessageSchema defined in your backend)
   const sendMessage = async () => {
     if (!newMessage.trim()) return;
 
     setSending(true);
     try {
+      const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
+        },
         credentials: "include",
         body: JSON.stringify({
           message: newMessage,
@@ -106,231 +161,486 @@ export default function ComplaintDetails() {
         // Append the new message to the current list
         setMessages((prev) => [...prev, newMsg]);
         setNewMessage("");
-        if (socket) {
-          socket.emit('complaintUpdate', {
-            type: 'COMPLAINT_MESSAGE_CREATED',
-            complaintId: complaintId,
-            messageId: newMsg.message_id
-          });
-        }
       } else {
         const errorData = await response.json();
-        console.error("Error sending message:", errorData);
       }
     } catch (error) {
-      console.error("Error sending message:", error);
     } finally {
       setSending(false);
     }
   };
 
-  if (loading){
-    return <View style={styles.overlay}>
-        <View style={styles.spinnerContainer}>
-            <ActivityIndicator size="large" color="#F8C332" />
-        </View>
-    </View>
-  }
-
-  if (!complaint) {
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>{translations[language].complaints.notFound}</Text>
+      <View style={styles.loadingContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <ActivityIndicator size="large" color="#4361EE" />
+        <Text style={styles.loadingText}>
+          {translations[language]?.complaints.loading || 'Loading...'}
+        </Text>
       </View>
     );
   }
 
-  return (
-    <View style={styles.container}>
-      {/* Complaint Information Card */}
-      <View style={styles.card}>
-        <Text style={[styles.subject,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{complaint.subject}</Text>
-        <Text style={[styles.description,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{complaint.description}</Text>
-        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-          <Text style={styles.label}>{translations[language].complaints.orderId}:</Text>
-          <Text style={styles.value}>#{complaint.order_id}</Text>
-        </View>
-        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-          <Text style={styles.label}>{translations[language].complaints.status.title}:</Text>
-          <Text style={[styles.status, { color: getStatusColor(complaint.status) }]}>{complaint.status}</Text>
-        </View>
-        <View style={[styles.row,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}]}>
-          <Text style={styles.label}>{translations[language].complaints.createdAt}:</Text>
-          <Text style={styles.value}>{new Date(complaint.created_at).toLocaleString()}</Text>
-        </View>
-      </View>
-
-      {/* Messages Section */}
-      <FlatList
-        data={messages}
-        keyExtractor={(item) => item.message_id.toString()}
-        renderItem={({ item }) => (
-          <View 
-            style={[
-              styles.messageContainer, 
-              item.sender_type === "business_user" ? styles.userMessage : styles.agentMessage
-            ]}
-          >
-            <Text style={styles.messageSender}>
-              {item.sender_name || (item.sender_type === 'business_user' ? 'Customer' : 'Support Agent')}
-            </Text>
-            <Text style={styles.messageText}>{item.message}</Text>
-            <Text style={styles.messageTime}>{new Date(item.created_at).toLocaleTimeString()}</Text>
-          </View>
-        )}
-        contentContainerStyle={styles.messagesList}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      />
-
-      {/* Send New Message */}
-      <View style={[styles.inputContainer]}>
-        <TextInput
-          style={styles.input}
-          placeholder={translations[language].complaints.messagePlaceholder}
-          value={newMessage}
-          onChangeText={setNewMessage}
+  if (!complaint) {
+    return (
+      <View style={styles.errorContainer}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <Image 
+          source={""} 
+          style={styles.errorImage}
+          resizeMode="contain"
         />
-        <TouchableOpacity onPress={sendMessage} style={styles.sendButton} disabled={sending}>
-          <MaterialIcons name="send" size={24} color="white" />
+        <Text style={styles.errorTitle}>
+          {translations[language]?.complaints?.notFoundTitle || 'Not Found'}
+        </Text>
+        <Text style={styles.errorText}>
+          {translations[language]?.complaints?.notFound || 'Complaint not found'}
+        </Text>
+        <TouchableOpacity 
+          style={styles.errorButton} 
+          onPress={() => router.back()}
+          activeOpacity={0.8}
+        >
+          <LinearGradient
+            colors={['#4361EE', '#3A0CA3']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.errorButtonGradient}
+          >
+            <Feather name="arrow-left" size={18} color="#ffffff" style={{ marginRight: 8 }} />
+            <Text style={styles.errorButtonText}>
+              {translations[language]?.complaints?.goBack || 'Go Back'}
+            </Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
-    </View>
+    );
+  }
+
+  const statusInfo = getStatusInfo(complaint.status);
+
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+    >
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        
+        {/* Complaint Information Card */}
+        <View style={styles.infoCard}>
+          <View style={styles.complaintHeader}>
+            <LinearGradient
+              colors={statusInfo.gradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.statusBadge}
+            >
+              <Ionicons name={statusInfo.icon} size={14} color="white" />
+              <Text style={styles.statusText}>{complaint.status}</Text>
+            </LinearGradient>
+            
+            <View style={styles.complaintId}>
+              <Text style={styles.complaintIdText}>
+                #{complaintId}
+              </Text>
+            </View>
+          </View>
+          
+          <Text style={[styles.subject, { textAlign: isRTL ? "right" : "left" }]}>
+            {complaint.subject}
+          </Text>
+          
+          <View style={styles.descriptionContainer}>
+            <Text style={[styles.descriptionLabel, { textAlign: isRTL ? "right" : "left" }]}>
+              {translations[language]?.complaints?.issue || 'Issue'}
+            </Text>
+            <Text style={[styles.description, { textAlign: isRTL ? "right" : "left" }]}>
+              {complaint.description}
+            </Text>
+          </View>
+          
+          <View style={styles.detailsContainer}>
+            <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <View style={[styles.detailIconContainer, { marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }]}>
+                <Feather name="package" size={16} color="#4361EE" />
+              </View>
+              <Text style={styles.detailLabel}>
+                {translations[language]?.complaints?.orderId || 'Order ID'}:
+              </Text>
+              <Text style={styles.detailValue}>#{complaint.order_id}</Text>
+            </View>
+            
+            <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <View style={[styles.detailIconContainer, { marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }]}>
+                <Feather name="calendar" size={16} color="#4361EE" />
+              </View>
+              <Text style={styles.detailLabel}>
+                {translations[language]?.complaints?.createdAt || 'Created'}:
+              </Text>
+              <Text style={styles.detailValue}>{formatDate(complaint.created_at)}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Messages Section */}
+        <View style={styles.messagesContainer}>
+          <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <Feather name="message-circle" size={18} color="#4361EE" style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }} />
+            <Text style={styles.sectionTitle}>
+              {translations[language]?.complaints?.conversation || 'Conversation'}
+            </Text>
+          </View>
+          
+          {messages.length === 0 ? (
+            <View style={styles.noMessagesContainer}>
+              <Feather name="message-square" size={40} color="#CBD5E1" />
+              <Text style={styles.noMessagesText}>
+                {translations[language]?.complaints?.noMessages || 'No messages yet'}
+              </Text>
+              <Text style={styles.noMessagesSubtext}>
+                {translations[language]?.complaints?.startConversation || 'Start the conversation by sending a message'}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={messages}
+              keyExtractor={(item) => item.message_id.toString()}
+              renderItem={({ item }) => {
+                const isUserMessage = item.sender_type === "business_user";
+                return (
+                  <View style={[
+                    styles.messageContainer,
+                    isUserMessage ? styles.userMessage : styles.agentMessage,
+                    isRTL && isUserMessage ? { alignSelf: 'flex-start' } : null,
+                    isRTL && !isUserMessage ? { alignSelf: 'flex-end' } : null
+                  ]}>
+                    <View style={[
+                      styles.messageBubble,
+                      isUserMessage ? styles.userBubble : styles.agentBubble
+                    ]}>
+                      <Text style={styles.messageSender}>
+                        {item.sender_name || (isUserMessage ? (translations[language]?.complaints?.you || 'You') : (translations[language]?.complaints?.supportAgent || 'Support Agent'))}
+                      </Text>
+                      <Text style={styles.messageText}>{item.message}</Text>
+                    </View>
+                    <Text style={[
+                      styles.messageTime,
+                      { textAlign: isRTL ? (isUserMessage ? 'left' : 'right') : (isUserMessage ? 'right' : 'left') }
+                    ]}>
+                      {formatDate(item.created_at)}
+                    </Text>
+                  </View>
+                );
+              }}
+              contentContainerStyle={styles.messagesList}
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4361EE"]} />
+              }
+              inverted={false}
+            />
+          )}
+        </View>
+
+        {/* Send New Message */}
+        <View style={[styles.inputContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+          <TextInput
+            style={[styles.input, { textAlign: isRTL ? "right" : "left" }]}
+            placeholder={translations[language]?.complaints?.messagePlaceholder || 'Type a message...'}
+            placeholderTextColor="#94A3B8"
+            value={newMessage}
+            onChangeText={setNewMessage}
+            multiline
+          />
+          <TouchableOpacity 
+            onPress={sendMessage} 
+            style={styles.sendButton} 
+            disabled={sending || !newMessage.trim()}
+            activeOpacity={0.8}
+          >
+            {sending ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={20} color="white" />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
-    padding: 10,
+    backgroundColor: "#f8f9fa",
   },
-  loader: {
+  loadingContainer: {
     flex: 1,
     justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#4B5563",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+    backgroundColor: "#f8f9fa",
+  },
+  errorImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 8,
   },
   errorText: {
+    fontSize: 16,
     textAlign: "center",
-    color: "#F44336",
+    color: "#6B7280",
+    marginBottom: 24,
+  },
+  errorButton: {
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#4361EE",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  errorButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  errorButtonText: {
+    color: "white",
+    fontWeight: "600",
     fontSize: 16,
   },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 12,
+  infoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    margin: 16,
+    marginBottom: 0,
+    padding: 16,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
     shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  complaintHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  complaintId: {
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  complaintIdText: {
+    color: "#64748B",
+    fontSize: 12,
+    fontWeight: "500",
   },
   subject: {
     fontSize: 18,
+    fontWeight: "700",
+    color: "#1F2937",
+    marginBottom: 12,
+  },
+  descriptionContainer: {
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  descriptionLabel: {
+    fontSize: 14,
     fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
+    color: "#4B5563",
+    marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    color: "#666",
+    color: "#4B5563",
+    lineHeight: 20,
+  },
+  detailsContainer: {
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
+    paddingTop: 16,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
   },
-  row: {
+  detailIconContainer: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#EFF6FF",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginRight: 6,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  messagesContainer: {
+    flex: 1,
+    margin: 16,
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  sectionHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 6,
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F5F9",
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#444",
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: "#333",
-  },
-  status: {
-    fontSize: 14,
-    fontWeight: "bold",
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
   },
   messagesList: {
-    paddingBottom: 20,
+    padding: 16,
+    paddingBottom: 80,
+  },
+  noMessagesContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  noMessagesText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noMessagesSubtext: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 16,
   },
   messageContainer: {
-    padding: 10,
-    borderRadius: 10,
-    marginVertical: 5,
+    marginBottom: 16,
     maxWidth: "80%",
   },
   userMessage: {
-    backgroundColor: "#DCF8C6",
     alignSelf: "flex-end",
   },
   agentMessage: {
-    backgroundColor: "#E0E0E0",
     alignSelf: "flex-start",
+  },
+  messageBubble: {
+    borderRadius: 16,
+    padding: 12,
+    paddingBottom: 10,
+  },
+  userBubble: {
+    backgroundColor: "#EFF6FF",
+    borderTopRightRadius: 4,
+  },
+  agentBubble: {
+    backgroundColor: "#F1F5F9",
+    borderTopLeftRadius: 4,
   },
   messageSender: {
     fontSize: 12,
-    fontWeight: "bold",
-    marginBottom: 2,
-    color: "#555",
+    fontWeight: "600",
+    marginBottom: 4,
+    color: "#64748B",
   },
   messageText: {
     fontSize: 14,
-    color: "#333",
+    color: "#1F2937",
+    lineHeight: 20,
   },
   messageTime: {
-    fontSize: 10,
-    color: "#999",
+    fontSize: 11,
+    color: "#94A3B8",
     marginTop: 4,
-    textAlign: "right",
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
+    padding: 12,
     borderTopWidth: 1,
-    borderColor: "#ddd",
+    borderTopColor: "#F1F5F9",
   },
   input: {
     flex: 1,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginRight: 10,
+    borderColor: "#E5E7EB",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#1F2937",
+    maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: "#F8C332",
-    padding: 10,
-    borderRadius: 8,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#4361EE",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 10,
+    marginRight: 10,
   },
-  overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-},
-spinnerContainer: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-        width: 0,
-        height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-}
 });

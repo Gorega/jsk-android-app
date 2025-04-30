@@ -1,63 +1,620 @@
-import { useState } from "react";
-import { TextInput,View,Text,StyleSheet, TouchableOpacity } from "react-native";
-import Feather from '@expo/vector-icons/Feather';
+import { useState, useRef, useEffect } from "react";
+import { 
+  TextInput, 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Animated, 
+  SafeAreaView,
+  StatusBar,
+  Alert,
+  ScrollView,
+  Platform,
+  Keyboard
+} from "react-native";
+import { Feather } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 
-export default function HomeScreen(){
+export default function ChangePasswordScreen() {
+  const { language } = useLanguage();
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [secureCurrentPassword, setSecureCurrentPassword] = useState(true);
+  const [secureNewPassword, setSecureNewPassword] = useState(true);
+  const [secureConfirmPassword, setSecureConfirmPassword] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  
+  const strengthAnimation = useRef(new Animated.Value(0)).current;
+  
+  // RTL support
+  const isRTL = ["he", "ar"].includes(language);
+  
+  // Track keyboard visibility
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
     
-    const { language } = useLanguage();
-    const [currentPassword,setCurrentPassword] = useState(null);
-    const [newPassword,setNewPassword] = useState(null);
-    const [securePassword,setSecurePassword] = useState(true);
+    const keyboardDidHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
 
-    return <View style={styles.container}>
-        <View style={styles.inputField}>
-            <Text style={[styles.inputLabel,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].chnagePassword.currentPass}</Text>
-            <TextInput style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]} secureTextEntry={true} value={currentPassword} onChangeText={(input)=> setCurrentPassword(input)} />
-            <Text style={{marginTop:7,fontSize:12,textAlign:["he", "ar"].includes(language) ? "right" : "left"}}>{translations[language].chnagePassword.currentPassHint}</Text>
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+  
+  // Password strength indicator
+  const getPasswordStrength = (password) => {
+    if (!password) return 0;
+    let strength = 0;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    return strength;
+  };
+  
+  const strength = getPasswordStrength(newPassword);
+  
+  // Animate password strength
+  useEffect(() => {
+    Animated.timing(strengthAnimation, {
+      toValue: strength / 4,
+      duration: 300,
+      useNativeDriver: false
+    }).start();
+  }, [strength]);
+  
+  const getStrengthColor = () => {
+    if (strength <= 1) return "#EF4444"; // Weak - Red
+    if (strength === 2) return "#F59E0B"; // Medium - Amber
+    if (strength === 3) return "#10B981"; // Strong - Green
+    if (strength >= 4) return "#3B82F6"; // Very Strong - Blue
+    return "#E5E5E5"; // Default
+  };
+  
+  const getStrengthText = () => {
+    if (!newPassword) return "";
+    if (strength <= 1) return translations[language].chnagePassword?.weak || "Weak";
+    if (strength === 2) return translations[language].chnagePassword?.medium || "Medium";
+    if (strength === 3) return translations[language].chnagePassword?.strong || "Strong";
+    if (strength >= 4) return translations[language].chnagePassword?.veryStrong || "Very Strong";
+    return "";
+  };
+  
+  const getStrengthIcon = () => {
+    if (strength <= 1) return "alert-circle";
+    if (strength === 2) return "alert-triangle";
+    if (strength === 3) return "check-circle";
+    if (strength >= 4) return "shield";
+    return "";
+  };
+  
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {};
+    
+    if (!currentPassword) {
+      newErrors.currentPassword = "Current password is required";
+      isValid = false;
+    }
+    
+    if (!newPassword) {
+      newErrors.newPassword = "New password is required";
+      isValid = false;
+    } else if (newPassword.length < 8) {
+      newErrors.newPassword = "Password must be at least 8 characters";
+      isValid = false;
+    }
+    
+    if (!confirmPassword) {
+      newErrors.confirmPassword = "Please confirm your password";
+      isValid = false;
+    } else if (newPassword !== confirmPassword) {
+      newErrors.confirmPassword = "Passwords do not match";
+      isValid = false;
+    }
+    
+    setErrors(newErrors);
+    return isValid;
+  };
+  
+  const handleSubmit = () => {
+    Keyboard.dismiss();
+    
+    if (validateForm()) {
+      setLoading(true);
+      
+      // Simulate API call
+      setTimeout(() => {
+        setLoading(false);
+        Alert.alert(
+          "Success",
+          "Your password has been changed successfully",
+          [{ text: "OK" }]
+        );
+      }, 1500);
+    }
+  };
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Feather name="lock" size={22} color="#4361EE" />
+            <Text style={styles.headerText}>
+              {translations[language].chnagePassword?.changePass || "Change Password"}
+            </Text>
+          </View>
         </View>
-        <View style={styles.inputField}>
-            <Text style={[styles.inputLabel,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].chnagePassword.newPass}</Text>
-            <View style={[styles.input,{padding:0,paddingHorizontal:10,flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row",justifyContent:"space-between",alignItems:"center"}]}>
-                <TextInput style={{width:"90%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}} secureTextEntry={securePassword} value={newPassword} onChangeText={(input)=> setNewPassword(input)} />
-                <TouchableOpacity onPress={()=> setSecurePassword(!securePassword)}>
-                    {securePassword ? <Feather name="eye-off" size={20} color="black" /> : <Feather name="eye" size={24} color="black" />}
-                </TouchableOpacity>
+        
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Security Tips */}
+          {!keyboardVisible && (
+            <View style={styles.securityTipsContainer}>
+              <View style={styles.securityTipsHeader}>
+                <Feather name="shield" size={18} color="#4361EE" />
+                <Text style={styles.securityTipsTitle}>Security Tips</Text>
+              </View>
+              <View style={styles.securityTipsList}>
+                <View style={styles.securityTipItem}>
+                  <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
+                  <Text style={styles.tipText}>Use at least 8 characters</Text>
+                </View>
+                <View style={styles.securityTipItem}>
+                  <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
+                  <Text style={styles.tipText}>Include uppercase letters</Text>
+                </View>
+                <View style={styles.securityTipItem}>
+                  <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
+                  <Text style={styles.tipText}>Include numbers and symbols</Text>
+                </View>
+              </View>
             </View>
+          )}
+          
+          {/* Form */}
+          <View style={styles.formContainer}>
+            {/* Current Password Field */}
+            <View style={styles.inputField}>
+              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
+                {translations[language].chnagePassword?.currentPass || "Current Password"}
+              </Text>
+              <View style={[
+                styles.inputContainer, 
+                errors.currentPassword && styles.inputError,
+                { flexDirection: isRTL ? "row-reverse" : "row" }
+              ]}>
+                <View style={[
+                  styles.inputIconContainer, 
+                  { [isRTL ? "right" : "left"]: 12 }
+                ]}>
+                  <Feather name="key" size={18} color="#94A3B8" />
+                </View>
+                <TextInput 
+                  style={[
+                    styles.input, 
+                    { 
+                      textAlign: isRTL ? "right" : "left",
+                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
+                    }
+                  ]} 
+                  secureTextEntry={secureCurrentPassword} 
+                  value={currentPassword} 
+                  onChangeText={(input) => {
+                    setCurrentPassword(input);
+                    if (errors.currentPassword) {
+                      setErrors({...errors, currentPassword: null});
+                    }
+                  }}
+                  placeholder={translations[language].chnagePassword?.currentPassHint || "Enter current password"}
+                  placeholderTextColor="#94A3B8"
+                />
+                <TouchableOpacity 
+                  style={[
+                    styles.eyeIcon,
+                    { [isRTL ? "left" : "right"]: 12 }
+                  ]} 
+                  onPress={() => setSecureCurrentPassword(!secureCurrentPassword)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather 
+                    name={secureCurrentPassword ? "eye-off" : "eye"} 
+                    size={18} 
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.currentPassword && (
+                <Text style={styles.errorText}>{errors.currentPassword}</Text>
+              )}
+            </View>
+            
+            {/* New Password Field */}
+            <View style={styles.inputField}>
+              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
+                {translations[language].chnagePassword?.newPass || "New Password"}
+              </Text>
+              <View style={[
+                styles.inputContainer, 
+                errors.newPassword && styles.inputError,
+                { flexDirection: isRTL ? "row-reverse" : "row" }
+              ]}>
+                <View style={[
+                  styles.inputIconContainer, 
+                  { [isRTL ? "right" : "left"]: 12 }
+                ]}>
+                  <Feather name="lock" size={18} color="#94A3B8" />
+                </View>
+                <TextInput 
+                  style={[
+                    styles.input, 
+                    { 
+                      textAlign: isRTL ? "right" : "left",
+                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
+                    }
+                  ]} 
+                  secureTextEntry={secureNewPassword} 
+                  value={newPassword} 
+                  onChangeText={(input) => {
+                    setNewPassword(input);
+                    if (errors.newPassword) {
+                      setErrors({...errors, newPassword: null});
+                    }
+                  }}
+                  placeholder={translations[language].chnagePassword?.newPassHint || "Enter new password"}
+                  placeholderTextColor="#94A3B8"
+                />
+                <TouchableOpacity 
+                  style={[
+                    styles.eyeIcon,
+                    { [isRTL ? "left" : "right"]: 12 }
+                  ]} 
+                  onPress={() => setSecureNewPassword(!secureNewPassword)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather 
+                    name={secureNewPassword ? "eye-off" : "eye"} 
+                    size={18} 
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.newPassword ? (
+                <Text style={styles.errorText}>{errors.newPassword}</Text>
+              ) : newPassword ? (
+                <View style={styles.strengthContainer}>
+                  <View style={styles.strengthBarContainer}>
+                    <Animated.View 
+                      style={[
+                        styles.strengthBar, 
+                        { 
+                          width: strengthAnimation.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ['0%', '100%']
+                          }),
+                          backgroundColor: getStrengthColor()
+                        }
+                      ]} 
+                    />
+                  </View>
+                  <View style={styles.strengthTextContainer}>
+                    <Feather name={getStrengthIcon()} size={14} color={getStrengthColor()} />
+                    <Text style={[styles.strengthText, {color: getStrengthColor()}]}>
+                      {getStrengthText()}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+            
+            {/* Confirm Password Field */}
+            <View style={styles.inputField}>
+              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
+                {"Confirm Password"}
+              </Text>
+              <View style={[
+                styles.inputContainer, 
+                errors.confirmPassword && styles.inputError,
+                { flexDirection: isRTL ? "row-reverse" : "row" }
+              ]}>
+                <View style={[
+                  styles.inputIconContainer, 
+                  { [isRTL ? "right" : "left"]: 12 }
+                ]}>
+                  <Feather name="check-circle" size={18} color="#94A3B8" />
+                </View>
+                <TextInput 
+                  style={[
+                    styles.input, 
+                    { 
+                      textAlign: isRTL ? "right" : "left",
+                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
+                    }
+                  ]} 
+                  secureTextEntry={secureConfirmPassword} 
+                  value={confirmPassword} 
+                  onChangeText={(input) => {
+                    setConfirmPassword(input);
+                    if (errors.confirmPassword) {
+                      setErrors({...errors, confirmPassword: null});
+                    }
+                  }}
+                  placeholder={"Confirm your new password"}
+                  placeholderTextColor="#94A3B8"
+                />
+                <TouchableOpacity 
+                  style={[
+                    styles.eyeIcon,
+                    { [isRTL ? "left" : "right"]: 12 }
+                  ]} 
+                  onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Feather 
+                    name={secureConfirmPassword ? "eye-off" : "eye"} 
+                    size={18} 
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+        
+        {/* Submit Button */}
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={[
+              styles.submitButton,
+              (loading || !(currentPassword && newPassword && confirmPassword)) && styles.disabledButton
+            ]}
+            onPress={handleSubmit}
+            disabled={loading || !(currentPassword && newPassword && confirmPassword)}
+          >
+            {loading ? (
+              <Text style={styles.submitText}>Updating...</Text>
+            ) : (
+              <Text style={styles.submitText}>
+                {translations[language].chnagePassword?.changePass || "Change Password"}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={[styles.submit, (currentPassword && newPassword) && styles.activeSubmit]}>
-            <Text style={{textAlign:"center",fontWeight:"600",color:(currentPassword && newPassword) ? "white" : "#ffffff"}}>{translations[language].chnagePassword.changePass}</Text>
-        </TouchableOpacity>
-    </View>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container:{
-        backgroundColor:"white",
-        boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
-        padding:15,
-        height:"100%",
-        paddingTop:40
-    },
-    inputLabel:{
-        fontWeight:"600"
-    },
-    input:{
-        borderWidth:1,
-        borderColor:"rgba(0,0,0,.1)",
-        marginTop:10,
-        padding:10,
-    },
-    inputField:{
-        marginBottom:40
-    },
-    submit:{
-        textAlign:"center",
-        backgroundColor:"rgba(248, 195, 50, 0.4)",
-        padding:15
-    },
-    activeSubmit:{
-        backgroundColor:"#F8C332"
-    }
-})
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF"
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB"
+  },
+  header: {
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginLeft: 10
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  securityTipsContainer: {
+    backgroundColor: "#F0F9FF",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4361EE",
+  },
+  securityTipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  securityTipsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginLeft: 8,
+  },
+  securityTipsList: {
+    paddingLeft: 6,
+  },
+  securityTipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  tipIcon: {
+    marginRight: 8,
+  },
+  tipText: {
+    fontSize: 14,
+    color: "#4B5563",
+  },
+  formContainer: {
+    marginBottom: 20,
+  },
+  inputField: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontWeight: "500",
+    fontSize: 15,
+    marginBottom: 8,
+    color: "#374151",
+  },
+  inputContainer: {
+    borderWidth: 1,
+    borderColor: "rgba(203, 213, 225, 0.8)",
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    position: 'relative',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  inputError: {
+    borderColor: "#EF4444",
+  },
+  inputIconContainer: {
+    position: 'absolute',
+    top: 14,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: "#1F2937",
+  },
+  eyeIcon: {
+    position: 'absolute',
+    top: 14,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: "#EF4444",
+    fontSize: 12,
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  strengthContainer: {
+    marginTop: 10,
+  },
+  strengthBarContainer: {
+    height: 4,
+    backgroundColor: "#E5E7EB",
+    borderRadius: 2,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  strengthBar: {
+    height: "100%",
+  },
+  strengthTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  strengthText: {
+    fontSize: 13,
+    marginLeft: 6,
+  },
+  footer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  submitButton: {
+    backgroundColor: "#4361EE",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4361EE',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  disabledButton: {
+    backgroundColor: "#A5B4FC",
+  },
+  submitText: {
+    fontWeight: "600",
+    color: "#FFFFFF",
+    fontSize: 16,
+  }
+});

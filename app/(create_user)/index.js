@@ -1,33 +1,36 @@
-import { View,StyleSheet, ScrollView,Button, Text, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, StyleSheet, ScrollView, Text, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
 import Section from "../../components/create/Section";
 import { useEffect, useState, useRef } from "react";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Feather from '@expo/vector-icons/Feather';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { useLocalSearchParams } from "expo-router";
-import Feather from '@expo/vector-icons/Feather';
+import { useLocalSearchParams, router } from "expo-router";
+import { LinearGradient } from 'expo-linear-gradient';
+import { getToken } from "../../utils/secureStore";
 
-export default function HomeScreen(){
+export default function HomeScreen() {
     const { userId } = useLocalSearchParams();
     const { language } = useLanguage();
-    const [page,setPage] = useState(1);
-    const [loadingMore,setLoadingMore] = useState(false);
-    const [cities,setCities] = useState([]);
-    const [roles,setRoles] = useState([]);
-    const [branches,setBranches] = useState([]);
-    const [pricelists,setPricelists] = useState([]);
-    const [managers,setManagers] = useState([]);
-    const [prickerSearchValue,setPickerSearchValue] = useState("");
-    const [selectedValue,setSelectedValue] = useState({
-        city:"",
-        role:"",
-        pricelist:"",
-        branch:"",
-        manager:""
+    const isRTL = language === 'ar' || language === 'he';
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [cities, setCities] = useState([]);
+    const [roles, setRoles] = useState([]);
+    const [branches, setBranches] = useState([]);
+    const [pricelists, setPricelists] = useState([]);
+    const [managers, setManagers] = useState([]);
+    const [prickerSearchValue, setPickerSearchValue] = useState("");
+    const [selectedValue, setSelectedValue] = useState({
+        city_id: "",
+        role_id: "",
+        pricelist_id: "",
+        branch_id: "",
+        manager_id: ""
     });
 
-    const [form,setForm] = useState({})
+    const [form, setForm] = useState({});
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState({ status: false, msg: "" });
     const [formSpinner, setFormSpinner] = useState({ status: false });
@@ -42,105 +45,91 @@ export default function HomeScreen(){
     const scrollViewRef = useRef(null);
 
     const sections = [{
-        label:translations[language].users.create.sections.user.title,
-        icon:<FontAwesome name="user-o" size={24} color="#F8C332" />,
-        fields:[{
-            label:translations[language].users.create.sections.user.fields.name,
-            name:"name",
-            type:"input",
-            value:form.name || "",
-            onChange:(input)=> setForm((form)=> ({...form,name:input}))
+        label: translations[language].users.create.sections.user.title,
+        icon: <FontAwesome name="user-o" size={24} color="#4361EE" />,
+        fields: [{
+            label: translations[language].users.create.sections.user.fields.name,
+            name: "name",
+            type: "input",
+            value: form.name || "",
+            onChange: (input) => setForm((form) => ({ ...form, name: input }))
         },{
-            label:translations[language].users.create.sections.user.fields.commercial,
-            type:"input",
-            name:"comercial_name",
-            value:form.comercialName || "",
-            onChange:(input)=> setForm((form)=> ({...form,comercialName:input}))
+            label: translations[language].users.create.sections.details.fields.role,
+            type: "select",
+            name: "role_id",
+            value: selectedValue.role_id.name,
+            list: roles
+        },selectedValue.role_id?.role_id === 2 ? {
+            label: translations[language].users.create.sections.user.fields.commercial,
+            type: "input",
+            name: "comercial_name",
+            value: form.comercialName || "",
+            onChange: (input) => setForm((form) => ({ ...form, comercialName: input }))
+        } : {visibility:"hidden"}, {
+            label: translations[language].users.create.sections.user.fields.firstPhone,
+            type: "input",
+            name: "phone",
+            value: form.firstPhone || "",
+            onChange: (input) => setForm((form) => ({ ...form, firstPhone: input }))
+        }, {
+            label: translations[language].users.create.sections.user.fields.secondPhone,
+            type: "input",
+            name: "secondPhone",
+            value: form.secondPhone || "",
+            onChange: (input) => setForm((form) => ({ ...form, secondPhone: input }))
         },{
-            label:translations[language].users.create.sections.user.fields.firstPhone,
-            type:"input",
-            name:"phone",
-            value:form.firstPhone || "",
-            onChange:(input)=> setForm((form)=> ({...form,firstPhone:input}))
-        },{
-            label:translations[language].users.create.sections.user.fields.secondPhone,
-            type:"input",
-            name:"secondPhone",
-            value:form.secondPhone || "",
-            onChange:(input)=> setForm((form)=> ({...form,secondPhone:input}))
-        },{
-            label:translations[language].users.create.sections.user.fields.affillator,
-            type:"input",
-            name:"affilliator",
-            value:form.affiliator || "",
-            onChange:(input)=> setForm((form)=> ({...form,affiliator:input}))
-        },{
-            label:translations[language].users.create.sections.user.fields.city,
-            type:"select",
-            name:"city_id",
-            value:selectedValue.city.name,
-            list:cities
-        },{
-            label:translations[language].users.create.sections.user.fields.area,
-            type:"input",
-            name:"area",
-            value:form.area || "",
-            onChange:(input)=> setForm((form)=> ({...form,area:input}))
-        },{
-            label:translations[language].users.create.sections.user.fields.address,
-            type:"input",
-            name:"address",
-            value:form.address || "",
-            onChange:(input)=> setForm((form)=> ({...form,address:input}))
+            label: translations[language].users.create.sections.user.fields.city,
+            type: "select",
+            name: "city_id",
+            value: selectedValue.city_id.name,
+            list: cities
+        }, {
+            label: translations[language].users.create.sections.user.fields.area,
+            type: "input",
+            name: "area",
+            value: form.area || "",
+            onChange: (input) => setForm((form) => ({ ...form, area: input }))
+        }, {
+            label: translations[language].users.create.sections.user.fields.address,
+            type: "input",
+            name: "address",
+            value: form.address || "",
+            onChange: (input) => setForm((form) => ({ ...form, address: input }))
         }]
-    },{
-        label:translations[language].users.create.sections.details.title,
-        icon:<MaterialIcons name="attach-money" size={24} color="#F8C332" />,
-        fields:[{
-            label:translations[language].users.create.sections.details.fields.role,
-            type:"select",
-            name:"role",
-            name:"role_id",
-            value:selectedValue.role.name,
-            list:roles
-        },{
-            label:translations[language].users.create.sections.details.fields.branch,
-            type:"select",
-            name:"branch_id",
-            name:"branch",
-            value:selectedValue.branch.name,
-            list:branches
-        },{
-            label:translations[language].users.create.sections.details.fields.manager,
-            type:"select",
-            name:"manager",
-            name:"manager_id",
-            value:selectedValue.manager.name,
-            list:managers
-        },selectedValue.role.id === 2 ? {
-            label:translations[language].users.create.sections.details.fields.pricelist,
-            type:"select",
-            name:"pricelist_id",
-            value:selectedValue.pricelist.name,
-            list:pricelists
-        } : {visibility:"hidden"}]
-    }]
+    }, {
+        label: translations[language].users.create.sections.details.title,
+        icon: <MaterialIcons name="admin-panel-settings" size={24} color="#4361EE" />,
+        fields: [{
+            label: translations[language].users.create.sections.details.fields.branch,
+            type: "select",
+            name: "branch_id",
+            value: selectedValue.branch_id.name,
+            list: branches
+        }, selectedValue.role_id?.role_id === 2 ? {
+            label: translations[language].users.create.sections.details.fields.pricelist,
+            type: "select",
+            name: "pricelist_id",
+            value: selectedValue.pricelist_id.name,
+            list: pricelists
+        } : { visibility: "hidden" }]
+    }];
 
     const scrollToError = (fieldName) => {
-        const sectionWithError = sections.find(section => 
+        const sectionWithError = sections.find(section =>
             section.fields.some(field => field.name === fieldName)
         );
 
         if (sectionWithError && scrollViewRef.current) {
             const sectionIndex = sections.indexOf(sectionWithError);
             const approximatePosition = sectionIndex * 250;
-            
+
             scrollViewRef.current.scrollTo({
                 y: Math.max(0, approximatePosition - 50),
                 animated: true
             });
         }
     };
+
 
     const createSender = async (url, method) => {
         setFormSpinner({ status: true });
@@ -149,34 +138,35 @@ export default function HomeScreen(){
         setError({ status: false, msg: "" });
 
         try {
+            const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}${url}`, {
                 method: method,
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    'Accept-Language': language
+                    'Accept-Language': language,
+                    "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
-                    name:form.name,
-                    comercial_name:form.comercialName,
-                    email:form.email,
-                    phone:form.firstPhone,
-                    phone_2:form.secondPhone,
-                    password:form.firstPhone,
-                    role_id:selectedValue.role.role_id,
-                    branch_id:selectedValue.branch.branch_id,
-                    manager_id:selectedValue.manager.user_id,
-                    affiliator:form.affiliator,
-                    pricelist_id:selectedValue.pricelist.pricelist_id,
-                    country:"palestine",
-                    city_id:selectedValue.city.city_id,
-                    area:form.area,
-                    address:form.address,
-                    website:form.website,
-                    tiktok:form.tiktok,
-                    whatsapp:form.whatsapp,
-                    instagram:form.instagram,
-                    facebook:form.facebook,
+                    name: form.name,
+                    comercial_name: form.comercialName,
+                    email: form.email,
+                    phone: form.firstPhone,
+                    phone_2: form.secondPhone,
+                    password: form.firstPhone,
+                    role_id: selectedValue.role_id.role_id,
+                    branch_id: selectedValue.branch_id.branch_id,
+                    affiliator: form.affiliator,
+                    pricelist_id: selectedValue.pricelist_id.pricelist_id,
+                    country: "palestine",
+                    city_id: selectedValue.city_id.city_id,
+                    area: form.area,
+                    address: form.address,
+                    website: form.website,
+                    tiktok: form.tiktok,
+                    whatsapp: form.whatsapp,
+                    instagram: form.instagram,
+                    facebook: form.facebook,
                 })
             });
 
@@ -190,7 +180,7 @@ export default function HomeScreen(){
                         errors[error.field] = error.message;
                     });
                     setFieldErrors(errors);
-                    
+
                     const firstErrorField = data.details[0]?.field;
                     if (firstErrorField) {
                         scrollToError(firstErrorField);
@@ -215,18 +205,18 @@ export default function HomeScreen(){
 
             setFormSpinner({ status: false });
             setSuccess(true);
-            
+
             setShowAlert({
                 visible: true,
                 type: 'success',
                 title: translations[language].users.create.success,
                 message: translations[language].users.create.successMsg,
-                onClose: () => router.push("(tabs)/users")
+                onClose: () => router.push("(users)")
             });
 
         } catch (err) {
             setFormSpinner({ status: false });
-            
+
             setShowAlert({
                 visible: true,
                 type: 'error',
@@ -238,69 +228,71 @@ export default function HomeScreen(){
 
     const fetchUserData = async () => {
         try {
+            const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Cookie": token ? `token=${token}` : ""
                 }
             });
             const userData = await res.json();
-            setSelectedValue((selectedValue)=> (
-                {...selectedValue,
-                    city:{name:userData.city,id:userData.city_id},
-                    role:{name:userData.role,id:userData.role_id},
-                    branch:{name:userData.branch,id:userData.branch_id},
-                    pricelist:{name:userData.priceList,id:userData.priceList_id}
+            setSelectedValue((selectedValue) => (
+                {
+                    ...selectedValue,
+                    city: { name: userData.city, id: userData.city_id },
+                    role: { name: userData.role, id: userData.role_id },
+                    branch: { name: userData.branch, id: userData.branch_id },
+                    pricelist: { name: userData.priceList, id: userData.priceList_id }
                 }
-                    
-            ))
+            ));
             setForm({
-                name:userData.name,
-                comercialName:userData.comercialName,
-                firstPhone:userData.firstPhone,
-                secondPhone:userData.secondPhone,
-                affiliator:userData.affiliator,
-                city_id:userData.city_id,
-                area:userData.area,
-                address:userData.address,
-                role_id:userData.role_id,
-                priceList_id:userData.priceList_id,
-            })
+                name: userData.name,
+                comercialName: userData.comercialName,
+                firstPhone: userData.firstPhone,
+                secondPhone: userData.secondPhone,
+                affiliator: userData.affiliator,
+                city_id: userData.city_id,
+                area: userData.area,
+                address: userData.address,
+                role_id: userData.role_id,
+                priceList_id: userData.priceList_id,
+            });
         } catch (err) {
+            console.log(err);
         }
     };
 
-    const fetchRelatedData = async (url,setData)=>{
+    const fetchRelatedData = async (url, setData) => {
         try {
+            const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/${url}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Cookie": token ? `token=${token}` : ""
                 }
             });
             const data = await res.json();
             setData(data.data);
         } catch (err) {
+            console.log(err);
         }
-    }
+    };
 
     const loadMoreData = async () => {
-        if (!loadingMore && senders?.data.length > 0) {
-            // Check if there's more data to load
-            if (senders.data.length >= senders?.metadata.total_records) {
-                return;
-            }
-    
+        if (!loadingMore && managers?.length > 0) {
             setLoadingMore(true);
             const nextPage = page + 1;
             setPage(nextPage);
             try {
-                await fetchSenders(nextPage, true);
-            } catch (error) {
+                await fetchRelatedData(`api/users?role=business&language_code=${language}&page=${nextPage}`, (newData) => {
+                    setManagers(prev => [...prev, ...newData]);
+                });
             } finally {
                 setLoadingMore(false);
             }
@@ -313,54 +305,82 @@ export default function HomeScreen(){
         }
     }, [userId]);
 
-    useEffect(()=>{
-        fetchRelatedData(`api/addresses/cities?language_code=${language}`,setCities)
-        fetchRelatedData(`api/branches?language_code=${language}`,setBranches)
-        fetchRelatedData(`api/prices-list`,setPricelists)
-        fetchRelatedData(`api/roles?language_code=${language}`,setRoles)
-        fetchRelatedData(`api/users?role=business&language_code=${language}`,setManagers)
+    useEffect(() => {
+        fetchRelatedData(`api/addresses/cities?language_code=${language}`, setCities);
+        fetchRelatedData(`api/branches?language_code=${language}`, setBranches);
+        fetchRelatedData(`api/prices-list`, setPricelists);
+        fetchRelatedData(`api/roles?language_code=${language}`, setRoles);
+        fetchRelatedData(`api/users?role=business&language_code=${language}`, setManagers);
         setPage(1);
-    },[])
+    }, [language]);
 
     const CustomAlert = ({ type, title, message, onClose }) => {
         return (
-            <View style={[styles.alertOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-                <View style={[styles.alertContainer, 
-                    type === 'error' ? styles.errorAlert : 
-                    type === 'success' ? styles.successAlert : 
-                    styles.warningAlert
+            <View style={styles.alertOverlay}>
+                <View style={[
+                    styles.alertContainer,
+                    { flexDirection: isRTL ? 'row-reverse' : 'row' }
                 ]}>
-                    <View style={styles.alertHeader}>
-                        <Text style={styles.alertTitle}>{title}</Text>
-                        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Feather name="x" size={24} color="#666" />
-                        </TouchableOpacity>
+                    <View style={[
+                        styles.alertColorBar,
+                        type === 'error' ? styles.errorBar :
+                            type === 'success' ? styles.successBar :
+                                styles.warningBar
+                    ]} />
+                    <View style={styles.alertContent}>
+                        <View style={[
+                            styles.alertHeader,
+                            { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                        ]}>
+                            <Text style={[
+                                styles.alertTitle,
+                                { textAlign: isRTL ? 'right' : 'left' }
+                            ]}>
+                                {title}
+                            </Text>
+                            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                                <Feather name="x" size={24} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={[
+                            styles.alertMessage,
+                            { textAlign: isRTL ? 'right' : 'left' }
+                        ]}>
+                            {message}
+                        </Text>
+                        <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
+                            <TouchableOpacity
+                                style={[
+                                    styles.alertButton,
+                                    type === 'error' ? styles.errorButton :
+                                        type === 'success' ? styles.successButton :
+                                            styles.warningButton
+                                ]}
+                                onPress={onClose}
+                            >
+                                <Text style={styles.alertButtonText}>OK</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                    <Text style={styles.alertMessage}>{message}</Text>
-                    <TouchableOpacity 
-                        style={[styles.alertButton, 
-                            type === 'error' ? styles.errorButton : 
-                            type === 'success' ? styles.successButton : 
-                            styles.warningButton
-                        ]}
-                        onPress={onClose}
-                    >
-                        <Text style={styles.alertButtonText}>OK</Text>
-                    </TouchableOpacity>
                 </View>
             </View>
         );
     };
 
-    return <View style={{ flex: 1 }}>
+    return (
+        <View style={styles.container}>
             <ScrollView
                 ref={scrollViewRef}
-                style={styles.container}
-                contentContainerStyle={styles.contentContainer}
+                style={styles.scrollView}
+                contentContainerStyle={[
+                    styles.contentContainer,
+                    { alignItems: isRTL ? 'flex-end' : 'flex-start' }
+                ]}
                 keyboardShouldPersistTaps="handled"
             >
+
                 <View style={styles.main}>
-                    {sections?.map((section,index)=>{
+                    {sections?.map((section, index) => {
                         return <Section
                             key={index}
                             section={section}
@@ -369,14 +389,34 @@ export default function HomeScreen(){
                             setSelectedValue={setSelectedValue}
                             fieldErrors={fieldErrors}
                             setFieldErrors={setFieldErrors}
-                            />
+                            isRTL={isRTL}
+                            prickerSearchValue={prickerSearchValue}
+                            setPickerSearchValue={setPickerSearchValue}
+                        />
                     })}
-                    <Button 
-                        color={"#F8C332"} 
-                        title={formSpinner.status ? translations[language].users.create.loading : translations[language].users.create.submit}
-                        onPress={() => userId ? createSender(`/api/users/${userId}`, "PUT") : createSender('/api/users', "POST")}
+
+                    <TouchableOpacity
+                        style={styles.submitButton}
+                        onPress={() => userId ? 
+                            createSender(`/api/users/${userId}`, "PUT") : 
+                            createSender('/api/users', "POST")}
                         disabled={formSpinner.status}
-                    />
+                    >
+                        <LinearGradient
+                            colors={['#4361EE', '#3A0CA3']}
+                            style={styles.gradientButton}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                        >
+                            {formSpinner.status ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={styles.submitButtonText}>
+                                    {translations[language].users.create.submit}
+                                </Text>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
 
@@ -384,7 +424,7 @@ export default function HomeScreen(){
             {formSpinner.status && (
                 <View style={styles.overlay}>
                     <View style={styles.spinnerContainer}>
-                        <ActivityIndicator size="large" color="#F8C332" />
+                        <ActivityIndicator size="large" color="#4361EE" />
                     </View>
                 </View>
             )}
@@ -393,10 +433,23 @@ export default function HomeScreen(){
             {success && (
                 <View style={styles.successOverlay}>
                     <View style={styles.successContainer}>
-                        <Feather name="check-circle" size={50} color="#2E7D32" />
-                        <Text style={[styles.successText, { marginTop: 15 }]}>
+                        <View style={styles.successIconContainer}>
+                            <Feather name="check-circle" size={50} color="#FFFFFF" />
+                        </View>
+                        <Text style={styles.successTitle}>
+                            {translations[language].users.create.success}
+                        </Text>
+                        <Text style={styles.successText}>
                             {translations[language].users.create.successMsg}
                         </Text>
+                        <TouchableOpacity 
+                            style={styles.successButton}
+                            onPress={() => router.push("(tabs)/users")}
+                        >
+                            <Text style={styles.successButtonText}>
+                                {translations[language].users.create.returnToUsers}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             )}
@@ -414,17 +467,40 @@ export default function HomeScreen(){
                 />
             )}
         </View>
+    );
 }
 
 const styles = StyleSheet.create({
-    main:{
-        padding:15
-    },
     container: {
         flex: 1,
+        backgroundColor: '#F8FAFC',
     },
-    contentContainer: {
-        paddingBottom: 20,
+    scrollView: {
+        flex: 1,
+    },
+    main: {
+        width: '100%',
+        padding: 16,
+    },
+    submitButton: {
+        marginTop: 24,
+        borderRadius: 8,
+        overflow: 'hidden',
+        elevation: 2,
+        shadowColor: '#4361EE',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+    },
+    gradientButton: {
+        paddingVertical: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    submitButtonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
     },
     overlay: {
         position: 'absolute',
@@ -439,15 +515,12 @@ const styles = StyleSheet.create({
     },
     spinnerContainer: {
         backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
+        padding: 24,
+        borderRadius: 12,
         shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
         elevation: 5,
     },
     successOverlay: {
@@ -462,21 +535,50 @@ const styles = StyleSheet.create({
         zIndex: 1500,
     },
     successContainer: {
-        backgroundColor: '#E8F5E9',
-        padding: 20,
-        borderRadius: 10,
+        backgroundColor: 'white',
+        padding: 24,
+        borderRadius: 12,
         width: '90%',
         maxWidth: 400,
         alignItems: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
+        shadowOpacity: 0.1,
         shadowRadius: 3.84,
         elevation: 5,
     },
+    successIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: '#10B981',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    successTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#1E293B',
+        marginBottom: 8,
+    },
     successText: {
-        color: '#2E7D32',
+        fontSize: 16,
+        color: '#64748B',
         textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    successButton: {
+        backgroundColor: '#4361EE',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    successButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
     },
     alertOverlay: {
         position: 'absolute',
@@ -484,6 +586,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2000,
@@ -491,63 +594,70 @@ const styles = StyleSheet.create({
     alertContainer: {
         width: '90%',
         backgroundColor: 'white',
-        borderRadius: 15,
-        padding: 20,
+        borderRadius: 12,
+        overflow: 'hidden',
+        flexDirection: 'row',
         elevation: 5,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.25,
         shadowRadius: 3.84,
     },
+    alertColorBar: {
+        width: 8,
+    },
+    errorBar: {
+        backgroundColor: '#EF4444',
+    },
+    successBar: {
+        backgroundColor: '#10B981',
+    },
+    warningBar: {
+        backgroundColor: '#F59E0B',
+    },
+    alertContent: {
+        flex: 1,
+        padding: 16,
+    },
     alertHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 15,
+        marginBottom: 12,
     },
     alertTitle: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
+        fontWeight: '600',
+        color: '#1E293B',
     },
     closeButton: {
-        padding: 5,
+        padding: 4,
     },
     alertMessage: {
-        fontSize: 16,
-        color: '#666',
+        fontSize: 15,
+        color: '#64748B',
         marginBottom: 20,
         lineHeight: 22,
     },
     alertButton: {
-        padding: 12,
-        borderRadius: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 6,
+        minWidth: 100,
         alignItems: 'center',
     },
-    errorAlert: {
-        borderLeftWidth: 5,
-        borderLeftColor: '#D32F2F',
-    },
-    successAlert: {
-        borderLeftWidth: 5,
-        borderLeftColor: '#2E7D32',
-    },
-    warningAlert: {
-        borderLeftWidth: 5,
-        borderLeftColor: '#F8C332',
-    },
     errorButton: {
-        backgroundColor: '#D32F2F',
+        backgroundColor: '#EF4444',
     },
     successButton: {
-        backgroundColor: '#2E7D32',
+        backgroundColor: '#10B981',
     },
     warningButton: {
-        backgroundColor: '#F8C332',
+        backgroundColor: '#F59E0B',
     },
     alertButtonText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '600',
     },
 });

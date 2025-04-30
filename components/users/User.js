@@ -1,4 +1,4 @@
-import { View,StyleSheet,Text, TouchableOpacity, Pressable} from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
@@ -9,155 +9,286 @@ import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import UserBox from "../orders/userBox/UserBox";
 
-
-export default function User({user}){
+export default function User({ user }) {
     const { language } = useLanguage();
-    const [showControl,setShowControl] = useState(false);
+    const [showControl, setShowControl] = useState(false);
+    const isRTL = ["he", "ar"].includes(language);
 
-    return <>
-        <Pressable onLongPress={()=> setShowControl(true)}>
-            <View style={styles.user}>
-                <View style={[styles.head,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                    <View style={styles.box}>
-                        <Text style={{textAlign:"center"}}># {user?.user_id}</Text>
+    // Helper functions for RTL-aware UI
+    const getFlexDirection = () => isRTL ? "row-reverse" : "row";
+    const getTextAlign = () => isRTL ? "right" : "left";
+    const getMargin = (side, value) => {
+        if (!isRTL) return { [`margin${side}`]: value };
+        const flippedSide = side === 'Left' ? 'Right' : side === 'Right' ? 'Left' : side;
+        return { [`margin${flippedSide}`]: value };
+    };
+
+    return (
+        <>
+            <Pressable
+                onLongPress={() => setShowControl(true)}
+                style={({ pressed }) => [
+                    { opacity: pressed ? 0.9 : 1 },
+                    styles.userPressable
+                ]}
+            >
+                <View style={styles.user}>
+                    {/* Header with ID & Status */}
+                    <View style={[styles.header, { flexDirection: getFlexDirection() }]}>
+                        <View style={[
+                            styles.idContainer,
+                            getMargin(isRTL ? "Left" : "Right", 10)
+                        ]}>
+                            <Text style={styles.idText}>#{user?.user_id}</Text>
+                        </View>
+                        
+                        <View style={[
+                            styles.statusBadge, 
+                            { backgroundColor: user.active_status_key ? "#10B981" : "#EF4444" }
+                        ]}>
+                            <Text style={styles.statusText}>{user.activeStatus}</Text>
+                        </View>
                     </View>
-                    <View style={[styles.status,{borderWidth:0,backgroundColor:user.active_status_key ? "green":"red",flexDirection:"row-reverse"}]}>
-                        <Text style={{color:"white"}}>{user.activeStatus}</Text>
+
+                    {/* User Info Section */}
+                    <View style={styles.userInfoSection}>
+                        <UserBox 
+                            styles={styles} 
+                            box={{
+                                label: translations[language].users.user.name,
+                                userName: user?.name,
+                                phone: user?.phone
+                            }}
+                        />
                     </View>
-                </View>
-                <UserBox styles={styles} box={{label:translations[language].users.user.name,userName:user?.name,phone:user?.phone}} />
-                <View style={styles.sec}>
-                    <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                        <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                            <Ionicons name="location-outline" size={24} color="#F8C332" />
-                            <View style={styles.info}>
-                                <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user?.city}</Text>
-                                <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user.area}{user.address ? `, ${user.address}` : null}</Text>
+
+                    {/* Location Section */}
+                    <View style={styles.section}>
+                        <View style={[styles.sectionContent, { flexDirection: getFlexDirection() }]}>
+                            <Ionicons 
+                                name="location-outline" 
+                                size={22} 
+                                color="#4361EE" 
+                                style={[
+                                    styles.sectionIcon,
+                                    isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                                ]}
+                            />
+                            <View style={styles.textContainer}>
+                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                                    {translations[language].users.user.location}
+                                </Text>
+                                <Text style={[styles.sectionText, { textAlign: getTextAlign() }]}>
+                                    {user?.city}{user.area ? `, ${user.area}` : ""}{user.address ? `, ${user.address}` : ""}
+                                </Text>
                             </View>
                         </View>
                     </View>
-                </View>
-                <View style={styles.sec}>
-                    <View style={[styles.in,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                        <View style={[styles.flexIn,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                            <MaterialIcons name="admin-panel-settings" size={24} color="#F8C332" />
-                            <View style={styles.info}>
-                                <Text style={[styles.h2,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].users.user.role}</Text>
-                                <Text style={[styles.p,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{user?.role}</Text>
+
+                    {/* Role Section */}
+                    <View style={styles.section}>
+                        <View style={[styles.sectionContent, { flexDirection: getFlexDirection() }]}>
+                            <MaterialIcons 
+                                name="admin-panel-settings" 
+                                size={22} 
+                                color="#4361EE" 
+                                style={[
+                                    styles.sectionIcon,
+                                    isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                                ]}
+                            />
+                            <View style={styles.textContainer}>
+                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                                    {translations[language].users.user.role}
+                                </Text>
+                                <Text style={[styles.sectionText, { textAlign: getTextAlign() }]}>
+                                    {user?.role}
+                                </Text>
                             </View>
                         </View>
                     </View>
-                </View>
-            </View>
-        </Pressable>
-        
-        {showControl
-    &&
-    <ModalPresentation
-     showModal={showControl}
-     setShowModal={setShowControl}
-     customStyles={{bottom:15}}
-    >
-        <View style={[styles.control,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-            <TouchableOpacity style={[styles.modalItem,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]} onPress={()=> router.push({
-                pathname: "(create_user)",
-                params: { userId: user.user_id }
-              })}>
-                <Feather name="edit" size={20} color="black" />
-                <Text style={{fontWeight:"500"}}>{translations[language].users.user.edit}</Text>
-            </TouchableOpacity>
-        </View>
 
-    </ModalPresentation>}
-    </>
+                    {/* Extra info or actions can be added here */}
+                </View>
+            </Pressable>
+            
+            {/* Edit Modal */}
+            {showControl && (
+                <ModalPresentation
+                    showModal={showControl}
+                    setShowModal={setShowControl}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>
+                            {translations[language].users.user.options}
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                        style={[
+                            styles.modalItem,
+                            { flexDirection: getFlexDirection() }
+                        ]} 
+                        onPress={() => {
+                            setShowControl(false);
+                            router.push({
+                                pathname: "(create_user)",
+                                params: { userId: user.user_id }
+                            });
+                        }}
+                    >
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                        ]}>
+                            <Feather name="edit" size={20} color="#4361EE" />
+                        </View>
+                        <Text style={styles.modalItemText}>
+                            {translations[language].users.user.edit}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={[
+                            styles.modalItem,
+                            { flexDirection: getFlexDirection(), borderBottomWidth: 0 }
+                        ]} 
+                        onPress={() => setShowControl(false)}
+                    >
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                        ]}>
+                            <Feather name="eye" size={20} color="#4361EE" />
+                        </View>
+                        <Text style={styles.modalItemText}>
+                            {translations[language].users.user.viewDetails}
+                        </Text>
+                    </TouchableOpacity>
+                </ModalPresentation>
+            )}
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
-    main:{
-        height:"100%"
+    userPressable: {
+        marginBottom: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
     },
-    section:{
-        marginTop:15,
-        flex:1
+    user: {
+        backgroundColor: "white",
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: "#64748B",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 2.65,
+        elevation: 2,
     },
-    scrollView:{
-        flex:1
+    header: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
     },
-    users:{
-        padding:15,
+    idContainer: {
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderColor: "#4361EE",
+        borderWidth: 1,
+        backgroundColor: "#EEF2FF",
     },
-    user:{
-        boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
-        backgroundColor:"white",
-        padding:15
+    idText: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#4361EE",
+        textAlign: "center",
     },
-    control:{
-        flexDirection:"row-reverse",
-        alignItems:"center",
-        gap:10,
-        marginBottom:15,
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 6,
     },
-    status:{
-        flexDirection:"row",
-        alignItems:"center",
-        justifyContent:"center",
-        width:14,
-        height:14,
-        borderRadius:"50%"
+    statusText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "600",
     },
-    head:{
-        flexDirection:"row",
-        justifyContent:"space-between",
-        alignItems:"center",
-        gap:10
+    userInfoSection: {
+        marginBottom: 12,
+        padding: 12,
+        backgroundColor: "#F8FAFC",
+        borderRadius: 8,
     },
-    box:{
-        borderRadius:15,
-        boxShadow: "rgba(99, 99, 99, 0.2) 0px 2px 8px 0px",
-        paddingHorizontal:15,
-        paddingVertical:10,
-        minWidth:130,
-        borderColor:"#F8C332",
-        borderWidth:1
+    section: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
     },
-    sec:{
-        marginTop:15,
-        paddingVertical:10,
-        borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1
+    sectionContent: {
+        flexDirection: "row",
+        alignItems: "center",
     },
-    in:{
-        flexDirection:"row",
-        alignItems:"center",
-        gap:15,
-        justifyContent:"space-between"
+    sectionIcon: {
+        width: 22,
+        height: 22,
     },
-    narrow:{
-        justifyContent:"center",
+    textContainer: {
+        flex: 1,
     },
-    flexIn:{
-        flexDirection:"row",
-        alignItems:"center",
-        gap:15
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: "600",
+        color: "#334155",
+        marginBottom: 2,
     },
-    icons:{
-        flexDirection:"row",
-        gap:15
+    sectionText: {
+        fontSize: 14,
+        color: "#64748B",
     },
-    flexSec:{
-        marginTop:20,
+    modalHeader: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: "#E2E8F0",
     },
-    h2:{
-        fontWeight:"500"
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#1E293B",
+        textAlign: "center",
     },
-    modalItem:{
-        padding:15,
-        flexDirection:"row",
-        alignItems:"center",
-        gap:10,
-        borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1,
-        width:"100%"
-    }
-
-})
+    modalItem: {
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        borderBottomColor: "#E2E8F0",
+        borderBottomWidth: 1,
+    },
+    modalItemIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: "#EEF2FF",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalItemText: {
+        fontSize: 16,
+        color: "#334155",
+        fontWeight: "500",
+    },
+    // Support styles for UserBox if needed
+    box: {
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+    },
+});

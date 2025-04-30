@@ -1,58 +1,76 @@
-import { View,Text,StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import FlatListData from '../FlatListData';
 import Order from './Order';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
-export default function OrdersView({data,metadata,loadMoreData,loadingMore,refreshControl,isLoading}){
+export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading }) {
     const { language } = useLanguage();
+    const isRTL = ["he", "ar"].includes(language);
 
     if (isLoading) {
         return (
             <View style={styles.overlay}>
                 <View style={styles.spinnerContainer}>
-                    <ActivityIndicator size="large" color="#F8C332" />
+                    <ActivityIndicator size="large" color="#4361EE" />
                 </View>
             </View>
         );
     }
 
-    return data.length > 0
-    ?
-    <FlatListData
-        list={data || []}
-        loadMoreData={loadMoreData}
-        loadingMore={loadingMore}
-        children={(item)=> (
-            <View style={styles.orders}>
-                 <Order user={metadata} order={item} />
+    return data.length > 0 ? (
+        <FlatListData
+            list={data || []}
+            loadMoreData={loadMoreData}
+            loadingMore={loadingMore}
+            children={(item) => (
+                <View style={styles.orderContainer}>
+                    <Order user={metadata} order={item} />
+                </View>
+            )}
+            refreshControl={refreshControl}
+        />
+    ) : (
+        <View style={styles.empty}>
+            <View style={styles.emptyIconContainer}>
+                <MaterialCommunityIcons name="package-variant" size={40} color="#4361EE" />
             </View>
-        )}
-        refreshControl={refreshControl}
-    />
-    :
-    <View style={styles.empty}>
-        <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>{translations[language].tabs.orders.emptyArray}</Text>
-    </View>
+            <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
+                {translations[language].tabs.orders.emptyArray}
+            </Text>
+        </View>
+    );
 }
 
-
 const styles = StyleSheet.create({
-    empty:{
-      fontWeight:"600",
-      margin:"auto",
-      textAlign:"center",
-      marginTop:50,
-      justifyContent:"center",
-      alignItems:"center"
+    orderContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 16,
     },
-    scrollView:{
-        flex:1
+    empty: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        padding: 20,
     },
-    orders:{
-        padding:15,
+    emptyIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    emptyText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#666",
+        textAlign: "center",
+    },
+    textRTL: {
+        textAlign: 'right',
     },
     overlay: {
         position: 'absolute',
@@ -60,22 +78,22 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
     },
     spinnerContainer: {
         backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
+        padding: 24,
+        borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 4,
         },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 8,
     }
-})
+});

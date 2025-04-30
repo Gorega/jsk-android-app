@@ -1,98 +1,259 @@
-import { StyleSheet,Modal, View,Text, Pressable, TouchableOpacity, TextInput } from "react-native";
-import EvilIcons from '@expo/vector-icons/EvilIcons';
+import { StyleSheet, Modal, View, Text, Pressable, TouchableOpacity, TextInput, Platform, Dimensions, KeyboardAvoidingView, SafeAreaView } from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import FlatListData from "../FlatListData";
+import { useState, useEffect } from 'react';
 
-export default function PickerModal({list,showPickerModal,setShowPickerModal,setSelectedValue,field,loadMoreData,loadingMore,prickerSearchValue,setPickerSearchValue}){
+export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
     const { language } = useLanguage();
-    const {name} = field;
+    const { name } = field;
+    const isRTL = ["he", "ar"].includes(language);
+    const [modalHeight, setModalHeight] = useState(Dimensions.get('window').height * 0.7);
 
-    return <Modal
-        style={styles.modal}
-        animationType="fade"
-        visible={showPickerModal}
-        onRequestClose={setShowPickerModal}
-        transparent
-    >
-        <View style={styles.container}>
-            <View style={styles.main}>
-                <Text style={styles.label}>{translations[language].picker.choose} {field.label}</Text>
-                {field.showSearchBar && <View style={[styles.inputField,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-                    <EvilIcons name="search" size={24} color="black" />
-                    <TextInput
-                        style={{width:"88%",textAlign:["he", "ar"].includes(language) ? "right" : "left"}}
-                        placeholder={translations[language].picker.searchPlaceholder}
-                        value={prickerSearchValue}
-                        onChangeText={(input)=> setPickerSearchValue(input)}
-                    />
-                </View>}
-                <FlatListData
-                    list={list || []}
-                    loadMoreData={loadMoreData ? loadMoreData : null}
-                    loadingMore={loadingMore ? loadingMore : false}
-                    children={(item)=> (
-                        <View style={styles.item}>
-                            <TouchableOpacity onPress={()=> {
-                                setSelectedValue((selectedValue) => ({...selectedValue,[name]:item}))
-                                setShowPickerModal(false)
-                            }}>
-                                <Text style={[styles.itemField,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}</Text>
+    // Adjust modal height on orientation change
+    useEffect(() => {
+        const updateDimensions = () => {
+            setModalHeight(Dimensions.get('window').height * 0.7);
+        };
+
+        const dimensionsListener = Dimensions.addEventListener('change', updateDimensions);
+
+        return () => {
+            dimensionsListener.remove();
+        };
+    }, []);
+
+    return (
+        <Modal
+            animationType="slide"
+            visible={showPickerModal}
+            onRequestClose={() => setShowPickerModal(false)}
+            transparent
+        >
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                style={styles.container}
+            >
+                <SafeAreaView style={styles.safeArea}>
+                    <View style={[styles.contentWrapper, { height: modalHeight }]}>
+                        <View style={styles.header}>
+                            <Text style={styles.headerTitle}>
+                                {translations[language].picker.choose} {field.label}
+                            </Text>
+                            <TouchableOpacity
+                                style={[styles.closeButton, isRTL ? { left: 16 } : { right: 16 }]}
+                                onPress={() => setShowPickerModal(false)}
+                            >
+                                <Ionicons name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
-                    )}
-                />
-                <Pressable onPress={setShowPickerModal}>
-                    <Text style={styles.quit}>{translations[language].picker.cancel}</Text>
-                </Pressable>
-            </View>
-        </View>
-    </Modal>
+
+                        {field.showSearchBar && (
+                            <View style={styles.searchContainer}>
+                                <View style={[
+                                    styles.searchInputContainer,
+                                    { flexDirection: isRTL ? "row-reverse" : "row" }
+                                ]}>
+                                    <Ionicons 
+                                        name="search" 
+                                        size={20} 
+                                        color="#6B7280" 
+                                        style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }}
+                                    />
+                                    <TextInput
+                                        style={[
+                                            styles.searchInput,
+                                            { textAlign: isRTL ? "right" : "left" }
+                                        ]}
+                                        placeholder={translations[language].picker.searchPlaceholder}
+                                        placeholderTextColor="#9CA3AF"
+                                        value={prickerSearchValue}
+                                        onChangeText={(input) => setPickerSearchValue(input)}
+                                    />
+                                </View>
+                            </View>
+                        )}
+
+                        <View style={styles.listContainer}>
+                            <FlatListData
+                                list={list || []}
+                                loadMoreData={loadMoreData || null}
+                                loadingMore={loadingMore || false}
+                                children={(item) => (
+                                    <TouchableOpacity 
+                                        style={[
+                                            styles.itemContainer,
+                                            { flexDirection: isRTL ? "row-reverse" : "row" }
+                                        ]}
+                                        onPress={() => {
+                                            setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
+                                            
+                                            // Clear any error for this field
+                                            const fieldNameMap = {
+                                                'sender': 'sender',
+                                                'city': 'city',
+                                                'paymentType': 'payment_type',
+                                                'orderType': 'order_type',
+                                                'itemsType': 'items_type'
+                                            };
+                                            
+                                            if (setFieldErrors) {
+                                                const serverFieldName = fieldNameMap[name] || name;
+                                                setFieldErrors(prev => {
+                                                    const updated = {...prev};
+                                                    if (updated[serverFieldName]) {
+                                                        delete updated[serverFieldName];
+                                                    }
+                                                    return updated;
+                                                });
+                                            }
+                                            
+                                            setShowPickerModal(false);
+                                        }}
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.itemContent}>
+                                            <Text 
+                                                style={[
+                                                    styles.itemText,
+                                                    { textAlign: isRTL ? "right" : "left" }
+                                                ]}
+                                            >
+                                                {item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.checkmarkContainer}>
+                                            <Ionicons 
+                                                name="chevron-forward" 
+                                                size={18} 
+                                                color="#4F46E5"
+                                                style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
+                                            />
+                                        </View>
+                                    </TouchableOpacity>
+                                )}
+                            />
+                        </View>
+
+                        <View style={styles.footer}>
+                            <TouchableOpacity 
+                                style={styles.cancelButton}
+                                onPress={() => setShowPickerModal(false)}
+                            >
+                                <Text style={styles.cancelButtonText}>
+                                    {translations[language].picker.cancel}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </SafeAreaView>
+            </KeyboardAvoidingView>
+        </Modal>
+    );
 }
 
-
 const styles = StyleSheet.create({
-    container:{
-        width:"100%",
-        height:"100%",
-        backgroundColor:"rgba(0,0,0,.5)"
+    container: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)'
     },
-    main:{
-        position:"absolute",
-        top:"50%",
-        left:"50%",
-        transform:"translate(-50%,-50%)",
-        backgroundColor:"white",
-        height:"80%",
-        width:"90%",
-        padding:15
+    safeArea: {
+        flex: 1,
+        justifyContent: 'flex-end'
     },
-    label:{
-        fontSize:18,
-        fontWeight:600,
-        marginBottom:25,
-        textAlign:"center"
+    contentWrapper: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        width: '100%',
+        maxHeight: '90%',
+        overflow: 'hidden',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: -3,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4.65,
+        elevation: 6,
     },
-    item:{
-        margin:0,
-        borderBottomColor:"rgba(0,0,0,.1)",
-        borderBottomWidth:1,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6',
+        position: 'relative'
     },
-    itemField:{
-    paddingHorizontal:15,
-    paddingVertical:20,
-    width:"100%",
+    headerTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#111827'
     },
-    quit:{
-        fontWeight:"500",
-        textAlign:"right",
-        marginTop:25
+    closeButton: {
+        position: 'absolute',
+        top: 16,
+        padding: 4
     },
-    inputField:{
-        borderWidth:1,
-        borderColor:"rgba(0,0,0,.1)",
-        flexDirection:"row",
-        alignItems:"center",
-        gap:10
+    searchContainer: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6'
+    },
+    searchInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFB',
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 15,
+        color: '#374151'
+    },
+    listContainer: {
+        flex: 1
+    },
+    itemContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#F3F4F6'
+    },
+    itemContent: {
+        flex: 1
+    },
+    itemText: {
+        fontSize: 16,
+        color: '#374151'
+    },
+    checkmarkContainer: {
+        paddingLeft: 8
+    },
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        padding: 16,
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6'
+    },
+    cancelButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        backgroundColor: '#F3F4F6'
+    },
+    cancelButtonText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#4B5563'
     }
-})
+});

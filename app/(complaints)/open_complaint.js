@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Alert, ScrollView, StatusBar } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
-import { useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../_layout';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useLocalSearchParams, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
+import { getToken } from '../../utils/secureStore';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const SubmitComplaint = () => {
   const socket = useSocket();
@@ -15,19 +17,26 @@ const SubmitComplaint = () => {
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
+  const isRTL = ["ar", "he"].includes(language);
 
   const submitComplaint = async () => {
     if (!subject.trim() || !description.trim()) {
-      Alert.alert(translations[language].complaints.error, translations[language].complaints.errorValidationMsg);
+      Alert.alert(
+        translations[language].complaints.error, 
+        translations[language].complaints.errorValidationMsg,
+        [{ text: translations[language].complaints.ok || 'OK' }]
+      );
       return;
     }
 
     setLoading(true);
     try {
+      const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints?language_code=${language}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           order_id: orderId,
@@ -38,20 +47,29 @@ const SubmitComplaint = () => {
 
       const result = await response.json();
       if (response.ok) {
-        if (socket) {
-          socket.emit('complaintUpdate', {
-            type: 'COMPLAINT_CREATED',
-            complaintId: result.complaint_id
-          });
-        }
-        Alert.alert(translations[language].complaints.success, translations[language].complaints.successMsg);
+        Alert.alert(
+          translations[language].complaints.success, 
+          translations[language].complaints.successMsg,
+          [{ 
+            text: translations[language].complaints.ok || 'OK',
+            onPress: () => router.back()
+          }]
+        );
         setSubject('');
         setDescription('');
       } else {
-        Alert.alert(translations[language].complaints.error,translations[language].complaints.errorMsg);
+        Alert.alert(
+          translations[language].complaints.error,
+          translations[language].complaints.errorMsg,
+          [{ text: translations[language].complaints.ok || 'OK' }]
+        );
       }
     } catch (error) {
-      Alert.alert(translations[language].complaints.error, translations[language].complaints.errorFailed);
+      Alert.alert(
+        translations[language].complaints.error, 
+        translations[language].complaints.errorFailed,
+        [{ text: translations[language].complaints.ok || 'OK' }]
+      );
     } finally {
       setLoading(false);
     }
@@ -59,37 +77,95 @@ const SubmitComplaint = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{translations[language].complaints.openComplaint} #{orderId}</Text>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        {/* Order ID Card */}
+        <LinearGradient
+          colors={['#4361EE', '#3A0CA3']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.orderCard}
+        >
+          <View style={[styles.orderCardContent, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={styles.orderIconContainer}>
+              <Feather name="package" size={24} color="white" />
+            </View>
+            <View>
+              <Text style={styles.orderLabel}>
+                {translations[language].complaints.order || 'Order'}
+              </Text>
+              <Text style={styles.orderIdText}>#{orderId}</Text>
+            </View>
+          </View>
+        </LinearGradient>
 
-      {/* Subject Input */}
-      <TextInput
-        style={styles.input}
-        placeholder={translations[language].complaints.subject}
-        value={subject}
-        onChangeText={setSubject}
-      />
+        <Text style={[styles.title, { textAlign: isRTL ? "right" : "left" }]}>
+          {translations[language].complaints.openComplaint}
+        </Text>
 
-      {/* Description Input */}
-      <TextInput
-        style={[styles.input, styles.textArea]}
-        placeholder={translations[language].complaints.describe}
-        multiline
-        numberOfLines={4}
-        value={description}
-        onChangeText={setDescription}
-      />
+        <View style={styles.formContainer}>
+          {/* Subject Input */}
+          <View style={styles.inputWrapper}>
+            <View style={[styles.inputLabelContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <MaterialIcons name="subject" size={18} color="#4361EE" />
+              <Text style={[styles.inputLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                {translations[language].complaints.subject}
+              </Text>
+            </View>
+            <TextInput
+              style={[styles.input, { textAlign: isRTL ? "right" : "left" }]}
+              placeholder={translations[language].complaints.subjectPlaceholder || 'Enter subject'}
+              placeholderTextColor="#94A3B8"
+              value={subject}
+              onChangeText={setSubject}
+            />
+          </View>
 
-      {/* Submit Button */}
-      <TouchableOpacity style={styles.button} onPress={submitComplaint} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color="#F8C332" />
-        ) : (
-          <>
-            <Feather name="send" size={18} color="#fff" />
-            <Text style={styles.buttonText}>{translations[language].complaints.submit}</Text>
-          </>
-        )}
-      </TouchableOpacity>
+          {/* Description Input */}
+          <View style={styles.inputWrapper}>
+            <View style={[styles.inputLabelContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+              <MaterialIcons name="description" size={18} color="#4361EE" />
+              <Text style={[styles.inputLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                {translations[language].complaints.describe}
+              </Text>
+            </View>
+            <TextInput
+              style={[styles.input, styles.textArea, { textAlign: isRTL ? "right" : "left" }]}
+              placeholder={translations[language].complaints.describePlaceholder || 'Describe your issue'}
+              placeholderTextColor="#94A3B8"
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+              value={description}
+              onChangeText={setDescription}
+            />
+          </View>
+
+          {/* Submit Button */}
+          <TouchableOpacity 
+            style={styles.buttonContainer} 
+            onPress={submitComplaint} 
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            <LinearGradient
+              colors={['#4361EE', '#3A0CA3']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <View style={[styles.buttonContent, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+                  <Feather name="send" size={18} color="#fff" style={{ marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }} />
+                  <Text style={styles.buttonText}>{translations[language].complaints.submit}</Text>
+                </View>
+              )}
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -97,48 +173,113 @@ const SubmitComplaint = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#f8f9fa",
   },
-  title: {
-    fontSize: 17,
-    fontWeight: "bold",
-    marginBottom: 15,
-    color: "#333",
+  scrollContainer: {
+    padding: 20,
   },
-  pickerContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#ddd",
+  orderCard: {
+    borderRadius: 16,
+    marginBottom: 24,
+    shadowColor: "#4361EE",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  orderCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap:10
+  },
+  orderIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  orderLabel: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  orderIdText: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 24,
+    color: "#1F2937",
+  },
+  formContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 3,
+  },
+  inputWrapper: {
+    marginBottom: 20,
+  },
+  inputLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 8,
   },
   input: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 15,
+    borderColor: "#E5E7EB",
     fontSize: 16,
+    color: "#1F2937",
   },
   textArea: {
-    height: 100,
+    minHeight: 120,
     textAlignVertical: "top",
+    paddingTop: 14,
+  },
+  buttonContainer: {
+    marginTop: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: "#4361EE",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   button: {
-    flexDirection: "row",
-    backgroundColor: "#F8C332",
-    padding: 15,
-    borderRadius: 8,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingVertical: 16,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
-    color: "#fff",
+    color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "bold",
-    marginLeft: 10,
+    fontWeight: "700",
+    textAlign: 'center',
   },
 });
 

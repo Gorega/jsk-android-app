@@ -1,4 +1,4 @@
-import { View,Text,TextInput,TouchableOpacity,StyleSheet } from "react-native"
+import { View,Text,TextInput,TouchableOpacity,StyleSheet,Platform  } from "react-native"
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from "expo-router";
@@ -27,7 +27,7 @@ export default function TrackOrder(){
                     onChangeText={(input)=> setValue(input)}
                     returnKeyType="done"
                     onSubmitEditing={()=> {
-                        router.push({pathname:"/(tabs)/orders",params:{orderId:value}})
+                        router.push({pathname:"/(track)",params:{orderId:value}})
                         setValue("")
                     }}
                 />
@@ -72,16 +72,32 @@ const styles = StyleSheet.create({
         backgroundColor:"white",
         width:"80%",
         height:45,
-        paddingHorizontal:7
+        paddingHorizontal:7,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "rgba(203, 213, 225, 0.8)",
     },
     input:{
         width:"85%",
-        textAlign:"left"
+        textAlign:"left",
+        color: "#1F2937",
     },
     button:{
-        backgroundColor:"#F8C332",
-        padding:10
-    }
-
+        backgroundColor: "#4361EE",
+        padding: 10,
+        borderRadius: 8,
+    },
+    ...Platform.select({
+        ios: {
+            shadowColor: '#4361EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 3,
+        },
+        android: {
+            elevation: 2,
+        },
+    }),
     
 })

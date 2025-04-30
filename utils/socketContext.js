@@ -34,7 +34,7 @@ export function SocketProvider({ children, isAuthenticated }) {
               auth: { token },
               forceNew: true,
               reconnection: true,
-              autoConnect: true
+              autoConnect: true,
             });
     
             // Add connection event before other events

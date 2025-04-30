@@ -1,46 +1,53 @@
-import { View,StyleSheet,SafeAreaView,Image,Text, TouchableOpacity } from "react-native";
-import avatar from "../assets/images/avatar2.jpg"
+import { View, StyleSheet, SafeAreaView, Image, Text, TouchableOpacity, Platform, Animated } from "react-native";
+import avatar from "../assets/images/avatar2.jpg";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from "@/app/_layout";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { translations } from '../utils/languageContext';
 import { useLanguage } from '../utils/languageContext';
 import { router } from "expo-router";
 import { useSocket } from '../utils/socketContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getToken } from "@/utils/secureStore";
 
-export default function Header(){
+export default function Header({ showGreeting = true, title }) {
     const socket = useSocket();
-    const {user} = useAuth();
+    const { user } = useAuth();
     const { language } = useLanguage();
     const [greetingMsg, setGreetingMsg] = useState("");
-    const [notificationsCount,setNotificationsCount] = useState(0);
+    const [notificationsCount, setNotificationsCount] = useState(0);
+    const isRTL = language === 'ar' || language === 'he';
+    const badgeAnimation = useRef(new Animated.Value(0)).current;
+    const balanceAnimation = useRef(new Animated.Value(0)).current;
 
-    const fetchNotificationsCount = async () => {
-        try {
-            console.log('Fetching notifications count for user:', user.userId);
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count?user_id=${user.userId}`, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json"
-                }
-            });
-    
-            if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-            }
-    
-            const data = await res.json();
-            console.log('Raw notification response:', data);
-            setNotificationsCount(prevCount => {
-                console.log('Updating count from', prevCount, 'to', data.unread_count);
-                return data.unread_count;
-            });
-        } catch (error) {
-            console.error('Error fetching notifications count:', error);
+    useEffect(() => {
+        if (notificationsCount > 0) {
+            Animated.sequence([
+                Animated.timing(badgeAnimation, {
+                    toValue: 1.2,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(badgeAnimation, {
+                    toValue: 1,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        } else {
+            badgeAnimation.setValue(0);
         }
-    };
+    }, [notificationsCount]);
+
+    useEffect(() => {
+        if (user?.total_amount) {
+            Animated.timing(balanceAnimation, {
+                toValue: 1,
+                duration: 600,
+                useNativeDriver: true,
+            }).start();
+        }
+    }, [user?.total_amount]);
 
     const handleNotificationIcon = async () => {
         // Navigate first to ensure good UX
@@ -48,12 +55,14 @@ export default function Header(){
     
         try {
             // Reset count on server
+            const token = await getToken("userToken");
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count`, {
                 method: "PUT",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
                     user_id: user.userId
@@ -66,17 +75,8 @@ export default function Header(){
     
             // Reset local count
             setNotificationsCount(0);
-    
-            // Emit socket event
-            socket.emit('notification', {
-                type: 'NOTIFICATIONS_RESET',
-                user_id: Number(user.userId),
-                timestamp: Date.now()
-            });
         } catch (error) {
             console.error('Error resetting notifications:', error);
-            // Refetch count to ensure UI is in sync
-            fetchNotificationsCount();
         }
     };
 
@@ -90,129 +90,273 @@ export default function Header(){
         } else {
             setGreetingMsg(translations[language].greeting.evening);
         }
-    }, [language,user]);
+    }, [language, user]);
 
     useEffect(() => {
         if (!socket || !user) return;
     
         const handleNotification = (notification) => {
-            console.log('Received socket notification:', notification);
             if (!notification || Number(user.userId) !== Number(notification.user_id)) {
-                console.log('Notification skipped - user mismatch or invalid notification');
                 return;
             }
     
-            console.log('Processing notification type:', notification.type);
             switch (notification.type) {
                 case 'NEW_NOTIFICATION':
                 case 'UPDATE_COUNT':
-                    console.log('Fetching new count due to:', notification.type);
-                    fetchNotificationsCount();
+                    setNotificationsCount(prev => prev + 1);
                     break;
                 case 'NOTIFICATIONS_RESET':
-                    console.log('Resetting count to 0');
                     setNotificationsCount(0);
                     break;
                 case 'NOTIFICATION_DELETED':
                 case 'NOTIFICATION_UPDATED':
                 case 'ALL_NOTIFICATIONS_DELETED':
-                    console.log('Fetching updated count due to:', notification.type);
-                    fetchNotificationsCount();
+                    // Handle count updates here if needed
                     break;
             }
         };
     
         socket.off('notification').on('notification', handleNotification);
         
-        // Initial fetch
-        fetchNotificationsCount();
-    
         return () => {
             socket.off('notification', handleNotification);
         };
     }, [socket, user]);
 
-    return <SafeAreaView style={[styles.main,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-        <View style={{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row",alignItems:"center",gap:5}}>
-            <TouchableOpacity
-                style={styles.avatarContainer}
-                onPress={()=> router.push({pathname: "(create_user)",params: { userId: user.userId }})}>
-                <Image style={styles.avatar} source={avatar} />
-            </TouchableOpacity>
-            {["business","driver"].includes(user.role) && <TouchableOpacity style>
-                <Text style={{color:"green",fontSize:13,fontWeight:"bold"}}>{user.total_amount}₪</Text>
-            </TouchableOpacity>}
-        </View>
-        <View style={styles.welcome}>
-          <Text style={styles.h2}>{greetingMsg}</Text>
-          <Text style={styles.p}>{user?.name}</Text>
-        </View>
-        <TouchableOpacity 
-            style={[styles.notification]}
-            onPress={handleNotificationIcon}
+    return (
+        <LinearGradient
+            colors={['#ffffff', '#f8f9fa']}
+            style={styles.container}
         >
-            <Ionicons 
-                name="notifications" 
-                size={26} 
-                color={"#F8C332"} 
-            />
-            {notificationsCount > 0 && (
-                <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{notificationsCount}</Text>
+            <SafeAreaView style={styles.safeArea}>
+                {/* Main Header Row */}
+                <View style={[
+                    styles.main,
+                    { flexDirection: isRTL ? "row-reverse" : "row" }
+                ]}>
+                    {/* User Avatar and Balance */}
+                    <TouchableOpacity
+                        style={styles.avatarContainer}
+                        onPress={() => router.push({
+                            pathname: "(create_user)",
+                            params: { userId: user.userId }
+                        })}
+                    >
+                        {user?.avatar ? (
+                            <Image 
+                                style={styles.avatar} 
+                                source={{ uri: user.avatar }}
+                                resizeMode="cover" 
+                            />
+                        ) : (
+                            <Image 
+                                style={styles.avatar} 
+                                source={avatar}
+                                resizeMode="cover" 
+                            />
+                        )}
+                        
+                        {["business", "driver"].includes(user?.role) && (
+                            <Animated.View 
+                                style={[
+                                    styles.balanceBadge,
+                                    { 
+                                        opacity: balanceAnimation,
+                                        transform: [{ scale: balanceAnimation }] 
+                                    }
+                                ]}
+                            >
+                                <Text style={styles.balanceText}>₪{user?.total_amount}</Text>
+                            </Animated.View>
+                        )}
+                    </TouchableOpacity>
+                    
+                    {/* Title or Greeting */}
+                    {showGreeting ? (
+                        <View style={[
+                            styles.greetingContainer,
+                            isRTL ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }
+                        ]}>
+                            <Text style={[styles.greeting, isRTL && styles.textRTL]}>
+                                {greetingMsg}
+                            </Text>
+                            <Text style={[styles.subGreeting, isRTL && styles.textRTL]}>
+                                {user.name}
+                            </Text>
+                        </View>
+                    ) : (
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.titleText}>{title}</Text>
+                        </View>
+                    )}
+                    
+                    {/* Notification Button */}
+                    <TouchableOpacity 
+                        style={styles.notificationButton}
+                        onPress={handleNotificationIcon}
+                        activeOpacity={0.7}
+                    >
+                        <LinearGradient
+                            colors={['#4361EE', '#3A0CA3']}
+                            style={styles.notificationGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <Ionicons 
+                                name="notifications" 
+                                size={24} 
+                                color="white" 
+                            />
+                            {notificationsCount > 0 && (
+                                <Animated.View 
+                                    style={[
+                                        styles.badge,
+                                        { transform: [{ scale: badgeAnimation }] }
+                                    ]}
+                                >
+                                    <Text style={styles.badgeText}>
+                                        {notificationsCount > 99 ? '99+' : notificationsCount}
+                                    </Text>
+                                </Animated.View>
+                            )}
+                        </LinearGradient>
+                    </TouchableOpacity>
                 </View>
-            )}
-        </TouchableOpacity>
-    </SafeAreaView>
+            </SafeAreaView>
+        </LinearGradient>
+    );
 }
 
 const styles = StyleSheet.create({
-    main:{
-        backgroundColor:"white",
-        height:100,
-        boxShadow:"rgba(0, 0, 0, 0.16) 0px 1px 4px",
-        display:"flex",
-        flexDirection:"row",
-        justifyContent:"space-between",
-        alignItems:"flex-end",
-        padding:15
+    container: {
+        ...Platform.select({
+            ios: {
+                paddingTop: 50,
+            },
+            android: {
+                paddingTop: 25,
+            },
+        }),
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
-    avatar:{
-        borderColor:"rgba(0,0,0,.1)",
-        borderWidth:1,
-        borderRadius:50,
-        width:40,
-        height:40,
+    safeArea: {
+        width: '100%',
     },
-    notification:{
-        position:"relative",
-        top:-7,
+    main: {
+        height: 80,
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 20,
+    },
+    textRTL: {
+        textAlign: 'right',
+    },
+    avatarContainer: {
+        position: 'relative',
+    },
+    avatar: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 2,
+        borderColor: '#f0f0f0',
+    },
+    balanceBadge: {
+        position: 'absolute',
+        bottom: -8,
+        right: -10,
+        backgroundColor: '#10B981',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: 'white',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.18,
+        shadowRadius: 1.00,
+        elevation: 2,
+    },
+    balanceText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    greetingContainer: {
+        flex: 1,
+        paddingHorizontal: 16,
+    },
+    greeting: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    subGreeting: {
+        fontSize: 14,
+        color: '#64748B',
+        marginTop: 2,
+    },
+    titleContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    titleText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    notificationButton: {
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+        elevation: 3,
+    },
+    notificationGradient: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
     },
     badge: {
         position: 'absolute',
-        right: -7,
-        top: -11,
-        backgroundColor: 'red',
-        borderRadius: 10,
-        minWidth: 20,
-        height: 20,
+        right: -6,
+        top: -6,
+        backgroundColor: '#EF4444',
+        borderRadius: 12,
+        minWidth: 22,
+        height: 22,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 1.5,
+        borderColor: 'white',
     },
     badgeText: {
         color: 'white',
         fontSize: 10,
         fontWeight: 'bold',
-        paddingHorizontal: 4,
-    },
-    h2:{
-        fontWeight:"500"
-    },
-    p:{
-      textTransform:"capitalize"
-    },
-    welcome:{
-        display:"flex",
-        justifyContent:"center",
-        alignItems:"center",
     }
-})
+});

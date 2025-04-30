@@ -6,6 +6,8 @@ import {router, useLocalSearchParams} from "expo-router"
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
+import { getToken } from "../../utils/secureStore";
+
 
 export default function HomeScreen(){
     const socket = useSocket();
@@ -99,6 +101,7 @@ export default function HomeScreen(){
     const fetchData = async (pageNumber = 1, isLoadMore = false)=>{
         if (!isLoadMore) setIsLoading(true);
         try {
+            const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             // if (collectionIds) queryParams.append('collection_ids', collectionIds)
@@ -114,7 +117,8 @@ export default function HomeScreen(){
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Cookie": token ? `token=${token}` : ""
                 }
             });
             const newData = await res.json();            
@@ -215,8 +219,8 @@ export default function HomeScreen(){
             <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                colors={["#F8C332"]} // Android
-                tintColor="#F8C332" // iOS
+                colors={["#4361EE"]} // Android
+                tintColor="#4361EE" // iOS
             />
             }
         />

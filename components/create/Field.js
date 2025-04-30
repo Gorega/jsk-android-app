@@ -1,15 +1,22 @@
 import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
 import PickerModal from "../pickerModal/PickerModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLanguage } from '../../utils/languageContext';
 import ModalPresentation from "../ModalPresentation";
 import { Calendar } from "react-native-calendars";
+import Feather from '@expo/vector-icons/Feather';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { translations } from '../../utils/languageContext';
 
-export default function Field({field,error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue,setFieldErrors}) {
+
+export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, isRTL}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState("");
+    const [selectedCurrency, setSelectedCurrency] = useState(field.currency || "ILS");
     const { language } = useLanguage();
+    const rtl = isRTL || language === 'ar' || language === 'he';
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
@@ -17,52 +24,145 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
         setShowCalendar(false);
     };
 
+    useEffect(() => {
+        if (field.currency) {
+            setSelectedCurrency(field.currency);
+        }
+    }, [field.currency]);
+
+    const handleCurrencySelect = (currency) => {
+        setSelectedCurrency(currency);
+        if (field.onCurrencyChange) {
+            field.onCurrencyChange(currency);
+        }
+    };
+
+    const getCurrencySymbol = (currency) => {
+        switch(currency) {
+            case 'ILS': return '₪';
+            case 'USD': return '$';
+            case 'JOD': return 'JD';
+            default: return '';
+        }
+    };
+
     return (
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
             field.containerStyle,
-            field.type === "toggle" && [styles.toggleContainer,{flexDirection:["ar","he"].includes(language) ? "row-reverse" : "row"}],
-            { borderColor: error ? "red" : "rgba(0,0,0,0.2)" }
+            field.type === "toggle" && [styles.toggleContainer, {flexDirection: rtl ? "row-reverse" : "row"}],
+            field.type === "currencyInput" && styles.currencyFieldContainer,
+            error && styles.fieldError,
+            field.type === "message" && styles.messageContainer
         ]}>
             {/* Field Label */}
-            <Text style={[
-                styles.label,
-                { 
-                    left: ["he", "ar"].includes(language) ? undefined : 10,
-                    right: ["he", "ar"].includes(language) ? 10 : undefined,
-                    backgroundColor: "#fff",
-                }
-            ]}>
-                {field.label}
-            </Text>
+            {field.type !== "message" && field.type !== "button" && (
+                <Text style={[
+                    styles.label,
+                    { 
+                        left: rtl ? undefined : 10,
+                        right: rtl ? 10 : undefined,
+                        backgroundColor: "#fff",
+                    }
+                ]}>
+                    {field.label}
+                </Text>
+            )}
 
             {/* Input Field */}
             <View style={styles.inputContent}>
                 {field.type === "input" && (
                     <>
                         <TextInput 
-                        multiline
-                        style={[styles.input,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}
-                        placeholder=""
-                        value={field.value}
-                        onBlur={field.onBlur}
-                        defaultValue={field.defaultValue}
-                        onChangeText={(text) => {
-                            if (field.onChange) {
-                                field.onChange(text);
-                            }
-                            // Clear error when user starts typing
-                            if (error && field.name) {
-                                setFieldErrors(prev => ({
-                                    ...prev,
-                                    [field.name]: null
-                                }));
-                            }
-                        }}
-                        placeholderTextColor="#999"
-                    />
-                    {error && <Text style={styles.errorText}>{error}</Text>}
+                            multiline
+                            style={[
+                                styles.input,
+                                {textAlign: rtl ? "right" : "left"}
+                            ]}
+                            placeholder={field.placeholder || ""}
+                            value={field.value}
+                            onBlur={field.onBlur}
+                            defaultValue={field.defaultValue}
+                            onChangeText={(text) => {
+                                if (field.onChange) {
+                                    field.onChange(text);
+                                }
+                                // Clear error when user starts typing
+                                if (error && field.name) {
+                                    setFieldErrors(prev => ({
+                                        ...prev,
+                                        [field.name]: null
+                                    }));
+                                }
+                            }}
+                            keyboardType={field.keyboardType || "default"}
+                            placeholderTextColor="#94A3B8"
+                        />
+                        {error && <Text style={styles.errorText}>{error}</Text>}
                     </>
+                )}
+
+                {field.type === "currencyInput" && (
+                    <View style={[
+                        styles.currencyInputContainer,
+                        {flexDirection: rtl ? "row-reverse" : "row"}
+                    ]}>
+                        <TextInput 
+                            style={[
+                                styles.currencyInput,
+                                {textAlign: rtl ? "right" : "left"}
+                            ]}
+                            value={field.value}
+                            onChangeText={(text) => {
+                                if (field.onChange) {
+                                    field.onChange(text);
+                                }
+                                if (error && field.name) {
+                                    setFieldErrors(prev => ({
+                                        ...prev,
+                                        [field.name]: null
+                                    }));
+                                }
+                            }}
+                            keyboardType="numeric"
+                            placeholder="0.00"
+                            placeholderTextColor="#94A3B8"
+                        />
+                        
+                        <Pressable 
+                            style={styles.currencySelector}
+                            onPress={() => {
+                                if (field.showCurrencyPicker) {
+                                    field.showCurrencyPicker(field.index);
+                                }
+                            }}
+                        >
+                            <Text style={styles.currencyText}>
+                                {getCurrencySymbol(field.currency)} {field.currency}
+                            </Text>
+                            {field.showCurrencyPicker && (
+                                <Feather 
+                                    name="chevron-down" 
+                                    size={16} 
+                                    color="#64748B" 
+                                    style={{marginLeft: 4}}
+                                />
+                            )}
+                        </Pressable>
+                    </View>
+                )}
+
+                {field.type === "addCurrencyButton" && (
+                    <TouchableOpacity
+                        style={styles.addCurrencyButton}
+                        onPress={field.onPress}
+                        activeOpacity={0.7}
+                    >
+                        <Feather name="plus" size={18} color="#FFFFFF" />
+                        <Text style={styles.addCurrencyButtonText}>
+                            {field.value || translations[language].tabs.orders.order.add_currency}
+                        </Text>
+                    </TouchableOpacity>
                 )}
 
                 {field.type === "select" && (
@@ -70,92 +170,261 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
                         style={styles.selectField} 
                         onPress={() => setShowPickerModal(true)}
                     >
-                        <Text style={[styles.selectText,{textAlign:["ar","he"].includes(language) ? "right" : "left"}]}>{field.value || field.placeholder}</Text>
+                        <View style={[
+                            styles.selectContent,
+                            {flexDirection: rtl ? "row-reverse" : "row"}
+                        ]}>
+                            <Text style={[
+                                styles.selectText,
+                                {textAlign: rtl ? "right" : "left"}
+                            ]}>
+                                {field.value || field.placeholder}
+                            </Text>
+                            <Feather 
+                                name="chevron-down" 
+                                size={18} 
+                                color="#64748B" 
+                                style={rtl ? {marginRight: 8} : {marginLeft: 8}}
+                            />
+                        </View>
                         {error && <Text style={styles.errorText}>{error}</Text>}
                     </Pressable>
                 )}
 
                 {field.type === "button" && (
-                    <Pressable 
+                    <TouchableOpacity 
                         style={[
                             styles.button,
-                            field.value === "x" && styles.deleteButton,
+                            field.value === "x" ? styles.deleteButton : styles.addButton,
+                            field.style
                         ]} 
                         onPress={field.onPress}
+                        activeOpacity={0.7}
                     >
-                        <Text style={styles.buttonText}>
-                            {field.value === "+" ? "+ Add Check" : field.value}
-                        </Text>
-                    </Pressable>
+                        {field.value === "x" ? (
+                            <FontAwesome name="times" size={16} color="#FFFFFF" />
+                        ) : (
+                            <View style={[
+                                styles.buttonContent,
+                                {flexDirection: rtl ? "row-reverse" : "row"}
+                            ]}>
+                                <Feather name="plus" size={16} color="#FFFFFF" style={rtl ? {marginLeft: 8} : {marginRight: 8}} />
+                                <Text style={styles.buttonText}>
+                                    {field.value}
+                                </Text>
+                            </View>
+                        )}
+                    </TouchableOpacity>
                 )}
 
                 {field.type === "message" && (
-                    <Text style={[styles.messageText, field.style]}>
-                        {field.value}
-                    </Text>
+                    <View style={styles.messageContent}>
+                        <View style={styles.messageIconContainer}>
+                            <MaterialIcons name="info-outline" size={24} color="#F59E0B" />
+                        </View>
+                        <View style={styles.messageTextContainer}>
+                            <Text style={[
+                                styles.messageTitle,
+                                {textAlign: rtl ? "right" : "left"}
+                            ]}>
+                                {field.label}
+                            </Text>
+                            <Text style={[
+                                styles.messageText,
+                                {textAlign: rtl ? "right" : "left"}
+                            ]}>
+                                {field.value}
+                            </Text>
+                        </View>
+                    </View>
+                )}
+
+                {field.type === "checksInput" && (
+                    <View style={styles.checksContainer}>
+                        {field.value && field.value.length > 0 ? (
+                            field.value.map((check, index) => (
+                                <View key={index} style={styles.checkItem}>
+                                    <View style={styles.checkHeader}>
+                                        <Text style={styles.checkTitle}>Check #{index + 1}</Text>
+                                        <TouchableOpacity
+                                            style={styles.removeCheckButton}
+                                            onPress={() => {
+                                                const updatedChecks = [...field.value];
+                                                updatedChecks.splice(index, 1);
+                                                field.onChange(updatedChecks);
+                                            }}
+                                        >
+                                            <Feather name="x" size={18} color="#EF4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    <View style={styles.checkField}>
+                                        <Text style={styles.checkFieldLabel}>Check Number</Text>
+                                        <TextInput
+                                            style={styles.checkInput}
+                                            value={check.number}
+                                            onChangeText={(text) => {
+                                                const updatedChecks = [...field.value];
+                                                updatedChecks[index] = { ...check, number: text };
+                                                field.onChange(updatedChecks);
+                                            }}
+                                            placeholder="Enter check number"
+                                            placeholderTextColor="#94A3B8"
+                                        />
+                                    </View>
+                                    
+                                    <View style={styles.checkRow}>
+                                        <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
+                                            <Text style={styles.checkFieldLabel}>Value</Text>
+                                            <TextInput
+                                                style={styles.checkInput}
+                                                value={check.value ? check.value.toString() : ''}
+                                                onChangeText={(text) => {
+                                                    const updatedChecks = [...field.value];
+                                                    updatedChecks[index] = { ...check, value: text };
+                                                    field.onChange(updatedChecks);
+                                                }}
+                                                keyboardType="numeric"
+                                                placeholder="0.00"
+                                                placeholderTextColor="#94A3B8"
+                                            />
+                                        </View>
+                                        
+                                        <View style={[styles.checkField, { flex: 1 }]}>
+                                            <Text style={styles.checkFieldLabel}>Currency</Text>
+                                            <View style={styles.checkCurrencySelect}>
+                                                <Pressable
+                                                    style={styles.currencySelector}
+                                                    onPress={() => {
+                                                        // Handle currency change
+                                                        const currencies = ['ILS', 'USD', 'JOD'];
+                                                        const currentIndex = currencies.indexOf(check.currency || 'ILS');
+                                                        const nextIndex = (currentIndex + 1) % currencies.length;
+                                                        
+                                                        const updatedChecks = [...field.value];
+                                                        updatedChecks[index] = { 
+                                                            ...check, 
+                                                            currency: currencies[nextIndex] 
+                                                        };
+                                                        field.onChange(updatedChecks);
+                                                    }}
+                                                >
+                                                    <Text style={styles.currencyText}>
+                                                        {getCurrencySymbol(check.currency || 'ILS')} {check.currency || 'ILS'}
+                                                    </Text>
+                                                    <Feather 
+                                                        name="chevron-down" 
+                                                        size={16} 
+                                                        color="#64748B" 
+                                                        style={{ marginLeft: 4 }}
+                                                    />
+                                                </Pressable>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            ))
+                        ) : (
+                            <Text style={styles.noChecksText}>No checks added yet</Text>
+                        )}
+                        
+                        <TouchableOpacity
+                            style={styles.addCheckButton}
+                            onPress={() => {
+                                const newCheck = {
+                                    number: '',
+                                    date: new Date().toISOString().split('T')[0],
+                                    value: '',
+                                    currency: 'ILS'
+                                };
+                                field.onChange([...(field.value || []), newCheck]);
+                            }}
+                        >
+                            <Feather name="plus" size={18} color="#FFFFFF" />
+                            <Text style={styles.addCheckButtonText}>
+                                Add Check
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 )}
 
                 {/* Picker Modal */}
                 {showPickerModal && (
                     <PickerModal
-                    list={field.list}
-                    showPickerModal={showPickerModal}
-                    setShowPickerModal={() => setShowPickerModal(false)}
-                    setSelectedValue={setSelectedValue}
-                    field={field}
-                    loadMoreData={loadMoreData}
-                    loadingMore={loadingMore}
-                    prickerSearchValue={prickerSearchValue}
-                    setPickerSearchValue={setPickerSearchValue}
-                />
+                        list={field.list}
+                        showPickerModal={showPickerModal}
+                        setShowPickerModal={() => setShowPickerModal(false)}
+                        setSelectedValue={setSelectedValue}
+                        field={field}
+                        loadMoreData={loadMoreData}
+                        loadingMore={loadingMore}
+                        prickerSearchValue={prickerSearchValue}
+                        setPickerSearchValue={setPickerSearchValue}
+                        isRTL={rtl}
+                        setFieldErrors={setFieldErrors}
+                    />
                 )}
 
                 {field.type === "date" && (
-                <>
-                    <Pressable 
-                        style={styles.input}
-                        onPress={() => setShowCalendar(true)}
-                    >
-                        <Text style={styles.buttonText}>
-                            {selectedDate || field.value || "Select Date"}
-                        </Text>
-                    </Pressable>
-
-                    <ModalPresentation
-                        showModal={showCalendar}
-                        setShowModal={setShowCalendar}
-                    >
-                        <View style={styles.calendarContainer}>
-                            <Calendar
-                                onDayPress={handleDateSelect}
-                                markedDates={{
-                                    [selectedDate]: { 
-                                        selected: true, 
-                                        selectedColor: '#F8C332' 
-                                    },
-                                }}
-                                theme={{
-                                    todayTextColor: "#F8C332",
-                                    arrowColor: "#F8C332",
-                                    textDayFontWeight: '300',
-                                    textMonthFontWeight: 'bold',
-                                    textDayHeaderFontWeight: '300',
-                                }}
-                            />
-                            <View style={styles.calendarButtons}>
-                                <TouchableOpacity 
-                                    style={styles.calendarButton}
-                                    onPress={() => setShowCalendar(false)}
-                                >
-                                    <Text style={{ color: "#F8C332" }}>
-                                        Cancel
-                                    </Text>
-                                </TouchableOpacity>
+                    <>
+                        <Pressable 
+                            style={styles.dateField}
+                            onPress={() => setShowCalendar(true)}
+                        >
+                            <View style={[
+                                styles.dateContent,
+                                {flexDirection: rtl ? "row-reverse" : "row"}
+                            ]}>
+                                <Text style={[
+                                    styles.dateText,
+                                    {textAlign: rtl ? "right" : "left"}
+                                ]}>
+                                    {selectedDate || field.value || "Select Date"}
+                                </Text>
+                                <Feather 
+                                    name="calendar" 
+                                    size={18} 
+                                    color="#64748B" 
+                                    style={rtl ? {marginRight: 8} : {marginLeft: 8}}
+                                />
                             </View>
-                        </View>
-                    </ModalPresentation>
-                </>
-            )}
+                        </Pressable>
+
+                        <ModalPresentation
+                            showModal={showCalendar}
+                            setShowModal={setShowCalendar}
+                        >
+                            <View style={styles.calendarContainer}>
+                                <Calendar
+                                    onDayPress={handleDateSelect}
+                                    markedDates={{
+                                        [selectedDate]: { 
+                                            selected: true, 
+                                            selectedColor: '#4361EE' 
+                                        },
+                                    }}
+                                    theme={{
+                                        todayTextColor: "#4361EE",
+                                        arrowColor: "#4361EE",
+                                        textDayFontWeight: '300',
+                                        textMonthFontWeight: 'bold',
+                                        textDayHeaderFontWeight: '300',
+                                    }}
+                                />
+                                <View style={styles.calendarButtons}>
+                                    <TouchableOpacity 
+                                        style={styles.calendarButton}
+                                        onPress={() => setShowCalendar(false)}
+                                    >
+                                        <Text style={{ color: "#4361EE" }}>
+                                            Cancel
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </ModalPresentation>
+                    </>
+                )}
 
                 {field.type === "toggle" && (
                     <View style={[styles.toggleWrapper]}>
@@ -167,8 +436,9 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
                                 }
                             }}
                             disabled={field.disabled}
-                            trackColor={{ false: "#767577", true: "#F8C332" }}
+                            trackColor={{ false: "#CBD5E1", true: "#4361EE" }}
                             thumbColor={field.value ? "#fff" : "#f4f3f4"}
+                            ios_backgroundColor="#CBD5E1"
                         />
                     </View>
                 )}
@@ -180,112 +450,281 @@ export default function Field({field,error, setSelectedValue, loadMoreData, load
 const styles = StyleSheet.create({
     fieldContainer: {
         borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginVertical: 8,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginVertical: 10,
         position: 'relative',
+        borderColor: 'rgba(203, 213, 225, 0.8)',
+        backgroundColor: 'white',
+    },
+    fieldError: {
+        borderColor: '#EF4444',
+        borderWidth: 1,
     },
     label: {
         position: 'absolute',
         top: -10,
         paddingHorizontal: 5,
-        fontSize: 12,
-        color: '#666',
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#64748B',
+        zIndex: 1,
     },
     inputContent: {
         paddingTop: 5,
     },
     input: {
-        fontSize: 16,
-        paddingVertical: 2,
-        color: '#333',
+        fontSize: 15,
+        paddingVertical: 4,
+        color: '#1F2937',
     },
     selectField: {
-        paddingVertical: 2,
+        paddingVertical: 4,
+    },
+    selectContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
     selectText: {
-        fontSize: 14,
-        color: '#333',
+        fontSize: 15,
+        color: '#1F2937',
+        flex: 1,
     },
     button: {
-        backgroundColor: '#F8C332',
-        borderRadius: 6,
-        paddingVertical: 10,
+        borderRadius: 8,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
         alignItems: 'center',
         justifyContent: 'center',
     },
+    addButton: {
+        backgroundColor: '#4361EE',
+    },
     deleteButton: {
-        backgroundColor: '#ff4444',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
+        backgroundColor: '#EF4444',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+    },
+    buttonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     buttonText: {
         color: 'white',
-        fontWeight: '500',
+        fontWeight: '600',
         fontSize: 14,
     },
     calendarContainer: {
         backgroundColor: "white",
         padding: 20,
-        borderRadius: 10,
+        borderRadius: 12,
+        width: '90%',
+        maxWidth: 360,
     },
     calendarButtons: {
         flexDirection: "row",
         justifyContent: "flex-end",
-        marginTop: 10,
+        marginTop: 16,
         gap: 15,
     },
     calendarButton: {
-        paddingVertical: 2,
-        paddingHorizontal: 15,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
     },
-    dateDisplay: {
-        fontSize: 16,
-        color: '#333',
+    dateField: {
+        paddingVertical: 4,
     },
-    hiddenField:{
-        display:"none"
+    dateContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    dateText: {
+        fontSize: 15,
+        color: '#1F2937',
+        flex: 1,
+    },
+    hiddenField: {
+        display: "none"
+    },
+    messageContainer: {
+        borderWidth: 1,
+        borderRadius: 10,
+        marginVertical: 12,
+        padding: 0,
+        borderColor: 'rgba(245, 158, 11, 0.3)',
+        backgroundColor: 'rgba(254, 243, 199, 0.5)',
+        overflow: 'hidden',
+    },
+    messageContent: {
+        flexDirection: 'row',
+        padding: 16,
+    },
+    messageIconContainer: {
+        marginRight: 12,
+    },
+    messageTextContainer: {
+        flex: 1,
+    },
+    messageTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#92400E',
+        marginBottom: 4,
     },
     messageText: {
-        color: 'red',
         fontSize: 14,
-        marginTop: 5,
-    },
-    inputError: {
-        borderColor: 'red',
+        color: '#92400E',
+        lineHeight: 20,
     },
     errorText: {
-        color: 'red',
+        color: '#EF4444',
         fontSize: 12,
         marginTop: 5,
-    },
-    fieldContainer: {
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginVertical: 8,
-        position: 'relative',
     },
     toggleContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        marginVertical: 8,
+        borderRadius: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        marginVertical: 10,
+        borderColor: 'rgba(203, 213, 225, 0.8)',
     },
     toggleLabel: {
         position: 'relative',
         top: 0,
-        fontSize: 14,
-        color: '#333',
+        fontSize: 15,
+        color: '#1F2937',
         backgroundColor: 'transparent',
     },
     toggleWrapper: {
         alignItems: 'flex-end',
+    },
+    currencyFieldContainer: {
+        marginBottom: 12,
+    },
+    currencyInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    currencyInput: {
+        flex: 1,
+        fontSize: 15,
+        paddingVertical: 4,
+        color: '#1F2937',
+    },
+    currencySelector: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 8,
+        borderRadius: 6,
+        backgroundColor: 'rgba(203, 213, 225, 0.2)',
+    },
+    currencyText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#4361EE',
+    },
+    addCurrencyButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        alignSelf: 'center',
+        marginTop: 4,
+    },
+    addCurrencyButtonText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#4361EE',
+        marginLeft: 8,
+    },
+    checksContainer: {
+        marginTop: 8
+    },
+    checkItem: {
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
+        backgroundColor: '#F8FAFC',
+    },
+    checkHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    checkTitle: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    removeCheckButton: {
+        padding: 4,
+    },
+    checkField: {
+        marginBottom: 10,
+    },
+    checkFieldLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        color: '#64748B',
+        marginBottom: 4,
+    },
+    checkInput: {
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        fontSize: 14,
+        color: '#1F2937',
+        backgroundColor: '#FFFFFF',
+    },
+    checkRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    checkCurrencySelect: {
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderRadius: 6,
+        paddingHorizontal: 10,
+        paddingVertical: 8,
+        backgroundColor: '#FFFFFF',
+    },
+    addCheckButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#4361EE',
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 8,
+    },
+    addCheckButtonText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#FFFFFF',
+        marginLeft: 8,
+    },
+    noChecksText: {
+        textAlign: 'center',
+        color: '#64748B',
+        fontSize: 14,
+        marginBottom: 12,
+        fontStyle: 'italic',
     },
 });

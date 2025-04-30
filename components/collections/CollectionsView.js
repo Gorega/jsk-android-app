@@ -7,6 +7,8 @@ import { useLanguage } from '../../utils/languageContext';
 
 export default function OrdersView({data,type,loadMoreData,loadingMore,refreshControl, isLoading}){
     const { language } = useLanguage();
+    const isRTL = ["he", "ar"].includes(language);
+
 
     if (isLoading) {
         return (
@@ -33,8 +35,12 @@ export default function OrdersView({data,type,loadMoreData,loadingMore,refreshCo
     />
     :
     <View style={styles.empty}>
-        <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>{translations[language].collections.emptyArray}</Text>
+        <View style={styles.emptyIconContainer}>
+            <MaterialCommunityIcons name="package-variant" size={40} color="#4361EE" />
+        </View>
+        <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
+                {translations[language].collections.emptyArray}
+        </Text>
     </View>
 }
 
@@ -54,6 +60,9 @@ const styles = StyleSheet.create({
     order:{
         padding:15,
     },
+    textRTL: {
+        textAlign: 'right',
+    },
     overlay: {
         position: 'absolute',
         top: 0,
@@ -67,15 +76,15 @@ const styles = StyleSheet.create({
     },
     spinnerContainer: {
         backgroundColor: 'white',
-        padding: 20,
-        borderRadius: 10,
+        padding: 24,
+        borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 4,
         },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-        elevation: 5,
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        elevation: 8,
     }
 })
