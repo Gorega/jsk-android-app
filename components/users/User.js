@@ -4,15 +4,19 @@ import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import UserBox from "../orders/userBox/UserBox";
+import { useSocket } from '../../utils/socketContext';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function User({ user }) {
     const { language } = useLanguage();
     const [showControl, setShowControl] = useState(false);
     const isRTL = ["he", "ar"].includes(language);
+    const socket = useSocket();
+    const [isOnline, setIsOnline] = useState(false);
 
     // Helper functions for RTL-aware UI
     const getFlexDirection = () => isRTL ? "row-reverse" : "row";
@@ -22,6 +26,30 @@ export default function User({ user }) {
         const flippedSide = side === 'Left' ? 'Right' : side === 'Right' ? 'Left' : side;
         return { [`margin${flippedSide}`]: value };
     };
+
+    // Listen for online user updates from socket
+    useEffect(() => {
+        if (!socket) return;
+
+        // Handle initial connection and user status updates
+        const handleUserStatus = (connectedUsers) => {
+            if (connectedUsers && Array.isArray(connectedUsers)) {
+                // Check if this user is in the list of connected users
+                setIsOnline(connectedUsers.some(connectedUser => 
+                    connectedUser.user_id === user.user_id));
+            }
+        };
+
+        // Listen for online users update event
+        socket.on('onlineUsers', handleUserStatus);
+        
+        // Request current online users when component mounts
+        socket.emit('getOnlineUsers');
+
+        return () => {
+            socket.off('onlineUsers', handleUserStatus);
+        };
+    }, [socket, user.user_id]);
 
     return (
         <>
@@ -42,12 +70,26 @@ export default function User({ user }) {
                             <Text style={styles.idText}>#{user?.user_id}</Text>
                         </View>
                         
-                        <View style={[
-                            styles.statusBadge, 
-                            { backgroundColor: user.active_status_key ? "#10B981" : "#EF4444" }
-                        ]}>
-                            <Text style={styles.statusText}>{user.activeStatus}</Text>
-                        </View>
+                        <LinearGradient
+                            colors={isOnline ? 
+                                ['#10B981', '#059669'] : 
+                                ['#EF4444', '#DC2626']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.statusBadge}
+                        >
+                            <View style={styles.statusIndicator}>
+                                <View style={[
+                                    styles.statusDot,
+                                    isOnline ? styles.onlineDot : styles.offlineDot
+                                ]} />
+                                <Text style={styles.statusText}>
+                                    {isOnline ? 
+                                        translations[language].users.user.online : 
+                                        translations[language].users.user.offline}
+                                </Text>
+                            </View>
+                        </LinearGradient>
                     </View>
 
                     {/* User Info Section */}
@@ -213,13 +255,41 @@ const styles = StyleSheet.create({
     },
     statusBadge: {
         paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 6,
+        paddingVertical: 8,
+        borderRadius: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 3,
     },
     statusText: {
         color: "white",
         fontSize: 12,
         fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+    },
+    statusIndicator: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginRight: 6,
+    },
+    onlineDot: {
+        backgroundColor: "#ffffff",
+        shadowColor: "#ffffff",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 3,
+    },
+    offlineDot: {
+        backgroundColor: "#ffffff",
+        opacity: 0.7,
     },
     userInfoSection: {
         marginBottom: 12,

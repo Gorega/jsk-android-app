@@ -712,8 +712,8 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 80,
+    height: 80,
     marginBottom: 15,
   },
   logoSmall: {

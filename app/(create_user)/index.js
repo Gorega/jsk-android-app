@@ -68,7 +68,7 @@ export default function HomeScreen() {
         } : {visibility:"hidden"}, {
             label: translations[language].users.create.sections.user.fields.firstPhone,
             type: "input",
-            name: "phone",
+            name: "firstPhone",
             value: form.firstPhone || "",
             onChange: (input) => setForm((form) => ({ ...form, firstPhone: input }))
         }, {
@@ -160,6 +160,7 @@ export default function HomeScreen() {
                     pricelist_id: selectedValue.pricelist_id.pricelist_id,
                     country: "palestine",
                     city_id: selectedValue.city_id.city_id,
+                    expected_salary:0,
                     area: form.area,
                     address: form.address,
                     website: form.website,
@@ -171,6 +172,7 @@ export default function HomeScreen() {
             });
 
             const data = await res.json();
+            console.log(data);
 
             if (!res.ok) {
                 setFormSpinner({ status: false });
