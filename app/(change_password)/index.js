@@ -16,9 +16,12 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useAuth } from "../_layout";
+import { getToken } from "../../utils/secureStore";
 
 export default function ChangePasswordScreen() {
   const { language } = useLanguage();
+  const { user } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -88,10 +91,10 @@ export default function ChangePasswordScreen() {
   
   const getStrengthText = () => {
     if (!newPassword) return "";
-    if (strength <= 1) return translations[language].chnagePassword?.weak || "Weak";
-    if (strength === 2) return translations[language].chnagePassword?.medium || "Medium";
-    if (strength === 3) return translations[language].chnagePassword?.strong || "Strong";
-    if (strength >= 4) return translations[language].chnagePassword?.veryStrong || "Very Strong";
+    if (strength <= 1) return translations[language].tabs.settings.options.changePasswordFields?.weak || "Weak";
+    if (strength === 2) return translations[language].tabs.settings.options.changePasswordFields?.medium || "Medium";
+    if (strength === 3) return translations[language].tabs.settings.options.changePasswordFields?.strong || "Strong";
+    if (strength >= 4) return translations[language].tabs.settings.options.changePasswordFields?.veryStrong || "Very Strong";
     return "";
   };
   
@@ -108,23 +111,23 @@ export default function ChangePasswordScreen() {
     const newErrors = {};
     
     if (!currentPassword) {
-      newErrors.currentPassword = "Current password is required";
+      newErrors.currentPassword = translations[language].tabs.settings.options.changePasswordFields?.currentPasswordRequired;
       isValid = false;
     }
     
     if (!newPassword) {
-      newErrors.newPassword = "New password is required";
+      newErrors.newPassword = translations[language].tabs.settings.options.changePasswordFields?.newPasswordRequired;
       isValid = false;
     } else if (newPassword.length < 8) {
-      newErrors.newPassword = "Password must be at least 8 characters";
+      newErrors.newPassword = translations[language].tabs.settings.options.changePasswordFields?.passwordValidationRequired;
       isValid = false;
     }
     
     if (!confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
+      newErrors.confirmPassword = translations[language].tabs.settings.options.changePasswordFields?.confirmPasswordRequired;
       isValid = false;
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = translations[language].tabs.settings.options.changePasswordFields?.passwordMatchValidation;
       isValid = false;
     }
     
@@ -132,21 +135,65 @@ export default function ChangePasswordScreen() {
     return isValid;
   };
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     Keyboard.dismiss();
     
     if (validateForm()) {
       setLoading(true);
       
-      // Simulate API call
-      setTimeout(() => {
-        setLoading(false);
+      try {
+        const token = await getToken("userToken");
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/update-password`, {
+          method: "PUT",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': language,
+            "Cookie": token ? `token=${token}` : ""
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            newPassword: newPassword,
+            confirmNewPass: confirmPassword
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          if (data.type === 'VALIDATION_ERROR' && data.details) {
+            const validationErrors = {};
+            data.details.forEach(error => {
+              if (error.field === 'newPassword') {
+                validationErrors.newPassword = error.message;
+              } else if (error.field === 'confirmNewPass') {
+                validationErrors.confirmPassword = error.message;
+              }
+            });
+            setErrors(prev => ({...prev, ...validationErrors}));
+          }
+          throw new Error(data.message || "Failed to update password");
+        }
+        
+        // Reset form fields on success
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        
         Alert.alert(
-          "Success",
-          "Your password has been changed successfully",
-          [{ text: "OK" }]
+          translations[language].tabs.settings.options.changePasswordFields?.success || "Success",
+          data.message || translations[language].tabs.settings.options.changePasswordFields?.successMsg || "Password updated successfully",
+          [{ text: translations[language].tabs.settings.options.changePasswordFields?.ok || "OK" }]
         );
-      }, 1500);
+      } catch (error) {
+        Alert.alert(
+          translations[language].tabs.settings.options.changePasswordFields?.error || "Error",
+          error.message || translations[language].tabs.settings.options.changePasswordFields?.errorMsg || "Failed to update password",
+          [{ text: translations[language].tabs.settings.options.changePasswordFields?.ok || "OK" }]
+        );
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -154,13 +201,13 @@ export default function ChangePasswordScreen() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
-      <View style={styles.container}>
+      <View style={[styles.container]}>
         {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
+        <View style={[styles.header,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+          <View style={[styles.headerContent,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
             <Feather name="lock" size={22} color="#4361EE" />
             <Text style={styles.headerText}>
-              {translations[language].chnagePassword?.changePass || "Change Password"}
+              {translations[language].tabs.settings.options.changePasswordFields?.changePass || "Change Password"}
             </Text>
           </View>
         </View>
@@ -174,22 +221,22 @@ export default function ChangePasswordScreen() {
           {/* Security Tips */}
           {!keyboardVisible && (
             <View style={styles.securityTipsContainer}>
-              <View style={styles.securityTipsHeader}>
+              <View style={[styles.securityTipsHeader,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
                 <Feather name="shield" size={18} color="#4361EE" />
-                <Text style={styles.securityTipsTitle}>Security Tips</Text>
+                <Text style={styles.securityTipsTitle}>{translations[language].tabs.settings.options.changePasswordFields?.tips}</Text>
               </View>
               <View style={styles.securityTipsList}>
-                <View style={styles.securityTipItem}>
+                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>Use at least 8 characters</Text>
+                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.usage}</Text>
                 </View>
-                <View style={styles.securityTipItem}>
+                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>Include uppercase letters</Text>
+                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.letterInclusion}</Text>
                 </View>
-                <View style={styles.securityTipItem}>
+                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>Include numbers and symbols</Text>
+                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.numbersInclusion}</Text>
                 </View>
               </View>
             </View>
@@ -200,7 +247,7 @@ export default function ChangePasswordScreen() {
             {/* Current Password Field */}
             <View style={styles.inputField}>
               <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
-                {translations[language].chnagePassword?.currentPass || "Current Password"}
+                {translations[language].tabs.settings.options.changePasswordFields?.currentPass || "Current Password"}
               </Text>
               <View style={[
                 styles.inputContainer, 
@@ -229,7 +276,7 @@ export default function ChangePasswordScreen() {
                       setErrors({...errors, currentPassword: null});
                     }
                   }}
-                  placeholder={translations[language].chnagePassword?.currentPassHint || "Enter current password"}
+                  placeholder={translations[language].tabs.settings.options.changePasswordFields?.currentPassHint || "Enter current password"}
                   placeholderTextColor="#94A3B8"
                 />
                 <TouchableOpacity 
@@ -255,7 +302,7 @@ export default function ChangePasswordScreen() {
             {/* New Password Field */}
             <View style={styles.inputField}>
               <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
-                {translations[language].chnagePassword?.newPass || "New Password"}
+                {translations[language].tabs.settings.options.changePasswordFields?.newPass || "New Password"}
               </Text>
               <View style={[
                 styles.inputContainer, 
@@ -284,7 +331,7 @@ export default function ChangePasswordScreen() {
                       setErrors({...errors, newPassword: null});
                     }
                   }}
-                  placeholder={translations[language].chnagePassword?.newPassHint || "Enter new password"}
+                  placeholder={translations[language].tabs.settings.options.changePasswordFields?.newPassHint || "Enter new password"}
                   placeholderTextColor="#94A3B8"
                 />
                 <TouchableOpacity 
@@ -333,7 +380,7 @@ export default function ChangePasswordScreen() {
             {/* Confirm Password Field */}
             <View style={styles.inputField}>
               <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
-                {"Confirm Password"}
+               {translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
               </Text>
               <View style={[
                 styles.inputContainer, 
@@ -362,7 +409,7 @@ export default function ChangePasswordScreen() {
                       setErrors({...errors, confirmPassword: null});
                     }
                   }}
-                  placeholder={"Confirm your new password"}
+                  placeholder={translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
                   placeholderTextColor="#94A3B8"
                 />
                 <TouchableOpacity 
@@ -398,10 +445,10 @@ export default function ChangePasswordScreen() {
             disabled={loading || !(currentPassword && newPassword && confirmPassword)}
           >
             {loading ? (
-              <Text style={styles.submitText}>Updating...</Text>
+              <Text style={styles.submitText}>{translations[language].tabs.settings.options.changePasswordFields?.updating}</Text>
             ) : (
               <Text style={styles.submitText}>
-                {translations[language].chnagePassword?.changePass || "Change Password"}
+                {translations[language].tabs.settings.options.changePasswordFields?.changePass || "Change Password"}
               </Text>
             )}
           </TouchableOpacity>
@@ -441,6 +488,7 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap:7
   },
   headerText: {
     fontSize: 18,
@@ -467,6 +515,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    gap:7
   },
   securityTipsTitle: {
     fontSize: 16,
@@ -481,6 +530,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    gap:7
   },
   tipIcon: {
     marginRight: 8,

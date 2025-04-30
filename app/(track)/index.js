@@ -281,7 +281,7 @@ const TrackingOrder = () => {
                 color="#ffffff" 
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.currentStatusText}>{order.status} | {order.status_reason}</Text>
+              <Text style={styles.currentStatusText}>{order.status} {order.status_reason ? ` | ${order.status_reason}` : ''}</Text>
             </LinearGradient>
             
             {/* Order created info */}
@@ -843,7 +843,7 @@ const TrackingOrder = () => {
                     </LinearGradient>
                     <View style={styles.timelineContent}>
                       <Text style={[styles.timelineStatus, { textAlign: getTextAlign(isRTL) }]}>
-                        {item.new_status} | {item?.status_reason}
+                        {item.new_status} {item?.status_reason ? ` | ${item?.status_reason}` : ''}
                       </Text>
                       
                       <View style={[styles.timelineDetailsContainer,{ flexDirection: getFlexDirection(isRTL) }]}>

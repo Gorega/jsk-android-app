@@ -9,6 +9,7 @@ import { useAuth } from "../_layout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import AntDesign from '@expo/vector-icons/AntDesign';
 import ModalPresentation from "../../components/ModalPresentation";
 import { getToken } from "../../utils/secureStore";
 
@@ -61,19 +62,19 @@ export default function HomeScreen() {
         value: "JOD"
     }]);
     const [itemsContentTypeList, setItemsContentTypeList] = useState([{
-        name: translations[language].tabs.orders.create.sections.itemsContentTypeList.normal,
+        name: translations[language].tabs.orders.create.sections?.itemsContentTypeList?.normal,
         value: "normal"
     }, {
-        name: translations[language].tabs.orders.create.sections.itemsContentTypeList.large,
+        name: translations[language].tabs.orders.create.sections?.itemsContentTypeList?.large,
         value: "large"
     }, {
-        name: translations[language].tabs.orders.create.sections.itemsContentTypeList.extra_large,
+        name: translations[language].tabs.orders.create.sections?.itemsContentTypeList?.extra_large,
         value: "extra_large"
     }, {
-        name: translations[language].tabs.orders.create.sections.itemsContentTypeList.fragile,
+        name: translations[language].tabs.orders.create.sections?.itemsContentTypeList?.fragile,
         value: "fragile"
     }, {
-        name: translations[language].tabs.orders.create.sections.itemsContentTypeList.high_value,
+        name: translations[language].tabs.orders.create.sections?.itemsContentTypeList?.high_value,
         value: "high_value"
     }]);
     const [checks, setChecks] = useState([]);
@@ -100,7 +101,17 @@ export default function HomeScreen() {
     const [codAmounts, setCodAmounts] = useState([{ value: "", currency: "ILS" }]);
     const [activeCurrencyPicker, setActiveCurrencyPicker] = useState(null);
 
-    const sections = [user.role !== "business" ? {
+    const sections = [{
+        label: translations[language].tabs.orders.create.sections?.referenceId?.title,
+        icon: <AntDesign name="qrcode" size={22} color="#4361EE" />,
+        fields: [{
+            label: translations[language].tabs.orders.create.sections?.referenceId?.explain,
+            type: "input",
+            name: "reference_id",
+            value: form.referenceId || "",
+            onChange: (input) => setForm((form) => ({ ...form, referenceId: input })),
+        }]
+    },user.role !== "business" ? {
         label: translations[language].tabs.orders.create.sections.sender.title,
         icon: <SimpleLineIcons name="user-follow" size={22} color="#4361EE" />,
         fields: [{
@@ -111,7 +122,7 @@ export default function HomeScreen() {
             list: senders.data,
             showSearchBar: true
         }]
-    } : { visibility: "hidden" }, {
+    } : { visibility: "hidden" },{
         label: translations[language].tabs.orders.create.sections.client.title,
         icon: <Ionicons name="person-outline" size={22} color="#4361EE" />,
         fields: [returnedOrdersMessage ? {
@@ -498,7 +509,6 @@ export default function HomeScreen() {
             });
 
             const data = await res.json();
-            console.log(data)         
 
             if (!res.ok) {
                 setFormSpinner({ status: false });
@@ -844,7 +854,7 @@ export default function HomeScreen() {
     const fetchDeliveryFee = async () => {
         try {
             const token = await getToken("userToken");
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${"normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {

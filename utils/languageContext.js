@@ -1,6 +1,7 @@
 import { createContext, useContext, useState,useEffect } from 'react';
-import {ActivityIndicator} from "react-native";
+import {ActivityIndicator, I18nManager,DevSettings} from "react-native";
 import { getToken, saveToken } from './secureStore';
+import * as Updates from 'expo-updates';
 
 const LanguageContext = createContext();
 
@@ -350,6 +351,10 @@ export const translations = {
           errorValidationMsg:"Please check the highlighted fields",
           errorMsg:"An unexpected error occurred, Please call the support agent to help",
           sections:{
+            referenceId:{
+              title:"Reference ID (optional)",
+              explain:"Enter your QR code if available"
+            },
             sender:{
               title:"Sender",
               fields:{
@@ -400,6 +405,13 @@ export const translations = {
               "delivery/receive":"Delivery / Recieve",
               receivedItems:"Received Items",
               receivedQuantity:"Received Quantity",
+            },
+            itemsContentTypeList:{
+              "normal":"Noraml",
+              "large":"Large",
+              "extra_large":"Extra Large",
+              "fragile":"Fragile",
+              "high_value":"high_value"
             },
             currencyList:{
               title:"Currency",
@@ -462,6 +474,30 @@ export const translations = {
           },
           complaints:"Complaints",
           changePassword:"Change Password",
+          changePasswordFields:{
+            currentPasswordRequired:"Current password is required",
+            newPasswordRequired:"New password is required",
+            passwordValidationRequired:"Password must be at least 8 characters",
+            confirmPasswordRequired:"Please confirm your password",
+            passwordMatchValidation:"Passwords do not match",
+            success:"Success",
+            successMsg:"Your password has been changed successfully",
+            changePass:"Change Password",
+            tips:"Security Tips",
+            usage:"Use at least 8 characters",
+            letterInclusion:"Include uppercase letters",
+            numbersInclusion:"Include numbers and symbols",
+            currentPass:"Current Password",
+            currentPassHint:"Enter current password",
+            newPass:"New Password",
+            newPassHint:"Enter new password",
+            confirmPassword:"Confirm Password",
+            weak:"Week",
+            medium:"Medium",
+            strong:"Strong",
+            veryStrong:"Very Strong",
+            updating:"Updating..."
+          },
           contactUs:"Contact Us",
           aboutUs:"About Us",
           locations:"Locations",
@@ -1119,6 +1155,10 @@ export const translations = {
           errorValidationMsg: "يرجى التحقق من الحقول المشار اليها بخطأ",
           errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
           sections: {
+            referenceId:{
+              title:"الرقم المرجعي (اختياري)",
+              explain:"ضع رقم QR الخاص بك ان كان متوفرا"
+            },
             sender: {
               title: "المرسل",
               fields: {
@@ -1238,6 +1278,30 @@ export const translations = {
           },
           complaints: "الشكاوى",
           changePassword: "تغيير كلمة المرور",
+          changePasswordFields: {
+            currentPasswordRequired: "كلمة المرور الحالية مطلوبة",
+            newPasswordRequired: "كلمة المرور الجديدة مطلوبة",
+            passwordValidationRequired: "يجب أن تتكون كلمة المرور من 8 أحرف على الأقل",
+            confirmPasswordRequired: "يرجى تأكيد كلمة المرور",
+            passwordMatchValidation: "كلمتا المرور غير متطابقتين",
+            success: "نجاح",
+            successMsg: "تم تغيير كلمة المرور بنجاح",
+            changePass: "تغيير كلمة المرور",
+            tips: "نصائح الأمان",
+            usage: "استخدم 8 أحرف على الأقل",
+            letterInclusion: "تضمين حروف كبيرة",
+            numbersInclusion: "تضمين أرقام ورموز",
+            currentPass: "كلمة المرور الحالية",
+            currentPassHint: "أدخل كلمة المرور الحالية",
+            newPass: "كلمة المرور الجديدة",
+            newPassHint: "أدخل كلمة المرور الجديدة",
+            confirmPassword: "تأكيد كلمة المرور",
+            weak: "ضعيفة",
+            medium: "متوسطة",
+            strong: "قوية",
+            veryStrong: "قوية جدًا",
+            updating: "جارٍ التحديث..."
+          },          
           contactUs: "اتصل بنا",
           aboutUs: "عنّا",
           locations: "المواقع",
@@ -1707,13 +1771,6 @@ export const translations = {
               USD:"USD",
               JOD:"JOD"
             },
-            itemsContentTypeList:{
-              "normal":"Noraml",
-              "large":"Large",
-              "extra_large":"Extra Large",
-              "fragile":"Fragile",
-              "high_value":"high_value"
-            },
             paymentType:{
               cash:"Cash",
               check:"Check",
@@ -1991,8 +2048,29 @@ export function LanguageProvider({ children }) {
 
   const handleSetLanguage = async (newLanguage) => {
     try {
+      // Determine if the new language requires RTL
+      const isRTL = newLanguage === 'ar' || newLanguage === 'he';
+      
+      // Save the language preference
       await saveToken('userLanguage', newLanguage);
       setLanguage(newLanguage);
+      
+      // Check if we need to change the RTL setting
+      if (I18nManager.isRTL !== isRTL) {
+        // Configure RTL setting
+        I18nManager.allowRTL(isRTL);
+        I18nManager.forceRTL(isRTL);
+        
+        // Restart the app to apply RTL changes properly
+        // This is required for proper RTL layout in production builds
+        if (Updates.isAvailable && !__DEV__) {
+          await Updates.reloadAsync();
+        } else {
+          // For development or if Updates is not available
+          // This will reset the JS context in dev mode
+          DevSettings.reload();
+        }
+      }
     } catch (error) {
       console.error('Error saving language preference:', error);
     }
