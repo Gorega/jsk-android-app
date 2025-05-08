@@ -802,7 +802,7 @@ export default function HomeScreen() {
                 setChecks([]);
             }
         } catch (err) {
-            console.error('Error fetching order data:', err);
+            
         }
     };
 
@@ -828,7 +828,7 @@ export default function HomeScreen() {
                 setSenders(newData);
             }
         } catch (err) {
-            console.error('Error fetching senders:', err);
+            
         } finally {
             setLoadingMore(false);
         }
@@ -847,7 +847,7 @@ export default function HomeScreen() {
             const data = await res.json();
             setCities(data.data);
         } catch (err) {
-            console.error('Error fetching cities:', err);
+           
         }
     }
 
@@ -866,7 +866,6 @@ export default function HomeScreen() {
             const data = await res.json();
             setDeliveryFee(data.data)
         } catch (err) {
-            console.error('Error fetching delivery fee:', err);
         }
     }
 
@@ -874,7 +873,7 @@ export default function HomeScreen() {
         if (!loadingMore && senders?.data && senders?.data.length > 0) {
             // Check if there's more data to load
             if (senders.metadata && senders.data.length >= senders?.metadata.total_records) {
-                console.log("No more data to load");
+               
                 return;
             }
 
@@ -884,7 +883,8 @@ export default function HomeScreen() {
             try {
                 await fetchSenders(nextPage, true);
             } catch (error) {
-                console.error('Error loading more data:', error)            }
+               
+             }
             finally {
                     setLoadingMore(false);
                 }
@@ -895,16 +895,18 @@ export default function HomeScreen() {
         if (orderId) {
             fetchOrderData();
         }
-    }, [orderId, language]);
+    }, [orderId]);
     
     useEffect(() => {
         fetchCities();
         setPage(1);
         fetchSenders(1, false);
-    }, [prickerSearchValue, language])
+    }, [prickerSearchValue])
     
     useEffect(() => {
-        fetchDeliveryFee();
+        if(selectedValue?.city){
+            fetchDeliveryFee();
+        }
     }, [selectedValue]);
     
     const CustomAlert = ({ type, title, message, onClose }) => {

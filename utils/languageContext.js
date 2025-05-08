@@ -2026,62 +2026,126 @@ export const translations = {
 };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguage] = useState('en');
-  const [isLoading, setIsLoading] = useState(true);
+  const [language, setLanguageState] = useState('ar');
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadLanguage = async () => {
-      try {
-        const savedLanguage = await getToken('userLanguage');
-        if (savedLanguage) {
-          setLanguage(savedLanguage);
-        }
-      } catch (error) {
-        console.error('Error loading language preference:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadLanguage();
-  }, []);
-
-  const handleSetLanguage = async (newLanguage) => {
+  // Function to properly set language and handle RTL
+  const setLanguage = async (newLanguage) => {
     try {
-      // Determine if the new language requires RTL
-      const isRTL = newLanguage === 'ar' || newLanguage === 'he';
+      // First update the state to ensure translations are available
+      setLanguageState(newLanguage);
       
       // Save the language preference
-      await saveToken('userLanguage', newLanguage);
-      setLanguage(newLanguage);
+      await saveToken('language', newLanguage);
       
-      // Check if we need to change the RTL setting
-      if (I18nManager.isRTL !== isRTL) {
-        // Configure RTL setting
-        I18nManager.allowRTL(isRTL);
-        I18nManager.forceRTL(isRTL);
-        
-        // Restart the app to apply RTL changes properly
-        // This is required for proper RTL layout in production builds
-        if (Updates.isAvailable && !__DEV__) {
-          await Updates.reloadAsync();
-        } else {
-          // For development or if Updates is not available
-          // This will reset the JS context in dev mode
+      // Check if RTL direction needs to change
+      const isCurrentRTL = I18nManager.isRTL;
+      const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
+      
+      // Check if we need to change RTL settings
+      const needsRTLChange = isCurrentRTL !== shouldBeRTL;
+      
+      // If RTL settings need to change
+      if (needsRTLChange) {
+        // Force RTL or LTR based on language
+        I18nManager.allowRTL(shouldBeRTL);
+        I18nManager.forceRTL(shouldBeRTL);
+      }
+      
+      // Always reload the app when changing languages to ensure proper rendering
+      setTimeout(async () => {
+        try {
+          if (__DEV__) {
+            // In development, use DevSettings
+            DevSettings.reload();
+          } else {
+            // In production, use Expo Updates
+            try {
+              // Check if updates are available first
+              const update = await Updates.checkForUpdateAsync();
+              if (update.isAvailable) {
+                await Updates.fetchUpdateAsync();
+              }
+              // Reload regardless of update availability
+              await Updates.reloadAsync();
+            } catch (updateError) {
+              // If all else fails, try a hard reload
+              if (Platform.OS === 'web') {
+                window.location.reload();
+              } else {
+                DevSettings.reload();
+              }
+            }
+          }
+        } catch (error) {
+          // Last resort fallback
           DevSettings.reload();
         }
-      }
+      }, 150); // Increased timeout for better reliability
+      
     } catch (error) {
-      console.error('Error saving language preference:', error);
+      // Still update the state even if saving fails
+      setLanguageState(newLanguage);
     }
   };
 
-  if (isLoading) {
-    return <ActivityIndicator size="50" color="#F8C332" />
+  // Load saved language on startup
+  useEffect(() => {
+    async function loadLanguage() {
+      try {
+        setLoading(true);
+        const savedLanguage = await getToken('language');
+        
+        if (savedLanguage) {
+          // Set the RTL direction based on saved language without reloading
+          const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
+          
+          // Only update RTL if it doesn't match current state
+          if (I18nManager.isRTL !== shouldBeRTL) {
+            I18nManager.allowRTL(shouldBeRTL);
+            I18nManager.forceRTL(shouldBeRTL);
+          }
+          
+          setLanguageState(savedLanguage);
+        } else {
+          // Default to English if no language is saved
+          setLanguageState('ar');
+        }
+      } catch (error) {
+        setLanguageState('ar');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadLanguage();
+  }, []);
+
+  // Create a safe translation accessor function to prevent null errors
+  const getTranslation = (path, defaultValue = '') => {
+    if (!language || !translations[language]) return defaultValue;
+    
+    const keys = path.split('.');
+    let current = translations[language];
+    
+    for (const key of keys) {
+      if (current === null || current === undefined) return defaultValue;
+      current = current[key];
+    }
+    
+    return current !== null && current !== undefined ? current : defaultValue;
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" color="#4361EE" style={{ flex: 1 }} />;
   }
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage: handleSetLanguage }}>
+    <LanguageContext.Provider value={{ 
+      language, 
+      setLanguage,
+      getTranslation // Add the safe translation accessor
+    }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -1,7 +1,7 @@
 import { LanguageProvider } from '../utils/languageContext';
-import {View,ActivityIndicator} from "react-native"
+import { View, ActivityIndicator } from "react-native";
 import { useFonts } from 'expo-font';
-import { Stack, router } from 'expo-router';
+import { Stack } from 'expo-router'; // Remove router import
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -11,19 +11,17 @@ import { getToken } from "../utils/secureStore";
 import useFetch from "@/utils/useFetch";
 import { SocketProvider } from '@/utils/socketContext';
 
-
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
-  const [trackChanges,setTrackChanges] = useState({type:null});
-  const {getRequest,data:user} = useFetch();
+  const [trackChanges, setTrackChanges] = useState({ type: null });
+  const { getRequest, data: user } = useFetch();
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
@@ -34,25 +32,19 @@ export default function RootLayout() {
       try {
         const token = await getToken("userToken");
         const storedUserId = await getToken("userId");
-        console.log("Retrieved token:", token);
         
         if (token) {
-          console.log("User is authenticated");
           setIsAuthenticated(true);
           if (storedUserId) { 
             setUserId(storedUserId);
           }
         } else {
-          console.log("No token found");
           setIsAuthenticated(false);
           setUserId(null);
-          router.replace("/(auth)");
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
         setIsAuthenticated(false);
         setUserId(null);
-        router.replace("/(auth)");
       } finally {
         setLoading(false);
       }
@@ -67,11 +59,11 @@ export default function RootLayout() {
     }
   }, [loaded, loading]);
 
-  useEffect(()=>{
-    if(userId){
+  useEffect(() => {
+    if (userId) {
       getRequest(`/api/users/${userId}`);
     }
-  },[userId])
+  }, [userId]);
 
   if (!loaded || loading) {
     return (
@@ -82,8 +74,8 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated,user,userId, setUserId,trackChanges,setTrackChanges }}>
-        <LanguageProvider>
+    <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId, trackChanges, setTrackChanges }}>
+      <LanguageProvider>
         <SocketProvider isAuthenticated={isAuthenticated}>
           <Stack
             screenOptions={{
@@ -91,26 +83,15 @@ export default function RootLayout() {
               gestureEnabled: false,
             }}
           >
-            {!isAuthenticated ? (
-              <Stack.Screen
-                name="(auth)"
-                options={{
-                  gestureEnabled: false,
-                }}
-              />
-            ) : (
-              <Stack.Screen
-                name="(tabs)"
-                options={{
-                  gestureEnabled: false,
-                }}
-              />
-            )}
+            <Stack.Screen
+              name={isAuthenticated ? "(tabs)" : "(auth)"}
+              options={{ gestureEnabled: false }}
+            />
             <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
           </Stack>
         </SocketProvider>
-        </LanguageProvider>
-        <StatusBar backgroundColor='black' style="auto" />
-      </AuthContext.Provider>
+      </LanguageProvider>
+      <StatusBar backgroundColor='black' style="auto" />
+    </AuthContext.Provider>
   );
 }

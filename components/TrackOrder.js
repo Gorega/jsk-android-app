@@ -16,7 +16,7 @@ export default function TrackOrder(){
 
     return <View style={styles.track}>
         <Text style={[styles.h2,{fontWeight:["he", "ar"].includes(language) ? "600" : "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.title}</Text>
-        <Text style={[styles.p,{fontWeight:["he", "ar"].includes(language) && "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.desc}</Text>
+        <Text style={[styles.p,{fontWeight:["he", "ar"].includes(language) ? "500" : "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.desc}</Text>
         <View style={[styles.flex,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
             <View style={[styles.inputBox,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
                 <Feather name="package" size={24} color="black" />

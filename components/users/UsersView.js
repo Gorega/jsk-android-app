@@ -31,7 +31,7 @@ export default function UsersView({data,loadMoreData,loadingMore,isLoading}){
     :
     <View style={styles.empty}>
         <MaterialCommunityIcons name="exclamation" size={24} color="black" />
-        <Text style={{fontWeight:500}}>{translations[language].users.emptyArray}</Text>
+        <Text style={{fontWeight:'500'}}>{translations[language].users.emptyArray}</Text>
     </View>
 }
 

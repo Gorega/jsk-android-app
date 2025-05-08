@@ -95,6 +95,31 @@ export default function Header({ showGreeting = true, title }) {
     useEffect(() => {
         if (!socket || !user) return;
     
+        // Fetch initial notification count when component mounts
+        const fetchNotificationCount = async () => {
+            try {
+                const token = await getToken("userToken");
+                const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count?user_id=${user.userId}`, {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/json",
+                        "Cookie": token ? `token=${token}` : ""
+                    }
+                });
+    
+                if (response.ok) {
+                    const data = await response.json();
+                    setNotificationsCount(data.count || 0);
+                }
+            } catch (error) {
+                console.error('Error fetching notification count:', error);
+            }
+        };
+        
+        fetchNotificationCount();
+    
         const handleNotification = (notification) => {
             if (!notification || Number(user.userId) !== Number(notification.user_id)) {
                 return;
@@ -102,16 +127,27 @@ export default function Header({ showGreeting = true, title }) {
     
             switch (notification.type) {
                 case 'NEW_NOTIFICATION':
-                case 'UPDATE_COUNT':
                     setNotificationsCount(prev => prev + 1);
+                    break;
+                case 'UPDATE_COUNT':
+                    // Set to the exact count provided in the notification
+                    if (notification.count !== undefined) {
+                        setNotificationsCount(notification.count);
+                    } else {
+                        setNotificationsCount(prev => prev + 1);
+                    }
                     break;
                 case 'NOTIFICATIONS_RESET':
                     setNotificationsCount(0);
                     break;
                 case 'NOTIFICATION_DELETED':
+                    setNotificationsCount(prev => Math.max(0, prev - 1));
+                    break;
                 case 'NOTIFICATION_UPDATED':
+                    // Handle if needed
+                    break;
                 case 'ALL_NOTIFICATIONS_DELETED':
-                    // Handle count updates here if needed
+                    setNotificationsCount(0);
                     break;
             }
         };

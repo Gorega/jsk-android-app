@@ -55,11 +55,10 @@ export default function HomeScreen() {
         fetchUserBalance()
       ]);
     } catch (error) {
-      console.error('Error refreshing data:', error);
     } finally {
       setRefreshing(false);
     }
-  }, [language]);
+  }, [language,user]);
 
   function formatMoney(codValue) {
     if (!codValue || typeof codValue !== 'object') return '';
@@ -188,7 +187,7 @@ export default function HomeScreen() {
   useEffect(() => {
     getRequest("/api/orders/status/totals");
     fetchUserBalance();
-  }, []);
+  }, [user]);
 
 
   useEffect(() => {

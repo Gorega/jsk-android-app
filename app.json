@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "tayar",
-    "slug": "tayar",
+    "name": "Taiar",
+    "slug": "taiar",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
@@ -14,10 +14,10 @@
         "NSCameraUsageDescription": "We need access to your camera.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.tayar.app"
+      "bundleIdentifier": "com.taiar"
     },
     "android": {
-      "package": "com.tayar.app",
+      "package": "com.taiar",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/tayar_logo.png",
         "backgroundColor": "#ffffff",
@@ -42,7 +42,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/tayar_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
@@ -69,9 +69,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "0ad3306c-7b23-4cef-aa55-059750d7623a"
+        "projectId": "c1d54568-437f-4a8c-a692-8b8ac589ffb0"
       }
     },
-    "owner": "tayarexpress"
+    "owner": "expresstaiar"
   }
 }

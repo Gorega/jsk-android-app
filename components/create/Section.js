@@ -12,7 +12,7 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
     return (
         <View style={[
             styles.section,
-            {display: section.visibility === "hidden" && "none"}
+            {display: section.visibility === "hidden" ? "none" : "flex"}
         ]}>
             <Pressable onPress={() => setShowFields(!showFields)}>
                 <View style={[

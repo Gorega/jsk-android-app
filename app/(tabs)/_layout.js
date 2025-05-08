@@ -1,7 +1,7 @@
 import { Tabs, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Text, TouchableOpacity, View, Platform, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from '@expo/vector-icons/Feather';
@@ -44,13 +44,14 @@ export default function TabLayout() {
 
   const handleAddPress = () => {
     animateAddButton();
+    // Reduce timeout to minimize potential timing issues
     setTimeout(() => {
       if (user.role === "driver") {
         router.push("/(camera)/assignOrdersDriver");
       } else {
-        router.push("(create)");
+        router.push("/(create)/");
       }
-    }, 200);
+    }, 100); // Reduced from 200ms to 100ms
   };
 
   const handleCollectionsPress = () => {
@@ -75,7 +76,7 @@ export default function TabLayout() {
         style={{
           fontSize: 11,
           color: focused ? "#4361EE" : "#94A3B8",
-          fontWeight: focused ? '600' : '400',
+          fontWeight: focused ? '600' : '400', // Ensure these are strings, not booleans
           textAlign: 'center',
           maxWidth: '100%',
         }}

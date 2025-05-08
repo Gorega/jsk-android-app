@@ -1,4 +1,4 @@
-package com.tayar.app
+package com.taiar
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

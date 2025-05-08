@@ -12,16 +12,16 @@ export function SocketProvider({ children, isAuthenticated }) {
         if (isAuthenticated && !socketRef.current) {
           const token = await getToken("userToken");
           if (!token) {
-            console.error('No token available for socket connection');
+            // console.error('No token available for socket connection');
             return;
           }
     
           // Use direct URL instead of environment variable
           const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL;
-          console.log('Attempting socket connection with:', {
-            url: SOCKET_URL,
-            token: token ? `${token.substring(0, 10)}...` : 'no token'
-          });
+          // console.log('Attempting socket connection with:', {
+          //   url: SOCKET_URL,
+          //   token: token ? `${token.substring(0, 10)}...` : 'no token'
+          // });
     
           try {
             socketRef.current = io(SOCKET_URL.trim(), {
@@ -39,43 +39,43 @@ export function SocketProvider({ children, isAuthenticated }) {
     
             // Add connection event before other events
             socketRef.current.on('connect_error', (error) => {
-              console.error('Socket connection error details:', {
-                error: error.message,
-                transport: socketRef.current.io.engine.transport.name,
-                readyState: socketRef.current.io.engine.readyState,
-                protocol: socketRef.current.io.engine.protocol
-              });
+              // console.error('Socket connection error details:', {
+              //   error: error.message,
+              //   transport: socketRef.current.io.engine.transport.name,
+              //   readyState: socketRef.current.io.engine.readyState,
+              //   protocol: socketRef.current.io.engine.protocol
+              // });
             });
     
             socketRef.current.on('connect', () => {
-              console.log('Socket successfully connected with ID:', socketRef.current.id);
+              // console.log('Socket successfully connected with ID:', socketRef.current.id);
             });
 
                 socketRef.current.on('connect_error', (error) => {
-                  console.error('Detailed connection error:', {
-                    message: error.message,
-                    description: error.description,
-                    context: error.context,
-                    type: error.type
-                  });
+                  // console.error('Detailed connection error:', {
+                  //   message: error.message,
+                  //   description: error.description,
+                  //   context: error.context,
+                  //   type: error.type
+                  // });
                 });
 
                 socketRef.current.on('authenticated', (response) => {
-                    console.log('Socket authentication:', response);
+                    // console.log('Socket authentication:', response);
                 });
 
                 socketRef.current.on('disconnect', (reason) => {
-                    console.log('Socket disconnected:', reason);
+                    // console.log('Socket disconnected:', reason);
                     if (reason === 'io server disconnect') {
                         socketRef.current.connect();
                     }
                 });
 
                 socketRef.current.on('error', (error) => {
-                  console.error('Socket error:', error);
+                  // console.error('Socket error:', error);
                 });
               } catch (error) {
-                console.error('Socket initialization error:', error);
+                // console.error('Socket initialization error:', error);
               }
           }
       };

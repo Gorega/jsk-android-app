@@ -52,11 +52,6 @@ export default function Settings() {
             icon: <MaterialCommunityIcons name="information-outline" size={22} color="#4361EE" />
         },
         {
-            label: translations[language].tabs.settings.options.locations,
-            onPress: () => router.push("(locations)"),
-            icon: <Ionicons name="location-outline" size={22} color="#4361EE" />
-        },
-        {
             label: translations[language].tabs.settings.options.logout,
             onPress: async () => {
                 await deleteToken("userToken");
@@ -208,6 +203,7 @@ export default function Settings() {
                 <ModalPresentation 
                     showModal={showLanguageModal} 
                     setShowModal={setShowLanguageModal}
+                    onDismiss={() => setShowLanguageModal(false)}
                 >
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>

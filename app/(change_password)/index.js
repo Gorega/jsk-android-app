@@ -244,60 +244,6 @@ export default function ChangePasswordScreen() {
           
           {/* Form */}
           <View style={styles.formContainer}>
-            {/* Current Password Field */}
-            <View style={styles.inputField}>
-              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
-                {translations[language].tabs.settings.options.changePasswordFields?.currentPass || "Current Password"}
-              </Text>
-              <View style={[
-                styles.inputContainer, 
-                errors.currentPassword && styles.inputError,
-                { flexDirection: isRTL ? "row-reverse" : "row" }
-              ]}>
-                <View style={[
-                  styles.inputIconContainer, 
-                  { [isRTL ? "right" : "left"]: 12 }
-                ]}>
-                  <Feather name="key" size={18} color="#94A3B8" />
-                </View>
-                <TextInput 
-                  style={[
-                    styles.input, 
-                    { 
-                      textAlign: isRTL ? "right" : "left",
-                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
-                    }
-                  ]} 
-                  secureTextEntry={secureCurrentPassword} 
-                  value={currentPassword} 
-                  onChangeText={(input) => {
-                    setCurrentPassword(input);
-                    if (errors.currentPassword) {
-                      setErrors({...errors, currentPassword: null});
-                    }
-                  }}
-                  placeholder={translations[language].tabs.settings.options.changePasswordFields?.currentPassHint || "Enter current password"}
-                  placeholderTextColor="#94A3B8"
-                />
-                <TouchableOpacity 
-                  style={[
-                    styles.eyeIcon,
-                    { [isRTL ? "left" : "right"]: 12 }
-                  ]} 
-                  onPress={() => setSecureCurrentPassword(!secureCurrentPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Feather 
-                    name={secureCurrentPassword ? "eye-off" : "eye"} 
-                    size={18} 
-                    color="#94A3B8"
-                  />
-                </TouchableOpacity>
-              </View>
-              {errors.currentPassword && (
-                <Text style={styles.errorText}>{errors.currentPassword}</Text>
-              )}
-            </View>
             
             {/* New Password Field */}
             <View style={styles.inputField}>
