@@ -20,10 +20,7 @@
       "package": "com.taiar",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/tayar_logo.png",
-        "backgroundColor": "#ffffff",
-        "permissions": [
-          "CAMERA"
-        ]
+        "backgroundColor": "#ffffff"
       },
       "permissions": [
         "android.permission.CAMERA",
