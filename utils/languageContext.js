@@ -2,6 +2,8 @@ import { createContext, useContext, useState,useEffect } from 'react';
 import {ActivityIndicator, I18nManager,DevSettings} from "react-native";
 import { getToken, saveToken } from './secureStore';
 import * as Updates from 'expo-updates';
+import RNRestart from 'react-native-restart';
+
 
 const LanguageContext = createContext();
 
@@ -2058,81 +2060,37 @@ export const translations = {
 };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState('ar');
+  const [language, setLanguageState] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Function to properly set language and handle RTL
+  // switch language & trigger full native restart if direction changed
   const setLanguage = async (newLanguage) => {
-    try {
-      // First update the state to ensure translations are available
-      setLanguageState(newLanguage);
-      
-      // Save the language preference
-      await saveToken('language', newLanguage);
-      
-      // Determine if RTL should be enabled
-      const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
-      
-      // Only reload if RTL setting needs to change
-      if (I18nManager.isRTL !== shouldBeRTL) {
-        I18nManager.allowRTL(shouldBeRTL);
-        I18nManager.forceRTL(shouldBeRTL);
-        
-        // In production, we need to restart the app to apply RTL changes
-        if (Updates.isAvailableAsync && Updates.reloadAsync) {
-          await Updates.reloadAsync();
-        } else {
-          DevSettings.reload();
-        }
-      }
-    } catch (error) {
-      console.error('Error setting language:', error);
+    setLanguageState(newLanguage);
+    await saveToken('language', newLanguage);
+
+    const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
+    if (I18nManager.isRTL !== shouldBeRTL) {
+      I18nManager.allowRTL(shouldBeRTL);
+      I18nManager.forceRTL(shouldBeRTL);
+
+      // full native restart (drops JS & native)
+      RNRestart.Restart();
     }
   };
 
-  // Load saved language on startup
+  // just load the saved language—no I18nManager calls here
   useEffect(() => {
-    async function loadLanguage() {
-      try {
-        const savedLanguage = await getToken('language');
-        
-        if (savedLanguage) {
-          // Apply RTL setting immediately on app start
-          const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
-          
-          // Set RTL direction without reloading if possible
-          if (I18nManager.isRTL !== shouldBeRTL) {
-            I18nManager.allowRTL(shouldBeRTL);
-            I18nManager.forceRTL(shouldBeRTL);
-          }
-          
-          // Update state with saved language
-          setLanguageState(savedLanguage);
-        }
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error loading language:', error);
-        setLoading(false);
-      }
-    }
-    
-    loadLanguage();
+    (async () => {
+      const saved = await getToken('language');
+      if (saved) setLanguageState(saved);
+      setLoading(false);
+    })();
   }, []);
 
-  // Create a safe translation accessor function to prevent null errors
   const getTranslation = (path, defaultValue = '') => {
     if (!language || !translations[language]) return defaultValue;
-    
-    const keys = path.split('.');
-    let current = translations[language];
-    
-    for (const key of keys) {
-      if (current === null || current === undefined) return defaultValue;
-      current = current[key];
-    }
-    
-    return current !== null && current !== undefined ? current : defaultValue;
+    return path.split('.').reduce((obj, key) => (obj ? obj[key] : null), translations[language]) 
+           ?? defaultValue;
   };
 
   if (loading) {
@@ -2140,20 +2098,14 @@ export function LanguageProvider({ children }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ 
-      language, 
-      setLanguage,
-      getTranslation // Add the safe translation accessor
-    }}>
+    <LanguageContext.Provider value={{ language, setLanguage, getTranslation }}>
       {children}
     </LanguageContext.Provider>
   );
 }
 
 export function useLanguage() {
-  const context = useContext(LanguageContext);
-  if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
-  }
-  return context;
+  const c = useContext(LanguageContext);
+  if (!c) throw new Error('useLanguage must be inside LanguageProvider');
+  return c;
 }
