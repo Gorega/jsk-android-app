@@ -16,7 +16,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { getToken } from "../../utils/secureStore";
 
 export default function ChangePasswordScreen() {

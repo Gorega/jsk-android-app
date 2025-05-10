@@ -5,7 +5,7 @@ import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useAuth } from '@/app/_layout';
+import { useAuth } from "../RootLayout";
 import { router } from 'expo-router';
 import FlatListData from './FlatListData';
 import { useSocket } from '../utils/socketContext';

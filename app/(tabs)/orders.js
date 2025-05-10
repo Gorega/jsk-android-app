@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { router, useLocalSearchParams } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { useAuth } from '../_layout';
+import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
 

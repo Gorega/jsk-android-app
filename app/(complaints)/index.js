@@ -4,7 +4,7 @@ import ModalPresentation from "../../components/ModalPresentation";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { router } from "expo-router";
 import Search from "../../components/search/Search";
 import FlatListData from "../../components/FlatListData";

@@ -5,7 +5,7 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import PickerModal from '../../components/pickerModal/PickerModal';
 import { router } from 'expo-router';
 import { getToken } from '../../utils/secureStore';

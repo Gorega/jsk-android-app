@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { useLanguage } from "../../utils/languageContext";
 import { translations } from "../../utils/languageContext";
 import useFetch from "../../utils/useFetch";

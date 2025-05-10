@@ -5,8 +5,9 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from "react";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import ModalPresentation from "@/components/ModalPresentation";
-import { useLanguage } from '../../utils/languageContext';
-import { translations } from '../../utils/languageContext';
+import { useLanguage,translations } from '../../utils/languageContext';
+
+
 
 export default function RootLayout(){
   const { language, setLanguage } = useLanguage();
@@ -23,9 +24,9 @@ return <>
   <Stack.Screen
     name="index"
     options={{
-      title:translations[language].auth.login,
+      title:translations[language]?.auth.login,
       header:()=>{
-        return <FixedHeader title={translations[language].auth.login} showBackButton={false}>
+        return <FixedHeader title={translations[language]?.auth.login} showBackButton={false}>
           <TouchableOpacity onPress={()=> setShowLanguageModal(true)}>
             <MaterialIcons name="language" size={24} color="#4361EE" />
           </TouchableOpacity>
@@ -36,9 +37,9 @@ return <>
   <Stack.Screen
     name="sign-up"
     options={{
-      title:translations[language].auth.register,
+      title:translations[language]?.auth.register,
       header:()=>{
-        return <FixedHeader title={translations[language].auth.register} showBackButton={true}>
+        return <FixedHeader title={translations[language]?.auth.register} showBackButton={true}>
           <TouchableOpacity onPress={()=> setShowLanguageModal(true)}>
             <MaterialIcons name="language" size={24} color="#4361EE" />
           </TouchableOpacity>
@@ -55,7 +56,7 @@ return <>
                 >
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalTitle}>
-                            {translations[language].tabs.settings.options.language.title}
+                            {translations[language]?.tabs.settings.options.language.title}
                         </Text>
                     </View>
                     
@@ -71,7 +72,7 @@ return <>
                             language === 'ar' && styles.activeLanguageText,
                             { textAlign: isRTL ? "right" : "left" }
                         ]}>
-                            {translations[language].tabs.settings.options.language.options.ar}
+                            {translations[language]?.tabs.settings.options.language.options.ar}
                         </Text>
                         {language === 'ar' && (
                             <Ionicons name="checkmark-circle" size={20} color="#4361EE" />
@@ -90,7 +91,7 @@ return <>
                             language === 'en' && styles.activeLanguageText,
                             { textAlign: isRTL ? "right" : "left" }
                         ]}>
-                            {translations[language].tabs.settings.options.language.options.en}
+                            {translations[language]?.tabs.settings.options.language.options.en}
                         </Text>
                         {language === 'en' && (
                             <Ionicons name="checkmark-circle" size={20} color="#4361EE" />
@@ -110,7 +111,7 @@ return <>
                             language === 'he' && styles.activeLanguageText,
                             { textAlign: isRTL ? "right" : "left" }
                         ]}>
-                            {translations[language].tabs.settings.options.language.options.he}
+                            {translations[language]?.tabs.settings.options.language.options.he}
                         </Text>
                         {language === 'he' && (
                             <Ionicons name="checkmark-circle" size={20} color="#4361EE" />

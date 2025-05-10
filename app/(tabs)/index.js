@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar, Image, I18nManager, ActivityIndicator } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -12,7 +12,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import { useCallback, useEffect, useState, useRef } from "react";
 import useFetch from "../../utils/useFetch";
 import { router } from "expo-router";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { useSocket } from "../../utils/socketContext";
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "@/utils/secureStore";
@@ -43,7 +43,6 @@ export default function HomeScreen() {
     const data = await res.json();
     setUserBalances(data.data);
     } catch (error) {
-      console.error('Error fetching user balance:', error);
     }
   };
 
@@ -189,21 +188,6 @@ export default function HomeScreen() {
     fetchUserBalance();
   }, [user]);
 
-
-  useEffect(() => {
-    // Force RTL layout for the component
-    const originalRTL = I18nManager.isRTL;
-    if (isRTL && !I18nManager.isRTL) {
-      I18nManager.forceRTL(true);
-    }
-    
-    return () => {
-      // Restore original RTL setting when component unmounts
-      if (I18nManager.isRTL !== originalRTL) {
-        I18nManager.forceRTL(originalRTL);
-      }
-    };
-  }, [isRTL]);
 
   if (isLoading && !data && !refreshing) {
     return (

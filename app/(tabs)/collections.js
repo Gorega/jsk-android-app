@@ -5,7 +5,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Feather from '@expo/vector-icons/Feather';
 import Octicons from '@expo/vector-icons/Octicons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 

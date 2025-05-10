@@ -2,7 +2,7 @@ import { View, StyleSheet, Text, TouchableOpacity, Alert, ActivityIndicator } fr
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useAuth } from "../../app/_layout";
+import { useAuth } from "../../RootLayout";
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';

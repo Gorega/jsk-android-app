@@ -11,7 +11,7 @@ import { router } from "expo-router";
 import ModalPresentation from "../../components/ModalPresentation";
 import { useState } from "react";
 import { deleteToken } from "../../utils/secureStore";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 
 export default function Settings() {
     const { language, setLanguage } = useLanguage();

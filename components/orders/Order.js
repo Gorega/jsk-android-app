@@ -9,7 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import PickerModal from "../pickerModal/PickerModal";
-import { useAuth } from '../../app/_layout';
+import { useAuth } from "../../RootLayout";
 import UserBox from "./userBox/UserBox";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';

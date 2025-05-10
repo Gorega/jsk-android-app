@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from "expo-router";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';

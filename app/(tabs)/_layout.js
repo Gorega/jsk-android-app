@@ -10,7 +10,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Header from "../../components/Header";
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Collections from './collections';
-import { useAuth } from '../_layout';
+import { useAuth } from "../../RootLayout";
 import FixedHeader from "../../components/FixedHeader";
 import { LinearGradient } from 'expo-linear-gradient';
 

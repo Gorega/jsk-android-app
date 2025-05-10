@@ -1,7 +1,7 @@
 import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity } from "react-native";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import ModalPresentation from "../../components/ModalPresentation";

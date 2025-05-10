@@ -5,7 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../_layout';
+import { useAuth } from "../../RootLayout";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';

@@ -1,9 +1,6 @@
 import { createContext, useContext, useState,useEffect } from 'react';
-import {ActivityIndicator, I18nManager,DevSettings} from "react-native";
+import {ActivityIndicator} from "react-native";
 import { getToken, saveToken } from './secureStore';
-import * as Updates from 'expo-updates';
-import RNRestart from 'react-native-restart';
-
 
 const LanguageContext = createContext();
 
@@ -2060,29 +2057,25 @@ export const translations = {
 };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState(null);
+  const [language, setLanguageState] = useState("ar");
   const [loading, setLoading] = useState(true);
 
   // switch language & trigger full native restart if direction changed
   const setLanguage = async (newLanguage) => {
     setLanguageState(newLanguage);
     await saveToken('language', newLanguage);
-
+  
     const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
-    if (I18nManager.isRTL !== shouldBeRTL) {
-      I18nManager.allowRTL(shouldBeRTL);
-      I18nManager.forceRTL(shouldBeRTL);
+    await saveToken('isRTL', shouldBeRTL.toString()); // Save RTL direction
 
-      // full native restart (drops JS & native)
-      RNRestart.Restart();
-    }
   };
 
-  // just load the saved language—no I18nManager calls here
   useEffect(() => {
     (async () => {
       const saved = await getToken('language');
-      if (saved) setLanguageState(saved);
+      if (saved){
+        setLanguageState(saved)
+      }
       setLoading(false);
     })();
   }, []);
@@ -2105,7 +2098,9 @@ export function LanguageProvider({ children }) {
 }
 
 export function useLanguage() {
-  const c = useContext(LanguageContext);
-  if (!c) throw new Error('useLanguage must be inside LanguageProvider');
-  return c;
+  const context = useContext(LanguageContext);
+  if (!context) {
+    throw new Error('useLanguage must be used within a LanguageProvider');
+  }
+  return context;
 }

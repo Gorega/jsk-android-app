@@ -19,7 +19,7 @@ import { Link, useRouter, Redirect } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import Field from "../../components/sign/Field";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { saveToken, getToken } from "../../utils/secureStore";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
@@ -134,11 +134,11 @@ export default function SignIn() {
   const fields = [
     {
       name: "phone",
-      label: translations[language].auth.mobileNumber,
+      label: translations[language]?.auth.mobileNumber,
       type: "input",
       value: loginForm.phone,
       error: formErrors.phone || "",
-      placeholder: translations[language].auth.phonePlaceholder,
+      placeholder: translations[language]?.auth.phonePlaceholder,
       keyboardType: "phone-pad",
       onChange: (value) => {
         setFormErrors(prev => ({...prev, phone: ""}));
@@ -147,11 +147,11 @@ export default function SignIn() {
     }, 
     {
       name: "password",
-      label: translations[language].auth.password,
+      label: translations[language]?.auth.password,
       type: "input",
       value: loginForm.password,
       error: formErrors.password || "",
-      placeholder: translations[language].auth.passwordPlaceholder,
+      placeholder: translations[language]?.auth.passwordPlaceholder,
       secureTextEntry: true,
       onChange: (value) => {
         setFormErrors(prev => ({...prev, password: ""}));
@@ -168,8 +168,8 @@ export default function SignIn() {
       // Only proceed if previous login info exists
       if (!previousLoginInfo) {
         Alert.alert(
-          translations[language].auth.biometricLoginFailed || "Biometric Login Failed",
-          translations[language].auth.noPreviousLogin || "Please login with your credentials first to enable biometric login"
+          translations[language]?.auth.biometricLoginFailed || "Biometric Login Failed",
+          translations[language]?.auth.noPreviousLogin || "Please login with your credentials first to enable biometric login"
         );
         setLoading(false);
         return;
@@ -177,13 +177,13 @@ export default function SignIn() {
 
       // First use local authentication
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: translations[language].auth.biometricPrompt || "Login with biometrics",
-        cancelLabel: translations[language].auth.cancel || "Cancel",
+        promptMessage: translations[language]?.auth.biometricPrompt || "Login with biometrics",
+        cancelLabel: translations[language]?.auth.cancel || "Cancel",
         disableDeviceFallback: false,
       });
 
       if (!result.success) {
-        throw new Error(translations[language].auth.biometricFailed || "Authentication failed");
+        throw new Error(translations[language]?.auth.biometricFailed || "Authentication failed");
       }
 
       // Get stored credentials
@@ -191,7 +191,7 @@ export default function SignIn() {
       const savedPassword = await getToken("lastLoginPassword");
 
       if (!savedPhone || !savedPassword) {
-        throw new Error(translations[language].auth.credentialsNotFound || "Saved credentials not found");
+        throw new Error(translations[language]?.auth.credentialsNotFound || "Saved credentials not found");
       }
 
       // Make API call with saved credentials
@@ -229,7 +229,7 @@ export default function SignIn() {
       }
     } catch (err) {
       Alert.alert(
-        translations[language].auth.biometricLoginFailed || "Biometric Login Failed",
+        translations[language]?.auth.biometricLoginFailed || "Biometric Login Failed",
         err.message
       );
     } finally {
@@ -248,11 +248,11 @@ export default function SignIn() {
       // Basic validation
       let hasError = false;
       if (!loginForm.phone) {
-        setFormErrors(prev => ({...prev, phone:translations[language].auth.phoneRequired}));
+        setFormErrors(prev => ({...prev, phone:translations[language]?.auth.phoneRequired}));
         hasError = true;
       }
       if (!loginForm.password) {
-        setFormErrors(prev => ({...prev, password:translations[language].auth.passwordRequired}));
+        setFormErrors(prev => ({...prev, password:translations[language]?.auth.passwordRequired}));
         hasError = true;
       }
       
@@ -355,8 +355,8 @@ export default function SignIn() {
           />
           
           <Animated.View style={{opacity: fadeAnim}}>
-            <Text style={styles.title}>{translations[language].auth.welcome}</Text>
-            <Text style={styles.subtitle}>{translations[language].auth.signMessage}</Text>
+            <Text style={styles.title}>{translations[language]?.auth.welcome}</Text>
+            <Text style={styles.subtitle}>{translations[language]?.auth.signMessage}</Text>
           </Animated.View>
         </View>
         
@@ -440,7 +440,7 @@ export default function SignIn() {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Text style={styles.loginButtonText}>
-                {translations[language].auth.login}
+                {translations[language]?.auth.login}
               </Text>
             )}
           </TouchableOpacity>
@@ -451,7 +451,7 @@ export default function SignIn() {
             isRTL && styles.registerLinkContainerRtl
           ]}>
             <Text style={styles.registerText}>
-              {translations[language].auth.dontHaveAccount}
+              {translations[language]?.auth.dontHaveAccount}
             </Text>
             <Link href="/sign-up" asChild>
               <TouchableOpacity style={[
@@ -459,7 +459,7 @@ export default function SignIn() {
                 isRTL && styles.registerLinkRtl
               ]}>
                 <Text style={styles.registerLinkText}>
-                  {translations[language].auth.register}
+                  {translations[language]?.auth.register}
                 </Text>
               </TouchableOpacity>
             </Link>

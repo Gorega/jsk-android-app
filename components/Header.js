@@ -1,7 +1,7 @@
 import { View, StyleSheet, SafeAreaView, Image, Text, TouchableOpacity, Platform, Animated } from "react-native";
 import avatar from "../assets/images/avatar2.jpg";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useAuth } from "@/app/_layout";
+import { useAuth } from "../RootLayout";
 import { useEffect, useState, useRef } from "react";
 import { translations } from '../utils/languageContext';
 import { useLanguage } from '../utils/languageContext';

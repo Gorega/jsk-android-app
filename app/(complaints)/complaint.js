@@ -14,10 +14,9 @@ import {
   Image
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Feather from "@expo/vector-icons/Feather";
-import { useAuth } from "../_layout";
+import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
