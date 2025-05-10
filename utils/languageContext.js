@@ -290,6 +290,12 @@ export const translations = {
             "received":"Received",
             "delivered_received":"Delivered / Received"
           },
+          "editPhone": "Edit Receiver Phone",
+          "receiverPhones": "Receiver Phones",
+          "loading": "Loading...",
+          "error": "Error",
+          "errorFetchingOrder": "Error fetching order data",
+          "ok": "OK",
           "missingStatus": "Missing status value",
           "selectReason": "Select Reason",
           "statusChangeSuccess": "Status updated successfully",
@@ -441,7 +447,17 @@ export const translations = {
               currency:"Currency",
               date:"Date"
             }
-          }
+          },
+          "validation": {
+              "required": "This field is required"
+            },
+            "save": "Save Changes",
+            "cancel": "Cancel",
+            "success": "Success",
+            "phoneUpdateSuccess": "Phone numbers updated successfully",
+            "error": "Error",
+            "errorMsg": "An error occurred",
+            "errorValidationMsg": "Please correct the errors in the form",
         }
       },
       collections:{
@@ -1094,6 +1110,12 @@ export const translations = {
             "received": "تم الاستلام",
             "delivered_received": "تم التوصيل / تم الاستلام"
           },
+          "editPhone": "تعديل هاتف المستلم",
+          "receiverPhones": "هواتف المستلم",
+          "loading": "جاري التحميل...",
+          "error": "خطأ",
+          "errorFetchingOrder": "خطأ في جلب بيانات الطلب",
+          "ok": "موافق",
           "missingStatus": "لم يتم تحديد حالة",
           "selectReason": "اختر السبب",
           "statusChangeSuccess": "تم تحديث الحالة بنجاح",
@@ -1245,7 +1267,17 @@ export const translations = {
               currency:"العملة",
               date:"التاريخ"
             }
-          }
+          },
+            "validation": {
+            "required": "هذا الحقل مطلوب"
+          },
+            "save": "حفظ التغييرات",
+            "cancel": "إلغاء",
+            "success": "تم بنجاح",
+            "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
+            "error": "خطأ",
+            "errorMsg": "حدث خطأ",
+            "errorValidationMsg": "يرجى تصحيح الأخطاء في النموذج"
         }
       },
       collections: {
@@ -2038,54 +2070,23 @@ export function LanguageProvider({ children }) {
       // Save the language preference
       await saveToken('language', newLanguage);
       
-      // Check if RTL direction needs to change
-      const isCurrentRTL = I18nManager.isRTL;
+      // Determine if RTL should be enabled
       const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
       
-      // Check if we need to change RTL settings
-      const needsRTLChange = isCurrentRTL !== shouldBeRTL;
-      
-      // If RTL settings need to change
-      if (needsRTLChange) {
-        // Force RTL or LTR based on language
+      // Only reload if RTL setting needs to change
+      if (I18nManager.isRTL !== shouldBeRTL) {
         I18nManager.allowRTL(shouldBeRTL);
         I18nManager.forceRTL(shouldBeRTL);
-      }
-      
-      // Always reload the app when changing languages to ensure proper rendering
-      setTimeout(async () => {
-        try {
-          if (__DEV__) {
-            // In development, use DevSettings
-            DevSettings.reload();
-          } else {
-            // In production, use Expo Updates
-            try {
-              // Check if updates are available first
-              const update = await Updates.checkForUpdateAsync();
-              if (update.isAvailable) {
-                await Updates.fetchUpdateAsync();
-              }
-              // Reload regardless of update availability
-              await Updates.reloadAsync();
-            } catch (updateError) {
-              // If all else fails, try a hard reload
-              if (Platform.OS === 'web') {
-                window.location.reload();
-              } else {
-                DevSettings.reload();
-              }
-            }
-          }
-        } catch (error) {
-          // Last resort fallback
+        
+        // In production, we need to restart the app to apply RTL changes
+        if (Updates.isAvailableAsync && Updates.reloadAsync) {
+          await Updates.reloadAsync();
+        } else {
           DevSettings.reload();
         }
-      }, 150); // Increased timeout for better reliability
-      
+      }
     } catch (error) {
-      // Still update the state even if saving fails
-      setLanguageState(newLanguage);
+      console.error('Error setting language:', error);
     }
   };
 
@@ -2093,27 +2094,25 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     async function loadLanguage() {
       try {
-        setLoading(true);
         const savedLanguage = await getToken('language');
         
         if (savedLanguage) {
-          // Set the RTL direction based on saved language without reloading
+          // Apply RTL setting immediately on app start
           const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
           
-          // Only update RTL if it doesn't match current state
+          // Set RTL direction without reloading if possible
           if (I18nManager.isRTL !== shouldBeRTL) {
             I18nManager.allowRTL(shouldBeRTL);
             I18nManager.forceRTL(shouldBeRTL);
           }
           
+          // Update state with saved language
           setLanguageState(savedLanguage);
-        } else {
-          // Default to English if no language is saved
-          setLanguageState('ar');
         }
+        
+        setLoading(false);
       } catch (error) {
-        setLanguageState('ar');
-      } finally {
+        console.error('Error loading language:', error);
         setLoading(false);
       }
     }

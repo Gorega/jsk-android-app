@@ -723,7 +723,7 @@ export default function Order({ user, order }) {
                     </View>
                     
                     <View style={styles.controlContainer}>
-                        {(!["delivered", "returned", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["business","driver","delivery_company"].includes(authUser.role)) && (
+                        {(!["delivered", "return_before_delivered_initiated", "return_after_delivered_initiated", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["driver","delivery_company"].includes(authUser.role)) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
@@ -743,6 +743,31 @@ export default function Order({ user, order }) {
                                 </View>
                                 <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
                                     {translations[language].tabs.orders.order.edit}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        {/* Edit receiver phone button for driver/delivery_company/business users */}
+                        {(["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key) && ["driver","delivery_company","business"].includes(authUser.role)) && (
+                            <TouchableOpacity 
+                                style={[
+                                    styles.controlOption, 
+                                    { flexDirection: getFlexDirection(isRTL) }
+                                ]} 
+                                onPress={() => router.push({
+                                    pathname: "(edit_receiver_phones)",
+                                    params: { orderId: order.order_id, editPhoneOnly: true }
+                                })}
+                            >
+                                <View style={[
+                                    styles.controlIconContainer, 
+                                    { backgroundColor: '#4361EE' },
+                                    isRTL ? { marginRight: 0, marginLeft: 16 } : { marginRight: 16 }
+                                ]}>
+                                    <Feather name="phone" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
+                                    {translations[language].tabs.orders.order.editPhone || "Edit Receiver Phone"}
                                 </Text>
                             </TouchableOpacity>
                         )}

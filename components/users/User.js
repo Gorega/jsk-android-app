@@ -191,7 +191,7 @@ export default function User({ user }) {
                         </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity 
+                    {/* <TouchableOpacity 
                         style={[
                             styles.modalItem,
                             { flexDirection: getFlexDirection(), borderBottomWidth: 0 }
@@ -207,7 +207,7 @@ export default function User({ user }) {
                         <Text style={styles.modalItemText}>
                             {translations[language].users.user.viewDetails}
                         </Text>
-                    </TouchableOpacity>
+                    </TouchableOpacity> */}
                 </ModalPresentation>
             )}
         </>

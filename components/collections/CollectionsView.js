@@ -14,7 +14,7 @@ export default function OrdersView({data,type,loadMoreData,loadingMore,refreshCo
         return (
             <View style={styles.overlay}>
                 <View style={styles.spinnerContainer}>
-                    <ActivityIndicator size="large" color="#F8C332" />
+                    <ActivityIndicator size="large" color="#4361EE" />
                 </View>
             </View>
         );
