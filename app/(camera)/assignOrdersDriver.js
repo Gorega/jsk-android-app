@@ -12,7 +12,7 @@ import { getToken } from '../../utils/secureStore';
 import { Audio } from 'expo-av';
 
 export default function CameraScanner() {
-  const { user, setTrackChanges } = useAuth();
+  const { user } = useAuth();
   const { language } = useLanguage();
   const isRTL = ["ar", "he"].includes(language);
   const [permission, requestPermission] = useCameraPermissions();
@@ -23,13 +23,15 @@ export default function CameraScanner() {
   const [success, setSuccess] = useState(false);
   const [scannedItems, setScannedItems] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [drivers,setDrivers] = useState([]);
   const [showCreateDispatchedCollectionModal, setShowCreateDispatchedCollectionModal] = useState(false);
   const [showPickerModal, setShowPickerModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [note, setNote] = useState("");
   const [manualOrderId, setManualOrderId] = useState("");
   const [selectedValue, setSelectedValue] = useState({
-    toBranch: null
+    toBranch: null,
+    toDriver:null
   });
   const [processingBarcode, setProcessingBarcode] = useState(false);
 
@@ -94,8 +96,6 @@ export default function CameraScanner() {
         const orderId = typeof id === 'object' ? id.order_id : id;
         return { order_id: orderId };
       });
-
-      console.log(formattedOrders)
       
       const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
@@ -111,7 +111,9 @@ export default function CameraScanner() {
           orders: formattedOrders,
           driver_id: user?.userId,
           to_branch_id: selectedValue.toBranch?.branch_id ? selectedValue.toBranch?.branch_id : null,
-          note_content: note
+          to_driver_id: selectedValue.toDriver?.user_id ? selectedValue.toDriver?.user_id : null,
+          note_content: note,
+          from_driver_balance: false
         })
       });
       
@@ -137,6 +139,7 @@ export default function CameraScanner() {
   };
 
   const fetchBranches = async () => {
+    setLoading(true)
     try {
       const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`, {
@@ -150,6 +153,7 @@ export default function CameraScanner() {
       });
       const data = await res.json();
       setBranches(data.data);
+      setLoading(false)
     } catch (err) {
       console.error('Error fetching branches:', err);
       Alert.alert(
@@ -159,9 +163,40 @@ export default function CameraScanner() {
     }
   };
 
+  const fetchDrivers = async () => {
+    setLoading(true)
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?role_id=4,9&language_code=${language}`, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Cookie": token ? `token=${token}` : ""
+        }
+      });
+      const data = await res.json();
+      setDrivers(data.data);
+      setLoading(false)
+    } catch (err) {
+      console.error('Error fetching branches:', err);
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].camera.driversError
+      );
+    }
+  };
+
   const branchHandler = (fieldType) => {
     setShowPickerModal(true);
     fetchBranches();
+    setCurrentField(fieldType);
+  };
+
+  const driverHandler = (fieldType) => {
+    setShowPickerModal(true);
+    fetchDrivers();
     setCurrentField(fieldType);
   };
 
@@ -285,7 +320,6 @@ export default function CameraScanner() {
         playErrorSound();
       }
     } catch (err) {
-      console.error('Error processing scan:', err);
       setError(translations[language].camera.scanInvalidTextError);
       playErrorSound();
       setTimeout(() => setError(null), 5000);
@@ -408,6 +442,7 @@ export default function CameraScanner() {
               </TouchableOpacity>
             </View>
             
+            <ScrollView>
             <View style={styles.modalContent}>
               <View style={styles.fieldContainer}>
                 <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
@@ -443,6 +478,25 @@ export default function CameraScanner() {
                   <Feather name="chevron-down" size={18} color="#64748B" />
                 </TouchableOpacity>
               </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                  {translations[language].camera.toDriver}
+                </Text>
+                <TouchableOpacity 
+                  style={styles.pickerButton} 
+                  onPress={() => driverHandler('toDriver')}
+                >
+                  <Text style={[
+                    styles.pickerButtonText, 
+                    selectedValue.toDriver?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
+                    isRTL && styles.rtlText
+                  ]}>
+                    {selectedValue.toDriver?.name || translations[language].camera.selectDriver}
+                  </Text>
+                  <Feather name="chevron-down" size={18} color="#64748B" />
+                </TouchableOpacity>
+              </View>
               
               <View style={styles.actionButtons}>
                 <TouchableOpacity 
@@ -469,6 +523,7 @@ export default function CameraScanner() {
                 </TouchableOpacity>
               </View>
             </View>
+            </ScrollView>
           </View>
         ) : (
           <View style={styles.scannedItemsContainer}>
@@ -589,15 +644,16 @@ export default function CameraScanner() {
 
       {showPickerModal && (
         <PickerModal
-          list={branches}
+          list={currentField === "toBranch" ? branches : drivers}
           setSelectedValue={setSelectedValue}
           showPickerModal={showPickerModal}
           setShowPickerModal={setShowPickerModal}
+          loading={loading}
           field={{
             name: currentField,
-            label: currentField === 'fromBranch' 
-              ? translations[language].camera.fromBranch 
-              : translations[language].camera.toBranch,
+            label: currentField === 'toBranch' 
+              ? translations[language].camera.toBranch 
+              : translations[language].camera.toDriver,
             showSearchBar: true
           }}
         />
@@ -617,11 +673,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   frameBorder: {
-    width: 250,
-    height: 250,
+    width: 220,
+    height: 220,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    marginTop:-50
   },
   cornerTL: {
     position: 'absolute',
@@ -886,7 +943,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '50%',
+    height: '55%',
     backgroundColor: 'white',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -936,7 +993,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     fontSize: 14,
     color: '#1F2937',
-    minHeight: 100,
+    minHeight: 50,
   },
   pickerButton: {
     flexDirection: 'row',
@@ -964,6 +1021,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 'auto',
     paddingBottom: 16,
+    position:"fixed"
   },
   cancelButton: {
     paddingVertical: 12,

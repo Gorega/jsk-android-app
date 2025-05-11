@@ -1,11 +1,11 @@
-import { StyleSheet, Modal, View, Text, Pressable, TouchableOpacity, TextInput, Platform, Dimensions, KeyboardAvoidingView, SafeAreaView } from "react-native";
+import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, Dimensions, ActivityIndicator,KeyboardAvoidingView, SafeAreaView } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import FlatListData from "../FlatListData";
 import { useState, useEffect } from 'react';
 
-export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
+export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loading,loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
     const { language } = useLanguage();
     const { name } = field;
     const isRTL = ["he", "ar"].includes(language);
@@ -76,7 +76,9 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                         )}
 
                         <View style={styles.listContainer}>
-                            <FlatListData
+                            {loading ? <ActivityIndicator size="small" color="#4361EE" />
+                             :
+                             <FlatListData
                                 list={list || []}
                                 loadMoreData={loadMoreData || null}
                                 loadingMore={loadingMore || false}
@@ -133,7 +135,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                         </View>
                                     </TouchableOpacity>
                                 )}
-                            />
+                            /> }
                         </View>
 
                         <View style={styles.footer}>

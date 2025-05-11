@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, I18nManager, Linking, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, StatusBar, Platform } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -63,17 +63,15 @@ const TrackingOrder = () => {
         throw new Error(errorText || `Error ${res.status}: Order could not be loaded`);
       }
       
-      const text = await res.text();
+      const data = await res.json();
       try {
         // Try to parse the JSON response
-        const data = JSON.parse(text);
         setOrder(data);
       } catch (parseError) {
         // If JSON parsing fails, throw a more specific error
         throw new Error(`Invalid response format: ${parseError.message}`);
       }
     } catch (error) {
-      console.error('Error fetching order data:', error);
       setError(error.message || 'Could not load order data');
     } finally {
       setIsLoading(false);

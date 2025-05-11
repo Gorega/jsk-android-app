@@ -328,6 +328,7 @@ export const translations = {
           "add_currency": "Add Another Currency",
           "orderActions": "Order Actions",
           "to_branch":"To Branch",
+          "to_driver":"To Driver",
           "orderChecks": {
             "title": "Order Checks",
             "orderId": "Order ID",
@@ -754,6 +755,7 @@ export const translations = {
       cancel:"Cancel",
       totalScanned:"Total Scanned",
       enterOrderId:"Ebter order ID",
+      toDriver:"To Driver",
       add:"Add",
     },
 
@@ -1140,6 +1142,7 @@ export const translations = {
           "print": "طباعة",
           "location": "الموقع",
           "to_branch":"مرسل الى الفرع",
+          "to_driver":"مرسل الى السائق",
           "financialDetails": "التفاصيل المالية",
           "codValue": "تكلفة الطرد",
           "netValue": "المطلوب من التاجر",
@@ -1571,6 +1574,7 @@ export const translations = {
       totalScanned: "إجمالي الممسوح",
       enterOrderId:"ادخل الرقم التسلسلي للطرد",
       add:"اضافة",
+      toDriver:"الى السائق",
     },
 
     // (change_password)

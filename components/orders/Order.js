@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, TextInput, I18nManager, Animated, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, TextInput, Animated, ActivityIndicator } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -81,20 +81,7 @@ export default function Order({ user, order }) {
         outputRange: ['0deg', '180deg']
     });
 
-    // Force layout direction based on language
-    useEffect(() => {
-        // Note: In a real app, you might want to manage this at a higher level
-        // This is just to ensure the component respects RTL properly
-        if (isRTL && !I18nManager.isRTL) {
-            // Just for component-level RTL handling
-            // Don't actually force app reload here
-        }
-    }, [isRTL]);
-
     const statusOptions = authUser.role === "driver" ? [{
-        label: translations[language].tabs.orders.order.states.deliveredToDestinationBranch, value: "in_branch",
-        requiresBranch: true
-    }, {
         label: translations[language].tabs.orders.order.states.rescheduleReasons?.title, value: "reschedule",
         requiresReason: true,
         reasons: [
@@ -117,23 +104,12 @@ export default function Order({ user, order }) {
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.title, value: "return_after_delivered_initiated",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs?.orders?.states?.order?.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.states?.order?.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
+            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
+            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
             { value: 'payment_failure', label: translations[language].tabs?.orders.order?.states.return_after_delivered_initiated?.paymentFailure || "Payment Failure" },
             { value: 'address_error', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.addressError || "Address Error" },
             { value: 'no_response', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.noResponse || "No Response" },
             { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.packageIssue || "Package Issue" }
-        ]
-    }, {
-        label: translations[language].tabs?.orders?.order.states?.returned?.title, value: "returned",
-        requiresReason: true,
-        reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states.returned?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states.returned?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'payment_failure', label: translations[language].tabs?.orders?.order.states?.returned?.paymentFailure || "Payment Failure" },
-            { value: 'address_error', label: translations[language].tabs?.orders?.order?.states?.returned?.addressError || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.returned?.noResponse || "No Response" },
-            { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states?.returned?.packageIssue || "Package Issue" }
         ]
     }, {
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
@@ -522,7 +498,7 @@ export default function Order({ user, order }) {
                             </View>
 
                             {/* sent to branch section */}
-                            {(order.to_branch && ["driver","delivery_company"].includes(authUser.role)) && <View style={styles.orderTypeSection}>
+                            {((order.to_branch || order.to_driver) && ["driver","delivery_company"].includes(authUser.role)) && <View style={styles.orderTypeSection}>
                                 <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
                                     <View style={[
                                         styles.iconWrapper, 
@@ -533,10 +509,10 @@ export default function Order({ user, order }) {
                                     </View>
                                     <View style={styles.sectionContent}>
                                         <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
-                                            {translations[language].tabs.orders.order.to_branch}
+                                            {order.to_branch ? translations[language].tabs.orders.order.to_branch : translations[language].tabs.orders.order.to_driver}
                                         </Text>
                                         <Text style={[styles.orderTypeText, { textAlign: getTextAlign(isRTL) }]}>
-                                            {order.to_branch}
+                                            {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
                                 </View>
