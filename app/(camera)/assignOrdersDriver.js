@@ -46,10 +46,8 @@ export default function CameraScanner() {
         soundObject.loadAsync(require('../../assets/sound/success.mp3')).then(() => {
           soundObject.playAsync();
         }).catch(error => {
-          console.log("Error playing sound", error);
         });
       } catch (error) {
-        console.log("Error with audio", error);
       }
     } else if (pattern === 'error') {
       // Longer vibration for error
@@ -60,10 +58,8 @@ export default function CameraScanner() {
         soundObject.loadAsync(require('../../assets/sound/failure.mp3')).then(() => {
           soundObject.playAsync();
         }).catch(error => {
-          console.log("Error playing sound", error);
         });
       } catch (error) {
-        console.log("Error with audio", error);
       }
     }
   };
@@ -155,7 +151,6 @@ export default function CameraScanner() {
       setBranches(data.data);
       setLoading(false)
     } catch (err) {
-      console.error('Error fetching branches:', err);
       Alert.alert(
         translations[language].errors.error,
         translations[language].camera.branchesError
@@ -180,7 +175,6 @@ export default function CameraScanner() {
       setDrivers(data.data);
       setLoading(false)
     } catch (err) {
-      console.error('Error fetching branches:', err);
       Alert.alert(
         translations[language].errors.error,
         translations[language].camera.driversError

@@ -1,8 +1,8 @@
 import { Tabs, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import React, { useState } from 'react';
-import { Text, TouchableOpacity, View, Platform, Animated } from "react-native";
+import React, { useEffect, useState } from 'react';
+import { Text, TouchableOpacity, View, Platform, Animated, I18nManager } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -13,13 +13,14 @@ import Collections from './collections';
 import { useAuth } from "../../RootLayout";
 import FixedHeader from "../../components/FixedHeader";
 import { LinearGradient } from 'expo-linear-gradient';
+import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function TabLayout() {
   const { language } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const { user } = useAuth();
-  const isRTL = language === 'ar' || language === 'he';
   const addButtonScale = new Animated.Value(1);
+  const rtl = useRTLStyles();
 
   // Animation for the add button
   const animateAddButton = () => {
@@ -62,7 +63,7 @@ export default function TabLayout() {
   };
 
   // First, let's create a complete TabLabel component for better organization
-  const TabLabel = ({ focused, label, isRTL }) => (
+  const TabLabel = ({ focused, label }) => (
     <View style={{
       alignItems: 'center',
       justifyContent: 'center',
@@ -79,6 +80,7 @@ export default function TabLayout() {
           fontWeight: focused ? '600' : '400', // Ensure these are strings, not booleans
           textAlign: 'center',
           maxWidth: '100%',
+          ...rtl.text, // Apply RTL text styling
         }}
       >
         {label}
@@ -114,7 +116,6 @@ export default function TabLayout() {
           <TabLabel
             focused={focused}
             label={translations[language].tabs.index.title}
-            isRTL={isRTL}
           />
         ),
         tabBarIcon: ({focused}) => createTabBarIcon(Ionicons, "home-outline", focused),
@@ -127,7 +128,6 @@ export default function TabLayout() {
           <TabLabel
             focused={focused}
             label={translations[language].tabs.orders.title}
-            isRTL={isRTL}
           />
         ),
         headerShown: false,
@@ -183,7 +183,6 @@ export default function TabLayout() {
           <TabLabel
             focused={focused}
             label={translations[language].tabs.collections.title}
-            isRTL={isRTL}
           />
         ),
         headerShown: false,
@@ -204,7 +203,6 @@ export default function TabLayout() {
           <TabLabel
             focused={focused}
             label={translations[language].tabs.settings.title}
-            isRTL={isRTL}
           />
         ),
         tabBarIcon: ({focused}) => createTabBarIcon(AntDesign, "setting", focused),
@@ -212,24 +210,29 @@ export default function TabLayout() {
     },
   ];
   
+  // Use RTL-aware styles for the tab bar
+  const tabBarStyles = rtl.createStyles({
+    tabBar: {
+      backgroundColor: '#FFFFFF',
+      flexDirection: 'row', // This will be transformed to row-reverse in RTL
+      height: Platform.OS === 'ios' ? 88 : 72,
+      paddingTop: Platform.OS === 'ios' ? 10 : 8,
+      paddingBottom: Platform.OS === 'ios' ? 28 : 16,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(0,0,0,0.06)',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 3,
+      elevation: 10,
+    }
+  });
+  
   return (
-    <>
+    <RTLWrapper>
       <Tabs
         screenOptions={{
-          tabBarStyle: {
-            backgroundColor: '#FFFFFF',
-            flexDirection: isRTL ? 'row-reverse' : 'row',
-            height: Platform.OS === 'ios' ? 88 : 72,
-            paddingTop: Platform.OS === 'ios' ? 10 : 8,
-            paddingBottom: Platform.OS === 'ios' ? 28 : 16,
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(0,0,0,0.06)',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: -2 },
-            shadowOpacity: 0.07,
-            shadowRadius: 3,
-            elevation: 10,
-          },
+          tabBarStyle: tabBarStyles.tabBar,
           tabBarItemStyle: {
             paddingHorizontal: 0,
             justifyContent: 'center',
@@ -242,24 +245,17 @@ export default function TabLayout() {
           headerShown: true,
         }}
       >
-        {isRTL
-          ? tabs.slice().reverse().map((tab) => (
-              <Tabs.Screen
-                key={tab.name}
-                name={tab.name}
-                options={tab.options}
-              />
-            ))
-          : tabs.map((tab) => (
-              <Tabs.Screen
-                key={tab.name}
-                name={tab.name}
-                options={tab.options}
-              />
-            ))}
+        {/* No need to reverse the tabs manually, RTLWrapper will handle it */}
+        {tabs.map((tab) => (
+          <Tabs.Screen
+            key={tab.name}
+            name={tab.name}
+            options={tab.options}
+          />
+        ))}
       </Tabs>
       {showModal && <Collections showModal={showModal} setShowModal={setShowModal} />}
-    </>
+    </RTLWrapper>
   );
 }
 

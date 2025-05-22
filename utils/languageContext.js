@@ -1,8 +1,9 @@
 import { createContext, useContext, useState,useEffect } from 'react';
-import {ActivityIndicator} from "react-native";
+import {ActivityIndicator, I18nManager, Platform,Alert,View,Text} from "react-native";
 import { getToken, saveToken } from './secureStore';
 
 const LanguageContext = createContext();
+
 
 export const translations = {
   en: {
@@ -1628,8 +1629,7 @@ export const translations = {
       jenin: {
         title: "جنين",
         desc: "مركز التوصيل في جنين"
-      },
-      loading:"جاري التحميل..."
+      }
     },
 
     // greeting
@@ -2064,24 +2064,27 @@ export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState("ar");
   const [loading, setLoading] = useState(true);
 
-  // switch language & trigger full native restart if direction changed
+  // Simple language setter without I18nManager
   const setLanguage = async (newLanguage) => {
-    setLanguageState(newLanguage);
     await saveToken('language', newLanguage);
-  
-    const shouldBeRTL = newLanguage === 'ar' || newLanguage === 'he';
-    await saveToken('isRTL', shouldBeRTL.toString()); // Save RTL direction
-
+    setLanguageState(newLanguage);
   };
 
+  // Initialize on component mount
   useEffect(() => {
-    (async () => {
-      const saved = await getToken('language');
-      if (saved){
-        setLanguageState(saved)
+    const initialize = async () => {
+      try {
+        // Get saved language
+        const savedLanguage = await getToken('language') || 'ar';
+        setLanguageState(savedLanguage);
+      } catch (error) {
+        console.error('Error initializing language context:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    })();
+    };
+    
+    initialize();
   }, []);
 
   const getTranslation = (path, defaultValue = '') => {
@@ -2095,7 +2098,12 @@ export function LanguageProvider({ children }) {
   }
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, getTranslation }}>
+    <LanguageContext.Provider value={{ 
+      language, 
+      setLanguage, 
+      getTranslation,
+      isRTL: language === 'ar' || language === 'he'
+    }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
@@ -14,7 +14,12 @@
         "NSCameraUsageDescription": "We need access to your camera.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.taiar"
+      "bundleIdentifier": "com.taiar",
+      "userInterfaceStyle": "automatic",
+      "config": {
+        "isRTL": true
+      },
+      "supportsRTL": true
     },
     "android": {
       "package": "com.taiar",
@@ -26,8 +31,16 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
-      ]
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RESTART_PACKAGES"
+      ],
+      "userInterfaceStyle": "automatic",
+      "allowBackup": false,
+      "config": {
+        "isRTL": true
+      },
+      "supportsRTL": true,
+      "jsEngine": "hermes"
     },
     "web": {
       "bundler": "metro",

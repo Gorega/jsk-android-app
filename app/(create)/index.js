@@ -13,11 +13,6 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import ModalPresentation from "../../components/ModalPresentation";
 import { getToken } from "../../utils/secureStore";
 
-// Helper functions for RTL
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-const getMargin = (isRTL, size = 15) => isRTL ? { marginRight: 0, marginLeft: size } : { marginLeft: 0, marginRight: size };
-
 export default function HomeScreen() {
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
@@ -319,6 +314,7 @@ export default function HomeScreen() {
         {
             label: translations[language].tabs.orders.create.sections.details.fields.product,
             type: "input",
+            name: "order_items",
             value: form.orderItems || "",
             onChange: (input) => setForm((form) => ({ ...form, orderItems: input }))
         }, {

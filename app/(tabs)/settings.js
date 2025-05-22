@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform, I18nManager } from "react-native";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';

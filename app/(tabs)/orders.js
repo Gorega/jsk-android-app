@@ -33,7 +33,6 @@ export default function Orders() {
             setPage(1);
             await fetchData(1, false);
         } catch (error) {
-            console.error('Error refreshing data:', error);
         } finally {
             setRefreshing(false);
         }
@@ -199,7 +198,7 @@ export default function Orders() {
             const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            if (orderIds) queryParams.append('order_ids', orderIds)
+            if (orderIds) queryParams.append('order_id', orderIds)
             if (activeFilter) queryParams.append('status_key', activeFilter);
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
             if (activeDate) queryParams.append("date_range", activeDate.action)

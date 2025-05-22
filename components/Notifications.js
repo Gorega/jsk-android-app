@@ -180,24 +180,25 @@ export default function Notifications() {
         switch (notification.type) {
           case 'NEW_NOTIFICATION':
             // Ensure we have all required fields
-            const newNotification = {
-              notification_id: notification.notification_id,
-              message: notification.message,
-              is_read: false,
-              is_read_count: false,
-              created_at: new Date().toISOString(), // Use current time if timestamp not provided
-              user_id: notificationUserId,
-              type: notification.notificationType || 'order', // Default to 'order' if not specified
-              order_id: notification.orderId
-            };
+            // const newNotification = {
+            //   notification_id: notification.notification_id,
+            //   message: notification.message,
+            //   is_read: false,
+            //   is_read_count: false,
+            //   created_at: new Date().toISOString(), // Use current time if timestamp not provided
+            //   user_id: notificationUserId,
+            //   type: notification.notificationType || 'order', // Default to 'order' if not specified
+            //   order_id: notification.orderId
+            // };
             
-            setNotificationsData(prev => {
-              const exists = prev.some(n => n.notification_id === newNotification.notification_id);
-              if (exists) {
-                return prev;
-              }
-              return [newNotification, ...prev];
-            });
+            // setNotificationsData(prev => {
+            //   const exists = prev.some(n => n.notification_id === newNotification.notification_id);
+            //   if (exists) {
+            //     return prev;
+            //   }
+            //   return [newNotification, ...prev];
+            // });
+            fetchNotificationsData();
             break;
               
           case 'NOTIFICATION_UPDATED':
@@ -224,7 +225,7 @@ export default function Notifications() {
             break;
         }
       } catch (error) {
-        console.error("Error handling notification:", error);
+        
       }
     };
 
@@ -327,12 +328,12 @@ export default function Notifications() {
             styles.notificationHeader,
             { flexDirection: isRTL ? "row-reverse" : "row" }
           ]}>
-            <Text style={[
+            {/* <Text style={[
               styles.title,
               { textAlign: isRTL ? "right" : "left" }
             ]} numberOfLines={1}>
               {`${translations[language].notifications.order} #${notification.order_id}`}
-            </Text>
+            </Text> */}
             <Text style={styles.time}>
               {formatDate(notification.created_at)}
             </Text>
@@ -344,7 +345,6 @@ export default function Notifications() {
               { textAlign: isRTL ? "right" : "left" },
               !notification.is_read && styles.unreadText
             ]} 
-            numberOfLines={2}
           >
             {notification.translated_message}
           </Text>

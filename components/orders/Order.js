@@ -1,11 +1,11 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, TextInput, Animated, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, ActivityIndicator,TextInput } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import PickerModal from "../pickerModal/PickerModal";
@@ -47,7 +47,7 @@ export default function Order({ user, order }) {
     const [showConfirmStatusChangeUpdateModal, setShowConfirmStatusChangeUpdateModal] = useState(false);
     const [selectedValue, setSelectedValue] = useState({});
     const [UpdatedStatusNote, setUpdatedStatusNote] = useState("");
-    const [isMinimized, setIsMinimized] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(["driver", "delivery_company"].includes(authUser.role));
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
@@ -426,13 +426,47 @@ export default function Order({ user, order }) {
                                     isRTL && { alignItems: 'flex-end' }
                                 ]}>
                                     <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
-                                        {translations[language].tabs.orders.order.location || 'Location'}
+                                        {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
                                     <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
-                                        {order.receiver_city}
+                                        {order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>
+                            
+                            {/* Additional minimized info - location with area and address */}
+                            <View style={[styles.minimizedRow, { flexDirection: getFlexDirection(isRTL), marginTop: 10 }]}>
+                                <View style={[
+                                    styles.minimizedSection, 
+                                    isRTL && { alignItems: 'flex-end' }
+                                ]}>
+                                    <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                        {translations[language].tabs.orders.order.location || 'Location'}
+                                    </Text>
+                                    <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                        {order.receiver_city}, {order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : ''}
+                                    </Text>
+                                </View>
+                            </View>
+                            
+                            {/* Show to_branch or to_driver if not null */}
+                            {(order.to_branch || order.to_driver) && (
+                                <View style={[styles.minimizedRow, { flexDirection: getFlexDirection(isRTL), marginTop: 10 }]}>
+                                    <View style={[
+                                        styles.minimizedSection, 
+                                        isRTL && { alignItems: 'flex-end' }
+                                    ]}>
+                                        <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                            {order.to_branch ? 
+                                                (translations[language].tabs.orders.order.to_branch || 'To Branch') : 
+                                                (translations[language].tabs.orders.order.to_driver || 'To Driver')}
+                                        </Text>
+                                        <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                            {order.to_branch || order.to_driver}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
                         </View>
                     ) : (
                         // Full expanded view
@@ -565,45 +599,51 @@ export default function Order({ user, order }) {
                                         </View>
                                     </View>
                                     
-                                    <View style={[
-                                        styles.costCard, 
-                                        { flexDirection: getFlexDirection(isRTL) }
-                                    ]}>
+                                    {/* Only show delivery fee for non-driver/delivery_company roles */}
+                                    {!["driver", "delivery_company"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costIconContainer, 
-                                            { backgroundColor: '#F72585' },
-                                            isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                            styles.costCard, 
+                                            { flexDirection: getFlexDirection(isRTL) }
                                         ]}>
-                                            <Feather name="truck" size={16} color="#ffffff" />
+                                            <View style={[
+                                                styles.costIconContainer, 
+                                                { backgroundColor: '#F72585' },
+                                                isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                            ]}>
+                                                <Feather name="truck" size={16} color="#ffffff" />
+                                            </View>
+                                            <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
+                                                <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                                    {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
+                                                </Text>
+                                                <Text style={[styles.costText, isRTL && styles.textRTL]}>
+                                                    {order.delivery_fee} {order.currency}
+                                                </Text>
+                                            </View>
                                         </View>
-                                        <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                            <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
-                                                {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
-                                            </Text>
-                                            <Text style={[styles.costText, isRTL && styles.textRTL]}>
-                                                {order.delivery_fee} {order.currency}
-                                            </Text>
-                                        </View>
-                                    </View>
+                                    )}
                                     
-                                    <View style={[
-                                        styles.costCard, 
-                                        { flexDirection: getFlexDirection(isRTL) }
-                                    ]}>
+                                    {/* Only show net value for non-driver/delivery_company roles */}
+                                    {!["driver", "delivery_company"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costIconContainer, 
-                                            { backgroundColor: '#3A0CA3' },
-                                            isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                            styles.costCard, 
+                                            { flexDirection: getFlexDirection(isRTL) }
                                         ]}>
-                                            <FontAwesome name="money" size={16} color="#ffffff" />
+                                            <View style={[
+                                                styles.costIconContainer, 
+                                                { backgroundColor: '#3A0CA3' },
+                                                isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                            ]}>
+                                                <FontAwesome name="money" size={16} color="#ffffff" />
+                                            </View>
+                                            <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
+                                                <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                                    {translations[language].tabs.orders.order.netValue || 'Net Value'}
+                                                </Text>
+                                                {formatCurrencyValue(order.total_net_value, order.currency, isRTL)}
+                                            </View>
                                         </View>
-                                        <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                            <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
-                                                {translations[language].tabs.orders.order.netValue || 'Net Value'}
-                                            </Text>
-                                            {formatCurrencyValue(order.total_net_value, order.currency, isRTL)}
-                                        </View>
-                                    </View>
+                                    )}
                                 </View>
                             </View>
                         
@@ -699,7 +739,7 @@ export default function Order({ user, order }) {
                     </View>
                     
                     <View style={styles.controlContainer}>
-                        {(!["delivered", "return_before_delivered_initiated", "return_after_delivered_initiated", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["driver","delivery_company"].includes(authUser.role)) && (
+                        {(!["delivered", "return_before_delivered_initiated", "return_after_delivered_initiated", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["business","driver","delivery_company"].includes(authUser.role)) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
@@ -1052,7 +1092,6 @@ const styles = StyleSheet.create({
     orderIdLabel: {
         fontSize: 14,
         color: '#64748B',
-        marginRight: 4,
     },
     orderIdText: {
         fontWeight: '700',
@@ -1070,7 +1109,7 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        minWidth: 100,
+        maxWidth: 150,
     },
     statusIcon: {
         marginRight: 6,

@@ -238,6 +238,25 @@ const TrackingOrder = () => {
     );
   };
 
+  // Helper function to format currency values
+  const formatCurrencyValue = (value, currency, isRTL) => {
+    // Check if value contains multiple currencies
+    if (typeof value === 'string' && (value.includes('ILS:') || value.includes('JOD:') || value.includes('USD:'))) {
+        // Split the string by '|' and create a wrapped display
+        const currencies = value.split('|').map(item => item.trim());
+        return (
+            <View style={[styles.currencyContainer, isRTL && { alignItems: 'flex-end' }]}>
+                {currencies.map((curr, idx) => (
+                    <Text key={idx} style={[styles.currencyText, isRTL && styles.textRTL]}>{curr}</Text>
+                ))}
+            </View>
+        );
+    }
+    
+    // Regular display for simple values - Wrap in Text component
+    return <Text style={[styles.costText, isRTL && styles.textRTL]}>{value} {currency}</Text>;
+  };
+
   return (
     <>
       <StatusBar barStyle="light-content" backgroundColor="#4361EE" />
@@ -597,7 +616,8 @@ const TrackingOrder = () => {
                   <Text style={styles.financialValue}>{order.total_cod_value || '0'}</Text>
                 </View>
                 
-                <View style={[styles.financialItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                {!["driver","delivery_company"].includes(authUser.role) && <>
+                  <View style={[styles.financialItem,{ flexDirection: getFlexDirection(isRTL) }]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
@@ -616,6 +636,8 @@ const TrackingOrder = () => {
                   </Text>
                   <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
                 </View>
+                
+                </>}
               </View>
               
               {/* Checks Section */}
@@ -648,7 +670,7 @@ const TrackingOrder = () => {
                             {translations[language].tabs.orders.track.checkValue}:
                           </Text>
                           <Text style={styles.checkDetailValue}>
-                            {check.value} {check.currency}
+                            {formatCurrencyValue(check.value, check.currency, isRTL)}
                           </Text>
                         </View>
                         

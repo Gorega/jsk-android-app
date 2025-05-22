@@ -217,7 +217,7 @@ export default function Collection({ type, collection }) {
                                         : translations[language].collections.collection.moneyToCollect}
                                 </Text>
                                 <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
-                                    {type === "driver" ? collection.total_cod_value : collection.total_cod_value}
+                                    {user.role === "business" ? collection.total_net_value : collection.total_cod_value}
                                 </Text>
                             </View>
                         </View>
@@ -365,7 +365,7 @@ export default function Collection({ type, collection }) {
                         >
                             <View style={styles.modalHeader}>
                                 <Text style={[styles.modalHeaderText, { textAlign: getTextAlign(isRTL) }]}>
-                                    {translations[language]?.packageActions || 'Package Actions'}
+                                    {translations[language]?.collections?.collection?.actions}
                                 </Text>
                             </View>
                             
@@ -439,7 +439,7 @@ export default function Collection({ type, collection }) {
                         >
                             <View style={styles.modalHeader}>
                                 <Text style={[styles.modalHeaderText, { textAlign: getTextAlign(isRTL) }]}>
-                                    {translations[language]?.moneyActions || 'Money Actions'}
+                                    {translations[language]?.collections?.collection?.actions}
                                 </Text>
                             </View>
                             
@@ -700,6 +700,7 @@ const styles = StyleSheet.create({
     },
     modalOption: {
         flexDirection: 'row',
+        gap:12,
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,

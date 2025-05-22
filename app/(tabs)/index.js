@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, Alert } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -16,6 +16,7 @@ import { useAuth } from "../../RootLayout";
 import { useSocket } from "../../utils/socketContext";
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "@/utils/secureStore";
+import ModalPresentation from "../../components/ModalPresentation";
 
 export default function HomeScreen() {
   const socket = useSocket();
@@ -24,6 +25,14 @@ export default function HomeScreen() {
   const { language } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [userBalances, setUserBalances] = useState(null);
+  const [showMoneyModal, setShowMoneyModal] = useState(false);
+  const [showPackageModal, setShowPackageModal] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [drivers, setDrivers] = useState([]);
+  const [hasWaitingOrders, setHasWaitingOrders] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [showDriverModal, setShowDriverModal] = useState(false);
+  const [selectedDrivers, setSelectedDrivers] = useState([]);
   
   const isRTL = language === 'ar' || language === 'he';
   const scrollViewRef = useRef(null);
@@ -51,7 +60,8 @@ export default function HomeScreen() {
       setRefreshing(true);
       await Promise.all([
         getRequest("/api/orders/status/totals"),
-        fetchUserBalance()
+        fetchUserBalance(),
+        checkWaitingOrders()
       ]);
     } catch (error) {
     } finally {
@@ -59,14 +69,16 @@ export default function HomeScreen() {
     }
   }, [language,user]);
 
+
   function formatMoney(codValue) {
     if (!codValue || typeof codValue !== 'object') return '';
     const parts = [];
     if ('ILS' in codValue) parts.push(`₪${codValue.ILS}`);
-    if ('JOD' in codValue) parts.push(`JD${codValue.JOD}`);
-    if ('USD' in codValue) parts.push(`$${codValue.USD}`);
+    if ('JOD' in codValue && codValue.JOD !== 0) parts.push(`JD${codValue.JOD}`);
+    if ('USD' in codValue && codValue.USD !== 0) parts.push(`$${codValue.USD}`);
     return parts.join(' | ');
   }
+
 
   const columnBoxes = [{
     label: translations[language].tabs.index.boxes.todayOrders,
@@ -75,28 +87,28 @@ export default function HomeScreen() {
     numberOfOrders: data?.today_orders?.count,
     money: formatMoney(data?.today_orders?.cod_value),
     orderIds: data?.today_orders?.order_ids
-  }, {
+  }, (user.role !== "driver" && user.role !== "delivery_company") ? {
     label: user.role === "business" ? translations[language].tabs.index.boxes.readyMoney : translations[language].tabs.index.boxes.moneyInBranches,
     icon: <MaterialIcons name="attach-money" size={24} color="white" />,
     gradientColors: ['#3A0CA3', '#480CA8'],
     numberOfOrders: data?.money_in_branch_orders?.count,
     money: formatMoney(data?.money_in_branch_orders?.cod_value),
     orderIds: data?.money_in_branch_orders?.order_ids
-  }, user.role === "business" ? {
+  } : null, user.role === "business" ? {
     label: translations[language].tabs.index.boxes.readyOrders,
     icon: <Octicons name="package-dependencies" size={24} color="white" />,
     gradientColors: ['#7209B7', '#F72585'],
     numberOfOrders: data?.returned_in_branch_orders?.count,
     money: formatMoney(data?.returned_in_branch_orders?.cod_value),
     orderIds: data?.returned_in_branch_orders?.order_ids
-  } : {
+  } : ["admin","manager"].includes(user.role) ? {
     label: user.role === "driver" ? translations[language].tabs.index.boxes.moneyWithDriver : translations[language].tabs.index.boxes.moneyWithDrivers,
     icon: <Feather name="truck" size={24} color="white" />,
     gradientColors: ['#7209B7', '#F72585'],
     numberOfOrders: data?.delivered_orders?.count,
     money: formatMoney(data?.delivered_orders?.cod_value),
     orderIds: data?.delivered_orders?.order_ids
-  }];
+  } : null];
 
   const boxes = [user.role === "driver" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.inWaiting,
@@ -188,6 +200,168 @@ export default function HomeScreen() {
     fetchUserBalance();
   }, [user]);
 
+  const handleGeneralCollectRequest = async (type, action) => {
+    setIsProcessing(true);
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
+        method: "POST",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': language,
+          "Cookie": token ? `token=${token}` : ""
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          action
+        })
+      });
+      const data = await res.json();
+      Alert.alert(data.message);
+    } catch (err) {
+      Alert.alert(err.message || "Something went wrong");
+    } finally {
+      setIsProcessing(false);
+      setShowMoneyModal(false);
+      setShowPackageModal(false);
+    }
+  };
+
+  // Long press handler for money card
+  const handleMoneyLongPress = () => {
+    if (user.role === "business") {
+      setShowMoneyModal(true);
+    }
+  };
+
+  // Long press handler for package card
+  const handlePackageLongPress = () => {
+    if (user.role === "business") {
+      setShowPackageModal(true);
+    }
+  };
+
+  const checkWaitingOrders = async () => {
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/orders?status_key=waiting&sender_id=${user.userId}`,
+        {
+          credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Cookie": token ? `token=${token}` : ""
+          },
+        }
+      );
+      const response = await res.json();
+      if (response.data && response.data.length > 0) {
+        setHasWaitingOrders(true);
+      }
+    } catch (error) {
+    }
+  };
+
+  const fetchDrivers = async () => {
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/users/business/drivers?business_ids=${user.userId}`,
+        {
+          credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Cookie": token ? `token=${token}` : ""
+          },
+        }
+      );
+      const response = await res.json();
+      if (response.status === "success") {
+        const currentBusiness = response.data.find(
+          biz => biz.business_id === user.userId
+        );
+        if (currentBusiness) setDrivers(currentBusiness.drivers || []);
+      }
+    } catch (error) {
+    }
+  };
+
+  const showDriversModal = () => {
+    setShowDriverModal(true);
+  };
+
+  const handleDriverSelect = (driverId) => {
+    setSelectedDrivers(prev => {
+      if (prev.includes(driverId)) {
+        return prev.filter(id => id !== driverId);
+      } else {
+        return [...prev, driverId];
+      }
+    });
+  };
+
+  const handleSendNotification = async () => {
+    if (selectedDrivers.length === 0) {
+      Alert.alert(
+        translations[language]?.driverNotification?.selectDrivers || "Select Drivers",
+        translations[language]?.driverNotification?.selectDriversMessage || "Please select at least one driver to notify."
+      );
+      return;
+    }
+
+    setSendingNotification(true);
+    try {
+      const token = await getToken("userToken");
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/users/notify/drivers`,
+        {
+          method: 'POST',
+          credentials: "include",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Cookie": token ? `token=${token}` : ""
+          },
+          body: JSON.stringify({
+            business_id: user.userId,
+            driver_ids: selectedDrivers,
+          }),
+        }
+      );
+      const data = await res.json();
+
+      if (data.message && data.notified_drivers) {
+        Alert.alert(
+          translations[language]?.driverNotification?.success || "Success",
+          translations[language]?.driverNotification?.notificationSent || "Notification sent successfully!"
+        );
+        setShowDriverModal(false);
+        setSelectedDrivers([]);
+      } else {
+        Alert.alert(
+          translations[language]?.driverNotification?.error || "Error",
+          data.message || translations[language]?.driverNotification?.errorMessage || "Failed to send notification"
+        );
+      }
+    } catch (error) {
+      Alert.alert(
+        translations[language]?.driverNotification?.error || "Error",
+        translations[language]?.driverNotification?.errorMessage || "Failed to send notification"
+      );
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user.role === "business") {
+      checkWaitingOrders();
+      fetchDrivers();
+    }
+  }, [user]);
 
   if (isLoading && !data && !refreshing) {
     return (
@@ -219,6 +393,96 @@ export default function HomeScreen() {
         {/* Track Order */}
         <View style={styles.trackOrderContainer}>
           <TrackOrder />
+        </View>
+
+        {/* Driver Notification Button - Only show for business users with waiting orders */}
+        {user.role === "business" && hasWaitingOrders && (
+          <View style={styles.driverNotificationContainer}>
+            <TouchableOpacity
+              style={styles.driverNotificationButton}
+              onPress={showDriversModal}
+              disabled={sendingNotification}
+            >
+              <LinearGradient
+                colors={['#4361EE', '#3A0CA3']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.driverNotificationGradient}
+              >
+                <Feather name="bell" size={20} color="white" />
+                <Text style={styles.driverNotificationText}>
+                  {translations[language]?.driverNotification?.title || "Notify Drivers"}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Summary Section */}
+        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
+          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+            {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
+          </Text>
+        </View>
+        
+        <View style={styles.cardsSection}>
+          {columnBoxes?.filter(box => box !== null).map((box, index) => (
+            <TouchableOpacity 
+              key={index} 
+              style={styles.cardTouchable}
+              onPress={() => router.push({
+                pathname: "/(tabs)/orders",
+                params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
+              })}
+              onLongPress={() => {
+                // Handle long press based on which card it is
+                if (index === 1 && user.role === "business") {  // Money in branch card
+                  handleMoneyLongPress();
+                } else if (index === 2 && user.role === "business") {  // Returned in branch card
+                  handlePackageLongPress();
+                }
+              }}
+              delayLongPress={500}
+              activeOpacity={0.85}
+            >
+              <View style={[
+                styles.card, 
+                isRTL ? styles.cardRTL : styles.cardLTR
+              ]}>
+                <LinearGradient
+                  colors={box.gradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={[
+                    styles.iconContainer,
+                    isRTL && styles.iconContainerRTL
+                  ]}
+                >
+                  {box.icon}
+                </LinearGradient>
+                <View style={styles.cardContent}>
+                  <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>
+                    {box.label}
+                  </Text>
+                  <View style={[styles.statsContainer, isRTL && styles.statsContainerRTL]}>
+                    <View style={styles.statItem}>
+                      <Text style={[styles.statNumber, isRTL && styles.textRTL]}>
+                        {box.numberOfOrders || 0}
+                      </Text>
+                      <Text style={[styles.statLabel, isRTL && styles.textRTL]}>
+                        {translations[language].tabs.index.boxes.ofOrders}
+                      </Text>
+                    </View>
+                    {box.money && (
+                      <Text style={[styles.moneyText, isRTL && styles.textRTL]}>
+                        {box.money}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Balance Section */}
@@ -332,64 +596,6 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Summary Section */}
-        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
-            {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
-          </Text>
-        </View>
-        
-        <View style={styles.cardsSection}>
-          {columnBoxes?.map((box, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.cardTouchable}
-              onPress={() => router.push({
-                pathname: "/(tabs)/orders",
-                params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
-              })}
-              activeOpacity={0.85}
-            >
-              <View style={[
-                styles.card, 
-                isRTL ? styles.cardRTL : styles.cardLTR
-              ]}>
-                <LinearGradient
-                  colors={box.gradientColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[
-                    styles.iconContainer,
-                    isRTL && styles.iconContainerRTL
-                  ]}
-                >
-                  {box.icon}
-                </LinearGradient>
-                <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>
-                    {box.label}
-                  </Text>
-                  <View style={[styles.statsContainer, isRTL && styles.statsContainerRTL]}>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statNumber, isRTL && styles.textRTL]}>
-                        {box.numberOfOrders || 0}
-                      </Text>
-                      <Text style={[styles.statLabel, isRTL && styles.textRTL]}>
-                        {translations[language].tabs.index.boxes.ofOrders}
-                      </Text>
-                    </View>
-                    {box.money && (
-                      <Text style={[styles.moneyText, isRTL && styles.textRTL]}>
-                        {box.money}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Status Section */}
         <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
           <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
@@ -447,6 +653,182 @@ export default function HomeScreen() {
           })}
         </ScrollView>
       </ScrollView>
+      
+      {/* Money Request Modal */}
+      <ModalPresentation 
+        showModal={showMoneyModal} 
+        setShowModal={setShowMoneyModal}
+        position="bottom"
+      >
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+            {translations[language]?.collections?.collection?.actions}
+          </Text>
+        </View>
+        
+        <TouchableOpacity
+          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          onPress={() => handleGeneralCollectRequest("money", "prepare")}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#4361EE" size="small" />
+          ) : (
+            <>
+              <View style={[
+                styles.modalIconContainer,
+                { backgroundColor: '#4361EE' },
+                isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+              ]}>
+                <MaterialIcons name="payments" size={18} color="#ffffff" />
+              </View>
+              <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+                {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomWidth: 0 }]}
+          onPress={() => handleGeneralCollectRequest("money", "send")}
+          disabled={isProcessing}
+        >
+          <View style={[
+            styles.modalIconContainer,
+            { backgroundColor: '#F72585' },
+            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+          ]}>
+            <Feather name="send" size={18} color="#ffffff" />
+          </View>
+          <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+            {translations[language]?.collections?.collection?.send_money || 'Send Money'}
+          </Text>
+        </TouchableOpacity>
+      </ModalPresentation>
+      
+      {/* Package Request Modal */}
+      <ModalPresentation 
+        showModal={showPackageModal} 
+        setShowModal={setShowPackageModal}
+        position="bottom"
+      >
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+            {translations[language]?.collections?.collection?.actions}
+          </Text>
+        </View>
+        
+        <TouchableOpacity
+          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          onPress={() => handleGeneralCollectRequest("package", "prepare")}
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <ActivityIndicator color="#4361EE" size="small" />
+          ) : (
+            <>
+              <View style={[
+                styles.modalIconContainer,
+                { backgroundColor: '#4361EE' },
+                isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+              ]}>
+                <MaterialIcons name="inventory" size={18} color="#ffffff" />
+              </View>
+              <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+                {translations[language]?.collections?.collection?.prepare_package || 'Prepare Package'}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomWidth: 0 }]}
+          onPress={() => handleGeneralCollectRequest("package", "send")}
+          disabled={isProcessing}
+        >
+          <View style={[
+            styles.modalIconContainer,
+            { backgroundColor: '#F72585' },
+            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+          ]}>
+            <Feather name="send" size={18} color="#ffffff" />
+          </View>
+          <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+            {translations[language]?.collections?.collection?.send_package || 'Send Package'}
+          </Text>
+        </TouchableOpacity>
+      </ModalPresentation>
+
+      {/* Driver Selection Modal */}
+      <ModalPresentation 
+        showModal={showDriverModal} 
+        setShowModal={setShowDriverModal}
+        position="bottom"
+      >
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+            {translations[language]?.driverNotification?.title || "Notify Drivers"}
+          </Text>
+        </View>
+
+        <ScrollView style={styles.driversList}>
+          {drivers.map((driver) => (
+            <TouchableOpacity
+              key={driver.driver_id}
+              style={[
+                styles.driverItem,
+                { flexDirection: isRTL ? 'row-reverse' : 'row' }
+              ]}
+              onPress={() => handleDriverSelect(driver.driver_id)}
+            >
+              <View style={[
+                styles.checkboxContainer,
+                selectedDrivers.includes(driver.driver_id) && styles.checkboxSelected
+              ]}>
+                {selectedDrivers.includes(driver.driver_id) && (
+                  <Feather name="check" size={16} color="white" />
+                )}
+              </View>
+              <View style={styles.driverInfo}>
+                <Text style={[styles.driverName, isRTL && styles.textRTL]}>
+                  {driver.name}
+                </Text>
+                <Text style={[styles.driverPhone, isRTL && styles.textRTL]}>
+                  {driver.phone}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.cancelButton]}
+            onPress={() => {
+              setShowDriverModal(false);
+              setSelectedDrivers([]);
+            }}
+          >
+            <Text style={styles.cancelButtonText}>
+              {translations[language]?.driverNotification?.cancel || "Cancel"}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.sendButton]}
+            onPress={handleSendNotification}
+            disabled={sendingNotification}
+          >
+            {sendingNotification ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.sendButtonText}>
+                {translations[language]?.driverNotification?.send || "Send"}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </ModalPresentation>
     </View>
   );
 }
@@ -741,5 +1123,124 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  modalHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  modalHeaderText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#333',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  modalIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  modalOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  driverNotificationContainer: {
+    paddingHorizontal: 20,
+    marginTop: 20,
+  },
+  driverNotificationButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  driverNotificationGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  driverNotificationText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  driversList: {
+    maxHeight: 400,
+  },
+  driverItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  checkboxContainer: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#4361EE',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxSelected: {
+    backgroundColor: '#4361EE',
+  },
+  driverInfo: {
+    flex: 1,
+  },
+  driverName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  driverPhone: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.06)',
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cancelButton: {
+    marginRight: 8,
+    backgroundColor: '#F3F4F6',
+  },
+  sendButton: {
+    marginLeft: 8,
+    backgroundColor: '#4361EE',
+  },
+  cancelButtonText: {
+    color: '#64748B',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  sendButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
