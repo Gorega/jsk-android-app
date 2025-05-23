@@ -18,14 +18,9 @@ import Modal from 'react-native-modal';
 import { useSocket } from '../../utils/socketContext';
 import FixedHeader from "../../components/FixedHeader";
 
-// Helper functions for RTL support
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-
 export default function RouteDetail() {
     const socket = useSocket();
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
     const { user } = useAuth();
     const params = useLocalSearchParams();
     const { routeId } = params;
@@ -146,19 +141,19 @@ export default function RouteDetail() {
                     setRouteName(routeData.name || '');
                     setOrders(routeData.orders || []);
                     
-                    // Focus map on first order if in map view and orders exist
-                    if (routeData.orders.length > 0 && showMap) {
-                        setTimeout(() => {
-                            if (mapRef.current) {
-                                mapRef.current.animateToRegion({
-                                    latitude: routeData.orders[0].latitude || 0,
-                                    longitude: routeData.orders[0].longitude || 0,
-                                    latitudeDelta: 0.05,
-                                    longitudeDelta: 0.05,
-                                }, 1000);
-                            }
-                        }, 500);
-                    }
+                    // // Focus map on first order if in map view and orders exist
+                    // if (routeData.orders.length > 0 && showMap) {
+                    //     setTimeout(() => {
+                    //         if (mapRef.current) {
+                    //             mapRef.current.animateToRegion({
+                    //                 latitude: routeData.orders[0].latitude || 0,
+                    //                 longitude: routeData.orders[0].longitude || 0,
+                    //                 latitudeDelta: 0.05,
+                    //                 longitudeDelta: 0.05,
+                    //             }, 1000);
+                    //         }
+                    //     }, 500);
+                    // }
                 } else {
                     throw new Error(data.message || 'Failed to load route');
                 }
@@ -498,9 +493,9 @@ export default function RouteDetail() {
                 </View>
                 
                 <View style={styles.orderContent}>
-                    <View style={[styles.orderHeader, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.orderHeader]}>
                         <View style={styles.orderIdContainer}>
-                            <Text style={[styles.orderId, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.orderId]}>
                                 {item.order_id}
                             </Text>
                             {item.status && (
@@ -524,27 +519,27 @@ export default function RouteDetail() {
                         )}
                     </View>
                     
-                    <Text style={[styles.orderName, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.orderName]}>
                         {item.receiver_name} | {item.receiver_mobile}
                     </Text>
                     
-                    <View style={[styles.addressContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.addressContainer]}>
                         <Ionicons name="location-outline" size={16} color="#64748B" />
-                        <Text style={[styles.orderAddress, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.orderAddress]}>
                             {item.receiver_address}
                         </Text>
                     </View>
 
-                    {(item.delivery_info.to_branch || item.delivery_info.to_driver) && <View style={[styles.availableAddressContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+                    {(item.delivery_info.to_branch || item.delivery_info.to_driver) && <View style={[styles.availableAddressContainer]}>
                         <Ionicons name="location-outline" size={14} color="#64748B" />
-                        <Text style={[styles.availableOrderAddress, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.availableOrderAddress]}>
                             {translations[language]?.routes?.dispatchTo} {`${item.delivery_info.to_branch || item.delivery_info.to_driver || ''}`}
                         </Text>
                     </View>}
                 </View>
             </TouchableOpacity>
         );
-    }, [isCompleted, isRTL, language, removingOrder]);
+    }, [isCompleted, language, removingOrder]);
     
     // Helper functions
     const getStatusColor = (status) => {
@@ -685,7 +680,6 @@ export default function RouteDetail() {
                         <TextInput 
                             style={[
                                 styles.routeNameInput, 
-                                { textAlign: getTextAlign(isRTL) },
                                 isCompleted && styles.disabledInput
                             ]}
                             value={routeName}
@@ -696,24 +690,24 @@ export default function RouteDetail() {
                         />
                         
                         <View style={styles.routeStats}>
-                            <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                            <View style={[styles.statItem]}>
                                 <Feather name="package" size={16} color="#64748B" />
-                                <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                <Text style={[styles.statText]}>
                                     {orders.length} {translations[language]?.routes?.orders || "Orders"}
                                 </Text>
                             </View>
                             
                             {isCompleted ? (
-                                <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.statItem]}>
                                     <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                                    <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0, color: "#10B981" }]}>
+                                    <Text style={[styles.statText]}>
                                         {translations[language]?.routes?.completed || "Completed"}
                                     </Text>
                                 </View>
                             ) : route?.optimized ? (
-                                <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.statItem]}>
                                     <MaterialIcons name="route" size={16} color="#4361EE" />
-                                    <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0, color: "#4361EE" }]}>
+                                    <Text style={[styles.statText, { color: "#4361EE" }]}>
                                         {translations[language]?.routes?.optimized || "Optimized"}
                                     </Text>
                                 </View>
@@ -914,7 +908,6 @@ export default function RouteDetail() {
                     <OrderSelectionModal
                         routeId={routeId}
                         language={language}
-                        isRTL={isRTL}
                         onClose={() => setOrderSelectionVisible(false)}
                         onOrdersAdded={handleOrdersAdded}
                     />
@@ -925,7 +918,7 @@ export default function RouteDetail() {
 }
 
 // Separate component for order selection to improve performance
-function OrderSelectionModal({ routeId, language, isRTL, onClose, onOrdersAdded }) {
+function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
     const [loading, setLoading] = useState(true);
     const [availableOrders, setAvailableOrders] = useState([]);
     const [selectedOrders, setSelectedOrders] = useState([]);
@@ -1122,7 +1115,7 @@ function OrderSelectionModal({ routeId, language, isRTL, onClose, onOrdersAdded 
                 onPress={() => toggleOrderSelection(item)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.availableOrderContent, { flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.availableOrderContent]}>
                     <View style={styles.checkboxContainer}>
                         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
                             {isSelected && <Feather name="check" size={16} color="#FFFFFF" />}
@@ -1130,24 +1123,24 @@ function OrderSelectionModal({ routeId, language, isRTL, onClose, onOrdersAdded 
                     </View>
                     
                     <View style={styles.availableOrderDetails}>
-                        <Text style={[styles.availableOrderId, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.availableOrderId]}>
                             {item.order_id || item.reference_id}
                         </Text>
                         
-                        <Text style={[styles.availableOrderName, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.availableOrderName]}>
                             {item.receiver_name} | {item.receiver_mobile}
                         </Text>
                         
-                        <View style={[styles.availableAddressContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.availableAddressContainer]}>
                             <Ionicons name="location-outline" size={14} color="#64748B" />
-                            <Text style={[styles.availableOrderAddress, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.availableOrderAddress]}>
                                 {`${item.receiver_city || ''}, ${item.receiver_area || ''} ${item.receiver_address ? `, ${item.receiver_address}` : ''}`}
                             </Text>
                         </View>
 
-                        {(item.to_branch || item.to_driver) && <View style={[styles.availableAddressContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+                        {(item.to_branch || item.to_driver) && <View style={[styles.availableAddressContainer]}>
                             <Ionicons name="location-outline" size={14} color="#64748B" />
-                            <Text style={[styles.availableOrderAddress, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.availableOrderAddress]}>
                                  {translations[language]?.routes?.dispatchTo} {`${item.to_branch || item.to_driver || ''}`}
                             </Text>
                         </View>}

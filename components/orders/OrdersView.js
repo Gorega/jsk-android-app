@@ -4,10 +4,10 @@ import Order from './Order';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { RTLWrapper } from '@/utils/RTLWrapper';
 
 export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading }) {
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
 
     if (isLoading) {
         return (
@@ -19,7 +19,8 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
         );
     }
 
-    return data.length > 0 ? (
+    return <RTLWrapper>
+         {data.length > 0 ? (
         <FlatListData
             list={data || []}
             loadMoreData={loadMoreData}
@@ -36,11 +37,12 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
             <View style={styles.emptyIconContainer}>
                 <MaterialCommunityIcons name="package-variant" size={40} color="#4361EE" />
             </View>
-            <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
+            <Text style={[styles.emptyText]}>
                 {translations[language].tabs.orders.emptyArray}
             </Text>
         </View>
-    );
+    )}
+    </RTLWrapper>
 }
 
 const styles = StyleSheet.create({
@@ -68,9 +70,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#666",
         textAlign: "center",
-    },
-    textRTL: {
-        textAlign: 'right',
     },
     overlay: {
         position: 'absolute',

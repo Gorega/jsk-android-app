@@ -14,13 +14,8 @@ import { router, useLocalSearchParams, Stack } from 'expo-router';
 import { Linking } from 'react-native';
 import ModalPresentation from "../../components/ModalPresentation";
 
-// Helper functions for RTL support
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-
 export default function RouteNavigate() {
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
     const { user } = useAuth();
     const params = useLocalSearchParams();
     const { routeId } = params;
@@ -590,21 +585,21 @@ export default function RouteNavigate() {
                                 })}
                                 activeOpacity={0.8}
                             >
-                                <View style={[styles.listItemHeader, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.listItemHeader]}>
                                     <View style={[styles.orderNumberContainer, { backgroundColor: getStatusColor(orderStatus[order.id]) }]}>
                                         <Text style={styles.orderNumber}>{index + 1}</Text>
                                     </View>
                                     
                                     <View style={styles.listItemTitleContainer}>
-                                        <Text style={[styles.listItemName, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.listItemName]}>
                                             {order.receiver_name}
                                         </Text>
-                                        <Text style={[styles.listItemAddress, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.listItemAddress]}>
                                             {order.receiver_address}
                                         </Text>
         
                                         {(order.delivery_info.to_branch || order.delivery_info.to_driver) && (
-                                            <Text style={[styles.listItemAddress, { textAlign: getTextAlign(isRTL) }]}>
+                                            <Text style={[styles.listItemAddress]}>
                                                 {translations[language].routes?.dispatchTo} {order.delivery_info.to_branch || order.delivery_info.to_driver}
                                             </Text>
                                         )}
@@ -627,9 +622,9 @@ export default function RouteNavigate() {
                                 {expandedOrder === order.id && (
                                     <View style={styles.expandedContent}>
                                         <View style={styles.orderDetails}>
-                                            <View style={[styles.orderDetailItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                            <View style={[styles.orderDetailItem]}>
                                                 <Feather name="package" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                                <Text style={[styles.orderDetailLabel]}>
                                                     {translations[language].routes?.orderId || "Order ID"}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
@@ -637,9 +632,9 @@ export default function RouteNavigate() {
                                                 </Text>
                                             </View>
                                             
-                                            <View style={[styles.orderDetailItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                            <View style={[styles.orderDetailItem]}>
                                                 <Feather name="phone" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                                <Text style={[styles.orderDetailLabel]}>
                                                     {translations[language].routes?.phone || "Phone"}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
@@ -647,9 +642,9 @@ export default function RouteNavigate() {
                                                 </Text>
                                             </View>
 
-                                            <View style={[styles.orderDetailItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                            <View style={[styles.orderDetailItem]}>
                                                 <Feather name="package" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                                <Text style={[styles.orderDetailLabel]}>
                                                     {translations[language].tabs?.orders?.order?.orderType || "Order Type"}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
@@ -657,9 +652,9 @@ export default function RouteNavigate() {
                                                 </Text>
                                             </View>
 
-                                            <View style={[styles.orderDetailItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                            <View style={[styles.orderDetailItem]}>
                                                 <MaterialIcons name="payment" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                                <Text style={[styles.orderDetailLabel]}>
                                                     {translations[language].tabs?.orders?.track?.paymentType || "Payment Type"}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
@@ -667,9 +662,9 @@ export default function RouteNavigate() {
                                                 </Text>
                                             </View>
 
-                                            <View style={[styles.orderDetailItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                                            <View style={[styles.orderDetailItem]}>
                                                 <MaterialIcons name="attach-money" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                                                <Text style={[styles.orderDetailLabel]}>
                                                     {translations[language].tabs?.orders?.order?.codValue || "COD Value"}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
@@ -745,12 +740,12 @@ export default function RouteNavigate() {
             
             {viewMode === 'map' && (
                 <View style={styles.currentOrderCard}>
-                    <View style={[styles.currentOrderHeader, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.currentOrderHeader]}>
                         <View style={styles.currentOrderInfo}>
-                            <Text style={[styles.currentOrderName, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.currentOrderName]}>
                                 {currentOrder?.receiver_name}
                             </Text>
-                            <Text style={[styles.currentOrderAddress, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.currentOrderAddress]}>
                                 {currentOrder?.receiver_address}
                             </Text>
                         </View>
@@ -808,12 +803,11 @@ export default function RouteNavigate() {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.reasonOption,
-                                    { flexDirection: getFlexDirection(!isRTL) }
+                                    styles.reasonOption
                                 ]}
                                 onPress={() => handleStatusSelect(status)}
                             >
-                                <Text style={[styles.reasonText, { textAlign: getTextAlign(!isRTL) }]}>
+                                <Text style={[styles.reasonText]}>
                                     {status.label}
                                 </Text>
                             </TouchableOpacity>
@@ -838,12 +832,11 @@ export default function RouteNavigate() {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.reasonOption,
-                                    { flexDirection: getFlexDirection(!isRTL) }
+                                    styles.reasonOption
                                 ]}
                                 onPress={() => handleReasonSelect(reason)}
                             >
-                                <Text style={[styles.reasonText, { textAlign: getTextAlign(!isRTL) }]}>
+                                <Text style={[styles.reasonText]}>
                                     {reason.label}
                                 </Text>
                             </TouchableOpacity>
@@ -864,11 +857,11 @@ export default function RouteNavigate() {
                         </Text>
                     </View>
                     <View style={styles.confirmContainer}>
-                        <Text style={[styles.confirmText, { textAlign: getTextAlign(!isRTL) }]}>
+                        <Text style={[styles.confirmText]}>
                             {translations[language].routes?.confirmStatusChangeMessage || "Are you sure you want to change the status to"} {selectedStatus?.label}?
                         </Text>
                         {selectedReason && (
-                            <Text style={[styles.reasonText, { textAlign: getTextAlign(!isRTL) }]}>
+                            <Text style={[styles.reasonText]}>
                                 {translations[language].routes?.reason || "Reason"}: {selectedReason.label}
                             </Text>
                         )}

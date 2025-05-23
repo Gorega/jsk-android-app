@@ -13,16 +13,9 @@ import ModalPresentation from "../ModalPresentation";
 import { useState } from 'react';
 import { getToken } from "../../utils/secureStore";
 
-// Helper functions for RTL
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-const getMargin = (isRTL, marginSize = 12) => isRTL 
-    ? { marginLeft: marginSize, marginRight: 0 } 
-    : { marginRight: marginSize, marginLeft: 0 };
 
 export default function Collection({ type, collection }) {
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
     const { user } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -152,9 +145,9 @@ export default function Collection({ type, collection }) {
     return (
         <View style={styles.collectionCard}>
             {/* Header section with ID and status */}
-            <View style={[styles.header, { flexDirection: getFlexDirection(isRTL) }]}>
+            <View style={[styles.header]}>
                 <View style={styles.idSection}>
-                    <View style={[styles.idContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.idContainer]}>
                         <Text style={styles.idText}>#{collection.collection_id}</Text>
                     </View>
                 </View>
@@ -162,8 +155,7 @@ export default function Collection({ type, collection }) {
                 <View style={[
                     styles.statusBadge, 
                     { 
-                        backgroundColor: getStatusColor(collection.status_key),
-                        flexDirection: getFlexDirection(isRTL)
+                        backgroundColor: getStatusColor(collection.status_key)
                     }
                 ]}>
                     <Text style={styles.statusText}>{collection.status}</Text>
@@ -178,21 +170,20 @@ export default function Collection({ type, collection }) {
                 
                 {/* Order count section */}
                 <View style={styles.infoSection}>
-                    <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.sectionRow]}>
                         <View style={[
                             styles.iconWrapper, 
-                            { backgroundColor: '#4361EE' },
-                            getMargin(isRTL)
+                            { backgroundColor: '#4361EE' }
                         ]}>
                             <Feather name="package" size={20} color="#ffffff" />
                         </View>
                         <View style={styles.sectionContent}>
-                            <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.sectionTitle]}>
                                 {type === "driver" 
                                     ? translations[language].collections.collection.numberOfCollections 
                                     : translations[language].collections.collection.numberOfOrders}
                             </Text>
-                            <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.sectionValue]}>
                                 {type === "driver" ? collection.number_of_collections : collection.number_of_orders}
                             </Text>
                         </View>
@@ -202,21 +193,20 @@ export default function Collection({ type, collection }) {
                 {/* Money section */}
                 {type !== "returned" && (
                     <View style={styles.infoSection}>
-                        <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
-                                { backgroundColor: '#F72585' },
-                                getMargin(isRTL)
+                                { backgroundColor: '#F72585' }
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
                             <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {type === "driver" 
                                         ? translations[language].collections.collection.moneyToDeliver 
                                         : translations[language].collections.collection.moneyToCollect}
                                 </Text>
-                                <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionValue]}>
                                     {user.role === "business" ? collection.total_net_value : collection.total_cod_value}
                                 </Text>
                             </View>
@@ -227,19 +217,18 @@ export default function Collection({ type, collection }) {
                 {/* Checks section for driver */}
                 {type === "driver" && (
                     <View style={styles.infoSection}>
-                        <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
-                                { backgroundColor: '#3A0CA3' },
-                                getMargin(isRTL)
+                                { backgroundColor: '#3A0CA3' }
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
                             <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.checksToDeliver}
                                 </Text>
-                                <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionValue]}>
                                     {collection.checks_value}
                                 </Text>
                             </View>
@@ -250,19 +239,18 @@ export default function Collection({ type, collection }) {
                 {/* Branch section */}
                 {(type === "returned" || type === "dispatched") && (
                     <View style={styles.infoSection}>
-                        <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
-                                { backgroundColor: '#4CC9F0' },
-                                getMargin(isRTL)
+                                { backgroundColor: '#4CC9F0' }
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
                             <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.currentBranch}
                                 </Text>
-                                <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionValue]}>
                                     {collection.current_branch_name}
                                 </Text>
                             </View>
@@ -273,19 +261,18 @@ export default function Collection({ type, collection }) {
                 {/* To branch section */}
                 {type === "dispatched" && (
                     <View style={styles.infoSection}>
-                        <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
-                                { backgroundColor: '#7209B7' },
-                                getMargin(isRTL)
+                                { backgroundColor: '#7209B7' }
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
                             <View style={styles.sectionContent}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.toBranch}
                                 </Text>
-                                <Text style={[styles.sectionValue, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.sectionValue]}>
                                     {collection.to_branch_name}
                                 </Text>
                             </View>
@@ -298,7 +285,7 @@ export default function Collection({ type, collection }) {
             <View style={styles.actionsContainer}>
                 {type === "driver" ? (
                     <TouchableOpacity 
-                        style={[styles.actionButton, { flexDirection: getFlexDirection(isRTL) }]}
+                        style={[styles.actionButton]}
                         onPress={() => router.push({
                             pathname: "/(collection)?type=money",
                             params: { collectionIds: collection.collection_ids }
@@ -307,8 +294,7 @@ export default function Collection({ type, collection }) {
                     >
                         <View style={[
                             styles.actionIconContainer,
-                            { backgroundColor: '#4361EE' },
-                            getMargin(isRTL, 8)
+                            { backgroundColor: '#4361EE' }
                         ]}>
                             <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
                         </View>
@@ -318,7 +304,7 @@ export default function Collection({ type, collection }) {
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity 
-                        style={[styles.actionButton, { flexDirection: getFlexDirection(isRTL) }]}
+                        style={[styles.actionButton]}
                         onPress={() => router.push({
                             pathname: "/(tabs)/orders",
                             params: { orderIds: collection.order_ids }
@@ -327,8 +313,7 @@ export default function Collection({ type, collection }) {
                     >
                         <View style={[
                             styles.actionIconContainer,
-                            { backgroundColor: '#4361EE' },
-                            getMargin(isRTL, 8)
+                            { backgroundColor: '#4361EE' }
                         ]}>
                             <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
                         </View>
@@ -342,14 +327,13 @@ export default function Collection({ type, collection }) {
                 {(user.role === "business" && collection.status_key === "returned_in_branch") && (
                     <>
                         <TouchableOpacity 
-                            style={[styles.actionButton, { flexDirection: getFlexDirection(isRTL) }]}
+                            style={[styles.actionButton]}
                             onPress={() => setShowModal(true)}
                             activeOpacity={0.7}
                         >
                             <View style={[
                                 styles.actionIconContainer,
-                                { backgroundColor: '#F72585' },
-                                getMargin(isRTL, 8)
+                                { backgroundColor: '#F72585' }
                             ]}>
                                 <FontAwesome6 name="money-bill-trend-up" size={18} color="#ffffff" />
                             </View>
@@ -364,13 +348,13 @@ export default function Collection({ type, collection }) {
                             setShowModal={setShowModal}
                         >
                             <View style={styles.modalHeader}>
-                                <Text style={[styles.modalHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.modalHeaderText]}>
                                     {translations[language]?.collections?.collection?.actions}
                                 </Text>
                             </View>
                             
                             <TouchableOpacity
-                                style={[styles.modalOption, { flexDirection: getFlexDirection(isRTL) }]}
+                                style={[styles.modalOption]}
                                 onPress={() => handleCollectNotification("package", "prepare")}
                                 disabled={isLoading}
                             >
@@ -380,12 +364,11 @@ export default function Collection({ type, collection }) {
                                     <>
                                         <View style={[
                                             styles.modalIconContainer,
-                                            { backgroundColor: '#4361EE' },
-                                            getMargin(isRTL, 12)
+                                            { backgroundColor: '#4361EE' }
                                         ]}>
                                             <MaterialIcons name="inventory" size={18} color="#ffffff" />
                                         </View>
-                                        <Text style={[styles.modalOptionText, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.modalOptionText]}>
                                             {translations[language].collections.collection.prepare_package}
                                         </Text>
                                     </>
@@ -393,7 +376,7 @@ export default function Collection({ type, collection }) {
                             </TouchableOpacity>
                             
                             <TouchableOpacity
-                                style={[styles.modalOption, styles.noBorder, { flexDirection: getFlexDirection(isRTL) }]}
+                                style={[styles.modalOption, styles.noBorder]}
                                 onPress={() => handleCollectNotification("package", "send")}
                                 disabled={isLoading}
                             >
@@ -404,7 +387,7 @@ export default function Collection({ type, collection }) {
                                 ]}>
                                     <Feather name="send" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.modalOptionText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.modalOptionText]}>
                                     {translations[language].collections.collection.send_package}
                                 </Text>
                             </TouchableOpacity>
@@ -416,14 +399,13 @@ export default function Collection({ type, collection }) {
                 {(user.role === "business" && collection.status_key === "money_in_branch") && (
                     <>
                         <TouchableOpacity 
-                            style={[styles.actionButton, { flexDirection: getFlexDirection(isRTL) }]}
+                            style={[styles.actionButton]}
                             onPress={() => setShowModal(true)}
                             activeOpacity={0.7}
                         >
                             <View style={[
                                 styles.actionIconContainer,
-                                { backgroundColor: '#F72585' },
-                                getMargin(isRTL, 8)
+                                { backgroundColor: '#F72585' }
                             ]}>
                                 <FontAwesome6 name="money-bill-trend-up" size={18} color="#ffffff" />
                             </View>
@@ -438,13 +420,13 @@ export default function Collection({ type, collection }) {
                             setShowModal={setShowModal}
                         >
                             <View style={styles.modalHeader}>
-                                <Text style={[styles.modalHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.modalHeaderText]}>
                                     {translations[language]?.collections?.collection?.actions}
                                 </Text>
                             </View>
                             
                             <TouchableOpacity
-                                style={[styles.modalOption, { flexDirection: getFlexDirection(isRTL) }]}
+                                style={[styles.modalOption]}
                                 onPress={() => handleCollectNotification("money", "prepare")}
                                 disabled={isLoading}
                             >
@@ -454,12 +436,11 @@ export default function Collection({ type, collection }) {
                                     <>
                                         <View style={[
                                             styles.modalIconContainer,
-                                            { backgroundColor: '#4361EE' },
-                                            getMargin(isRTL, 12)
+                                            { backgroundColor: '#4361EE' }
                                         ]}>
                                             <MaterialIcons name="payments" size={18} color="#ffffff" />
                                         </View>
-                                        <Text style={[styles.modalOptionText, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.modalOptionText]}>
                                             {translations[language].collections.collection.prepare_money}
                                         </Text>
                                     </>
@@ -467,7 +448,7 @@ export default function Collection({ type, collection }) {
                             </TouchableOpacity>
                             
                             <TouchableOpacity
-                                style={[styles.modalOption, styles.noBorder, { flexDirection: getFlexDirection(isRTL) }]}
+                                style={[styles.modalOption, styles.noBorder]}
                                 onPress={() => handleCollectNotification("money", "send")}
                                 disabled={isLoading}
                             >
@@ -478,7 +459,7 @@ export default function Collection({ type, collection }) {
                                 ]}>
                                     <Feather name="send" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.modalOptionText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.modalOptionText]}>
                                     {translations[language].collections.collection.send_money}
                                 </Text>
                             </TouchableOpacity>
@@ -490,7 +471,7 @@ export default function Collection({ type, collection }) {
             {/* Confirm payment button for business */}
             {collection.status_key === "money_out" && user.role === "business" && (
                 <TouchableOpacity 
-                    style={[styles.confirmButton, { flexDirection: getFlexDirection(isRTL) }]}
+                    style={[styles.confirmButton]}
                     onPress={() => handleCollectionStatusConfirm("paid")}
                     disabled={isLoading}
                     activeOpacity={0.8}
@@ -503,7 +484,6 @@ export default function Collection({ type, collection }) {
                                 name="cloud-done" 
                                 size={20} 
                                 color="white" 
-                                style={getMargin(isRTL, 8)}
                             />
                             <Text style={styles.confirmButtonText}>
                                 {translations[language].collections.collection.confirmPaymentTitle}
@@ -516,7 +496,7 @@ export default function Collection({ type, collection }) {
             {/* Confirm returned button for business */}
             {collection.status_key === "returned_out" && user.role === "business" && (
                 <TouchableOpacity 
-                    style={[styles.confirmButton, { flexDirection: getFlexDirection(isRTL) }]}
+                    style={[styles.confirmButton]}
                     onPress={() => handleCollectionStatusConfirm("returned_delivered")}
                     disabled={isLoading}
                     activeOpacity={0.8}
@@ -529,7 +509,6 @@ export default function Collection({ type, collection }) {
                                 name="cloud-done" 
                                 size={20} 
                                 color="white" 
-                                style={getMargin(isRTL, 8)}
                             />
                             <Text style={styles.confirmButtonText}>
                                 {translations[language].collections.collection.confirmReturnedTitle}
@@ -573,11 +552,11 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flexWrap: 'wrap',
+        gap: 12
     },
     idLabel: {
         fontSize: 14,
-        color: '#64748B',
-        marginRight: 4,
+        color: '#64748B'
     },
     idText: {
         fontWeight: '700',
@@ -614,14 +593,14 @@ const styles = StyleSheet.create({
     sectionRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12
     },
     iconWrapper: {
         width: 40,
         height: 40,
         borderRadius: 20,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     sectionContent: {
         flex: 1,
@@ -651,14 +630,14 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 12,
         borderRadius: 20,
+        gap: 12
     },
     actionIconContainer: {
         width: 28,
         height: 28,
         borderRadius: 14,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 8,
+        alignItems: 'center'
     },
     actionText: {
         fontSize: 14,
@@ -711,8 +690,7 @@ const styles = StyleSheet.create({
         height: 36,
         borderRadius: 18,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     modalOptionText: {
         fontSize: 16,

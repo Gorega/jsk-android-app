@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { StyleSheet, Modal, View, Pressable, Animated, Dimensions, Platform } from "react-native";
 import { useLanguage } from '../utils/languageContext';
+import { RTLWrapper } from '../utils/RTLWrapper';
 
 export default function ModalPresentation({ 
   children, 
@@ -13,13 +14,11 @@ export default function ModalPresentation({
   position = "center"
 }) {
   const { language } = useLanguage();
-  const isRTL = language === 'ar' || language === 'he';
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
-  const { height: windowHeight } = Dimensions.get('window');
 
   useEffect(() => {
     if (showModal) {
@@ -109,6 +108,7 @@ export default function ModalPresentation({
       statusBarTranslucent
       onRequestClose={() => setShowModal(false)}
     >
+      <RTLWrapper>
       <Animated.View 
         style={[
           styles.container,
@@ -126,13 +126,13 @@ export default function ModalPresentation({
             getAnimationStyle(),
             customStyles,
             position === 'bottom' && styles.bottomModal,
-            position === 'top' && styles.topModal,
-            isRTL && { direction: 'rtl' }
+            position === 'top' && styles.topModal
           ]}
         >
           {children}
         </Animated.View>
       </Animated.View>
+      </RTLWrapper>
     </Modal>
   );
 }

@@ -17,6 +17,8 @@ import { useSocket } from "../../utils/socketContext";
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "@/utils/secureStore";
 import ModalPresentation from "../../components/ModalPresentation";
+import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+
 
 export default function HomeScreen() {
   const socket = useSocket();
@@ -34,7 +36,8 @@ export default function HomeScreen() {
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedDrivers, setSelectedDrivers] = useState([]);
   
-  const isRTL = language === 'ar' || language === 'he';
+  
+  const rtl = useRTLStyles();
   const scrollViewRef = useRef(null);
 
   const fetchUserBalance = async () => {
@@ -375,7 +378,8 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <RTLWrapper>
+      <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
       
       <ScrollView
@@ -419,8 +423,8 @@ export default function HomeScreen() {
         )}
 
         {/* Summary Section */}
-        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+        <View style={[styles.sectionHeader]}>
+          <Text style={[styles.sectionTitle]}>
             {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
           </Text>
         </View>
@@ -447,34 +451,32 @@ export default function HomeScreen() {
             >
               <View style={[
                 styles.card, 
-                isRTL ? styles.cardRTL : styles.cardLTR
               ]}>
                 <LinearGradient
                   colors={box.gradientColors}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={[
-                    styles.iconContainer,
-                    isRTL && styles.iconContainerRTL
+                    styles.iconContainer
                   ]}
                 >
                   {box.icon}
                 </LinearGradient>
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle, isRTL && styles.textRTL]}>
+                  <Text style={[styles.cardTitle]}>
                     {box.label}
                   </Text>
-                  <View style={[styles.statsContainer, isRTL && styles.statsContainerRTL]}>
+                  <View style={[styles.statsContainer]}>
                     <View style={styles.statItem}>
-                      <Text style={[styles.statNumber, isRTL && styles.textRTL]}>
+                      <Text style={[styles.statNumber]}>
                         {box.numberOfOrders || 0}
                       </Text>
-                      <Text style={[styles.statLabel, isRTL && styles.textRTL]}>
+                      <Text style={[styles.statLabel]}>
                         {translations[language].tabs.index.boxes.ofOrders}
                       </Text>
                     </View>
                     {box.money && (
-                      <Text style={[styles.moneyText, isRTL && styles.textRTL]}>
+                      <Text style={[styles.moneyText]}>
                         {box.money}
                       </Text>
                     )}
@@ -486,8 +488,8 @@ export default function HomeScreen() {
         </View>
 
         {/* Balance Section */}
-        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+        <View style={[styles.sectionHeader]}>
+          <Text style={[styles.sectionTitle]}>
             {translations[language]?.tabs.index.balanceTitle || 'Your Balance'}
           </Text>
         </View>
@@ -508,7 +510,7 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
               >
-                <View style={[styles.balanceHeader, isRTL && {flexDirection:"row-reverse"}]}>
+                <View style={[styles.balanceHeader]}>
                   <View style={styles.currencyIconContainer}>
                     <FontAwesome name="shekel" size={24} color="white" />
                   </View>
@@ -520,7 +522,7 @@ export default function HomeScreen() {
                     {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
                   </Text>
                   <View style={styles.arrowContainer}>
-                    <AntDesign name={isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
+                    <AntDesign name={rtl ? "arrowleft" : "arrowright"} size={16} color="white" />
                   </View>
                 </View>
               </LinearGradient>
@@ -542,7 +544,7 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
               >
-                <View style={[styles.balanceHeader,isRTL && {flexDirection:"row-reverse"}]}>
+                <View style={[styles.balanceHeader]}>
                   <View style={styles.currencyIconContainer}>
                     <FontAwesome name="dollar" size={24} color="white" />
                   </View>
@@ -554,7 +556,7 @@ export default function HomeScreen() {
                     {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
                   </Text>
                   <View style={styles.arrowContainer}>
-                    <AntDesign name={isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
+                    <AntDesign name={rtl.isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
                   </View>
                 </View>
               </LinearGradient>
@@ -576,7 +578,7 @@ export default function HomeScreen() {
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
               >
-                <View style={[styles.balanceHeader,isRTL && {flexDirection:"row-reverse"}]}>
+                <View style={[styles.balanceHeader]}>
                   <View style={styles.currencyIconContainer}>
                     <Text style={styles.currencyCustomText}>JD</Text>
                   </View>
@@ -588,7 +590,7 @@ export default function HomeScreen() {
                     {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
                   </Text>
                   <View style={styles.arrowContainer}>
-                    <AntDesign name={isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
+                    <AntDesign name={rtl.isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
                   </View>
                 </View>
               </LinearGradient>
@@ -597,61 +599,60 @@ export default function HomeScreen() {
         </View>
 
         {/* Status Section */}
-        <View style={[styles.sectionHeader, isRTL && styles.sectionHeaderRTL]}>
-          <Text style={[styles.sectionTitle, isRTL && styles.textRTL]}>
+        <View style={[styles.sectionHeader]}>
+          <Text style={[styles.sectionTitle]}>
             {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
           </Text>
         </View>
         
-        <ScrollView 
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={[
-            styles.horizontalScrollContent,
-            { alignItems: 'flex-start' }
-          ]}
-          contentOffset={{ x: isRTL ? 10000 : 0, y: 0 }}
-          onContentSizeChange={(width) => {
-            if (isRTL && scrollViewRef.current) {
-              scrollViewRef.current.scrollTo({ x: width, animated: false });
-            }
-          }}
-          ref={scrollViewRef}
-        >
-          {(isRTL ? [...boxes].reverse() : boxes)?.map((box, index) => {
-            if (box.visibility === "hidden") return null;
-            
-            return (
-              <TouchableOpacity 
-                key={index}
-                style={styles.statusCard}
-                onPress={() => router.push({
-                  pathname: "/(tabs)/orders",
-                  params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
-                })}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={box.gradientColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.statusIconContainer}
+        <View style={styles.statusScrollContainer}>
+          <ScrollView 
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[
+              { alignItems: 'flex-start', paddingHorizontal: 12 }
+            ]}
+            ref={scrollViewRef}
+            style={rtl.isRTL ? { transform: [{ scaleX: -1 }] } : {}}
+          >
+            {(rtl.isRTL ? [...boxes].reverse() : boxes)?.map((box, index) => {
+              if (box.visibility === "hidden") return null;
+              
+              return (
+                <TouchableOpacity 
+                  key={index}
+                  style={[
+                    styles.statusCard,
+                    rtl.isRTL ? { transform: [{ scaleX: -1 }] } : {}
+                  ]}
+                  onPress={() => router.push({
+                    pathname: "/(tabs)/orders",
+                    params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
+                  })}
+                  activeOpacity={0.85}
                 >
-                  {box.icon}
-                </LinearGradient>
-                <Text style={[styles.statusTitle, isRTL && styles.textRTL]} numberOfLines={2}>
-                  {box.label}
-                </Text>
-                <Text style={styles.statusCount}>{box.numberOfOrders || 0}</Text>
-                {box.money && (
-                  <Text style={[styles.statusMoney, isRTL && styles.textRTL]} numberOfLines={1}>
-                    {box.money}
+                  <LinearGradient
+                    colors={box.gradientColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.statusIconContainer}
+                  >
+                    {box.icon}
+                  </LinearGradient>
+                  <Text style={[styles.statusTitle]} numberOfLines={2}>
+                    {box.label}
                   </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+                  <Text style={[styles.statusCount]}>{box.numberOfOrders || 0}</Text>
+                  {box.money && (
+                    <Text style={[styles.statusMoney]} numberOfLines={1}>
+                      {box.money}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       </ScrollView>
       
       {/* Money Request Modal */}
@@ -661,13 +662,13 @@ export default function HomeScreen() {
         position="bottom"
       >
         <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+          <Text style={[styles.modalHeaderText]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
         </View>
         
         <TouchableOpacity
-          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          style={[styles.modalOption]}
           onPress={() => handleGeneralCollectRequest("money", "prepare")}
           disabled={isProcessing}
         >
@@ -677,12 +678,11 @@ export default function HomeScreen() {
             <>
               <View style={[
                 styles.modalIconContainer,
-                { backgroundColor: '#4361EE' },
-                isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                { backgroundColor: '#4361EE' }
               ]}>
                 <MaterialIcons name="payments" size={18} color="#ffffff" />
               </View>
-              <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+              <Text style={[styles.modalOptionText]}>
                 {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
               </Text>
             </>
@@ -690,18 +690,17 @@ export default function HomeScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomWidth: 0 }]}
+          style={[styles.modalOption]}
           onPress={() => handleGeneralCollectRequest("money", "send")}
           disabled={isProcessing}
         >
           <View style={[
             styles.modalIconContainer,
-            { backgroundColor: '#F72585' },
-            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+            { backgroundColor: '#F72585' }
           ]}>
             <Feather name="send" size={18} color="#ffffff" />
           </View>
-          <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+          <Text style={[styles.modalOptionText]}>
             {translations[language]?.collections?.collection?.send_money || 'Send Money'}
           </Text>
         </TouchableOpacity>
@@ -714,13 +713,13 @@ export default function HomeScreen() {
         position="bottom"
       >
         <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+          <Text style={[styles.modalHeaderText]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
         </View>
         
         <TouchableOpacity
-          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+          style={[styles.modalOption]}
           onPress={() => handleGeneralCollectRequest("package", "prepare")}
           disabled={isProcessing}
         >
@@ -730,12 +729,11 @@ export default function HomeScreen() {
             <>
               <View style={[
                 styles.modalIconContainer,
-                { backgroundColor: '#4361EE' },
-                isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                { backgroundColor: '#4361EE' }
               ]}>
                 <MaterialIcons name="inventory" size={18} color="#ffffff" />
               </View>
-              <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+              <Text style={[styles.modalOptionText]}>
                 {translations[language]?.collections?.collection?.prepare_package || 'Prepare Package'}
               </Text>
             </>
@@ -743,18 +741,17 @@ export default function HomeScreen() {
         </TouchableOpacity>
         
         <TouchableOpacity
-          style={[styles.modalOption, { flexDirection: isRTL ? 'row-reverse' : 'row', borderBottomWidth: 0 }]}
+          style={[styles.modalOption]}
           onPress={() => handleGeneralCollectRequest("package", "send")}
           disabled={isProcessing}
         >
           <View style={[
             styles.modalIconContainer,
-            { backgroundColor: '#F72585' },
-            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+            { backgroundColor: '#F72585' }
           ]}>
             <Feather name="send" size={18} color="#ffffff" />
           </View>
-          <Text style={[styles.modalOptionText, isRTL && { textAlign: 'right' }]}>
+          <Text style={[styles.modalOptionText]}>
             {translations[language]?.collections?.collection?.send_package || 'Send Package'}
           </Text>
         </TouchableOpacity>
@@ -767,7 +764,7 @@ export default function HomeScreen() {
         position="bottom"
       >
         <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText, isRTL && { textAlign: 'right' }]}>
+          <Text style={[styles.modalHeaderText]}>
             {translations[language]?.driverNotification?.title || "Notify Drivers"}
           </Text>
         </View>
@@ -777,8 +774,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={driver.driver_id}
               style={[
-                styles.driverItem,
-                { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                styles.driverItem
               ]}
               onPress={() => handleDriverSelect(driver.driver_id)}
             >
@@ -791,10 +787,10 @@ export default function HomeScreen() {
                 )}
               </View>
               <View style={styles.driverInfo}>
-                <Text style={[styles.driverName, isRTL && styles.textRTL]}>
+                <Text style={[styles.driverName]}>
                   {driver.name}
                 </Text>
-                <Text style={[styles.driverPhone, isRTL && styles.textRTL]}>
+                <Text style={[styles.driverPhone]}>
                   {driver.phone}
                 </Text>
               </View>
@@ -830,6 +826,7 @@ export default function HomeScreen() {
         </View>
       </ModalPresentation>
     </View>
+    </RTLWrapper>
   );
 }
 
@@ -837,6 +834,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
+    paddingTop: 110,
   },
   loadingContainer: {
     flex: 1,
@@ -867,12 +865,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 8,
     paddingBottom: 20,
-  },
-  headerRTL: {
-    flexDirection: 'row-reverse',
-  },
-  textRTL: {
-    textAlign: 'right',
   },
   greeting: {
     fontSize: 24,
@@ -922,9 +914,6 @@ const styles = StyleSheet.create({
     marginTop: 25,
     marginBottom: 15,
   },
-  sectionHeaderRTL: {
-    flexDirection: 'row-reverse',
-  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -940,19 +929,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
+    gap:10,
     borderRadius: 20,
-    padding: 18,
+    paddingHorizontal:10,
+    paddingVertical:12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
-  },
-  cardRTL: {
-    flexDirection: 'row-reverse',
-  },
-  cardLTR: {
-    flexDirection: 'row',
   },
   iconContainer: {
     width: 56,
@@ -960,11 +945,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 18,
-  },
-  iconContainerRTL: {
-    marginRight: 0,
-    marginLeft: 18,
   },
   cardContent: {
     flex: 1,
@@ -979,9 +959,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  statsContainerRTL: {
-    flexDirection: 'row-reverse',
   },
   statItem: {
     flexDirection: 'column',
@@ -1242,5 +1219,9 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  statusScrollContainer: {
+    marginTop: 20,
+    marginBottom: 20,
   },
 });

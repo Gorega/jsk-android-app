@@ -18,6 +18,7 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { getToken } from "../../utils/secureStore";
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function ChangePasswordScreen() {
   const { language } = useLanguage();
@@ -31,12 +32,10 @@ export default function ChangePasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const rtl = useRTLStyles();
   
   const strengthAnimation = useRef(new Animated.Value(0)).current;
-  
-  // RTL support
-  const isRTL = ["he", "ar"].includes(language);
-  
+    
   // Track keyboard visibility
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -110,10 +109,10 @@ export default function ChangePasswordScreen() {
     let isValid = true;
     const newErrors = {};
     
-    if (!currentPassword) {
-      newErrors.currentPassword = translations[language].tabs.settings.options.changePasswordFields?.currentPasswordRequired;
-      isValid = false;
-    }
+    // if (!currentPassword) {
+    //   newErrors.currentPassword = translations[language].tabs.settings.options.changePasswordFields?.currentPasswordRequired;
+    //   isValid = false;
+    // }
     
     if (!newPassword) {
       newErrors.newPassword = translations[language].tabs.settings.options.changePasswordFields?.newPasswordRequired;
@@ -203,8 +202,8 @@ export default function ChangePasswordScreen() {
       
       <View style={[styles.container]}>
         {/* Header */}
-        <View style={[styles.header,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
-          <View style={[styles.headerContent,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+        <View style={[styles.header]}>
+          <View style={[styles.headerContent]}>
             <Feather name="lock" size={22} color="#4361EE" />
             <Text style={styles.headerText}>
               {translations[language].tabs.settings.options.changePasswordFields?.changePass || "Change Password"}
@@ -221,20 +220,20 @@ export default function ChangePasswordScreen() {
           {/* Security Tips */}
           {!keyboardVisible && (
             <View style={styles.securityTipsContainer}>
-              <View style={[styles.securityTipsHeader,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+              <View style={[styles.securityTipsHeader]}>
                 <Feather name="shield" size={18} color="#4361EE" />
                 <Text style={styles.securityTipsTitle}>{translations[language].tabs.settings.options.changePasswordFields?.tips}</Text>
               </View>
               <View style={styles.securityTipsList}>
-                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+                <View style={[styles.securityTipItem]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
                   <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.usage}</Text>
                 </View>
-                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+                <View style={[styles.securityTipItem]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
                   <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.letterInclusion}</Text>
                 </View>
-                <View style={[styles.securityTipItem,{flexDirection:isRTL ? "row-reverse" : "row"}]}>
+                <View style={[styles.securityTipItem]}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
                   <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.numbersInclusion}</Text>
                 </View>
@@ -247,27 +246,22 @@ export default function ChangePasswordScreen() {
             
             {/* New Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
+              <Text style={[styles.inputLabel]}>
                 {translations[language].tabs.settings.options.changePasswordFields?.newPass || "New Password"}
               </Text>
               <View style={[
                 styles.inputContainer, 
-                errors.newPassword && styles.inputError,
-                { flexDirection: isRTL ? "row-reverse" : "row" }
+                errors.newPassword && styles.inputError
               ]}>
                 <View style={[
-                  styles.inputIconContainer, 
-                  { [isRTL ? "right" : "left"]: 12 }
+                  styles.inputIconContainer,
                 ]}>
                   <Feather name="lock" size={18} color="#94A3B8" />
                 </View>
                 <TextInput 
                   style={[
-                    styles.input, 
-                    { 
-                      textAlign: isRTL ? "right" : "left",
-                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
-                    }
+                    styles.input
+                  
                   ]} 
                   secureTextEntry={secureNewPassword} 
                   value={newPassword} 
@@ -282,8 +276,7 @@ export default function ChangePasswordScreen() {
                 />
                 <TouchableOpacity 
                   style={[
-                    styles.eyeIcon,
-                    { [isRTL ? "left" : "right"]: 12 }
+                    styles.eyeIcon
                   ]} 
                   onPress={() => setSecureNewPassword(!secureNewPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -325,27 +318,21 @@ export default function ChangePasswordScreen() {
             
             {/* Confirm Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel, { textAlign: isRTL ? "right" : "left" }]}>
+              <Text style={[styles.inputLabel]}>
                {translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
               </Text>
               <View style={[
                 styles.inputContainer, 
-                errors.confirmPassword && styles.inputError,
-                { flexDirection: isRTL ? "row-reverse" : "row" }
+                errors.confirmPassword && styles.inputError
               ]}>
                 <View style={[
-                  styles.inputIconContainer, 
-                  { [isRTL ? "right" : "left"]: 12 }
+                  styles.inputIconContainer,
                 ]}>
                   <Feather name="check-circle" size={18} color="#94A3B8" />
                 </View>
                 <TextInput 
                   style={[
-                    styles.input, 
-                    { 
-                      textAlign: isRTL ? "right" : "left",
-                      [isRTL ? "paddingRight" : "paddingLeft"]: 40
-                    }
+                    styles.input
                   ]} 
                   secureTextEntry={secureConfirmPassword} 
                   value={confirmPassword} 
@@ -360,8 +347,7 @@ export default function ChangePasswordScreen() {
                 />
                 <TouchableOpacity 
                   style={[
-                    styles.eyeIcon,
-                    { [isRTL ? "left" : "right"]: 12 }
+                    styles.eyeIcon
                   ]} 
                   onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -385,10 +371,10 @@ export default function ChangePasswordScreen() {
           <TouchableOpacity 
             style={[
               styles.submitButton,
-              (loading || !(currentPassword && newPassword && confirmPassword)) && styles.disabledButton
+              (loading || !(newPassword && confirmPassword)) && styles.disabledButton
             ]}
             onPress={handleSubmit}
-            disabled={loading || !(currentPassword && newPassword && confirmPassword)}
+            disabled={loading || !(newPassword && confirmPassword)}
           >
             {loading ? (
               <Text style={styles.submitText}>{translations[language].tabs.settings.options.changePasswordFields?.updating}</Text>
@@ -439,8 +425,7 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1F2937",
-    marginLeft: 10
+    color: "#1F2937"
   },
   scrollView: {
     flex: 1,
@@ -466,8 +451,7 @@ const styles = StyleSheet.create({
   securityTipsTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
-    marginLeft: 8,
+    color: "#1F2937"
   },
   securityTipsList: {
     paddingLeft: 6,
@@ -477,9 +461,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
     gap:7
-  },
-  tipIcon: {
-    marginRight: 8,
   },
   tipText: {
     fontSize: 14,
@@ -520,28 +501,17 @@ const styles = StyleSheet.create({
   inputError: {
     borderColor: "#EF4444",
   },
-  inputIconContainer: {
-    position: 'absolute',
-    top: 14,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   input: {
     flex: 1,
     paddingVertical: 14,
-    paddingHorizontal: 16,
     fontSize: 15,
     color: "#1F2937",
   },
+  inputIconContainer: {
+    paddingHorizontal: 16,
+  },
   eyeIcon: {
-    position: 'absolute',
-    top: 14,
-    width: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    paddingHorizontal: 16,
   },
   errorText: {
     color: "#EF4444",
@@ -564,11 +534,10 @@ const styles = StyleSheet.create({
   },
   strengthTextContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'center'
   },
   strengthText: {
-    fontSize: 13,
-    marginLeft: 6,
+    fontSize: 13
   },
   footer: {
     backgroundColor: '#FFFFFF',

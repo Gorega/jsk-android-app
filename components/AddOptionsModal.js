@@ -10,7 +10,6 @@ import Feather from '@expo/vector-icons/Feather';
 
 export default function AddOptionsModal({ visible, onClose, userRole }) {
   const { language } = useLanguage();
-  const isRTL = language === 'ar' || language === 'he';
 
   const handleOptionPress = (path) => {
     onClose();
@@ -26,7 +25,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
     >
       <BlurView intensity={80} style={styles.modalOverlay}>
         <View style={styles.modalContainer}>
-          <View style={[styles.modalHeader, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.modalHeader]}>
             <Text style={styles.modalTitle}>
               {translations[language]?.common?.selectOption || "Select Option"}
             </Text>
@@ -39,7 +38,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
             {["driver", "delivery_company"].includes(userRole) ? (
               <>
                 <TouchableOpacity
-                  style={[styles.optionButton,{ flexDirection: isRTL ? 'row-reverse' : 'row' }]}
+                  style={[styles.optionButton]}
                   onPress={() => handleOptionPress("/(camera)/assignOrdersDriver")}
                 >
                   <LinearGradient
@@ -56,8 +55,8 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.optionButton,{ flexDirection: isRTL ? 'row-reverse' : 'row' }]}
-                  onPress={() => handleOptionPress("/(routes)")}
+                  style={[styles.optionButton]}
+                  onPress={() => handleOptionPress("/(routes)/")}
                 >
                   <LinearGradient
                     colors={['#4361EE', '#3A0CA3']}
@@ -119,6 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    flexDirection: 'row',
   },
   modalTitle: {
     fontSize: 18,

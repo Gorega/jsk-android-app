@@ -6,14 +6,15 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function CameraScanner() {
   const { language } = useLanguage();
-  const isRTL = ["ar", "he"].includes(language);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const rtl = useRTLStyles();
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -171,13 +172,13 @@ export default function CameraScanner() {
           <TouchableOpacity 
             style={[
               styles.backButtonContainer,
-              isRTL ? { left: 20 } : { right: 20 }
+              rtl.isRTL ? { right: 20 } : { left: 20 }
             ]}
             onPress={() => router.back()}
           >
             <View style={styles.backButtonCircle}>
               <Feather 
-                name={isRTL ? "chevron-right" : "chevron-left"} 
+                name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
                 size={24} 
                 color="#FFFFFF" 
               />

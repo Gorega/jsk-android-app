@@ -8,11 +8,11 @@ import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
+import { RTLWrapper } from '@/utils/RTLWrapper';
 
 export default function Orders() {
     const socket = useSocket();
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
     const [data, setData] = useState([]);
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -309,7 +309,8 @@ export default function Orders() {
     }, [orderId]);
 
     return (
-        <View style={styles.container}>
+        <RTLWrapper>
+            <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
             
             <Search
@@ -349,6 +350,7 @@ export default function Orders() {
                 />
             </View>
         </View>
+        </RTLWrapper>
     );
 }
 

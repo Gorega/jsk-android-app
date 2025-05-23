@@ -7,16 +7,17 @@ import { translations } from "../../utils/languageContext";
 import useFetch from "../../utils/useFetch";
 import { MaterialIcons, AntDesign, Entypo } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function BalanceHistoryScreen() {
   const { currency,value } = useLocalSearchParams();
   const { user } = useAuth();
   const { language } = useLanguage();
-  const isRTL = language === "ar" || language === "he";
   const { data: { data }, getRequest, isLoading } = useFetch();
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const rtl = useRTLStyles();
 
   const fetchBalanceHistory = async (pageNum = 1) => {
     try {
@@ -81,7 +82,7 @@ export default function BalanceHistoryScreen() {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString(language === "en" ? "en-US" : "ar-SA", {
+    return date.toLocaleDateString( "en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -91,7 +92,7 @@ export default function BalanceHistoryScreen() {
   };
 
   const renderBalanceItem = ({ item }) => (
-    <View style={[styles.transactionCard, isRTL && styles.transactionCardRTL]}>
+    <View style={[styles.transactionCard]}>
       <LinearGradient
         colors={getGradientColors(item.operation)}
         start={{ x: 0, y: 0 }}
@@ -103,7 +104,7 @@ export default function BalanceHistoryScreen() {
       
       <View style={styles.transactionDetails}>
         <View style={styles.transactionHeader}>
-          <Text style={[styles.transactionType, isRTL && styles.textRTL]} numberOfLines={1}>
+          <Text style={[styles.transactionType]} numberOfLines={1}>
             {item.reference_type === "payment" 
               ? translations[language]?.balance?.paymentType || "Payment" 
               : item.reference_type === "transaction" 
@@ -114,7 +115,6 @@ export default function BalanceHistoryScreen() {
             style={[
               styles.transactionAmount, 
               item.operation === "add" ? styles.amountPositive : styles.amountNegative,
-              isRTL && styles.textRTL
             ]}
           >
             {item.operation === "add" ? "+" : "-"}
@@ -122,11 +122,10 @@ export default function BalanceHistoryScreen() {
           </Text>
         </View>
         
-        <Text style={[styles.transactionNotes, isRTL && styles.textRTL]} numberOfLines={2}>
+        <Text style={[styles.transactionNotes]} numberOfLines={2}>
           {item.notes}
         </Text>
-        
-        <View style={[styles.transactionFooter]}>
+        <View style={[styles.transactionFooter,rtl.isRTL && {marginRight:-50}]}>
           <Text style={styles.transactionDate}>
             {formatDate(item.created_at)}
           </Text>
@@ -229,6 +228,7 @@ export default function BalanceHistoryScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    paddingTop:25,
     flex: 1,
     backgroundColor: "#f8f9fa",
   },
@@ -289,14 +289,10 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap:10
   },
-  transactionCardRTL: {
-    flexDirection: "row-reverse",
-  },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 16,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -317,8 +313,7 @@ const styles = StyleSheet.create({
   },
   transactionAmount: {
     fontSize: 16,
-    fontWeight: "700",
-    marginLeft: 8,
+    fontWeight: "700"
   },
   amountPositive: {
     color: "#06D6A0",
@@ -335,9 +330,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
-  transactionFooterRTL: {
-    flexDirection: "row-reverse",
+    gap:10
   },
   transactionDate: {
     fontSize: 12,
@@ -346,11 +339,11 @@ const styles = StyleSheet.create({
   balanceChange: {
     flexDirection: "row",
     alignItems: "center",
+    gap:4
   },
   balanceLabel: {
     fontSize: 12,
-    color: "#64748B",
-    marginRight: 4,
+    color: "#64748B"
   },
   balanceValue: {
     fontSize: 12,
@@ -371,8 +364,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#94A3B8",
     textAlign: "center",
-  },
-  textRTL: {
-    textAlign: "right",
   },
 });

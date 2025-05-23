@@ -10,7 +10,6 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function HomeScreen() {
     const { language } = useLanguage();
-    const isRTL = language === 'ar' || language === 'he';
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy, setActiveSearchBy] = useState("");

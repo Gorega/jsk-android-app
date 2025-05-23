@@ -22,6 +22,7 @@ import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function ComplaintDetails() {
   const socket = useSocket();
@@ -34,8 +35,7 @@ export default function ComplaintDetails() {
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  
-  const isRTL = ["ar", "he"].includes(language);
+  const rtl = useRTLStyles();
 
   // Fetch complaint details along with its messages
   const fetchComplaintDetails = async () => {
@@ -54,7 +54,6 @@ export default function ComplaintDetails() {
       setComplaint(data);
       setMessages(data.messages || []);
     } catch (error) {
-      console.error("Error fetching complaint details:", error);
     } finally {
       setLoading(false);
     }
@@ -221,10 +220,10 @@ export default function ComplaintDetails() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-    >
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
+      >
       <View style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
         
@@ -248,22 +247,22 @@ export default function ComplaintDetails() {
             </View>
           </View>
           
-          <Text style={[styles.subject, { textAlign: isRTL ? "right" : "left" }]}>
+          <Text style={[styles.subject]}>
             {complaint.subject}
           </Text>
           
           <View style={styles.descriptionContainer}>
-            <Text style={[styles.descriptionLabel, { textAlign: isRTL ? "right" : "left" }]}>
+            <Text style={[styles.descriptionLabel]}>
               {translations[language]?.complaints?.issue || 'Issue'}
             </Text>
-            <Text style={[styles.description, { textAlign: isRTL ? "right" : "left" }]}>
+            <Text style={[styles.description]}>
               {complaint.description}
             </Text>
           </View>
           
           <View style={styles.detailsContainer}>
-            <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-              <View style={[styles.detailIconContainer, { marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }]}>
+            <View style={[styles.detailRow]}>
+              <View style={[styles.detailIconContainer]}>
                 <Feather name="package" size={16} color="#4361EE" />
               </View>
               <Text style={styles.detailLabel}>
@@ -272,8 +271,8 @@ export default function ComplaintDetails() {
               <Text style={styles.detailValue}>#{complaint.order_id}</Text>
             </View>
             
-            <View style={[styles.detailRow, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-              <View style={[styles.detailIconContainer, { marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }]}>
+            <View style={[styles.detailRow]}>
+              <View style={[styles.detailIconContainer]}>
                 <Feather name="calendar" size={16} color="#4361EE" />
               </View>
               <Text style={styles.detailLabel}>
@@ -286,8 +285,8 @@ export default function ComplaintDetails() {
 
         {/* Messages Section */}
         <View style={styles.messagesContainer}>
-          <View style={[styles.sectionHeader, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-            <Feather name="message-circle" size={18} color="#4361EE" style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }} />
+          <View style={[styles.sectionHeader]}>
+            <Feather name="message-circle" size={18} color="#4361EE" />
             <Text style={styles.sectionTitle}>
               {translations[language]?.complaints?.conversation || 'Conversation'}
             </Text>
@@ -313,8 +312,8 @@ export default function ComplaintDetails() {
                   <View style={[
                     styles.messageContainer,
                     isUserMessage ? styles.userMessage : styles.agentMessage,
-                    isRTL && isUserMessage ? { alignSelf: 'flex-start' } : null,
-                    isRTL && !isUserMessage ? { alignSelf: 'flex-end' } : null
+                    isUserMessage ? { alignSelf: 'flex-start' } : null,
+                    !isUserMessage ? { alignSelf: 'flex-end' } : null
                   ]}>
                     <View style={[
                       styles.messageBubble,
@@ -327,7 +326,7 @@ export default function ComplaintDetails() {
                     </View>
                     <Text style={[
                       styles.messageTime,
-                      { textAlign: isRTL ? (isUserMessage ? 'left' : 'right') : (isUserMessage ? 'right' : 'left') }
+                      { textAlign: rtl.isRTL ? (isUserMessage ? 'left' : 'right') : (isUserMessage ? 'right' : 'left') }
                     ]}>
                       {formatDate(item.created_at)}
                     </Text>
@@ -344,9 +343,9 @@ export default function ComplaintDetails() {
         </View>
 
         {/* Send New Message */}
-        <View style={[styles.inputContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+        <View style={[styles.inputContainer]}>
           <TextInput
-            style={[styles.input, { textAlign: isRTL ? "right" : "left" }]}
+            style={[styles.input]}
             placeholder={translations[language]?.complaints?.messagePlaceholder || 'Type a message...'}
             placeholderTextColor="#94A3B8"
             value={newMessage}
@@ -362,7 +361,7 @@ export default function ComplaintDetails() {
             {sending ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Feather name={isRTL ? "arrow-left" : "arrow-right"} size={20} color="white" />
+              <Feather name={rtl.isRTL ? "arrow-left" : "arrow-right"} size={20} color="white" />
             )}
           </TouchableOpacity>
         </View>
@@ -449,6 +448,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    gap:10
   },
   statusBadge: {
     flexDirection: "row",
@@ -456,12 +456,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
+    gap: 10,
   },
   statusText: {
     color: "white",
     fontWeight: "600",
-    fontSize: 12,
-    marginLeft: 4,
+    fontSize: 12
   },
   complaintId: {
     backgroundColor: "#F1F5F9",
@@ -506,6 +506,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
+    gap: 10,
   },
   detailIconContainer: {
     width: 30,
@@ -513,13 +514,11 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: "#EFF6FF",
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
+    alignItems: "center"
   },
   detailLabel: {
     fontSize: 14,
     color: "#6B7280",
-    marginRight: 6,
   },
   detailValue: {
     fontSize: 14,
@@ -619,6 +618,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
+    gap: 10,
+    // Add bottom padding for extra space
+    paddingBottom: Platform.OS === 'ios' ? 25 : 12
   },
   input: {
     flex: 1,

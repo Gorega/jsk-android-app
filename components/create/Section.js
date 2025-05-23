@@ -2,12 +2,11 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from "react";
 import Field from "./Field";
-import { useLanguage } from '../../utils/languageContext';
+import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function Section({section, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, fieldErrors, setFieldErrors, isRTL}) {
     const [showFields, setShowFields] = useState(true);
-    const { language } = useLanguage();
-    const rtl = isRTL || language === 'ar' || language === 'he';
+    const rtl = useRTLStyles();
 
     return (
         <View style={[
@@ -16,22 +15,18 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
         ]}>
             <Pressable onPress={() => setShowFields(!showFields)}>
                 <View style={[
-                    styles.label,
-                    {flexDirection: rtl ? "row-reverse" : "row"}
+                    styles.label
                 ]}>
                     <View style={[
-                        styles.labelContent,
-                        {flexDirection: rtl ? "row-reverse" : "row"}
+                        styles.labelContent
                     ]}>
                         <View style={[
-                            styles.iconContainer,
-                            rtl ? {marginLeft: 12} : {marginRight: 12}
+                            styles.iconContainer
                         ]}>
                             {section.icon}
                         </View>
                         <Text style={[
-                            styles.labelText,
-                            {textAlign: rtl ? "right" : "left"}
+                            styles.labelText
                         ]}>
                             {section.label}
                         </Text>
@@ -40,9 +35,9 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                         style={[
                             styles.arrowIcon, 
                             showFields && styles.activeSection,
-                            rtl && {transform: [{rotate: showFields ? '270deg' : '180deg'}]}
+                            rtl.isRTL && {transform: [{rotate: showFields ? '270deg' : '180deg'}]}
                         ]} 
-                        name={rtl ? "arrow-left" : "arrow-right"} 
+                        name={rtl.isRTL ? "arrow-left" : "arrow-right"} 
                         size={24} 
                         color="#4361EE" 
                     />
@@ -98,6 +93,7 @@ const styles = StyleSheet.create({
     labelContent: {
         flexDirection: "row",
         alignItems: "center",
+        gap:12
     },
     labelText: {
         fontSize: 16,
@@ -110,8 +106,7 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         backgroundColor: 'rgba(67, 97, 238, 0.1)',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     arrowIcon: {
         transition: '0.3s',

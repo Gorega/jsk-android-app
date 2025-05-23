@@ -14,33 +14,29 @@ import UserBox from "./userBox/UserBox";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { getToken } from "../../utils/secureStore";
-
-// Helper function for RTL text direction
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
+import { RTLWrapper } from '@/utils/RTLWrapper';
 
 // Helper function to format currency values
-const formatCurrencyValue = (value, currency, isRTL) => {
+const formatCurrencyValue = (value, currency) => {
     // Check if value contains multiple currencies
     if (typeof value === 'string' && (value.includes('ILS:') || value.includes('JOD:') || value.includes('USD:'))) {
         // Split the string by '|' and create a wrapped display
         const currencies = value.split('|').map(item => item.trim());
         return (
-            <View style={[styles.currencyContainer, isRTL && { alignItems: 'flex-end' }]}>
+            <View style={[styles.currencyContainer]}>
                 {currencies.map((curr, idx) => (
-                    <Text key={idx} style={[styles.currencyText, isRTL && styles.textRTL]}>{curr}</Text>
+                    <Text key={idx} style={[styles.currencyText]}>{curr}</Text>
                 ))}
             </View>
         );
     }
     
     // Regular display for simple values
-    return <Text style={[styles.costText, isRTL && styles.textRTL]}>{value} {currency}</Text>;
+    return <Text style={[styles.costText]}>{value} {currency}</Text>;
 };
 
 export default function Order({ user, order }) {
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
     const { user: authUser } = useAuth();
     const [showControl, setShowControl] = useState(false);
     const [showStatusUpdateModal, setShowStatusUpdateModal] = useState(false);
@@ -336,7 +332,7 @@ export default function Order({ user, order }) {
     };
 
     return (
-        <>
+        <RTLWrapper>
             <Pressable 
                 onPress={() => router.push({
                     pathname: "(track)",
@@ -350,7 +346,7 @@ export default function Order({ user, order }) {
             >
                 <View style={styles.orderCard}>
                     {/* Header section with order ID and status */}
-                    <View style={[styles.header, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.header]}>
                         {/* Minimize/Expand toggle button */}
                         <TouchableOpacity 
                                 onPress={toggleMinimize}
@@ -367,26 +363,25 @@ export default function Order({ user, order }) {
                                     />
                                 </Animated.View>
                             </TouchableOpacity>
-                        <View style={[styles.orderIdSection, isRTL && { alignItems: 'flex-end' }]}>
-                            <View style={[styles.orderIdContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.orderIdSection]}>
+                            <View style={[styles.orderIdContainer]}>
                                 <Text style={styles.orderIdText}>#{order.order_id}</Text>
                             </View>
                             {order.reference_id && !isMinimized && (
-                                <Text style={[styles.referenceId, isRTL && styles.textRTL]}>
+                                <Text style={[styles.referenceId]}>
                                     Ref: {order.reference_id}
                                 </Text>
                             )}
                         </View>
                         
-                        <View style={{ flexDirection: getFlexDirection(isRTL), alignItems: 'center' }}>
+                        <View style={{alignItems: 'center' }}>
                             
                             <TouchableOpacity 
                                 onPress={() => authUser.role !== "business" && setShowStatusUpdateModal(true)} 
                                 style={[
                                     styles.statusBadge, 
                                     { 
-                                        backgroundColor: getStatusColor(order.status_key),
-                                        flexDirection: getFlexDirection(isRTL)
+                                        backgroundColor: getStatusColor(order.status_key)
                                     }
                                 ]}
                                 activeOpacity={authUser.role !== "business" ? 0.7 : 1}
@@ -396,7 +391,7 @@ export default function Order({ user, order }) {
                                         name="published-with-changes" 
                                         size={18} 
                                         color="white" 
-                                        style={isRTL ? styles.statusIconRTL : styles.statusIcon} 
+                                        style={styles.statusIcon} 
                                     />
                                 )}
                                 <Text style={styles.statusText}>{order.status}</Text>
@@ -407,43 +402,40 @@ export default function Order({ user, order }) {
                     {/* Compact View for minimized state - only shows essential details */}
                     {isMinimized ? (
                         <View style={styles.minimizedContainer}>
-                            <View style={[styles.minimizedRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                            <View style={[styles.minimizedRow]}>
                                 <View style={[
-                                    styles.minimizedSection, 
-                                    isRTL && { alignItems: 'flex-end' }
+                                    styles.minimizedSection 
                                 ]}>
-                                    <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.userClientBoxLabel || 'Client'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedValue]}>
                                         {order.receiver_name}
                                     </Text>
                                 </View>
                                 
                                 <View style={[
                                     styles.minimizedSection, 
-                                    styles.locationMinimized, 
-                                    isRTL && { alignItems: 'flex-end' }
+                                    styles.locationMinimized
                                 ]}>
-                                    <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedValue]}>
                                         {order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>
                             
                             {/* Additional minimized info - location with area and address */}
-                            <View style={[styles.minimizedRow, { flexDirection: getFlexDirection(isRTL), marginTop: 10 }]}>
+                            <View style={[styles.minimizedRow]}>
                                 <View style={[
-                                    styles.minimizedSection, 
-                                    isRTL && { alignItems: 'flex-end' }
+                                    styles.minimizedSection
                                 ]}>
-                                    <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.location || 'Location'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                    <Text style={[styles.minimizedValue]}>
                                         {order.receiver_city}, {order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : ''}
                                     </Text>
                                 </View>
@@ -451,17 +443,16 @@ export default function Order({ user, order }) {
                             
                             {/* Show to_branch or to_driver if not null */}
                             {(order.to_branch || order.to_driver) && (
-                                <View style={[styles.minimizedRow, { flexDirection: getFlexDirection(isRTL), marginTop: 10 }]}>
+                                <View style={[styles.minimizedRow, { marginTop: 10 }]}>
                                     <View style={[
-                                        styles.minimizedSection, 
-                                        isRTL && { alignItems: 'flex-end' }
+                                        styles.minimizedSection
                                     ]}>
-                                        <Text style={[styles.minimizedLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.minimizedLabel]}>
                                             {order.to_branch ? 
                                                 (translations[language].tabs.orders.order.to_branch || 'To Branch') : 
                                                 (translations[language].tabs.orders.order.to_driver || 'To Driver')}
                                         </Text>
-                                        <Text style={[styles.minimizedValue, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.minimizedValue]}>
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
@@ -509,22 +500,21 @@ export default function Order({ user, order }) {
                             
                             {/* Location section */}
                             <View style={styles.locationSection}>
-                                <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.sectionRow]}>
                                     <View style={[
                                         styles.iconWrapper, 
-                                        { backgroundColor: '#4CC9F0' },
-                                        isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                        { backgroundColor: '#4CC9F0' }
                                     ]}>
                                         <Ionicons name="location-outline" size={20} color="#ffffff" />
                                     </View>
                                     <View style={styles.sectionContent}>
-                                        <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.sectionTitle]}>
                                             {translations[language].tabs.orders.order.location || 'Delivery Location'}
                                         </Text>
-                                        <Text style={[styles.locationCity, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.locationCity]}>
                                             {order.receiver_city}
                                         </Text>
-                                        <Text style={[styles.locationAddress, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.locationAddress]}>
                                             {order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : ''}
                                         </Text>
                                     </View>
@@ -533,19 +523,18 @@ export default function Order({ user, order }) {
 
                             {/* sent to branch section */}
                             {((order.to_branch || order.to_driver) && ["driver","delivery_company"].includes(authUser.role)) && <View style={styles.orderTypeSection}>
-                                <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.sectionRow]}>
                                     <View style={[
                                         styles.iconWrapper, 
-                                        { backgroundColor: '#7209B7' },
-                                        isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                        { backgroundColor: '#7209B7' }
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
                                     <View style={styles.sectionContent}>
-                                        <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.sectionTitle]}>
                                             {order.to_branch ? translations[language].tabs.orders.order.to_branch : translations[language].tabs.orders.order.to_driver}
                                         </Text>
-                                        <Text style={[styles.orderTypeText, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.orderTypeText]}>
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
@@ -554,19 +543,18 @@ export default function Order({ user, order }) {
                             
                             {/* Order type section */}
                             <View style={styles.orderTypeSection}>
-                                <View style={[styles.sectionRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                                <View style={[styles.sectionRow]}>
                                     <View style={[
                                         styles.iconWrapper, 
-                                        { backgroundColor: '#7209B7' },
-                                        isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                        { backgroundColor: '#7209B7' }
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
                                     <View style={styles.sectionContent}>
-                                        <Text style={[styles.sectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.sectionTitle]}>
                                             {translations[language].tabs.orders.order.orderType}
                                         </Text>
-                                        <Text style={[styles.orderTypeText, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.orderTypeText]}>
                                             {order.order_type}
                                         </Text>
                                     </View>
@@ -575,48 +563,44 @@ export default function Order({ user, order }) {
                             
                             {/* Cost information section */}
                             <View style={styles.costSectionWrapper}>
-                                <Text style={[styles.costSectionTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.costSectionTitle]}>
                                     {translations[language].tabs.orders.order.financialDetails || 'Financial Details'}
                                 </Text>
                                 
                                 <View style={styles.costSection}>
                                     <View style={[
-                                        styles.costCard, 
-                                        { flexDirection: getFlexDirection(isRTL) }
+                                        styles.costCard
                                     ]}>
                                         <View style={[
                                             styles.costIconContainer, 
-                                            { backgroundColor: '#4361EE' },
-                                            isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                            { backgroundColor: '#4361EE' }
                                         ]}>
                                             <Feather name="package" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                            <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                        <View style={[styles.costLabelContainer]}>
+                                            <Text style={[styles.costLabel]}>
                                                 {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                             </Text>
-                                            {formatCurrencyValue(order.total_cod_value, order.currency, isRTL)}
+                                            {formatCurrencyValue(order.total_cod_value, order.currency)}
                                         </View>
                                     </View>
                                     
                                     {/* Only show delivery fee for non-driver/delivery_company roles */}
                                     {!["driver", "delivery_company"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costCard, 
-                                            { flexDirection: getFlexDirection(isRTL) }
+                                            styles.costCard
                                         ]}>
                                             <View style={[
                                                 styles.costIconContainer, 
-                                                { backgroundColor: '#F72585' },
-                                                isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                                { backgroundColor: '#F72585' }
                                             ]}>
                                                 <Feather name="truck" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                                <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                            <View style={[styles.costLabelContainer]}>
+                                                <Text style={[styles.costLabel]}>
                                                     {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
                                                 </Text>
-                                                <Text style={[styles.costText, isRTL && styles.textRTL]}>
+                                                <Text style={[styles.costText]}>
                                                     {order.delivery_fee} {order.currency}
                                                 </Text>
                                             </View>
@@ -626,21 +610,19 @@ export default function Order({ user, order }) {
                                     {/* Only show net value for non-driver/delivery_company roles */}
                                     {!["driver", "delivery_company"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costCard, 
-                                            { flexDirection: getFlexDirection(isRTL) }
+                                            styles.costCard
                                         ]}>
                                             <View style={[
                                                 styles.costIconContainer, 
-                                                { backgroundColor: '#3A0CA3' },
-                                                isRTL ? { marginRight: 0, marginLeft: 10 } : { marginRight: 10 }
+                                                { backgroundColor: '#3A0CA3' }
                                             ]}>
                                                 <FontAwesome name="money" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                                <Text style={[styles.costLabel, { textAlign: getTextAlign(isRTL) }]}>
+                                            <View style={[styles.costLabelContainer]}>
+                                                <Text style={[styles.costLabel]}>
                                                     {translations[language].tabs.orders.order.netValue || 'Net Value'}
                                                 </Text>
-                                                {formatCurrencyValue(order.total_net_value, order.currency, isRTL)}
+                                                {formatCurrencyValue(order.total_net_value, order.currency)}
                                             </View>
                                         </View>
                                     )}
@@ -660,25 +642,23 @@ export default function Order({ user, order }) {
                                     ]}
                                 >
                                     <View style={[
-                                        styles.checksAlert, 
-                                        { flexDirection: getFlexDirection(isRTL) }
+                                        styles.checksAlert
                                     ]}>
                                         <View style={[
-                                            styles.checksIconContainer,
-                                            isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                            styles.checksIconContainer
                                         ]}>
                                             <FontAwesome name="money" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.checksTextContainer, isRTL && { alignItems: 'flex-end' }]}>
-                                            <Text style={[styles.checksTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                        <View style={[styles.checksTextContainer]}>
+                                            <Text style={[styles.checksTitle]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
-                                            <Text style={[styles.checksText, { textAlign: getTextAlign(isRTL) }]}>
+                                            <Text style={[styles.checksText]}>
                                                 {translations[language].tabs.orders.order.checksValue}: {order.checks_value} {order.currency}
                                             </Text>
                                         </View>
                                         <MaterialIcons 
-                                            name={isRTL ? "chevron-left" : "chevron-right"} 
+                                            name={"chevron-right"} 
                                             size={24} 
                                             color="#E11D48" 
                                         />
@@ -689,20 +669,18 @@ export default function Order({ user, order }) {
                             {/* Notes section if applicable */}
                             {order.note && (
                                 <View style={[
-                                    styles.noteContainer, 
-                                    { flexDirection: getFlexDirection(isRTL) }
+                                    styles.noteContainer
                                 ]}>
                                     <View style={[
-                                        styles.noteIconContainer,
-                                        isRTL ? { marginRight: 0, marginLeft: 12 } : { marginRight: 12 }
+                                        styles.noteIconContainer
                                     ]}>
                                         <FontAwesome name="sticky-note-o" size={16} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.noteContent, isRTL && { alignItems: 'flex-end' }]}>
-                                        <Text style={[styles.noteTitle, { textAlign: getTextAlign(isRTL) }]}>
+                                    <View style={[styles.noteContent]}>
+                                        <Text style={[styles.noteTitle]}>
                                             {translations[language].tabs.orders.order.note || 'Notes'}
                                         </Text>
-                                        <Text style={[styles.noteText, { textAlign: getTextAlign(isRTL) }]}>
+                                        <Text style={[styles.noteText]}>
                                             {order.note}
                                         </Text>
                                     </View>
@@ -712,11 +690,10 @@ export default function Order({ user, order }) {
                             {/* Order date/time info if available */}
                             {order.created_at && (
                                 <View style={[
-                                    styles.dateTimeContainer,
-                                    isRTL ? { alignItems: 'flex-start' } : { alignItems: 'flex-end' }
+                                    styles.dateTimeContainer
                                 ]}>
-                                    <Text style={[styles.dateTimeText, { textAlign: getTextAlign(isRTL) }]}>
-                                        {new Date(order.created_at).toLocaleString(isRTL ? (language === 'he' ? 'he-IL' : 'ar-SA') : 'en-US')}
+                                    <Text style={[styles.dateTimeText]}>
+                                        {new Date(order.created_at).toLocaleString('en-US')}
                                     </Text>
                                 </View>
                             )}
@@ -742,8 +719,7 @@ export default function Order({ user, order }) {
                         {(!["delivered", "return_before_delivered_initiated", "return_after_delivered_initiated", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["business","driver","delivery_company"].includes(authUser.role)) && (
                             <TouchableOpacity 
                                 style={[
-                                    styles.controlOption, 
-                                    { flexDirection: getFlexDirection(isRTL) }
+                                    styles.controlOption
                                 ]} 
                                 onPress={() => router.push({
                                     pathname: "(create)",
@@ -752,12 +728,11 @@ export default function Order({ user, order }) {
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
-                                    { backgroundColor: '#4361EE' },
-                                    isRTL ? { marginRight: 0, marginLeft: 16 } : { marginRight: 16 }
+                                    { backgroundColor: '#4361EE' }
                                 ]}>
                                     <Feather name="edit" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.controlText]}>
                                     {translations[language].tabs.orders.order.edit}
                                 </Text>
                             </TouchableOpacity>
@@ -767,8 +742,7 @@ export default function Order({ user, order }) {
                         {(["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key) && ["driver","delivery_company","business"].includes(authUser.role)) && (
                             <TouchableOpacity 
                                 style={[
-                                    styles.controlOption, 
-                                    { flexDirection: getFlexDirection(isRTL) }
+                                    styles.controlOption 
                                 ]} 
                                 onPress={() => router.push({
                                     pathname: "(edit_receiver_phones)",
@@ -777,12 +751,11 @@ export default function Order({ user, order }) {
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
-                                    { backgroundColor: '#4361EE' },
-                                    isRTL ? { marginRight: 0, marginLeft: 16 } : { marginRight: 16 }
+                                    { backgroundColor: '#4361EE' }
                                 ]}>
                                     <Feather name="phone" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.controlText]}>
                                     {translations[language].tabs.orders.order.editPhone || "Edit Receiver Phone"}
                                 </Text>
                             </TouchableOpacity>
@@ -792,19 +765,17 @@ export default function Order({ user, order }) {
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
-                                    { flexDirection: getFlexDirection(isRTL) },
                                     styles.noBorder
                                 ]} 
                                 onPress={() => setShowStatusUpdateModal(true)}
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
-                                    { backgroundColor: '#7209B7' },
-                                    isRTL ? { marginRight: 0, marginLeft: 16 } : { marginRight: 16 }
+                                    { backgroundColor: '#7209B7' }
                                 ]}>
                                     <MaterialIcons name="published-with-changes" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.controlText]}>
                                     {translations[language].tabs.orders.order.changeStatus}
                                 </Text>
                             </TouchableOpacity>
@@ -813,7 +784,6 @@ export default function Order({ user, order }) {
                         <TouchableOpacity 
                             style={[
                                 styles.controlOption, 
-                                { flexDirection: getFlexDirection(isRTL) },
                                 styles.noBorder
                             ]} 
                             onPress={() => router.push({
@@ -823,12 +793,11 @@ export default function Order({ user, order }) {
                         >
                             <View style={[
                                 styles.controlIconContainer, 
-                                { backgroundColor: '#10B981' },
-                                isRTL ? { marginRight: 0, marginLeft: 16 } : { marginRight: 16 }
+                                { backgroundColor: '#10B981' }
                             ]}>
                                 <MaterialIcons name="track-changes" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText, { textAlign: getTextAlign(isRTL) }]}>
+                            <Text style={[styles.controlText]}>
                                 {translations[language].tabs.orders.track.orderTracking || 'Track Order'}
                             </Text>
                         </TouchableOpacity>
@@ -868,12 +837,11 @@ export default function Order({ user, order }) {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.reasonOption,
-                                    { flexDirection: getFlexDirection(isRTL) }
+                                    styles.reasonOption
                                 ]}
                                 onPress={() => handleReasonSelect(reason)}
                             >
-                                <Text style={[styles.reasonText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.reasonText]}>
                                     {reason.label}
                                 </Text>
                             </TouchableOpacity>
@@ -898,12 +866,11 @@ export default function Order({ user, order }) {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.branchOption,
-                                    { flexDirection: getFlexDirection(isRTL) }
+                                    styles.branchOption
                                 ]}
                                 onPress={() => handleBranchSelect(branch)}
                             >
-                                <Text style={[styles.branchText, { textAlign: getTextAlign(isRTL) }]}>
+                                <Text style={[styles.branchText]}>
                                     {branch.label}
                                 </Text>
                             </TouchableOpacity>
@@ -920,13 +887,13 @@ export default function Order({ user, order }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.confirmModalContent}>
-                        <Text style={[styles.confirmModalTitle, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.confirmModalTitle]}>
                             {translations[language].tabs.orders.order.changeStatusAlert} 
                             <Text style={styles.highlightText}> {statusOptions.find(option => option.value === selectedValue.status?.value)?.label || ''}</Text>
                         </Text>
                         
                         {selectedBranch && (
-                            <View style={[styles.selectedDetailContainer, { textAlign: getTextAlign(isRTL) }]}>
+                            <View style={[styles.selectedDetailContainer]}>
                                 <Text style={styles.selectedDetailLabel}>
                                     {translations[language].tabs.orders.order.branch || "Branch"}:
                                 </Text>
@@ -935,7 +902,7 @@ export default function Order({ user, order }) {
                         )}
                         
                         {selectedReason && (
-                            <View style={[styles.selectedDetailContainer, { textAlign: getTextAlign(isRTL) }]}>
+                            <View style={[styles.selectedDetailContainer]}>
                                 <Text style={styles.selectedDetailLabel}>
                                     {translations[language].tabs.orders.order.reason || "Reason"}:
                                 </Text>
@@ -945,8 +912,7 @@ export default function Order({ user, order }) {
                         
                         <TextInput
                             style={[
-                                styles.noteInput, 
-                                { textAlign: getTextAlign(isRTL) }
+                                styles.noteInput
                             ]}
                             placeholder={translations[language].tabs.orders.order.changeStatusAlertNote}
                             value={UpdatedStatusNote}
@@ -957,8 +923,7 @@ export default function Order({ user, order }) {
                         />
                         
                         <View style={[
-                            styles.confirmActions, 
-                            { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                            styles.confirmActions
                         ]}>
                             <TouchableOpacity 
                                 style={[
@@ -1043,7 +1008,7 @@ export default function Order({ user, order }) {
                     </View>
                 </ModalPresentation>
             )}
-        </>
+        </RTLWrapper>
     );
 }
 
@@ -1109,14 +1074,8 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         paddingHorizontal: 12,
         paddingVertical: 6,
+        gap:4,
         maxWidth: 150,
-    },
-    statusIcon: {
-        marginRight: 6,
-    },
-    statusIconRTL: {
-        marginLeft: 6,
-        marginRight: 0,
     },
     statusText: {
         color: 'white',
@@ -1143,18 +1102,15 @@ const styles = StyleSheet.create({
     },
     sectionRow: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-    },
-    sectionRowRTL: {
-        flexDirection: 'row-reverse',
+        alignItems: 'center',
+        gap: 12,
     },
     iconWrapper: {
         width: 40,
         height: 40,
         borderRadius: 20,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     sectionContent: {
         flex: 1,
@@ -1162,14 +1118,12 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#64748B',
-        marginBottom: 6,
+        color: '#64748B'
     },
     locationCity: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#333',
-        marginBottom: 4,
+        color: '#333'
     },
     locationAddress: {
         fontSize: 14,
@@ -1200,14 +1154,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(249, 250, 251, 1)',
         borderRadius: 12,
         padding: 10,
+        gap: 12,
     },
     costIconContainer: {
         width: 32,
         height: 32,
         borderRadius: 16,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 10,
+        alignItems: 'center'
     },
     costLabelContainer: {
         flex: 1,
@@ -1246,6 +1200,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         borderRadius: 12,
         padding: 12,
+        gap:10
     },
     checksIconContainer: {
         width: 36,
@@ -1253,8 +1208,7 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         backgroundColor: '#EF4444',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     checksTextContainer: {
         flex: 1,
@@ -1277,6 +1231,7 @@ const styles = StyleSheet.create({
         padding: 12,
         marginHorizontal: 16,
         marginBottom: 16,
+        gap:10
     },
     noteIconContainer: {
         width: 36,
@@ -1284,8 +1239,7 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         backgroundColor: '#4361EE',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 12,
+        alignItems: 'center'
     },
     noteContent: {
         flex: 1,
@@ -1309,9 +1263,6 @@ const styles = StyleSheet.create({
     dateTimeText: {
         fontSize: 12,
         color: '#94A3B8',
-    },
-    textRTL: {
-        textAlign: 'right',
     },
     
     /* Modal Styles */
@@ -1459,6 +1410,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: '#333',
+        marginBottom:10
     },
     locationMinimized: {
         borderLeftWidth: 1,

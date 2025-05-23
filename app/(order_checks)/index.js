@@ -6,6 +6,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { getToken } from "../../utils/secureStore";
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 const OrderChecks = () => {
   const params = useLocalSearchParams();
@@ -13,12 +14,8 @@ const OrderChecks = () => {
   const [order, setOrder] = useState({});
   const [loading, setLoading] = useState(true);
   const { language } = useLanguage();
-  const isRTL = language === 'ar' || language === 'he';
+  const rtl = useRTLStyles();
 
-  // Helper for RTL-aware styling
-  const getDirectionalStyle = (ltrStyle, rtlStyle) => {
-    return isRTL ? rtlStyle : ltrStyle;
-  };
 
   const fetchOrderData = async () => {
     try {
@@ -57,15 +54,12 @@ const OrderChecks = () => {
         <TouchableOpacity 
           style={[
             styles.backButton,
-            getDirectionalStyle(
-              { left: 16 },
-              { right: 16 }
-            )
+            rtl.isRTL ? { right: 16 } : { left: 16 }
           ]}
           onPress={() => router.back()}
         >
           <Feather 
-            name={isRTL ? "chevron-right" : "chevron-left"} 
+            name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
             size={24} 
             color="#1E293B" 
           />
@@ -96,12 +90,10 @@ const OrderChecks = () => {
             <>
               <View style={styles.summaryCard}>
                 <View style={[
-                  styles.summaryRow,
-                  { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                  styles.summaryRow
                 ]}>
                   <Text style={[
-                    styles.summaryLabel,
-                    { textAlign: isRTL ? 'right' : 'left' }
+                    styles.summaryLabel
                   ]}>
                     {translations[language]?.tabs.orders.order.orderChecks?.totalChecks || "Total Checks"}:
                   </Text>
@@ -109,12 +101,10 @@ const OrderChecks = () => {
                 </View>
                 
                 <View style={[
-                  styles.summaryRow,
-                  { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                  styles.summaryRow
                 ]}>
                   <Text style={[
-                    styles.summaryLabel,
-                    { textAlign: isRTL ? 'right' : 'left' }
+                    styles.summaryLabel
                   ]}>
                     {translations[language]?.tabs.orders.order.orderChecks?.totalValue || "Total Value"}:
                   </Text>
@@ -125,22 +115,20 @@ const OrderChecks = () => {
                 </View>
               </View>
               
-              <Text style={[styles.sectionTitle,{ textAlign: isRTL ? 'right' : 'left' }]}>
+              <Text style={[styles.sectionTitle]}>
                 {translations[language]?.tabs.orders.order.orderChecks?.checkDetails || "Check Details"}
               </Text>
               
               {order.checks.map((check, index) => (
                 <View key={index} style={styles.checkItem}>
                   <View style={[
-                    styles.checkHeader,
-                    { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                    styles.checkHeader
                   ]}>
                     <View style={styles.checkNumberContainer}>
                       <Text style={styles.checkNumberText}>{index + 1}</Text>
                     </View>
                     <Text style={[
-                      styles.checkTitle,
-                      { textAlign: isRTL ? 'right' : 'left' }
+                      styles.checkTitle
                     ]}>
                       {translations[language]?.tabs.orders.order.orderChecks?.check || "Check"} #{check.number}
                     </Text>
@@ -151,54 +139,40 @@ const OrderChecks = () => {
                   
                   <View style={styles.checkBody}>
                     <View style={[
-                      styles.checkRow,
-                      { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                      styles.checkRow
                     ]}>
                       <MaterialIcons 
                         name="attach-money" 
                         size={18} 
-                        color="#4361EE" 
-                        style={getDirectionalStyle(
-                          { marginRight: 8 },
-                          { marginLeft: 8 }
-                        )}
+                        color="#4361EE"
                       />
                       <Text style={[
-                        styles.checkLabel,
-                        { textAlign: isRTL ? 'right' : 'left' }
+                        styles.checkLabel
                       ]}>
                         {translations[language]?.tabs.orders.order.orderChecks?.value || "Value"}:
                       </Text>
                       <Text style={[
-                        styles.checkValue,
-                        { textAlign: isRTL ? 'right' : 'left' }
+                        styles.checkValue
                       ]}>
                         {formatCurrency(check.value, check.currency)}
                       </Text>
                     </View>
                     
                     <View style={[
-                      styles.checkRow,
-                      { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                      styles.checkRow
                     ]}>
                       <MaterialIcons 
                         name="date-range" 
                         size={18} 
                         color="#4361EE" 
-                        style={getDirectionalStyle(
-                          { marginRight: 8 },
-                          { marginLeft: 8 }
-                        )}
                       />
                       <Text style={[
-                        styles.checkLabel,
-                        { textAlign: isRTL ? 'right' : 'left' }
+                        styles.checkLabel
                       ]}>
                         {translations[language]?.tabs.orders.order.orderChecks?.date || "Date"}:
                       </Text>
                       <Text style={[
-                        styles.checkValue,
-                        { textAlign: isRTL ? 'right' : 'left' }
+                        styles.checkValue
                       ]}>
                         {check.date?.slice(0,10)}
                       </Text>
@@ -265,11 +239,11 @@ const styles = StyleSheet.create({
     marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
+    gap:10
   },
   orderIdLabel: {
     fontSize: 14,
-    color: "#64748B",
-    marginRight: 4,
+    color: "#64748B"
   },
   orderId: {
     fontSize: 14,
@@ -302,7 +276,7 @@ const styles = StyleSheet.create({
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 8
   },
   summaryLabel: {
     fontSize: 14,
@@ -339,6 +313,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
     backgroundColor: "#FAFAFA",
+    gap:10
   },
   checkNumberContainer: {
     width: 24,
@@ -346,8 +321,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: "#4361EE",
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
+    alignItems: 'center'
   },
   checkNumberText: {
     color: "white",
@@ -370,6 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    gap:10
   },
   checkLabel: {
     width: 70,

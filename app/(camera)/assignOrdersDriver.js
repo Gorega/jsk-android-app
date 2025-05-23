@@ -10,11 +10,11 @@ import PickerModal from '../../components/pickerModal/PickerModal';
 import { router } from 'expo-router';
 import { getToken } from '../../utils/secureStore';
 import { Audio } from 'expo-av';
+import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function CameraScanner() {
   const { user } = useAuth();
   const { language } = useLanguage();
-  const isRTL = ["ar", "he"].includes(language);
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
@@ -28,6 +28,7 @@ export default function CameraScanner() {
   const [showPickerModal, setShowPickerModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [note, setNote] = useState("");
+  const rtl = useRTLStyles();
   const [manualOrderId, setManualOrderId] = useState("");
   const [selectedValue, setSelectedValue] = useState({
     toBranch: null,
@@ -233,7 +234,6 @@ export default function CameraScanner() {
       
       return data.data;
     } catch (err) {
-      console.error('Error fetching order details:', err);
       setError(translations[language].camera.orderLookupError);
       setTimeout(() => setError(null), 2000);
       return null;
@@ -380,6 +380,22 @@ export default function CameraScanner() {
           }}
         >
           <View style={styles.overlay}>
+             {/* Back button */}
+              <TouchableOpacity 
+                style={[
+                  styles.backButtonContainer,
+                  rtl.isRTL ? { right: 20 } : { left: 20 }
+                ]}
+                onPress={() => router.back()}
+              >
+                <View style={styles.backButtonCircle}>
+                  <Feather 
+                    name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
+                    size={24} 
+                    color="#FFFFFF" 
+                  />
+                </View>
+              </TouchableOpacity>
             {/* Scanner frame with animated border */}
             <View style={styles.frameBorder}>
               <View style={styles.cornerTL} />
@@ -425,11 +441,11 @@ export default function CameraScanner() {
                 {translations[language].camera.createCollection}
               </Text>
               <TouchableOpacity 
-                style={styles.backButton} 
+                style={[styles.backButton, rtl.isRTL && { right: 16 }]} 
                 onPress={() => setShowCreateDispatchedCollectionModal(false)}
               >
                 <Feather 
-                  name={isRTL ? "chevron-right" : "chevron-left"} 
+                  name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
                   size={24} 
                   color="#4361EE" 
                 />
@@ -439,11 +455,11 @@ export default function CameraScanner() {
             <ScrollView>
             <View style={styles.modalContent}>
               <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                <Text style={[styles.fieldLabel]}>
                   {translations[language].camera.note}
                 </Text>
                 <TextInput
-                  style={[styles.textInput, isRTL && styles.rtlInput]}
+                  style={[styles.textInput]}
                   placeholder={translations[language].camera.notePlaceholder}
                   value={note}
                   onChangeText={(input) => setNote(input)}
@@ -455,7 +471,7 @@ export default function CameraScanner() {
               </View>
               
               <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                <Text style={[styles.fieldLabel]}>
                   {translations[language].camera.toBranch}
                 </Text>
                 <TouchableOpacity 
@@ -465,7 +481,6 @@ export default function CameraScanner() {
                   <Text style={[
                     styles.pickerButtonText, 
                     selectedValue.toBranch?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
-                    isRTL && styles.rtlText
                   ]}>
                     {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
                   </Text>
@@ -474,7 +489,7 @@ export default function CameraScanner() {
               </View>
 
               <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel, isRTL && styles.rtlText]}>
+                <Text style={[styles.fieldLabel]}>
                   {translations[language].camera.toDriver}
                 </Text>
                 <TouchableOpacity 
@@ -484,7 +499,6 @@ export default function CameraScanner() {
                   <Text style={[
                     styles.pickerButtonText, 
                     selectedValue.toDriver?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
-                    isRTL && styles.rtlText
                   ]}>
                     {selectedValue.toDriver?.name || translations[language].camera.selectDriver}
                   </Text>
@@ -523,8 +537,7 @@ export default function CameraScanner() {
           <View style={styles.scannedItemsContainer}>
             <View style={styles.scannedHeaderContainer}>
               <View style={[
-                styles.scannedHeader,
-                { flexDirection: isRTL ? "row-reverse" : "row" }
+                styles.scannedHeader
               ]}>
                 <View style={styles.totalContainer}>
                   <Text style={styles.totalLabel}>
@@ -544,7 +557,7 @@ export default function CameraScanner() {
                       {translations[language].camera.next}
                     </Text>
                     <Feather 
-                      name={isRTL ? "chevron-left" : "chevron-right"} 
+                      name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                       size={16} 
                       color="#FFFFFF" 
                     />
@@ -556,7 +569,7 @@ export default function CameraScanner() {
             {/* Add manual input section */}
             <View style={styles.manualInputContainer}>
               <TextInput
-                style={[styles.manualInput, isRTL && styles.rtlInput]}
+                style={[styles.manualInput]}
                 placeholder={translations[language].camera.enterOrderId}
                 value={manualOrderId}
                 onChangeText={setManualOrderId}
@@ -581,30 +594,27 @@ export default function CameraScanner() {
                   <View 
                     key={index} 
                     style={[
-                      styles.itemContainer,
-                      { flexDirection: isRTL ? "row-reverse" : "row" }
+                      styles.itemContainer
                     ]}
                   >
                     <View style={[
-                      styles.itemContent,
-                      { flexDirection: isRTL ? "row-reverse" : "row" }
+                      styles.itemContent
                     ]}>
                       <View style={[
-                        styles.itemIconContainer,
-                        isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                        styles.itemIconContainer
                       ]}>
                         <Feather name="package" size={16} color="#4361EE" />
                       </View>
                       <View style={styles.itemTextContainer}>
-                        <Text style={[styles.itemText, isRTL && styles.rtlText]}>
+                        <Text style={[styles.itemText]}>
                           {typeof item === 'object' ? item.order_id : item}
                         </Text>
                         {typeof item === 'object' && (
                           <>
-                            <Text style={[styles.itemDetailText, isRTL && styles.rtlText]}>
+                            <Text style={[styles.itemDetailText]}>
                               {item.receiver_name}
                             </Text>
-                            <Text style={[styles.itemDetailText, isRTL && styles.rtlText]}>
+                            <Text style={[styles.itemDetailText]}>
                               {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
                             </Text>
                           </>
@@ -666,6 +676,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  backButtonContainer: {
+    position: 'absolute',
+    top: 50,
+    zIndex: 10,
+  },
+  backButtonCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   frameBorder: {
     width: 220,
     height: 220,
@@ -720,7 +743,7 @@ const styles = StyleSheet.create({
   },
   instructionsContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 70,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -798,16 +821,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap:10
   },
   totalContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap:10
   },
   totalLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
-    marginRight: 8,
+    color: '#1F2937'
   },
   totalBadge: {
     backgroundColor: '#4361EE',
@@ -827,12 +851,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
+    gap:10
   },
   nextButtonText: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 14,
-    marginRight: 4,
+    fontSize: 14
   },
   manualInputContainer: {
     flexDirection: 'row',
@@ -849,12 +873,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     fontSize: 14,
     color: '#1F2937',
-  },
-  rtlInput: {
-    textAlign: 'right',
-  },
-  rtlText: {
-    textAlign: 'right',
   },
   addButton: {
     backgroundColor: '#4361EE',
@@ -889,6 +907,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+    gap:10
   },
   itemIconContainer: {
     width: 32,
@@ -896,8 +915,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'rgba(67, 97, 238, 0.1)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    alignItems: 'center'
   },
   itemTextContainer: {
     flex: 1,
@@ -963,7 +981,6 @@ const styles = StyleSheet.create({
   },
   backButton: {
     position: 'absolute',
-    left: 16,
     padding: 4,
   },
   modalContent: {

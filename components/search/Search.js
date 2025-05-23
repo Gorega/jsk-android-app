@@ -1,7 +1,7 @@
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { TextInput, TouchableOpacity, View, StyleSheet, Text, ScrollView, SafeAreaView, Platform } from 'react-native';
-import { useState } from 'react';
+import { TextInput, TouchableOpacity, View, StyleSheet, Text, ScrollView, SafeAreaView, Platform, I18nManager, FlatList } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
 import ModalPresentation from "../../components/ModalPresentation";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import { useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function Search({
     searchValue,
@@ -35,283 +36,279 @@ export default function Search({
     const [showDateFilters,setShowDateFilters] = useState(false);
     const [showCalendar,setShowCalendar] = useState(false);
     const [permission,requestPermission] = useCameraPermissions();
-    const isRTL = ["he", "ar"].includes(language);
+    const rtl = useRTLStyles();
+    const scrollViewRef = useRef(null);
 
-    // Helper function for RTL-aware positioning
-    const getMargin = (side, value) => {
-      if (!isRTL) return { [`margin${side}`]: value };
-      
-      // Flip left/right margins for RTL
-      const flippedSide = side === 'Left' ? 'Right' : side === 'Right' ? 'Left' : side;
-      return { [`margin${flippedSide}`]: value };
-    };
+    useEffect(() => {
+      if (rtl.isRTL && scrollViewRef.current && filterByGroup?.length > 0) {
+        setTimeout(() => {
+          scrollViewRef.current.scrollToEnd({ animated: false });
+        }, 100);
+      }
+    }, [rtl.isRTL, filterByGroup]);
 
     return <>
-        <SafeAreaView style={[styles.searchBox, {paddingTop: addPaddingSpace ? 40 : 15}]}>
-          <View style={[styles.search, {flexDirection: isRTL ? "row-reverse" : "row"}]}>
-            <View style={[
-              styles.inputField, 
-              {
-                width: (activeSearchBy || activeDate) ? "60%" : showScanButton ? "70%" : "80%",
-                flexDirection: isRTL ? "row-reverse" : "row",
-                borderRadius: 8,
-                backgroundColor: '#F8F9FA',
-                borderWidth: 0,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
+      <SafeAreaView style={[styles.searchBox ,{paddingTop: addPaddingSpace ? 40 : 15}]}>
+    <View style={[styles.search]}>
+      <View style={[
+        styles.inputField, 
+        {
+          width: (activeSearchBy || activeDate) ? "60%" : showScanButton ? "70%" : "80%",
+          flexDirection: "row",
+          borderRadius: 8,
+          backgroundColor: '#F8F9FA',
+          borderWidth: 0,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+        }
+      ]}>
+        <EvilIcons name="search" size={24} color="#4361EE" />
+        <TextInput
+          style={[
+            styles.input,
+            {
+              textAlign: rtl.isRTL ? "right" : "left",
+              color: '#333',
+              fontSize: 15,
+              padding: 0,
+              flex: 1,
+            }
+          ]}
+          placeholder={`${translations[language].search.placeholder} ${activeSearchBy ? `${translations[language].search.by} ${activeSearchBy.name}` : ''}`}
+          placeholderTextColor="#94A3B8"
+          value={searchValue}
+          onChangeText={setSearchValue}
+        />
+      </View>
+      
+      <View style={[
+        styles.actionButtons
+      ]}>
+        {(activeSearchBy || activeDate) && (
+          <TouchableOpacity 
+            style={styles.iconButton} 
+            onPress={()=> {
+              setActiveSearchBy("")
+              setSearchValue("")
+              setActiveDate("")
+              onClearFilters();
+            }}
+          >
+            <MaterialIcons name="clear" size={22} color="#E63946" />
+          </TouchableOpacity>
+        )}
+        
+        {showScanButton && (
+          <TouchableOpacity 
+            style={styles.iconButton}
+            onPress={()=> {
+              if(permission){
+                router.push("(camera)/lookupOrder")
+              } else {
+                requestPermission()
               }
-            ]}>
-              <EvilIcons name="search" size={24} color="#4361EE" style={isRTL ? { marginLeft: 8 } : { marginRight: 8 }} />
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    textAlign: isRTL ? "right" : "left",
-                    color: '#333',
-                    fontSize: 15,
-                    padding: 0,
-                    flex: 1,
-                  }
-                ]}
-                placeholder={`${translations[language].search.placeholder} ${activeSearchBy ? `${translations[language].search.by} ${activeSearchBy.name}` : ''}`}
-                placeholderTextColor="#94A3B8"
-                value={searchValue}
-                onChangeText={setSearchValue}
-              />
-            </View>
-            
-            <View style={[
-              styles.actionButtons,
-              { flexDirection: isRTL ? "row-reverse" : "row" }
-            ]}>
-              {(activeSearchBy || activeDate) && (
-                <TouchableOpacity 
-                  style={styles.iconButton} 
-                  onPress={()=> {
-                    setActiveSearchBy("")
-                    setSearchValue("")
-                    setActiveDate("")
-                    onClearFilters();
-                  }}
-                >
-                  <MaterialIcons name="clear" size={22} color="#E63946" />
-                </TouchableOpacity>
-              )}
-              
-              {showScanButton && (
-                <TouchableOpacity 
-                  style={styles.iconButton}
-                  onPress={()=> {
-                    if(permission){
-                      router.push("(camera)/lookupOrder")
-                    } else {
-                      requestPermission()
-                    }
-                  }}
-                >
-                  <Ionicons name="scan" size={22} color="#4361EE" />
-                </TouchableOpacity>
-              )}
-              
-              <TouchableOpacity 
-                style={styles.iconButton}
-                onPress={()=> setShowSpecificFilters(true)}
-              >
-                <AntDesign name="filter" size={20} color={activeSearchBy ? "#F8C332" : "#4361EE"} />
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.iconButton}
-                onPress={()=> setShowDateFilters(true)}
-              >
-                <Ionicons name="calendar-number-outline" size={22} color={activeDate ? "#F8C332" : "#4361EE"} />
-              </TouchableOpacity>
-            </View>
-          </View>
+            }}
+          >
+            <Ionicons name="scan" size={22} color="#4361EE" />
+          </TouchableOpacity>
+        )}
+        
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={()=> setShowSpecificFilters(true)}
+        >
+          <AntDesign name="filter" size={20} color={activeSearchBy ? "#F8C332" : "#4361EE"} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.iconButton}
+          onPress={()=> setShowDateFilters(true)}
+        >
+          <Ionicons name="calendar-number-outline" size={22} color={activeDate ? "#F8C332" : "#4361EE"} />
+        </TouchableOpacity>
+      </View>
+    </View>
 
-          {filterByGroup && filterByGroup.length > 0 && (
-            <View style={styles.filter}>
-              <ScrollView 
-                style={[
-                  styles.filterScrollView,
-                  isRTL && { transform: [{ scaleX: -1 }] }
-                ]} 
-                horizontal={true} 
-                showsHorizontalScrollIndicator={false}
-              >
-                <View style={[
-                  styles.filterBy,
-                  {
-                    flexDirection: isRTL ? "row-reverse" : "row",
-                    justifyContent: isRTL ? 'flex-end' : 'flex-start',
-                    transform: isRTL ? [{ scaleX: -1 }] : undefined
-                  }
-                ]}>
-                  {filterByGroup.map((filter, index) => (
-                    <TouchableOpacity 
-                      style={[
-                        styles.filterItem,
-                        activeFilter === filter.action && styles.activeFilter
-                      ]} 
-                      key={index} 
-                      onPress={() => setActiveFilter(filter.action)}
-                    >
-                      <Text style={[
-                        styles.filterItemText,
-                        activeFilter === filter.action && styles.activeFilterText
-                      ]}>
-                        {filter.name}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View> 
-              </ScrollView>
-            </View>
-          )}
+    <View style={styles.filter}>
+  <FlatList
+    ref={scrollViewRef}
+    data={filterByGroup}
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    contentContainerStyle={[
+      styles.filterScrollContent,
+      rtl.isRTL && { flexDirection: 'row-reverse' }
+    ]}
+    style={styles.filterScrollView}
+    keyExtractor={(_, idx) => idx.toString()}
+    renderItem={({ item: filter }) => (
+      <TouchableOpacity
+        style={[
+          styles.filterItem,
+          activeFilter === filter.action && styles.activeFilter
+        ]}
+        onPress={() => setActiveFilter(filter.action)}
+        activeOpacity={0.7}
+      >
+        {filter.action ? (
+          <View style={styles.filterIconContainer}>
+            {activeFilter === filter.action && (
+              <AntDesign name="check" size={12} color="white" />
+            )}
+          </View>
+        ) : null}
+        <Text
+          style={[
+            styles.filterItemText,
+            activeFilter === filter.action && styles.activeFilterText
+          ]}
+        >
+          {filter.name}
+        </Text>
+      </TouchableOpacity>
+    )}
+  />
+</View>
+
         </SafeAreaView>
 
-        {showSpecificFilters && (
-          <ModalPresentation
-            showModal={showSpecificFilters}
-            setShowModal={setShowSpecificFilters}
+  {showSpecificFilters && (
+    <ModalPresentation
+      showModal={showSpecificFilters}
+      setShowModal={setShowSpecificFilters}
+    >
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalH2}>{translations[language].search.searchBy}</Text>
+      </View>
+      
+      <ScrollView style={styles.modalScrollView}>
+        {searchByGroup?.map((item, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.modalItem} 
+            onPress={()=> {
+              setActiveSearchBy(item)
+              setShowSpecificFilters()
+            }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalH2}>{translations[language].search.searchBy}</Text>
-            </View>
-            
-            <ScrollView style={styles.modalScrollView}>
-              {searchByGroup?.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={styles.modalItem} 
-                  onPress={()=> {
-                    setActiveSearchBy(item)
-                    setShowSpecificFilters()
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    {textAlign: isRTL ? "right" : "left"}
-                  ]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            
-            <View style={[
-              styles.modalFooter,
-              { flexDirection: isRTL ? 'row-reverse' : 'row' }
+            <Text style={[
+              styles.modalItemText
             ]}>
-              <TouchableOpacity 
-                style={styles.modalButton} 
-                onPress={() => setShowSpecificFilters(false)}
-              >
-                <Text style={styles.modalButtonText}>{translations[language].search.cancel}</Text>
-              </TouchableOpacity>
-            </View>
-          </ModalPresentation>
-        )}
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      
+      <View style={[
+        styles.modalFooter
+      ]}>
+        <TouchableOpacity 
+          style={styles.modalButton} 
+          onPress={() => setShowSpecificFilters(false)}
+        >
+          <Text style={styles.modalButtonText}>{translations[language].search.cancel}</Text>
+        </TouchableOpacity>
+      </View>
+    </ModalPresentation>
+  )}
 
-        {showDateFilters && (
-          <ModalPresentation
-            showModal={showDateFilters}
-            setShowModal={setShowDateFilters}
+  {showDateFilters && (
+    <ModalPresentation
+      showModal={showDateFilters}
+      setShowModal={setShowDateFilters}
+    >
+      <View style={styles.modalHeader}>
+        <Text style={styles.modalH2}>{translations[language].search.searchByDate}</Text>
+      </View>
+      
+      <ScrollView style={styles.modalScrollView}>
+        {searchByDateGroup?.map((item, index) => (
+          <TouchableOpacity 
+            key={index} 
+            style={styles.modalItem} 
+            onPress={()=> {
+              if(item.action === "custom"){
+                setShowCalendar(true)
+              } else {
+                setActiveDate(item)
+                setShowDateFilters()
+              }
+            }}
           >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalH2}>{translations[language].search.searchByDate}</Text>
-            </View>
-            
-            <ScrollView style={styles.modalScrollView}>
-              {searchByDateGroup?.map((item, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={styles.modalItem} 
-                  onPress={()=> {
-                    if(item.action === "custom"){
-                      setShowCalendar(true)
-                    } else {
-                      setActiveDate(item)
-                      setShowDateFilters()
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.modalItemText,
-                    {textAlign: isRTL ? "right" : "left"}
-                  ]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            
-            <View style={[
-              styles.modalFooter,
-              { flexDirection: isRTL ? 'row-reverse' : 'row' }
+            <Text style={[
+              styles.modalItemText
             ]}>
-              <TouchableOpacity 
-                style={styles.modalButton} 
-                onPress={() => setShowDateFilters(false)}
-              >
-                <Text style={styles.modalButtonText}>{translations[language].search.cancel}</Text>
-              </TouchableOpacity>
-            </View>
-          </ModalPresentation>
-        )}
+              {item.name}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+      
+      <View style={[
+        styles.modalFooter
+      ]}>
+        <TouchableOpacity 
+          style={styles.modalButton} 
+          onPress={() => setShowDateFilters(false)}
+        >
+          <Text style={styles.modalButtonText}>{translations[language].search.cancel}</Text>
+        </TouchableOpacity>
+      </View>
+    </ModalPresentation>
+  )}
 
-        {showCalendar && (
-          <ModalPresentation
-            showModal={showCalendar}
-            setShowModal={setShowCalendar}
+  {showCalendar && (
+    <ModalPresentation
+      showModal={showCalendar}
+      setShowModal={setShowCalendar}
+    >
+      <View style={styles.calendarContainer}>
+        <Calendar
+          onDayPress={(day) => {
+            setSelectedDate(day.dateString);
+          }}
+          markedDates={{
+            [selectedDate]: { selected: true, selectedColor: '#4361EE' },
+          }}
+          theme={{
+            todayTextColor: "#4361EE",
+            arrowColor: "#4361EE",
+            selectedDayBackgroundColor: '#4361EE',
+            textDayFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+            textMonthFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+            textDayHeaderFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+            textDayFontWeight: '400',
+            textMonthFontWeight: '600',
+            textDayHeaderFontWeight: '500',
+            textSectionTitleColor: '#4361EE',
+          }}
+        />
+        
+        <View style={[
+          styles.calendarActions
+        ]}>
+          <TouchableOpacity 
+            style={[styles.calendarButton, styles.primaryButton]}
+            onPress={() => {
+              setShowCalendar(false);
+              setShowDateFilters(false);
+              setActiveDate({action: "custom"});
+            }}
           >
-            <View style={styles.calendarContainer}>
-              <Calendar
-                onDayPress={(day) => {
-                  setSelectedDate(day.dateString);
-                }}
-                markedDates={{
-                  [selectedDate]: { selected: true, selectedColor: '#4361EE' },
-                }}
-                theme={{
-                  todayTextColor: "#4361EE",
-                  arrowColor: "#4361EE",
-                  selectedDayBackgroundColor: '#4361EE',
-                  textDayFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-                  textMonthFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-                  textDayHeaderFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-                  textDayFontWeight: '400',
-                  textMonthFontWeight: '600',
-                  textDayHeaderFontWeight: '500',
-                  textSectionTitleColor: '#4361EE',
-                }}
-              />
-              
-              <View style={[
-                styles.calendarActions, 
-                { flexDirection: isRTL ? 'row-reverse' : 'row' }
-              ]}>
-                <TouchableOpacity 
-                  style={[styles.calendarButton, styles.primaryButton]}
-                  onPress={() => {
-                    setShowCalendar(false);
-                    setShowDateFilters(false);
-                    setActiveDate({action: "custom"});
-                  }}
-                >
-                  <Text style={styles.primaryButtonText}>{translations[language].search.confirm}</Text>
-                </TouchableOpacity>
-                
-                <TouchableOpacity 
-                  style={[styles.calendarButton, styles.secondaryButton]}
-                  onPress={() => setShowCalendar(false)}
-                >
-                  <Text style={styles.secondaryButtonText}>{translations[language].search.cancel}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </ModalPresentation>
-        )}
+            <Text style={styles.primaryButtonText}>{translations[language].search.confirm}</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.calendarButton, styles.secondaryButton]}
+            onPress={() => setShowCalendar(false)}
+          >
+            <Text style={styles.secondaryButtonText}>{translations[language].search.cancel}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ModalPresentation>
+  )}
     </>
 }
 
@@ -356,31 +353,50 @@ const styles = StyleSheet.create({
     },
     filter: {
         marginTop: 15,
-    },
-    filterBy: {
-        flexDirection: "row",
-        paddingVertical: 8,
+        paddingBottom: 8,
     },
     filterScrollView: {
         width: "100%",
     },
+    filterScrollContent: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+    },
     filterItem: {
         paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderRadius: 20,
         marginHorizontal: 6,
         backgroundColor: '#F1F5F9',
+        flexDirection: 'row',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+        gap:4
+    },
+    filterIconContainer: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#4361EE',
+        justifyContent: 'center',
+        alignItems: 'center'
     },
     filterItemText: {
-        fontSize: 13,
+        fontSize: 14,
         color: '#64748B',
         fontWeight: '500',
     },
     activeFilter: {
-        backgroundColor: '#4361EE',
+        backgroundColor: '#EEF2FF',
+        borderWidth: 1,
+        borderColor: '#4361EE',
     },
     activeFilterText: {
-        color: 'white',
+        color: '#4361EE',
         fontWeight: '600',
     },
     modalHeader: {

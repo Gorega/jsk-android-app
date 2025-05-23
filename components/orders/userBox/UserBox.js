@@ -3,24 +3,25 @@ import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import Contact from "./Contact";
 import { translations } from '../../../utils/languageContext';
 import { useLanguage } from '../../../utils/languageContext';
+import { RTLWrapper } from '../../../utils/RTLWrapper';
 
 export default function BusinessBox({ box }) {
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
 
     return (
-        <View style={styles.container}>
-            <View style={[styles.contentRow, isRTL && styles.contentRowRTL]}>
-                <View style={[styles.userInfo, isRTL && styles.userInfoRTL]}>
+        <RTLWrapper>
+            <View style={styles.container}>
+            <View style={[styles.contentRow]}>
+                <View style={[styles.userInfo]}>
                     <View style={styles.iconContainer}>
                         <SimpleLineIcons name="user" size={20} color="#ffffff" />
                     </View>
                     <View style={styles.textContainer}>
-                        <Text style={[styles.labelText, isRTL && styles.textRTL]}>{box.label}</Text>
-                        <Text style={[styles.valueText, isRTL && styles.textRTL]}>{box.userName}</Text>
+                        <Text style={[styles.labelText]}>{box.label}</Text>
+                        <Text style={[styles.valueText]}>{box.userName}</Text>
                     </View>
                 </View>
-                <View style={[styles.contactActions, isRTL && styles.contactActionsRTL]}>
+                <View style={[styles.contactActions]}>
                     <Contact
                         contact={{
                             type: "phone",
@@ -40,6 +41,7 @@ export default function BusinessBox({ box }) {
                 </View>
             </View>
         </View>
+        </RTLWrapper>
     );
 }
 
@@ -55,17 +57,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
     },
-    contentRowRTL: {
-        flexDirection: 'row-reverse',
-    },
     userInfo: {
         flexDirection: 'row',
         alignItems: 'center',
         gap:12,
         flex: 1,
-    },
-    userInfoRTL: {
-        flexDirection: 'row-reverse',
     },
     iconContainer: {
         width: 36,
@@ -88,14 +84,11 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         color: '#333',
     },
-    textRTL: {
-        textAlign: 'right',
-    },
     contactActions: {
         flexDirection: 'row',
         gap: 16,
     },
     contactActionsRTL: {
         flexDirection: 'row-reverse',
-    },
+    }
 });

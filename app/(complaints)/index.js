@@ -13,6 +13,8 @@ import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
 import { LinearGradient } from 'expo-linear-gradient';
+import {useRTLStyles } from '../../utils/RTLWrapper';
+
 
 export default function ComplaintsScreen() {
   const socket = useSocket();
@@ -29,8 +31,8 @@ export default function ComplaintsScreen() {
   const [selectedDate, setSelectedDate] = useState("");
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
+  const rtl = useRTLStyles();
   
-  const isRTL = ["ar", "he"].includes(language);
 
   const filterByGroup = [
     { name: translations[language].complaints.status.all, action: "all" },
@@ -109,7 +111,6 @@ export default function ComplaintsScreen() {
         setComplaints(newData);
       }
     } catch (error) {
-      console.error("Error fetching complaints:", error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -129,7 +130,6 @@ export default function ComplaintsScreen() {
       try {
         await fetchComplaints(nextPage, true);
       } catch (error) {
-        console.error("Error loading more data:", error);
       }
     }
   };
@@ -154,7 +154,6 @@ export default function ComplaintsScreen() {
       fetchComplaints(1, false);
       setShowControl(false);
     } catch (err) {
-      console.error("Error changing status:", err);
     }
   };
 
@@ -269,22 +268,22 @@ export default function ComplaintsScreen() {
               })
             }
           >
-            <View style={[styles.cardHeader, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-              <View style={[styles.complaintInfo, { alignItems: isRTL ? "flex-end" : "flex-start" }]}>
-                <Text style={[styles.subject, { textAlign: isRTL ? "right" : "left" }]} numberOfLines={1}>
+            <View style={[styles.cardHeader]}>
+              <View style={[styles.complaintInfo]}>
+                <Text style={[styles.subject]} numberOfLines={1}>
                   {item.subject}
                 </Text>
-                <View style={[styles.complaintMeta, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                  <View style={[styles.metaItem, { marginRight: isRTL ? 0 : 14, marginLeft: isRTL ? 14 : 0 }, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                    <Feather name="hash" size={14} color="#64748B" style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }} />
+                <View style={[styles.complaintMeta]}>
+                  <View style={[styles.metaItem]}>
+                    <Feather name="hash" size={14} color="#64748B" />
                     <Text style={styles.metaText}>{item.complaint_id}</Text>
                   </View>
-                  <View style={[styles.metaItem, { marginRight: isRTL ? 0 : 14, marginLeft: isRTL ? 14 : 0 }, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                    <Feather name="package" size={14} color="#64748B" style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }} />
+                  <View style={[styles.metaItem]}>
+                    <Feather name="package" size={14} color="#64748B" />
                     <Text style={styles.metaText}>#{item.order_case_id}</Text>
                   </View>
-                  <View style={[styles.metaItem, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
-                    <Feather name="calendar" size={14} color="#64748B" style={{ marginRight: isRTL ? 0 : 4, marginLeft: isRTL ? 4 : 0 }} />
+                  <View style={[styles.metaItem]}>
+                    <Feather name="calendar" size={14} color="#64748B" />
                     <Text style={styles.metaText}>{formatDate(item.created_at)}</Text>
                   </View>
                 </View>
@@ -300,25 +299,25 @@ export default function ComplaintsScreen() {
               </LinearGradient>
             </View>
             
-            <Text style={[styles.description, { textAlign: isRTL ? "right" : "left" }]} numberOfLines={2}>
+            <Text style={[styles.description]} numberOfLines={2}>
               {item.description}
             </Text>
             
-            <View style={[styles.footer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <View style={[styles.footer]}>
               {item.created_by && (
-                <View style={[styles.userInfo, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+                <View style={[styles.userInfo]}>
                   <View style={styles.userIconContainer}>
                     <Feather name="user" size={14} color="#4361EE" />
                   </View>
                   <Text style={styles.userName}>{item.created_by}</Text>
                 </View>
               )}
-              <View style={[styles.viewDetailsContainer, { flexDirection: isRTL ? "row-reverse" : "row" }]}>
+              <View style={[styles.viewDetailsContainer]}>
                 <Text style={styles.viewDetails}>
                   {translations[language]?.complaints?.viewDetails || 'View Details'}
                 </Text>
                 <MaterialIcons 
-                  name={isRTL ? "chevron-left" : "chevron-right"} 
+                  name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                   size={20} 
                   color="#4361EE" 
                 />
@@ -343,29 +342,6 @@ export default function ComplaintsScreen() {
       <Text style={styles.emptyText}>
         {translations[language]?.complaints?.noComplaintsDesc || 'There are no complaints matching your filters.'}
       </Text>
-      
-      <TouchableOpacity
-        style={styles.newComplaintButton}
-        onPress={() => router.push("/(complaints)/open_complaint")}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={['#4361EE', '#3A0CA3']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.newComplaintGradient}
-        >
-          <Feather 
-            name="plus" 
-            size={18} 
-            color="#FFFFFF" 
-            style={{ marginRight: isRTL ? 0 : 8, marginLeft: isRTL ? 8 : 0 }} 
-          />
-          <Text style={styles.newComplaintText}>
-            {translations[language]?.complaints?.newComplaint || 'New Complaint'}
-          </Text>
-        </LinearGradient>
-      </TouchableOpacity>
     </View>
   );
 
@@ -405,22 +381,6 @@ export default function ComplaintsScreen() {
         )}
       </View>
       
-      {/* Floating Action Button for new complaint */}
-      {user.role === "business" && complaints?.data?.length > 0 && (
-        <TouchableOpacity
-          style={[styles.fab, { right: isRTL ? null : 20, left: isRTL ? 20 : null }]}
-          onPress={() => router.push("/(complaints)/open_complaint")}
-          activeOpacity={0.8}
-        >
-          <LinearGradient
-            colors={['#4361EE', '#3A0CA3']}
-            style={styles.fabGradient}
-          >
-            <Feather name="plus" size={24} color="#FFFFFF" />
-          </LinearGradient>
-        </TouchableOpacity>
-      )}
-      
       {/* Modal for actions */}
       {showControl && selectedComplaint && (
         <ModalPresentation
@@ -442,7 +402,7 @@ export default function ComplaintsScreen() {
             </View>
             
             <TouchableOpacity
-              style={[styles.actionButton, { flexDirection: isRTL ? "row-reverse" : "row" }]}
+              style={[styles.actionButton]}
               onPress={() => handleChangeStatus(selectedComplaint)}
             >
               <View style={styles.actionIconContainer}>
@@ -454,7 +414,7 @@ export default function ComplaintsScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity
-              style={[styles.actionButton, { flexDirection: isRTL ? "row-reverse" : "row" }]}
+              style={[styles.actionButton]}
               onPress={() => {
                 setShowControl(false);
                 router.push({
@@ -516,10 +476,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 12,
+    gap:10
   },
   complaintInfo: {
-    flex: 1,
-    marginRight: 12,
+    flex: 1
   },
   subject: {
     fontSize: 16,
@@ -530,11 +490,13 @@ const styles = StyleSheet.create({
   complaintMeta: {
     flexDirection: "row",
     flexWrap: "wrap",
+    gap:12
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
+    gap:4
   },
   metaText: {
     fontSize: 12,
@@ -546,6 +508,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
+    gap:4
   },
   statusText: {
     color: "white",

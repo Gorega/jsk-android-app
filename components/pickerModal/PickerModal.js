@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loading,loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
     const { language } = useLanguage();
     const { name } = field;
-    const isRTL = ["he", "ar"].includes(language);
     const [modalHeight, setModalHeight] = useState(Dimensions.get('window').height * 0.7);
 
     // Adjust modal height on orientation change
@@ -42,7 +41,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                 {translations[language].picker.choose} {field.label}
                             </Text>
                             <TouchableOpacity
-                                style={[styles.closeButton, isRTL ? { left: 16 } : { right: 16 }]}
+                                style={[styles.closeButton]}
                                 onPress={() => setShowPickerModal(false)}
                             >
                                 <Ionicons name="close" size={24} color="#6B7280" />
@@ -52,19 +51,16 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                         {field.showSearchBar && (
                             <View style={styles.searchContainer}>
                                 <View style={[
-                                    styles.searchInputContainer,
-                                    { flexDirection: isRTL ? "row-reverse" : "row" }
+                                    styles.searchInputContainer
                                 ]}>
                                     <Ionicons 
                                         name="search" 
                                         size={20} 
                                         color="#6B7280" 
-                                        style={isRTL ? { marginLeft: 10 } : { marginRight: 10 }}
                                     />
                                     <TextInput
                                         style={[
-                                            styles.searchInput,
-                                            { textAlign: isRTL ? "right" : "left" }
+                                            styles.searchInput
                                         ]}
                                         placeholder={translations[language].picker.searchPlaceholder}
                                         placeholderTextColor="#9CA3AF"
@@ -85,8 +81,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                 children={(item) => (
                                     <TouchableOpacity 
                                         style={[
-                                            styles.itemContainer,
-                                            { flexDirection: isRTL ? "row-reverse" : "row" }
+                                            styles.itemContainer
                                         ]}
                                         onPress={() => {
                                             setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
@@ -118,8 +113,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                         <View style={styles.itemContent}>
                                             <Text 
                                                 style={[
-                                                    styles.itemText,
-                                                    { textAlign: isRTL ? "right" : "left" }
+                                                    styles.itemText
                                                 ]}
                                             >
                                                 {item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}
@@ -130,7 +124,6 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                                 name="chevron-forward" 
                                                 size={18} 
                                                 color="#4F46E5"
-                                                style={{ transform: [{ scaleX: isRTL ? -1 : 1 }] }}
                                             />
                                         </View>
                                     </TouchableOpacity>
@@ -198,7 +191,8 @@ const styles = StyleSheet.create({
     closeButton: {
         position: 'absolute',
         top: 16,
-        padding: 4
+        padding: 4,
+        left: 16
     },
     searchContainer: {
         padding: 16,

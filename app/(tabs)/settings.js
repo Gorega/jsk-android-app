@@ -12,12 +12,14 @@ import ModalPresentation from "../../components/ModalPresentation";
 import { useState } from "react";
 import { deleteToken } from "../../utils/secureStore";
 import { useAuth } from "../../RootLayout";
+import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+
 
 export default function Settings() {
     const { language, setLanguage } = useLanguage();
-    const isRTL = language === 'ar' || language === 'he';
     const [showLanguageModal, setShowLanguageModal] = useState(false);
     const { setIsAuthenticated, user } = useAuth();
+    const rtl = useRTLStyles();
 
     const settings = [
         (["admin", "manager"].includes(user.role)) ? {
@@ -71,7 +73,7 @@ export default function Settings() {
     return (
         <View style={styles.container}>
             {/* User Info Card */}
-            <View style={[styles.userCard,{ flexDirection: isRTL ? "row-reverse" : "row" }]}>
+            <View style={[styles.userCard]}>
                 <View style={styles.avatarContainer}>
                     <Text style={styles.avatarText}>
                         {user.name ? user.name.charAt(0).toUpperCase() : "U"}
@@ -93,39 +95,34 @@ export default function Settings() {
                     <TouchableOpacity
                         key={index}
                         style={[
-                            styles.item,
-                            { flexDirection: isRTL ? "row-reverse" : "row" }
+                            styles.item
                         ]}
                         onPress={item?.onPress}
                         activeOpacity={0.7}
                     >
                         <View style={[
-                            styles.iconContainer,
-                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                            styles.iconContainer
                         ]}>
                             {item?.icon}
                         </View>
                         <View style={styles.itemTextContainer}>
                             <Text style={[
-                                styles.itemLabel,
-                                { textAlign: isRTL ? "right" : "left" }
+                                styles.itemLabel
                             ]}>
                                 {item?.label}
                             </Text>
                         </View>
                         {item.value && (
                             <View style={[
-                                styles.valueContainer,
-                                isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }
+                                styles.valueContainer
                             ]}>
                                 <Text style={styles.valueText}>{item.value}</Text>
                             </View>
                         )}
                         <MaterialIcons 
-                            name={isRTL ? "chevron-left" : "chevron-right"} 
+                            name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                             size={24} 
                             color="#94A3B8" 
-                            style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}
                         />
                     </TouchableOpacity>
                 ))}
@@ -138,31 +135,27 @@ export default function Settings() {
                     <TouchableOpacity
                         key={index}
                         style={[
-                            styles.item,
-                            { flexDirection: isRTL ? "row-reverse" : "row" }
+                            styles.item
                         ]}
                         onPress={item?.onPress}
                         activeOpacity={0.7}
                     >
                         <View style={[
-                            styles.iconContainer,
-                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                            styles.iconContainer
                         ]}>
                             {item?.icon}
                         </View>
                         <View style={styles.itemTextContainer}>
                             <Text style={[
-                                styles.itemLabel,
-                                { textAlign: isRTL ? "right" : "left" }
+                                styles.itemLabel
                             ]}>
                                 {item?.label}
                             </Text>
                         </View>
                         <MaterialIcons 
-                            name={isRTL ? "chevron-left" : "chevron-right"} 
+                            name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                             size={24} 
                             color="#94A3B8" 
-                            style={isRTL ? { marginRight: 'auto' } : { marginLeft: 'auto' }}
                         />
                     </TouchableOpacity>
                 ))}
@@ -174,24 +167,21 @@ export default function Settings() {
                 <TouchableOpacity
                     style={[
                         styles.item,
-                        styles.dangerItem,
-                        { flexDirection: isRTL ? "row-reverse" : "row" }
+                        styles.dangerItem
                     ]}
                     onPress={settings[7]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
-                        styles.dangerIconContainer,
-                        isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                        styles.dangerIconContainer
                     ]}>
                         {settings[7]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
-                            styles.dangerLabel,
-                            { textAlign: isRTL ? "right" : "left" }
+                            styles.dangerLabel
                         ]}>
                             {settings[7]?.label}
                         </Text>
@@ -220,8 +210,7 @@ export default function Settings() {
                     >
                         <Text style={[
                             styles.languageText, 
-                            language === 'ar' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'ar' && styles.activeLanguageText
                         ]}>
                             {translations[language].tabs.settings.options.language.options.ar}
                         </Text>
@@ -239,8 +228,7 @@ export default function Settings() {
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'en' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'en' && styles.activeLanguageText
                         ]}>
                             {translations[language].tabs.settings.options.language.options.en}
                         </Text>
@@ -259,8 +247,7 @@ export default function Settings() {
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'he' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'he' && styles.activeLanguageText
                         ]}>
                             {translations[language].tabs.settings.options.language.options.he}
                         </Text>
@@ -286,6 +273,7 @@ const styles = StyleSheet.create({
         padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
+        gap: 12
     },
     avatarContainer: {
         width: 50,
@@ -293,8 +281,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
         backgroundColor: '#4361EE',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 15,
+        alignItems: 'center'
     },
     avatarText: {
         color: 'white',
@@ -338,6 +325,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
+        gap: 12
     },
     iconContainer: {
         width: 36,
@@ -368,8 +356,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#E2E8F0',
         paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: 4,
-        marginRight: 8,
+        borderRadius: 4
     },
     valueText: {
         fontSize: 12,

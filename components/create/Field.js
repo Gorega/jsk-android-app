@@ -16,7 +16,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedCurrency, setSelectedCurrency] = useState(field.currency || "ILS");
     const { language } = useLanguage();
-    const rtl = isRTL || language === 'ar' || language === 'he';
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
@@ -50,7 +49,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
             field.containerStyle,
-            field.type === "toggle" && [styles.toggleContainer, {flexDirection: rtl ? "row-reverse" : "row"}],
+            field.type === "toggle" && [styles.toggleContainer],
             field.type === "currencyInput" && styles.currencyFieldContainer,
             error && styles.fieldError,
             field.type === "message" && styles.messageContainer
@@ -60,8 +59,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                 <Text style={[
                     styles.label,
                     { 
-                        left: rtl ? undefined : 10,
-                        right: rtl ? 10 : undefined,
                         backgroundColor: "#fff",
                     }
                 ]}>
@@ -76,8 +73,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         <TextInput 
                             multiline
                             style={[
-                                styles.input,
-                                {textAlign: rtl ? "right" : "left"}
+                                styles.input
                             ]}
                             placeholder={field.placeholder || ""}
                             value={field.value}
@@ -104,13 +100,11 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "currencyInput" && (
                     <View style={[
-                        styles.currencyInputContainer,
-                        {flexDirection: rtl ? "row-reverse" : "row"}
+                        styles.currencyInputContainer
                     ]}>
                         <TextInput 
                             style={[
-                                styles.currencyInput,
-                                {textAlign: rtl ? "right" : "left"}
+                                styles.currencyInput
                             ]}
                             value={field.value}
                             onChangeText={(text) => {
@@ -171,20 +165,17 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         onPress={() => setShowPickerModal(true)}
                     >
                         <View style={[
-                            styles.selectContent,
-                            {flexDirection: rtl ? "row-reverse" : "row"}
+                            styles.selectContent
                         ]}>
                             <Text style={[
-                                styles.selectText,
-                                {textAlign: rtl ? "right" : "left"}
+                                styles.selectText
                             ]}>
                                 {field.value || field.placeholder}
                             </Text>
                             <Feather 
                                 name="chevron-down" 
                                 size={18} 
-                                color="#64748B" 
-                                style={rtl ? {marginRight: 8} : {marginLeft: 8}}
+                                color="#64748B"
                             />
                         </View>
                         {error && <Text style={styles.errorText}>{error}</Text>}
@@ -205,10 +196,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             <FontAwesome name="times" size={16} color="#FFFFFF" />
                         ) : (
                             <View style={[
-                                styles.buttonContent,
-                                {flexDirection: rtl ? "row-reverse" : "row"}
+                                styles.buttonContent
                             ]}>
-                                <Feather name="plus" size={16} color="#FFFFFF" style={rtl ? {marginLeft: 8} : {marginRight: 8}} />
+                                <Feather name="plus" size={16} color="#FFFFFF" />
                                 <Text style={styles.buttonText}>
                                     {field.value}
                                 </Text>
@@ -224,14 +214,12 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         </View>
                         <View style={styles.messageTextContainer}>
                             <Text style={[
-                                styles.messageTitle,
-                                {textAlign: rtl ? "right" : "left"}
+                                styles.messageTitle
                             ]}>
                                 {field.label}
                             </Text>
                             <Text style={[
-                                styles.messageText,
-                                {textAlign: rtl ? "right" : "left"}
+                                styles.messageText
                             ]}>
                                 {field.value}
                             </Text>
@@ -245,7 +233,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             field.value.map((check, index) => (
                                 <View key={index} style={styles.checkItem}>
                                     <View style={styles.checkHeader}>
-                                        <Text style={styles.checkTitle}>Check #{index + 1}</Text>
+                                        <Text style={styles.checkTitle}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
                                         <TouchableOpacity
                                             style={styles.removeCheckButton}
                                             onPress={() => {
@@ -259,7 +247,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     </View>
                                     
                                     <View style={styles.checkField}>
-                                        <Text style={styles.checkFieldLabel}>Check Number</Text>
+                                        <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
                                         <TextInput
                                             style={styles.checkInput}
                                             value={check.number}
@@ -268,14 +256,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                 updatedChecks[index] = { ...check, number: text };
                                                 field.onChange(updatedChecks);
                                             }}
-                                            placeholder="Enter check number"
+                                            placeholder={translations[language].tabs.orders.order.orderChecks.checkNumberPlaceholder}
                                             placeholderTextColor="#94A3B8"
                                         />
                                     </View>
                                     
                                     <View style={styles.checkRow}>
                                         <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={styles.checkFieldLabel}>Value</Text>
+                                            <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
                                             <TextInput
                                                 style={styles.checkInput}
                                                 value={check.value ? check.value.toString() : ''}
@@ -291,7 +279,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         </View>
                                         
                                         <View style={[styles.checkField, { flex: 1 }]}>
-                                            <Text style={styles.checkFieldLabel}>Currency</Text>
+                                            <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
                                             <View style={styles.checkCurrencySelect}>
                                                 <Pressable
                                                     style={styles.currencySelector}
@@ -325,7 +313,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.noChecksText}>No checks added yet</Text>
+                            <Text style={styles.noChecksText}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
                         )}
                         
                         <TouchableOpacity
@@ -342,7 +330,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         >
                             <Feather name="plus" size={18} color="#FFFFFF" />
                             <Text style={styles.addCheckButtonText}>
-                                Add Check
+                                {translations[language].tabs.orders.order.orderChecks.addCheck}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -360,7 +348,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         loadingMore={loadingMore}
                         prickerSearchValue={prickerSearchValue}
                         setPickerSearchValue={setPickerSearchValue}
-                        isRTL={rtl}
                         setFieldErrors={setFieldErrors}
                     />
                 )}
@@ -372,20 +359,17 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             onPress={() => setShowCalendar(true)}
                         >
                             <View style={[
-                                styles.dateContent,
-                                {flexDirection: rtl ? "row-reverse" : "row"}
+                                styles.dateContent
                             ]}>
                                 <Text style={[
-                                    styles.dateText,
-                                    {textAlign: rtl ? "right" : "left"}
+                                    styles.dateText
                                 ]}>
                                     {selectedDate || field.value || "Select Date"}
                                 </Text>
                                 <Feather 
                                     name="calendar" 
                                     size={18} 
-                                    color="#64748B" 
-                                    style={rtl ? {marginRight: 8} : {marginLeft: 8}}
+                                    color="#64748B"
                                 />
                             </View>
                         </Pressable>

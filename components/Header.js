@@ -9,6 +9,8 @@ import { router } from "expo-router";
 import { useSocket } from '../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "@/utils/secureStore";
+import { RTLWrapper } from '@/utils/RTLWrapper';
+import { StatusBar } from 'expo-status-bar';
 
 export default function Header({ showGreeting = true, title }) {
     const socket = useSocket();
@@ -16,9 +18,18 @@ export default function Header({ showGreeting = true, title }) {
     const { language } = useLanguage();
     const [greetingMsg, setGreetingMsg] = useState("");
     const [notificationsCount, setNotificationsCount] = useState(0);
-    const isRTL = language === 'ar' || language === 'he';
     const badgeAnimation = useRef(new Animated.Value(0)).current;
     const balanceAnimation = useRef(new Animated.Value(0)).current;
+    const headerAnimation = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Animate header appearance
+        Animated.timing(headerAnimation, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+        }).start();
+    }, []);
 
     useEffect(() => {
         if (notificationsCount > 0) {
@@ -76,7 +87,6 @@ export default function Header({ showGreeting = true, title }) {
             // Reset local count
             setNotificationsCount(0);
         } catch (error) {
-            console.error('Error resetting notifications:', error);
         }
     };
 
@@ -114,7 +124,6 @@ export default function Header({ showGreeting = true, title }) {
                     setNotificationsCount(data.count || 0);
                 }
             } catch (error) {
-                console.error('Error fetching notification count:', error);
             }
         };
         
@@ -160,106 +169,112 @@ export default function Header({ showGreeting = true, title }) {
     }, [socket, user]);
 
     return (
-        <LinearGradient
-            colors={['#ffffff', '#f8f9fa']}
-            style={styles.container}
-        >
-            <SafeAreaView style={styles.safeArea}>
-                {/* Main Header Row */}
-                <View style={[
-                    styles.main,
-                    { flexDirection: isRTL ? "row-reverse" : "row" }
-                ]}>
-                    {/* User Avatar and Balance */}
-                    <TouchableOpacity
-                        style={styles.avatarContainer}
-                        onPress={() => router.push({
-                            pathname: "(create_user)",
-                            params: { userId: user.userId }
-                        })}
-                    >
-                        {user?.avatar ? (
-                            <Image 
-                                style={styles.avatar} 
-                                source={{ uri: user.avatar }}
-                                resizeMode="cover" 
-                            />
-                        ) : (
-                            <Image 
-                                style={styles.avatar} 
-                                source={avatar}
-                                resizeMode="cover" 
-                            />
-                        )}
-                        
-                        {["business", "driver"].includes(user?.role) && (
-                            <Animated.View 
-                                style={[
-                                    styles.balanceBadge,
-                                    { 
-                                        opacity: balanceAnimation,
-                                        transform: [{ scale: balanceAnimation }] 
-                                    }
-                                ]}
+        <RTLWrapper>
+            <StatusBar style="dark" />
+            <Animated.View style={{ opacity: headerAnimation, transform: [{ translateY: headerAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [-20, 0]
+            }) }] }}>
+                <LinearGradient
+                    colors={['#ffffff', '#f8f9fa']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={styles.container}
+                >
+                    <SafeAreaView style={styles.safeArea}>
+                        {/* Main Header Row */}
+                        <View style={styles.main}>
+                            {/* User Avatar and Balance */}
+                            <TouchableOpacity
+                                style={styles.avatarContainer}
+                                onPress={() => router.push({
+                                    pathname: "(create_user)",
+                                    params: { userId: user.userId }
+                                })}
                             >
-                                <Text style={styles.balanceText}>₪{user?.total_amount}</Text>
-                            </Animated.View>
-                        )}
-                    </TouchableOpacity>
-                    
-                    {/* Title or Greeting */}
-                    {showGreeting ? (
-                        <View style={[
-                            styles.greetingContainer,
-                            isRTL ? { alignItems: 'flex-end' } : { alignItems: 'flex-start' }
-                        ]}>
-                            <Text style={[styles.greeting, isRTL && styles.textRTL]}>
-                                {greetingMsg}
-                            </Text>
-                            <Text style={[styles.subGreeting, isRTL && styles.textRTL]}>
-                                {user.name}
-                            </Text>
-                        </View>
-                    ) : (
-                        <View style={styles.titleContainer}>
-                            <Text style={styles.titleText}>{title}</Text>
-                        </View>
-                    )}
-                    
-                    {/* Notification Button */}
-                    <TouchableOpacity 
-                        style={styles.notificationButton}
-                        onPress={handleNotificationIcon}
-                        activeOpacity={0.7}
-                    >
-                        <LinearGradient
-                            colors={['#4361EE', '#3A0CA3']}
-                            style={styles.notificationGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        >
-                            <Ionicons 
-                                name="notifications" 
-                                size={24} 
-                                color="white" 
-                            />
-                            {notificationsCount > 0 && (
-                                <Animated.View 
-                                    style={[
-                                        styles.badge,
-                                        { transform: [{ scale: badgeAnimation }] }
-                                    ]}
-                                >
-                                    <Text style={styles.badgeText}>
-                                        {notificationsCount > 99 ? '99+' : notificationsCount}
+                                <View style={styles.avatarWrapper}>
+                                    {user?.avatar ? (
+                                        <Image 
+                                            style={styles.avatar} 
+                                            source={{ uri: user.avatar }}
+                                            resizeMode="cover" 
+                                        />
+                                    ) : (
+                                        <Image 
+                                            style={styles.avatar} 
+                                            source={avatar}
+                                            resizeMode="cover" 
+                                        />
+                                    )}
+                                </View>
+                                
+                                {["business", "driver"].includes(user?.role) && (
+                                    <Animated.View 
+                                        style={[
+                                            styles.balanceBadge,
+                                            { 
+                                                opacity: balanceAnimation,
+                                                transform: [{ scale: balanceAnimation }] 
+                                            }
+                                        ]}
+                                    >
+                                        <Text style={styles.balanceText}>₪{user?.total_amount}</Text>
+                                    </Animated.View>
+                                )}
+                            </TouchableOpacity>
+                            
+                            {/* Title or Greeting */}
+                            {showGreeting ? (
+                                <View style={styles.greetingContainer}>
+                                    <Text style={styles.greeting}>
+                                        {greetingMsg}
                                     </Text>
-                                </Animated.View>
+                                    <Text style={styles.subGreeting}>
+                                        {user.name}
+                                    </Text>
+                                </View>
+                            ) : (
+                                <View style={styles.titleContainer}>
+                                    <Text style={styles.titleText}>{title}</Text>
+                                </View>
                             )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
-            </SafeAreaView>
-        </LinearGradient>
+                            
+                            {/* Notification Button */}
+                            <TouchableOpacity 
+                                style={styles.notificationButton}
+                                onPress={handleNotificationIcon}
+                                activeOpacity={0.7}
+                            >
+                                <LinearGradient
+                                    colors={['#4361EE', '#3A0CA3']}
+                                    style={styles.notificationGradient}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                >
+                                    <Ionicons 
+                                        name="notifications" 
+                                        size={24} 
+                                        color="white" 
+                                    />
+                                    {notificationsCount > 0 && (
+                                        <Animated.View 
+                                            style={[
+                                                styles.badge,
+                                                { transform: [{ scale: badgeAnimation }] }
+                                            ]}
+                                        >
+                                            <Text style={styles.badgeText}>
+                                                {notificationsCount > 99 ? '99+' : notificationsCount}
+                                            </Text>
+                                        </Animated.View>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+                </LinearGradient>
+            </Animated.View>
+        </RTLWrapper>
     );
 }
 
@@ -278,14 +293,20 @@ const styles = StyleSheet.create({
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.05,
-                shadowRadius: 2,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
             },
             android: {
-                elevation: 2,
+                elevation: 4,
             },
         }),
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1,
+        backgroundColor: '#ffffff',
     },
     safeArea: {
         width: '100%',
@@ -297,11 +318,24 @@ const styles = StyleSheet.create({
         alignItems: "center",
         paddingHorizontal: 20,
     },
-    textRTL: {
-        textAlign: 'right',
-    },
     avatarContainer: {
         position: 'relative',
+    },
+    avatarWrapper: {
+        borderRadius: 26,
+        padding: 2,
+        backgroundColor: 'white',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     avatar: {
         width: 48,
@@ -317,17 +351,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#10B981',
         paddingHorizontal: 8,
         paddingVertical: 4,
-        borderRadius: 10,
-        borderWidth: 1.5,
+        borderRadius: 12,
+        borderWidth: 2,
         borderColor: 'white',
         shadowColor: "#000",
         shadowOffset: {
             width: 0,
-            height: 1,
+            height: 2,
         },
-        shadowOpacity: 0.18,
-        shadowRadius: 1.00,
-        elevation: 2,
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
     },
     balanceText: {
         color: 'white',
@@ -339,14 +373,16 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
     },
     greeting: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
         color: '#1F2937',
+        letterSpacing: -0.5,
     },
     subGreeting: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#64748B',
         marginTop: 2,
+        fontWeight: '500',
     },
     titleContainer: {
         flex: 1,
@@ -354,24 +390,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     titleText: {
-        fontSize: 18,
-        fontWeight: '600',
+        fontSize: 20,
+        fontWeight: '700',
         color: '#1F2937',
+        letterSpacing: -0.5,
     },
     notificationButton: {
-        shadowColor: "#000",
+        shadowColor: "#4361EE",
         shadowOffset: {
             width: 0,
-            height: 2,
+            height: 4,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 3.84,
-        elevation: 3,
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 6,
     },
     notificationGradient: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
         position: 'relative',
@@ -382,17 +419,17 @@ const styles = StyleSheet.create({
         top: -6,
         backgroundColor: '#EF4444',
         borderRadius: 12,
-        minWidth: 22,
-        height: 22,
+        minWidth: 24,
+        height: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 4,
-        borderWidth: 1.5,
+        paddingHorizontal: 5,
+        borderWidth: 2,
         borderColor: 'white',
     },
     badgeText: {
         color: 'white',
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: 'bold',
     }
 });

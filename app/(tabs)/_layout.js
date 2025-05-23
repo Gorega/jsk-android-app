@@ -1,8 +1,8 @@
 import { Tabs, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import React, { useEffect, useState } from 'react';
-import { Text, TouchableOpacity, View, Platform, Animated, I18nManager } from "react-native";
+import React, { useState } from 'react';
+import { Text, TouchableOpacity, View, Platform, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -14,10 +14,14 @@ import { useAuth } from "../../RootLayout";
 import FixedHeader from "../../components/FixedHeader";
 import { LinearGradient } from 'expo-linear-gradient';
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+import AddOptionsModal from '../../components/AddOptionsModal';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+
 
 export default function TabLayout() {
   const { language } = useLanguage();
   const [showModal, setShowModal] = useState(false);
+  const [showAddOptionsModal, setShowAddOptionsModal] = useState(false);
   const { user } = useAuth();
   const addButtonScale = new Animated.Value(1);
   const rtl = useRTLStyles();
@@ -47,8 +51,9 @@ export default function TabLayout() {
     animateAddButton();
     // Reduce timeout to minimize potential timing issues
     setTimeout(() => {
-      if (user.role === "driver") {
-        router.push("/(camera)/assignOrdersDriver");
+      if (["driver", "delivery_company"].includes(user.role)) {
+        // Show options modal for driver or delivery_company
+        setShowAddOptionsModal(true);
       } else {
         router.push("/(create)/");
       }
@@ -169,7 +174,7 @@ export default function TabLayout() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                <FontAwesome6 name="plus" size={22} color="#FFFFFF" />
+               {["driver","delivery_company"].includes(user.role) ? <MaterialIcons name="route" size={24} color="#FFFFFF" /> : <FontAwesome6 name="plus" size={22} color="#FFFFFF" />}
               </LinearGradient>
             </Animated.View>
           </TouchableOpacity>
@@ -255,6 +260,11 @@ export default function TabLayout() {
         ))}
       </Tabs>
       {showModal && <Collections showModal={showModal} setShowModal={setShowModal} />}
+      <AddOptionsModal 
+        visible={showAddOptionsModal} 
+        onClose={() => setShowAddOptionsModal(false)} 
+        userRole={user.role} 
+      />
     </RTLWrapper>
   );
 }

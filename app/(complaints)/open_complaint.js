@@ -5,19 +5,16 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useLocalSearchParams, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { useSocket } from '../../utils/socketContext';
 import { getToken } from '../../utils/secureStore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const SubmitComplaint = () => {
-  const socket = useSocket();
   const { language } = useLanguage();
   const params = useLocalSearchParams();
   const { orderId } = params;
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
-  const isRTL = ["ar", "he"].includes(language);
 
   const submitComplaint = async () => {
     if (!subject.trim() || !description.trim()) {
@@ -86,7 +83,7 @@ const SubmitComplaint = () => {
           end={{ x: 1, y: 1 }}
           style={styles.orderCard}
         >
-          <View style={[styles.orderCardContent, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+          <View style={[styles.orderCardContent]}>
             <View style={styles.orderIconContainer}>
               <Feather name="package" size={24} color="white" />
             </View>
@@ -99,21 +96,21 @@ const SubmitComplaint = () => {
           </View>
         </LinearGradient>
 
-        <Text style={[styles.title, { textAlign: isRTL ? "right" : "left" }]}>
+        <Text style={[styles.title]}>
           {translations[language].complaints.openComplaint}
         </Text>
 
         <View style={styles.formContainer}>
           {/* Subject Input */}
           <View style={styles.inputWrapper}>
-            <View style={[styles.inputLabelContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.inputLabelContainer]}>
               <MaterialIcons name="subject" size={18} color="#4361EE" />
-              <Text style={[styles.inputLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+              <Text style={[styles.inputLabel]}>
                 {translations[language].complaints.subject}
               </Text>
             </View>
             <TextInput
-              style={[styles.input, { textAlign: isRTL ? "right" : "left" }]}
+              style={[styles.input]}
               placeholder={translations[language].complaints.subjectPlaceholder || 'Enter subject'}
               placeholderTextColor="#94A3B8"
               value={subject}
@@ -123,14 +120,14 @@ const SubmitComplaint = () => {
 
           {/* Description Input */}
           <View style={styles.inputWrapper}>
-            <View style={[styles.inputLabelContainer, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
+            <View style={[styles.inputLabelContainer]}>
               <MaterialIcons name="description" size={18} color="#4361EE" />
-              <Text style={[styles.inputLabel, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+              <Text style={[styles.inputLabel]}>
                 {translations[language].complaints.describe}
               </Text>
             </View>
             <TextInput
-              style={[styles.input, styles.textArea, { textAlign: isRTL ? "right" : "left" }]}
+              style={[styles.input, styles.textArea]}
               placeholder={translations[language].complaints.describePlaceholder || 'Describe your issue'}
               placeholderTextColor="#94A3B8"
               multiline
@@ -157,8 +154,8 @@ const SubmitComplaint = () => {
               {loading ? (
                 <ActivityIndicator color="#FFFFFF" size="small" />
               ) : (
-                <View style={[styles.buttonContent, { flexDirection: isRTL ? 'row-reverse' : 'row' }]}>
-                  <Feather name="send" size={18} color="#fff" style={{ marginRight: isRTL ? 0 : 10, marginLeft: isRTL ? 10 : 0 }} />
+                <View style={[styles.buttonContent]}>
+                  <Feather name="send" size={18} color="#fff" />
                   <Text style={styles.buttonText}>{translations[language].complaints.submit}</Text>
                 </View>
               )}
@@ -199,8 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
+    alignItems: 'center'
   },
   orderLabel: {
     color: 'rgba(255, 255, 255, 0.8)',
@@ -235,12 +231,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 10
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
-    marginLeft: 8,
+    color: '#1F2937'
   },
   input: {
     backgroundColor: "#F9FAFB",
@@ -274,6 +270,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10
   },
   buttonText: {
     color: "#FFFFFF",

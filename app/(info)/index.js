@@ -7,7 +7,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen(){
     const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
 
     return (
         <View style={styles.container}>
@@ -27,11 +26,11 @@ export default function HomeScreen(){
                         <Feather name="info" size={24} color="white" />
                     </LinearGradient>
                     
-                    <Text style={[styles.title, {textAlign: isRTL ? "right" : "left"}]}>
+                    <Text style={[styles.title]}>
                         {translations[language].about.aboutLabel}
                     </Text>
                     
-                    <Text style={[styles.description, {textAlign: isRTL ? "right" : "left"}]}>
+                    <Text style={[styles.description]}>
                         {translations[language].about.aboutDesc}
                     </Text>
                 </View>

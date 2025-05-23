@@ -13,10 +13,6 @@ import { router } from 'expo-router';
 // import * as Location from 'expo-location';
 import { useSocket } from '../../utils/socketContext';
 
-// Helper functions for RTL support
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-
 export default function Routes() {
     const socket = useSocket();
     const { language } = useLanguage();
@@ -252,18 +248,18 @@ export default function Routes() {
                 onPress={() => handleEditRoute(item)}
                 activeOpacity={0.7}
             >
-                <View style={[styles.routeHeader, { flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.routeHeader]}>
                     <View style={styles.routeIconContainer}>
                         <MaterialCommunityIcons name="routes" size={22} color="#fff" />
                     </View>
                     
                     <View style={styles.routeTitleContainer}>
-                        <Text style={[styles.routeName, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.routeName]}>
                             {item.name}
                         </Text>
-                        <Text style={[styles.routeDate, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.routeDate]}>
                             {new Date(item.created_at).toLocaleDateString(
-                                isRTL ? (language === 'he' ? 'he-IL' : 'ar-SA') : 'en-US',
+                                'en-US',
                                 { year: 'numeric', month: 'short', day: 'numeric' }
                             )}
                         </Text>
@@ -280,33 +276,33 @@ export default function Routes() {
                 </View>
                 
                 <View style={styles.routeStats}>
-                    <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.statItem]}>
                         <Feather name="package" size={16} color="#64748B" />
-                        <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                        <Text style={[styles.statText]}>
                             {orderCount} {translations[language]?.routes?.orders || "Orders"}
                         </Text>
                     </View>
                     
                     {isCompletedRoute ? (
-                        <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.statItem]}>
                             <Feather name="check-circle" size={16} color="#10B981" />
-                            <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                            <Text style={[styles.statText]}>
                                 {translations[language]?.routes?.completed || "Completed"}
                             </Text>
                         </View>
                     ) : (
-                        <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.statItem]}>
                             <Feather name="check-circle" size={16} color="#10B981" />
-                            <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0 }]}>
+                            <Text style={[styles.statText]}>
                                 {deliveredCount}/{orderCount} {translations[language]?.routes?.delivered || "Delivered"}
                             </Text>
                         </View>
                     )}
                     
                     {item.optimized ? (
-                        <View style={[styles.statItem, { flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.statItem]}>
                             <MaterialIcons name="route" size={16} color="#4361EE" />
-                            <Text style={[styles.statText, { marginLeft: isRTL ? 0 : 8, marginRight: isRTL ? 8 : 0, color: "#4361EE" }]}>
+                            <Text style={[styles.statText]}>
                                 {translations[language]?.routes?.optimized || "Optimized"}
                             </Text>
                         </View>
@@ -436,7 +432,7 @@ export default function Routes() {
                             <View style={styles.inputWrapper}>
                                 <Feather name="tag" size={20} color="#64748B" style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, { textAlign: getTextAlign(isRTL) }]}
+                                    style={[styles.input]}
                                     placeholder={translations[language]?.routes?.enterRouteName || "Enter route name"}
                                     value={routeName}
                                     onChangeText={setRouteName}
@@ -604,6 +600,7 @@ const styles = StyleSheet.create({
     },
     routeActions: {
         flexDirection: 'row',
+        gap:10
     },
     actionButton: {
         width: 36,
@@ -611,8 +608,7 @@ const styles = StyleSheet.create({
         borderRadius: 18,
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginLeft: 8,
+        alignItems: 'center'
     },
     routeStats: {
         flexDirection: 'row',
@@ -621,18 +617,18 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#F1F5F9',
         paddingTop: 12,
+        gap:10
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 16,
         marginBottom: 8,
+        gap:4
     },
     statText: {
         fontSize: 13,
         color: '#64748B',
-        fontWeight: '500',
-        marginLeft: 8,
+        fontWeight: '500'
     },
     routeButtons: {
         flexDirection: 'row',
@@ -644,13 +640,14 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingVertical: 10,
         borderRadius: 8,
-        marginHorizontal: 4,
     },
     editButton: {
         backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        gap:4,
     },
     navigateButton: {
         backgroundColor: '#4361EE',
+        gap:4,
     },
     buttonText: {
         marginLeft: 8,
@@ -824,6 +821,7 @@ const styles = StyleSheet.create({
     confirmButtons: {
         flexDirection: 'row',
         width: '100%',
+        gap:10
     },
     cancelButton: {
         flex: 1,
@@ -831,7 +829,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#E2E8F0',
         borderRadius: 8,
-        marginRight: 8,
         alignItems: 'center',
     },
     cancelButtonText: {

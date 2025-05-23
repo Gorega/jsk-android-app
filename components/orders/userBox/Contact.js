@@ -10,7 +10,6 @@ export default function Contact({ contact }) {
     const { language } = useLanguage();
     const [showContactModal, setShowContactModal] = useState(false);
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
-    const isRTL = ["he", "ar"].includes(language);
 
     return (
         <>
@@ -31,12 +30,12 @@ export default function Contact({ contact }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalContent}>
-                        <Text style={[styles.modalTitle, isRTL && styles.textRTL]}>
+                        <Text style={[styles.modalTitle]}>
                             {contact.label}
                         </Text>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, isRTL && styles.modalOptionRTL]}
+                            style={[styles.modalOption]}
                             onPress={() => Linking.openURL(
                                 contact.type === "phone" 
                                     ? `tel:${contact.phone}` 
@@ -49,19 +48,19 @@ export default function Contact({ contact }) {
                                     : <Feather name="message-square" size={20} color="#ffffff" />
                                 }
                             </View>
-                            <Text style={[styles.modalOptionText, isRTL && styles.textRTL]}>
+                            <Text style={[styles.modalOptionText]}>
                                 {translations[language].tabs.orders.order.contactPhone} {contact.label}
                             </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, isRTL && styles.modalOptionRTL, styles.withoutBorder]}
+                            style={[styles.modalOption, styles.withoutBorder]}
                             onPress={() => setShowWhatsappOptions(true)}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
                             </View>
-                            <Text style={[styles.modalOptionText, isRTL && styles.textRTL]}>
+                            <Text style={[styles.modalOptionText]}>
                                 {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
                             </Text>
                         </TouchableOpacity>
@@ -76,12 +75,12 @@ export default function Contact({ contact }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalContent}>
-                        <Text style={[styles.modalTitle, isRTL && styles.textRTL]}>
+                        <Text style={[styles.modalTitle]}>
                             {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
                         </Text>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, isRTL && styles.modalOptionRTL]}
+                            style={[styles.modalOption]}
                             onPress={() => Linking.openURL(
                                 `https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`
                             )}
@@ -89,13 +88,13 @@ export default function Contact({ contact }) {
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
                             </View>
-                            <Text style={[styles.modalOptionText, isRTL && styles.textRTL]}>
+                            <Text style={[styles.modalOptionText]}>
                                 {`+972${contact.phone}`}
                             </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, isRTL && styles.modalOptionRTL, styles.withoutBorder]}
+                            style={[styles.modalOption, styles.withoutBorder]}
                             onPress={() => Linking.openURL(
                                 `https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`
                             )}
@@ -103,14 +102,14 @@ export default function Contact({ contact }) {
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
                             </View>
-                            <Text style={[styles.modalOptionText, isRTL && styles.textRTL]}>
+                            <Text style={[styles.modalOptionText]}>
                                 {`+970${contact.phone}`}
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </ModalPresentation>
             )}
-        </>
+       </>
     );
 }
 
@@ -140,9 +139,6 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.08)',
     },
-    modalOptionRTL: {
-        flexDirection: 'row-reverse',
-    },
     modalIconContainer: {
         width: 40,
         height: 40,
@@ -157,9 +153,6 @@ const styles = StyleSheet.create({
     modalOptionText: {
         fontSize: 15,
         color: '#333333',
-    },
-    textRTL: {
-        textAlign: 'right',
     },
     withoutBorder: {
         borderBottomWidth: 0,

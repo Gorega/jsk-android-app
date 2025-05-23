@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useCameraPermissions } from 'expo-camera';
 import { translations } from '../utils/languageContext';
 import { useLanguage } from '../utils/languageContext';
-
+import { RTLWrapper } from '@/utils/RTLWrapper';
 
 export default function TrackOrder(){
     const [value,setValue] = useState("");
@@ -14,14 +14,15 @@ export default function TrackOrder(){
     const { language } = useLanguage();
 
 
-    return <View style={styles.track}>
-        <Text style={[styles.h2,{fontWeight:["he", "ar"].includes(language) ? "600" : "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.title}</Text>
-        <Text style={[styles.p,{fontWeight:["he", "ar"].includes(language) ? "500" : "500",textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}>{translations[language].track.desc}</Text>
-        <View style={[styles.flex,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
-            <View style={[styles.inputBox,{flexDirection:["he", "ar"].includes(language) ? "row-reverse" : "row"}]}>
+    return <RTLWrapper>
+        <View style={styles.track}>
+        <Text style={[styles.h2]}>{translations[language].track.title}</Text>
+        <Text style={[styles.onPress]}>{translations[language].track.desc}</Text>
+        <View style={[styles.flex]}>
+            <View style={[styles.inputBox]}>
                 <Feather name="package" size={24} color="black" />
                 <TextInput
-                    style={[styles.input,{textAlign:["he", "ar"].includes(language) ? "right" : "left"}]}
+                    style={[styles.input]}
                     placeholder={translations[language].track.placeholder} 
                     value={value}
                     onChangeText={(input)=> setValue(input)}
@@ -43,6 +44,7 @@ export default function TrackOrder(){
             </TouchableOpacity>
         </View>
     </View>
+    </RTLWrapper>
 }
 
 const styles = StyleSheet.create({
@@ -80,7 +82,6 @@ const styles = StyleSheet.create({
     },
     input:{
         width:"85%",
-        textAlign:"left",
         color: "#1F2937",
     },
     button:{

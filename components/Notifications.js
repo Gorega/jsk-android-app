@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } fr
 import { useLanguage } from '../utils/languageContext';
 import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from "../RootLayout";
 import { router } from 'expo-router';
@@ -11,6 +10,7 @@ import FlatListData from './FlatListData';
 import { useSocket } from '../utils/socketContext';
 import { getToken } from '../utils/secureStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRTLStyles } from '../utils/RTLWrapper';
 
 export default function Notifications() {
   const socket = useSocket();
@@ -20,8 +20,7 @@ export default function Notifications() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
-  
-  const isRTL = useMemo(() => ["he", "ar"].includes(language), [language]);
+  const rtl = useRTLStyles();
 
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
@@ -108,7 +107,6 @@ export default function Notifications() {
         )
       );
     } catch (error) {
-      console.error("Error marking notification as read:", error);
     }
   };
 
@@ -309,8 +307,7 @@ export default function Notifications() {
     >
       <TouchableOpacity 
         style={[
-          styles.notificationContent,
-          { flexDirection: isRTL ? "row-reverse" : "row" }
+          styles.notificationContent
         ]}
         onPress={() => handleNotificationItemClick(notification.notification_id, notification.type, notification.order_id)}
         activeOpacity={0.7}
@@ -321,12 +318,10 @@ export default function Notifications() {
         </View>
         
         <View style={[
-          styles.contentContainer,
-          { paddingLeft: isRTL ? 0 : 12, paddingRight: isRTL ? 12 : 0 }
+          styles.contentContainer
         ]}>
           <View style={[
-            styles.notificationHeader,
-            { flexDirection: isRTL ? "row-reverse" : "row" }
+            styles.notificationHeader
           ]}>
             {/* <Text style={[
               styles.title,
@@ -342,7 +337,6 @@ export default function Notifications() {
           <Text 
             style={[
               styles.message,
-              { textAlign: isRTL ? "right" : "left" },
               !notification.is_read && styles.unreadText
             ]} 
           >
@@ -393,12 +387,10 @@ export default function Notifications() {
         style={styles.headerGradient}
       >
         <View style={[
-          styles.header,
-          { flexDirection: isRTL ? "row-reverse" : "row" }
+          styles.header
         ]}>
           <View style={[
-            styles.headerTitleContainer,
-            { flexDirection: isRTL ? "row-reverse" : "row" }
+            styles.headerTitleContainer
           ]}>
             <TouchableOpacity 
               onPress={() => router.back()}
@@ -406,7 +398,7 @@ export default function Notifications() {
               hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
             >
               <MaterialIcons 
-                style={{ transform: isRTL ? [{ scaleX: -1 }] : [] }}
+                style={{ transform: rtl.isRTL ? [{ scaleX: -1 }] : [] }}
                 name="arrow-back-ios" 
                 size={22} 
                 color="#1F2937" 
@@ -471,10 +463,12 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   header: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingTop: 40,
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    height: 110,
   },
   headerTitle: {
     fontSize: 20,
@@ -574,6 +568,7 @@ const styles = StyleSheet.create({
   notificationContent: {
     flex: 1,
     flexDirection: 'row',
+    gap:10
   },
   deleteButton: {
     width: 36,
@@ -581,8 +576,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: 'rgba(255, 107, 107, 0.1)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 10,
+    alignItems: 'center'
   },
   emptyContainer: {
     flex: 1,

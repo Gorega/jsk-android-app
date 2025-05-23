@@ -11,7 +11,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function HomeScreen(){
     const { language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
-    const isRTL = ["he", "ar"].includes(language);
 
     useEffect(() => {
         const currentHour = new Date().getHours();
@@ -44,13 +43,13 @@ export default function HomeScreen(){
                     </LinearGradient>
                     
                     <View style={styles.statusTextContainer}>
-                        <Text style={[styles.statusTitle, {textAlign: isRTL ? "right" : "left"}]}>
+                        <Text style={[styles.statusTitle]}>
                             {translations[language].contact.weAre}{' '}
                             <Text style={{color: isOpen ? "#059669" : "#DC2626", fontWeight: '700'}}>
                                 {isOpen ? translations[language].contact.open : translations[language].contact.closed} {translations[language].contact.now}
                             </Text>
                         </Text>
-                        <Text style={[styles.statusSubtitle, {textAlign: isRTL ? "right" : "left"}]}>
+                        <Text style={[styles.statusSubtitle]}>
                             {isOpen 
                                 ? (translations[language].contact?.openingHours || "Opening hours: 9:00 AM - 10:00 PM") 
                                 : (translations[language].contact?.closingHours || "We'll be back tomorrow at 9:00 AM")}
@@ -60,9 +59,9 @@ export default function HomeScreen(){
                 
                 {/* Contact Card */}
                 <View style={styles.contactCard}>
-                    <View style={[styles.contactRow, {flexDirection: isRTL ? "row-reverse" : "row"}]}>
+                    <View style={[styles.contactRow]}>
                         <Feather name="phone" size={20} color="#4361EE" />
-                        <View style={[styles.contactTextContainer, {alignItems: isRTL ? "flex-end" : "flex-start"}]}>
+                        <View style={[styles.contactTextContainer]}>
                             <Text style={styles.contactLabel}>{translations[language].contact.local}</Text>
                             <Text style={styles.contactValue}>+970593686817</Text>
                         </View>
@@ -71,7 +70,7 @@ export default function HomeScreen(){
                 
                 {/* Social Media Card */}
                 <View style={styles.socialCard}>
-                    <Text style={[styles.socialTitle, {textAlign: isRTL ? "right" : "left"}]}>
+                    <Text style={[styles.socialTitle]}>
                         {translations[language].contact?.connectWithUs || "تواصل معنا"}
                     </Text>
                     
@@ -178,14 +177,14 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 4,
         marginBottom: 20,
+        gap: 10,
     },
     statusIconContainer: {
         width: 56,
         height: 56,
         borderRadius: 16,
         justifyContent: 'center',
-        alignItems: 'center',
-        marginRight: 16,
+        alignItems: 'center'
     },
     statusTextContainer: {
         flex: 1,
@@ -281,6 +280,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 16,
+        gap: 10,
     },
     websiteButtonText: {
         fontWeight: "700",

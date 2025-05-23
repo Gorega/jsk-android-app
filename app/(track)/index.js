@@ -13,11 +13,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { getToken } from '../../utils/secureStore';
 
-// Helper functions for RTL
-const getTextAlign = (isRTL) => isRTL ? 'right' : 'left';
-const getFlexDirection = (isRTL) => isRTL ? 'row-reverse' : 'row';
-const getMargin = (isRTL, size = 15) => isRTL ? { marginRight: 0, marginLeft: size } : { marginLeft: 0, marginRight: size };
-
 const TrackingOrder = () => {
   const socket = useSocket();
   const { user: authUser } = useAuth();
@@ -27,7 +22,6 @@ const TrackingOrder = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { language } = useLanguage();
-  const isRTL = language === 'ar' || language === 'he';
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -36,7 +30,6 @@ const TrackingOrder = () => {
       setError(null);
       await fetchOrderData();
     } catch (error) {
-      console.error('Error refreshing data:', error);
     } finally {
       setRefreshing(false);
     }
@@ -233,28 +226,28 @@ const TrackingOrder = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString(
-      isRTL ? (language === 'he' ? 'he-IL' : 'ar-SA') : 'en-US',
+      'en-US',
       { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }
     );
   };
 
   // Helper function to format currency values
-  const formatCurrencyValue = (value, currency, isRTL) => {
+  const formatCurrencyValue = (value, currency) => {
     // Check if value contains multiple currencies
     if (typeof value === 'string' && (value.includes('ILS:') || value.includes('JOD:') || value.includes('USD:'))) {
         // Split the string by '|' and create a wrapped display
         const currencies = value.split('|').map(item => item.trim());
         return (
-            <View style={[styles.currencyContainer, isRTL && { alignItems: 'flex-end' }]}>
+            <View style={[styles.currencyContainer]}>
                 {currencies.map((curr, idx) => (
-                    <Text key={idx} style={[styles.currencyText, isRTL && styles.textRTL]}>{curr}</Text>
+                    <Text key={idx} style={[styles.currencyText]}>{curr}</Text>
                 ))}
             </View>
         );
     }
     
     // Regular display for simple values - Wrap in Text component
-    return <Text style={[styles.costText, isRTL && styles.textRTL]}>{value} {currency}</Text>;
+    return <Text style={[styles.costText]}>{value} {currency}</Text>;
   };
 
   return (
@@ -327,38 +320,38 @@ const TrackingOrder = () => {
               colors={['#4F46E5', '#4338CA']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <Ionicons name="person" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.receiverInfo || 'Receiver Information'}
               </Text>
             </LinearGradient>
             
             <View style={styles.cardContent}>
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer, { flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="user" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.receiver_name || '-'}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="phone" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
                 <TouchableOpacity 
-                  style={[styles.phoneButton,{ flexDirection: getFlexDirection(isRTL) }]}
+                  style={[styles.phoneButton]}
                   onPress={() => handlePhoneCall(order.receiver_mobile)}
                 >
                   <Text style={styles.phoneButtonText}>{order.receiver_mobile || '-'}</Text>
@@ -367,15 +360,15 @@ const TrackingOrder = () => {
               </View>
               
               {order.receiver_second_mobile && (
-                <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                  <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.infoRow]}>
+                  <View style={[styles.labelContainer]}>
                     <Feather name="phone-forwarded" size={16} color="#4F46E5" style={styles.labelIcon} />
-                    <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.infoLabel]}>
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
                   <TouchableOpacity 
-                    style={[styles.phoneButton,{ flexDirection: getFlexDirection(isRTL) }]}
+                    style={[styles.phoneButton]}
                     onPress={() => handlePhoneCall(order.receiver_second_mobile)}
                   >
                     <Text style={styles.phoneButtonText}>{order.receiver_second_mobile}</Text>
@@ -384,26 +377,26 @@ const TrackingOrder = () => {
                 </View>
               )}
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="map-pin" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.receiver_city || '-'}{order.receiver_area ? `, ${order.receiver_area}` : ''}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="home" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.address}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.receiver_address || '-'}
                 </Text>
               </View>
@@ -416,83 +409,83 @@ const TrackingOrder = () => {
               colors={['#8B5CF6', '#7C3AED']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <Ionicons name="business" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.senderInfo || 'Sender Information'}
               </Text>
             </LinearGradient>
             
             <View style={styles.cardContent}>
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="briefcase" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.sender || '-'}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="phone" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
                 <TouchableOpacity 
-                  style={[styles.phoneButton, { backgroundColor: '#7C3AED' },{ flexDirection: getFlexDirection(isRTL) }]}
+                  style={[styles.phoneButton, { backgroundColor: '#7C3AED' }]}
                   onPress={() => handlePhoneCall(order.sender_mobile)}
                 >
-                  <Text style={[styles.phoneButtonText,{ flexDirection: getFlexDirection(isRTL) }]}>{order.sender_mobile || '-'}</Text>
+                  <Text style={[styles.phoneButtonText]}>{order.sender_mobile || '-'}</Text>
                   <Feather name="phone-call" size={14} color="#ffffff" />
                 </TouchableOpacity>
               </View>
               
               {order.sender_second_mobile && (
-                <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                  <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.infoRow]}>
+                  <View style={[styles.labelContainer]}>
                     <Feather name="phone-forwarded" size={16} color="#7C3AED" style={styles.labelIcon} />
-                    <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.infoLabel]}>
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
                   <TouchableOpacity 
-                    style={[styles.phoneButton, { backgroundColor: '#7C3AED' },{ flexDirection: getFlexDirection(isRTL) }]}
+                    style={[styles.phoneButton, { backgroundColor: '#7C3AED' }]}
                     onPress={() => handlePhoneCall(order.sender_second_mobile)}
                   >
-                    <Text style={[styles.phoneButtonText,{ flexDirection: getFlexDirection(isRTL) }]}>{order.sender_second_mobile}</Text>
+                    <Text style={[styles.phoneButtonText]}>{order.sender_second_mobile}</Text>
                     <Feather name="phone-call" size={14} color="#ffffff" />
                   </TouchableOpacity>
                 </View>
               )}
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="map-pin" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.sender_city || '-'}{order.sender_area ? `, ${order.sender_area}` : ''}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                <View style={[styles.labelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.infoRow]}>
+                <View style={[styles.labelContainer]}>
                   <Feather name="map" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.infoLabel]}>
                     {translations[language].tabs.orders.track.branch}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.infoValue]}>
                   {order.sender_branch || '-'}
                 </Text>
               </View>
@@ -505,12 +498,12 @@ const TrackingOrder = () => {
               colors={['#F97316', '#EA580C']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <Feather name="info" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.orderDetails || 'Order Details'}
               </Text>
             </LinearGradient>
@@ -563,7 +556,7 @@ const TrackingOrder = () => {
               {order.driver && (
                 <View style={styles.driverContainer}>
                   <View style={styles.driverHeader}>
-                    <View style={[styles.driverIconContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.driverIconContainer]}>
                       <Feather name="truck" size={18} color="#F97316" />
                     </View>
                     <Text style={styles.driverHeaderText}>
@@ -594,44 +587,44 @@ const TrackingOrder = () => {
               colors={['#10B981', '#059669']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <FontAwesome name="money" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.financialDetails || 'Financial Details'}
               </Text>
             </LinearGradient>
             
             <View style={styles.cardContent}>
               <View style={styles.financialSummary}>
-                <View style={[styles.financialItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.financialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="dollar-sign" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel,{ textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.financialLabel]}>
                     {translations[language].tabs.orders.track.codValue}
                   </Text>
                   <Text style={styles.financialValue}>{order.total_cod_value || '0'}</Text>
                 </View>
                 
                 {!["driver","delivery_company"].includes(authUser.role) && <>
-                  <View style={[styles.financialItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                  <View style={[styles.financialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel,{ textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.financialLabel]}>
                     {translations[language].tabs.orders.track.deliveryFee}
                   </Text>
                   <Text style={styles.financialValue}>{order.delivery_fee || '0'}</Text>
                 </View>
                 
-                <View style={[styles.financialItem, styles.highlightedFinancialItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.financialItem, styles.highlightedFinancialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
                     <Feather name="check-circle" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabelHighlight,{ textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.financialLabelHighlight]}>
                     {translations[language].tabs.orders.track.netValue}
                   </Text>
                   <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
@@ -642,7 +635,7 @@ const TrackingOrder = () => {
               
               {/* Checks Section */}
               {order.checks && order.checks.length > 0 && (
-                <View style={[styles.checksContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.checksContainer]}>
                   <LinearGradient 
                     colors={['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.05)']} 
                     start={{ x: 0, y: 0 }}
@@ -657,24 +650,24 @@ const TrackingOrder = () => {
                   
                   {order.checks.map((check, index) => (
                     <View key={index} style={[styles.checkItem]}>
-                      <View style={[styles.checkHeader,{ flexDirection: getFlexDirection(isRTL) }]}>
+                      <View style={[styles.checkHeader]}>
                         <Text style={styles.checkNumberLabel}>
                           {translations[language].tabs.orders.track.checkNumber}: {check.number || '-'}
                         </Text>
                       </View>
                       
                       <View style={styles.checkDetails}>
-                        <View style={[styles.checkDetailItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.checkDetailItem]}>
                           <Feather name="dollar-sign" size={14} color="#10B981" style={styles.checkDetailIcon} />
                           <Text style={styles.checkDetailLabel}>
                             {translations[language].tabs.orders.track.checkValue}:
                           </Text>
                           <Text style={styles.checkDetailValue}>
-                            {formatCurrencyValue(check.value, check.currency, isRTL)}
+                            {formatCurrencyValue(check.value, check.currency)}
                           </Text>
                         </View>
                         
-                        <View style={[styles.checkDetailItem,{ flexDirection: getFlexDirection(isRTL) }]}>
+                        <View style={[styles.checkDetailItem]}>
                           <Feather name="calendar" size={14} color="#10B981" style={styles.checkDetailIcon} />
                           <Text style={styles.checkDetailLabel}>
                             {translations[language].tabs.orders.track.checkDate}:
@@ -698,20 +691,20 @@ const TrackingOrder = () => {
                 colors={['#F59E0B', '#D97706']} 
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+                style={[styles.cardHeader]}
               >
-                <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+                <View style={[styles.cardIconContainer]}>
                   <Feather name="file-text" size={22} color="#ffffff" />
                 </View>
-                <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.cardHeaderText]}>
                   {translations[language].tabs.orders.track.notes || 'Notes'}
                 </Text>
               </LinearGradient>
               
               <View style={styles.cardContent}>
-                <View style={[styles.noteContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                <View style={[styles.noteContainer]}>
                   <Feather name="message-square" size={20} color="#F59E0B" style={styles.noteIcon} />
-                  <Text style={[styles.noteText, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.noteText]}>
                     {order.note_content}
                   </Text>
                 </View>
@@ -725,18 +718,18 @@ const TrackingOrder = () => {
               colors={['#4361EE', '#3730A3']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <Feather name="package" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.packageDetails || 'Package Details'}
               </Text>
             </LinearGradient>
             
             <View style={styles.cardContent}>
-              <View style={[styles.packageWrapper,{ flexDirection: getFlexDirection(isRTL) }]}>
+              <View style={[styles.packageWrapper]}>
                 <View style={styles.packageImageContainer}>
                   <View style={styles.packageImagePlaceholder}>
                     <Feather name="box" size={32} color="#4361EE" />
@@ -744,65 +737,65 @@ const TrackingOrder = () => {
                 </View>
                 
                 <View style={styles.packageInfo}>
-                  <View style={[styles.packageInfoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                    <View style={[styles.packageLabelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                  <View style={[styles.packageInfoRow]}>
+                    <View style={[styles.packageLabelContainer]}>
                       <Feather name="box" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.packageInfoLabel]}>
                         {translations[language].tabs.orders.track.package}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.packageInfoValue]}>
                       {order?.order_items ? order?.order_items : translations[language].tabs.orders.track.unknown}
                     </Text>
                   </View>
                   
-                  <View style={[styles.packageInfoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                    <View style={[styles.packageLabelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                  <View style={[styles.packageInfoRow]}>
+                    <View style={[styles.packageLabelContainer]}>
                       <Feather name="hash" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.packageInfoLabel]}>
                         {translations[language].tabs.orders.track.quantity}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.packageInfoValue]}>
                       {order?.number_of_items || 0}
                     </Text>
                   </View>
                   
-                  <View style={[styles.packageInfoRow, { flexDirection: getFlexDirection(isRTL) }]}>
-                    <View style={[styles.packageLabelContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                  <View style={[styles.packageInfoRow]}>
+                    <View style={[styles.packageLabelContainer]}>
                       <Feather name="anchor" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.packageInfoLabel]}>
                         {translations[language].tabs.orders.track.weight}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue, { textAlign: getTextAlign(isRTL) }]}>
+                    <Text style={[styles.packageInfoValue]}>
                       {order?.order_weight || 0} kg
                     </Text>
                   </View>
                   
                   {order.received_items && (
-                    <View style={[styles.packageInfoRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.packageInfoRow]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-square" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                        <Text style={[styles.packageInfoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.packageInfoLabel]}>
                           {translations[language].tabs.orders.track.receivedItems}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.packageInfoValue]}>
                         {order?.received_items}
                       </Text>
                     </View>
                   )}
                   
                   {order.received_quantity && (
-                    <View style={[styles.packageInfoRow, { flexDirection: getFlexDirection(isRTL) }]}>
+                    <View style={[styles.packageInfoRow]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-circle" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                        <Text style={[styles.packageInfoLabel, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.packageInfoLabel]}>
                           {translations[language].tabs.orders.track.receivedQuantity}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.packageInfoValue]}>
                         {order?.received_quantity}
                       </Text>
                     </View>
@@ -818,24 +811,22 @@ const TrackingOrder = () => {
               colors={['#6366F1', '#4F46E5']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+              style={[styles.cardHeader]}
             >
-              <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+              <View style={[styles.cardIconContainer]}>
                 <MaterialCommunityIcons name="timeline-clock" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+              <Text style={[styles.cardHeaderText]}>
                 {translations[language].tabs.orders.track.deliveryStatus}
               </Text>
             </LinearGradient>
 
             {/* Timeline */}
             <View style={[
-              styles.timelineContainer, 
-              isRTL ? { paddingRight: 20, paddingLeft: 10 } : { paddingLeft: 20, paddingRight: 10 }
+              styles.timelineContainer,
             ]}>
               <View style={[
-                styles.timelineLine, 
-                isRTL ? { right: 30 } : { left: 30 }
+                styles.timelineLine
               ]}></View>
               
               {order.order_status_history?.map((item, index) => {
@@ -848,46 +839,44 @@ const TrackingOrder = () => {
                     key={index} 
                     style={[
                       styles.timelineItem, 
-                      { flexDirection: getFlexDirection(isRTL) },
                       isLast && styles.lastTimelineItem
                     ]}
                   >
                     <LinearGradient
                       colors={statusInfo.gradient}
                       style={[
-                        styles.timelineIconContainer,
-                        getMargin(isRTL, 15)
+                        styles.timelineIconContainer
                       ]}
                     >
                       <Feather name={statusInfo.icon} size={20} color="#ffffff" />
                     </LinearGradient>
                     <View style={styles.timelineContent}>
-                      <Text style={[styles.timelineStatus, { textAlign: getTextAlign(isRTL) }]}>
+                      <Text style={[styles.timelineStatus]}>
                         {item.new_status} {item?.status_reason ? ` | ${item?.status_reason}` : ''}
                       </Text>
                       
-                      <View style={[styles.timelineDetailsContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                      <View style={[styles.timelineDetailsContainer]}>
                         <Feather name="map-pin" size={14} color="#6366F1" style={styles.timelineDetailIcon} />
-                        <Text style={[styles.timelineDetails, { textAlign: getTextAlign(isRTL) }]}>
+                        <Text style={[styles.timelineDetails]}>
                           {item.branch}
                         </Text>
                       </View>
                       
-                      <View style={[styles.timelineDateContainer,{ flexDirection: getFlexDirection(isRTL) }]}>
+                      <View style={[styles.timelineDateContainer]}>
                         <View style={styles.timelineDateItem}>
                           <Feather name="calendar" size={12} color="#94A3B8" style={styles.timelineDateIcon} />
-                          <Text style={[styles.timelineDate, { textAlign: getTextAlign(isRTL) }]}>
+                          <Text style={[styles.timelineDate]}>
                             {date.toLocaleDateString(
-                              isRTL ? (language === 'he' ? 'he-IL' : 'ar-SA') : 'en-US',
+                              'en-US',
                               { year: 'numeric', month: 'short', day: 'numeric' }
                             )}
                           </Text>
                         </View>
                         <View style={styles.timelineDateItem}>
                           <Feather name="clock" size={12} color="#94A3B8" style={styles.timelineDateIcon} />
-                          <Text style={[styles.timelineDate, { textAlign: getTextAlign(isRTL) }]}>
+                          <Text style={[styles.timelineDate]}>
                             {date.toLocaleTimeString(
-                              isRTL ? (language === 'he' ? 'he-IL' : 'ar-SA') : 'en-US',
+                              'en-US',
                               { hour: '2-digit', minute: '2-digit' }
                             )}
                           </Text>
@@ -907,12 +896,12 @@ const TrackingOrder = () => {
                 colors={['#EF4444', '#DC2626']} 
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={[styles.cardHeader, { flexDirection: getFlexDirection(isRTL) }]}
+                style={[styles.cardHeader]}
               >
-                <View style={[styles.cardIconContainer, getMargin(isRTL)]}>
+                <View style={[styles.cardIconContainer]}>
                   <Ionicons name="help-buoy" size={20} color="#ffffff" />
                 </View>
-                <Text style={[styles.cardHeaderText, { textAlign: getTextAlign(isRTL) }]}>
+                <Text style={[styles.cardHeaderText]}>
                   {translations[language]?.tabs.orders.track.needHelp || 'Need Help?'}
                 </Text>
               </LinearGradient>
@@ -920,7 +909,7 @@ const TrackingOrder = () => {
               <View style={styles.supportContent}>
                 <View style={styles.supportTextContainer}>
                   <Feather name="alert-circle" size={24} color="#EF4444" style={styles.supportTextIcon} />
-                  <Text style={[styles.supportText, { textAlign: getTextAlign(isRTL) }]}>
+                  <Text style={[styles.supportText]}>
                     {translations[language].tabs.orders.track.issue}
                   </Text>
                 </View>
@@ -1065,9 +1054,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 10,
-  },
-  heroInfoIcon: {
-    marginRight: 6,
+    gap:10
   },
   heroInfoText: {
     color: '#E0E7FF',
@@ -1094,6 +1081,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 18,
     paddingHorizontal: 20,
+    gap:10
   },
   cardIconContainer: {
     width: 44,
@@ -1198,6 +1186,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    gap:10
   },
   driverIconContainer: {
     width: 32,
@@ -1205,8 +1194,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'rgba(249, 115, 22, 0.1)',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+    alignItems: 'center'
   },
   driverHeaderText: {
     fontSize: 16,
@@ -1217,13 +1205,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap:10
   },
   driverName: {
     fontSize: 15,
     fontWeight: '600',
     color: '#1F2937',
-    flex: 1,
-    marginRight: 10,
+    flex: 1
   },
   
   // Financial Summary
@@ -1250,8 +1238,7 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    alignItems: 'center'
   },
   financialLabel: {
     fontSize: 14,
@@ -1587,6 +1574,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap:10
   },
   errorButtonText: {
     color: 'white',

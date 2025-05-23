@@ -14,18 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function User({ user }) {
     const { language } = useLanguage();
     const [showControl, setShowControl] = useState(false);
-    const isRTL = ["he", "ar"].includes(language);
     const socket = useSocket();
     const [isOnline, setIsOnline] = useState(false);
-
-    // Helper functions for RTL-aware UI
-    const getFlexDirection = () => isRTL ? "row-reverse" : "row";
-    const getTextAlign = () => isRTL ? "right" : "left";
-    const getMargin = (side, value) => {
-        if (!isRTL) return { [`margin${side}`]: value };
-        const flippedSide = side === 'Left' ? 'Right' : side === 'Right' ? 'Left' : side;
-        return { [`margin${flippedSide}`]: value };
-    };
 
     // Listen for online user updates from socket
     useEffect(() => {
@@ -62,10 +52,9 @@ export default function User({ user }) {
             >
                 <View style={styles.user}>
                     {/* Header with ID & Status */}
-                    <View style={[styles.header, { flexDirection: getFlexDirection() }]}>
+                    <View style={[styles.header]}>
                         <View style={[
-                            styles.idContainer,
-                            getMargin(isRTL ? "Left" : "Right", 10)
+                            styles.idContainer
                         ]}>
                             <Text style={styles.idText}>#{user?.user_id}</Text>
                         </View>
@@ -106,21 +95,20 @@ export default function User({ user }) {
 
                     {/* Location Section */}
                     <View style={styles.section}>
-                        <View style={[styles.sectionContent, { flexDirection: getFlexDirection() }]}>
+                        <View style={[styles.sectionContent]}>
                             <Ionicons 
                                 name="location-outline" 
                                 size={22} 
                                 color="#4361EE" 
                                 style={[
-                                    styles.sectionIcon,
-                                    isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                                    styles.sectionIcon
                                 ]}
                             />
                             <View style={styles.textContainer}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {translations[language].users.user.location}
                                 </Text>
-                                <Text style={[styles.sectionText, { textAlign: getTextAlign() }]}>
+                                <Text style={[styles.sectionText]}>
                                     {user?.city}{user.area ? `, ${user.area}` : ""}{user.address ? `, ${user.address}` : ""}
                                 </Text>
                             </View>
@@ -129,21 +117,20 @@ export default function User({ user }) {
 
                     {/* Role Section */}
                     <View style={styles.section}>
-                        <View style={[styles.sectionContent, { flexDirection: getFlexDirection() }]}>
+                        <View style={[styles.sectionContent]}>
                             <MaterialIcons 
                                 name="admin-panel-settings" 
                                 size={22} 
                                 color="#4361EE" 
                                 style={[
-                                    styles.sectionIcon,
-                                    isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                                    styles.sectionIcon
                                 ]}
                             />
                             <View style={styles.textContainer}>
-                                <Text style={[styles.sectionTitle, { textAlign: getTextAlign() }]}>
+                                <Text style={[styles.sectionTitle]}>
                                     {translations[language].users.user.role}
                                 </Text>
-                                <Text style={[styles.sectionText, { textAlign: getTextAlign() }]}>
+                                <Text style={[styles.sectionText]}>
                                     {user?.role}
                                 </Text>
                             </View>
@@ -169,8 +156,7 @@ export default function User({ user }) {
 
                     <TouchableOpacity 
                         style={[
-                            styles.modalItem,
-                            { flexDirection: getFlexDirection() }
+                            styles.modalItem
                         ]} 
                         onPress={() => {
                             setShowControl(false);
@@ -181,8 +167,7 @@ export default function User({ user }) {
                         }}
                     >
                         <View style={[
-                            styles.modalItemIconContainer,
-                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
+                            styles.modalItemIconContainer
                         ]}>
                             <Feather name="edit" size={20} color="#4361EE" />
                         </View>
@@ -277,8 +262,7 @@ const styles = StyleSheet.create({
     statusDot: {
         width: 8,
         height: 8,
-        borderRadius: 4,
-        marginRight: 6,
+        borderRadius: 4
     },
     onlineDot: {
         backgroundColor: "#ffffff",
@@ -305,6 +289,7 @@ const styles = StyleSheet.create({
     sectionContent: {
         flexDirection: "row",
         alignItems: "center",
+        gap: 12
     },
     sectionIcon: {
         width: 22,
