@@ -716,7 +716,18 @@ export default function Order({ user, order }) {
                     </View>
                     
                     <View style={styles.controlContainer}>
-                        {(!["delivered", "return_before_delivered_initiated", "return_after_delivered_initiated", "business_returned_delivered", "received", "delivered/received", "money_in_branch", "money_out", "business_paid", "completed", "returned_out", "returned_in_branch"].includes(order.status_key) && !["business","driver","delivery_company"].includes(authUser.role)) && (
+                        {/* Edit Order button logic */}
+                        {(
+                            // For business users, only show on "waiting" status
+                            (authUser.role === "business" && order.status_key === "waiting") ||
+                            
+                            // For driver and delivery_company, never show
+                            (!["driver", "delivery_company", "business"].includes(authUser.role) && 
+                             ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way", 
+                              "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
+                              "return_before_delivered_initiated", "return_after_delivered_initiated", 
+                              "business_returned_delivered", "received", "delivered/received"].includes(order.status_key))
+                        ) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption
@@ -738,8 +749,17 @@ export default function Order({ user, order }) {
                             </TouchableOpacity>
                         )}
 
-                        {/* Edit receiver phone button for driver/delivery_company/business users */}
-                        {(["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key) && ["driver","delivery_company","business"].includes(authUser.role)) && (
+                        {/* Edit receiver phone button logic */}
+                        {(
+                            // For driver and delivery_company
+                            (["driver", "delivery_company"].includes(authUser.role) && 
+                             ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
+                            
+                            // For business users
+                            (authUser.role === "business" && 
+                             ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
+                              "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
+                        ) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption 

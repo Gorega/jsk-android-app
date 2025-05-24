@@ -21,7 +21,7 @@ import Field from "../../components/sign/Field";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import { router } from "expo-router";
-
+import { useRTLStyles } from '../../utils/RTLWrapper';
 const { width, height } = Dimensions.get('window');
 
 export default function SignUp() {
@@ -32,9 +32,9 @@ export default function SignUp() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const flatListRef = useRef(null);
+  const rtl = useRTLStyles();
   
   const { language } = useLanguage();
-  const isRTL = ["he", "ar"].includes(language);
 
   const [formErrors, setFormErrors] = useState({});
 
@@ -637,7 +637,7 @@ export default function SignUp() {
                 activeOpacity={0.7}
               >
                 <Feather 
-                  name={isRTL ? "arrow-right" : "arrow-left"} 
+                  name={rtl.isRTL ? "arrow-right" : "arrow-left"} 
                   size={18} 
                   color="#4361EE" 
                 />
@@ -670,7 +670,7 @@ export default function SignUp() {
                   </Text>
                   {currentStep < 3 && (
                     <Feather 
-                      name={isRTL ? "arrow-left" : "arrow-right"} 
+                      name={rtl.isRTL ? "arrow-left" : "arrow-right"} 
                       size={18} 
                       color="#FFF" 
                       style={{marginLeft: 8}}
@@ -773,6 +773,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 10,
+    gap: 10
   },
   stepIconCircle: {
     width: 30,
@@ -780,8 +781,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     backgroundColor: '#4361EE',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
+    alignItems: 'center'
   },
   stepTitle: {
     fontSize: 18,
@@ -859,12 +859,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: 'transparent',
     minWidth: 100,
+    gap: 10
   },
   backButtonText: {
     color: '#4361EE',
     fontSize: 16,
-    fontWeight: '500',
-    marginLeft: 8,
+    fontWeight: '500'
   },
   nextButton: {
     flexDirection: 'row',

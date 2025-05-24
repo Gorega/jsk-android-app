@@ -309,8 +309,7 @@ export default function Orders() {
     }, [orderId]);
 
     return (
-        <RTLWrapper>
-            <View style={styles.container}>
+        <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
             
             <Search
@@ -350,7 +349,6 @@ export default function Orders() {
                 />
             </View>
         </View>
-        </RTLWrapper>
     );
 }
 

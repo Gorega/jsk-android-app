@@ -11,7 +11,6 @@ import Feather from '@expo/vector-icons/Feather';
 
 export default function EditPhoneScreen() {
     const { language } = useLanguage();
-    const isRTL = language === 'ar' || language === 'he';
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState({});
@@ -239,7 +238,6 @@ export default function EditPhoneScreen() {
                                 selectedValue={{}}
                                 fieldErrors={fieldErrors}
                                 setFieldErrors={setFieldErrors}
-                                isRTL={isRTL}
                             />
                         ))}
                     </ScrollView>

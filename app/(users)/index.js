@@ -145,7 +145,6 @@ export default function HomeScreen() {
                 setData(newData);
             }
         } catch (err) {
-            console.log(err);
         } finally {
             setLoadingMore(false);
             setIsLoading(false);

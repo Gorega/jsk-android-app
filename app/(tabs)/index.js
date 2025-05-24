@@ -605,53 +605,63 @@ export default function HomeScreen() {
           </Text>
         </View>
         
-        <View style={styles.statusScrollContainer}>
-          <ScrollView 
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[
-              { alignItems: 'flex-start', paddingHorizontal: 12 }
-            ]}
-            ref={scrollViewRef}
-            style={rtl.isRTL ? { transform: [{ scaleX: -1 }] } : {}}
-          >
-            {(rtl.isRTL ? [...boxes].reverse() : boxes)?.map((box, index) => {
-              if (box.visibility === "hidden") return null;
-              
-              return (
-                <TouchableOpacity 
-                  key={index}
-                  style={[
-                    styles.statusCard,
-                    rtl.isRTL ? { transform: [{ scaleX: -1 }] } : {}
-                  ]}
-                  onPress={() => router.push({
-                    pathname: "/(tabs)/orders",
-                    params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
-                  })}
-                  activeOpacity={0.85}
+        <View style={styles.statusRowsContainer}>
+          {(boxes)?.map((box, index) => {
+            if (box.visibility === "hidden") return null;
+            
+            // Calculate progress percentage (capped at 100%)
+            const totalOrders = data?.total_orders?.count || 100;
+            const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
+            
+            return (
+              <TouchableOpacity 
+                key={index}
+                style={[styles.statusRow]}
+                onPress={() => router.push({
+                  pathname: "/(tabs)/orders",
+                  params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
+                })}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={box.gradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.rowIconContainer}
                 >
-                  <LinearGradient
-                    colors={box.gradientColors}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.statusIconContainer}
-                  >
-                    {box.icon}
-                  </LinearGradient>
-                  <Text style={[styles.statusTitle]} numberOfLines={2}>
-                    {box.label}
-                  </Text>
-                  <Text style={[styles.statusCount]}>{box.numberOfOrders || 0}</Text>
+                  {box.icon}
+                </LinearGradient>
+                
+                <View style={styles.rowContent}>
+                  <View style={styles.rowTitleContainer}>
+                    <Text style={styles.rowTitle}>{box.label}</Text>
+                    <Text style={styles.rowCount}>{box.numberOfOrders || 0}</Text>
+                  </View>
+                  
+                  {/* Progress bar */}
+                  <View style={styles.progressContainer}>
+                    <View 
+                      style={[
+                        styles.progressBar, 
+                        { width: `${progressPercentage}%` }
+                      ]} 
+                    >
+                      <LinearGradient
+                        colors={box.gradientColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={styles.progressGradient}
+                      />
+                    </View>
+                  </View>
+                  
                   {box.money && (
-                    <Text style={[styles.statusMoney]} numberOfLines={1}>
-                      {box.money}
-                    </Text>
+                    <Text style={styles.rowMoney}>{box.money}</Text>
                   )}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
       
@@ -978,48 +988,67 @@ const styles = StyleSheet.create({
     color: '#4361EE',
     fontWeight: '600',
   },
-  statusCard: {
-    width: 180,
+  statusGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 24,
+  },
+  statusGridCard: {
+    width: '48%',
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 18,
-    marginHorizontal: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    alignItems: 'center',
-    height: 200,
-    justifyContent: 'center',
-    marginBottom: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 5,
   },
-  statusIconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
+  statusCardHeader: {
+    padding: 16,
+    paddingBottom: 14,
   },
-  statusTitle: {
+  statusHeaderTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1F2937',
-    textAlign: 'center',
-    height: 25,
+    color: 'white',
+    marginTop: 8,
+  },
+  statusCardContent: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  statusIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
   },
   statusCount: {
-    fontSize: 26,
+    fontSize: 32,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 6,
+  },
+  statusSubtitle: {
+    fontSize: 14,
+    color: '#64748B',
+    marginTop: 2,
+    marginBottom: 8,
   },
   statusMoney: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#4361EE',
-    textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#EEF2FF',
+    marginTop: 4,
   },
   balanceContainer: {
     flexDirection: 'row',
@@ -1117,6 +1146,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
+    gap: 10,
   },
   modalIconContainer: {
     width: 36,
@@ -1220,8 +1250,72 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  statusScrollContainer: {
-    marginTop: 20,
-    marginBottom: 20,
+  statusRowsContainer: {
+    paddingHorizontal: 16,
+    marginTop: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
+    overflow: 'hidden',
+    height: 65,
+  },
+  rowIconContainer: {
+    width: 50,
+    height: 65,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rowContent: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  rowTitleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  rowTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  rowMoney: {
+    fontSize: 12,
+    color: '#4361EE',
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  rowCount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  progressContainer: {
+    height: 4,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 6,
+    marginBottom: 6,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  progressGradient: {
+    height: '100%',
+    width: '100%',
   },
 });

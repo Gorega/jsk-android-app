@@ -25,7 +25,6 @@ import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 
-const { width, height } = Dimensions.get('window');
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,6 @@ export default function SignIn() {
   
   const router = useRouter();
   const { language } = useLanguage();
-  const isRTL = ["he", "ar"].includes(language);
   const { isAuthenticated, setIsAuthenticated, setUserId } = useAuth();
 
   const [loginForm, setLoginForm] = useState({
@@ -375,7 +373,7 @@ export default function SignIn() {
           {isBiometricAvailable && previousLoginInfo && (
             <View style={styles.biometricContainer}>
               <TouchableOpacity
-                style={[styles.biometricButton, isRTL && styles.biometricButtonRtl]}
+                style={[styles.biometricButton]}
                 onPress={biometricAuthHandler}
                 disabled={loading}
                 activeOpacity={0.8}
@@ -415,7 +413,7 @@ export default function SignIn() {
           
           {/* Forgot password */}
           <TouchableOpacity 
-            style={[styles.forgotPassword, isRTL && styles.forgotPasswordRtl]}
+            style={[styles.forgotPassword]}
             activeOpacity={0.7}
           >
             <Text style={styles.forgotPasswordText}>
@@ -447,16 +445,14 @@ export default function SignIn() {
           
           {/* Register link */}
           <View style={[
-            styles.registerLinkContainer,
-            isRTL && styles.registerLinkContainerRtl
+            styles.registerLinkContainer
           ]}>
             <Text style={styles.registerText}>
               {translations[language]?.auth.dontHaveAccount}
             </Text>
             <Link href="/sign-up" asChild>
               <TouchableOpacity style={[
-                styles.registerLink,
-                isRTL && styles.registerLinkRtl
+                styles.registerLink
               ]}>
                 <Text style={styles.registerLinkText}>
                   {translations[language]?.auth.register}
