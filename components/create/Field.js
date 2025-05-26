@@ -8,6 +8,7 @@ import Feather from '@expo/vector-icons/Feather';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { translations } from '../../utils/languageContext';
+import { router } from "expo-router";
 
 
 export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, isRTL}) {
@@ -45,6 +46,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         }
     };
 
+    // Handle QR code scanning
+    const handleScanQRCode = () => {
+        // Store current field name to identify where to return data
+        if (!global) global = {};
+        global.scanTargetField = field.name;
+        
+        router.push("/(camera)/scanReference");
+    };
+
     return (
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
@@ -70,30 +80,46 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
             <View style={styles.inputContent}>
                 {field.type === "input" && (
                     <>
-                        <TextInput 
-                            multiline
-                            style={[
-                                styles.input
-                            ]}
-                            placeholder={field.placeholder || ""}
-                            value={field.value}
-                            onBlur={field.onBlur}
-                            defaultValue={field.defaultValue}
-                            onChangeText={(text) => {
-                                if (field.onChange) {
-                                    field.onChange(text);
-                                }
-                                // Clear error when user starts typing
-                                if (error && field.name) {
-                                    setFieldErrors(prev => ({
-                                        ...prev,
-                                        [field.name]: null
-                                    }));
-                                }
-                            }}
-                            keyboardType={field.keyboardType || "default"}
-                            placeholderTextColor="#94A3B8"
-                        />
+                        <View style={[
+                            styles.inputWrapper,
+                            field.name === "reference_id" && styles.scanInputWrapper
+                        ]}>
+                            <TextInput 
+                                multiline={field.name !== "reference_id"}
+                                style={[
+                                    styles.input,
+                                    field.name === "reference_id" && styles.scanInput
+                                ]}
+                                placeholder={field.placeholder || ""}
+                                value={field.value}
+                                onBlur={field.onBlur}
+                                defaultValue={field.defaultValue}
+                                onChangeText={(text) => {
+                                    if (field.onChange) {
+                                        field.onChange(text);
+                                    }
+                                    // Clear error when user starts typing
+                                    if (error && field.name) {
+                                        setFieldErrors(prev => ({
+                                            ...prev,
+                                            [field.name]: null
+                                        }));
+                                    }
+                                }}
+                                keyboardType={field.keyboardType || "default"}
+                                placeholderTextColor="#94A3B8"
+                            />
+                            
+                            {field.name === "reference_id" && (
+                                <TouchableOpacity
+                                    style={styles.scanButton}
+                                    onPress={handleScanQRCode}
+                                    activeOpacity={0.7}
+                                >
+                                    <MaterialIcons name="qr-code-scanner" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
                         {error && <Text style={styles.errorText}>{error}</Text>}
                     </>
                 )}
@@ -412,6 +438,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "toggle" && (
                     <View style={[styles.toggleWrapper]}>
+                        <Text style={{display: 'none'}}>{/* Empty text component to prevent warning */}</Text>
                         <Switch
                             value={field.value}
                             onValueChange={(value) => {
@@ -458,10 +485,29 @@ const styles = StyleSheet.create({
     inputContent: {
         paddingTop: 5,
     },
+    inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    scanInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
     input: {
         fontSize: 15,
         paddingVertical: 4,
         color: '#1F2937',
+        flex: 1,
+    },
+    scanInput: {
+        flex: 1,
+    },
+    scanButton: {
+        backgroundColor: '#4361EE',
+        borderRadius: 8,
+        padding: 8,
+        marginLeft: 8,
     },
     selectField: {
         paddingVertical: 4,

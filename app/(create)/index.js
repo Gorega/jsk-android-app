@@ -1,6 +1,6 @@
 import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, I18nManager } from "react-native";
 import Section from "../../components/create/Section";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, React, useCallback } from "react";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -12,6 +12,7 @@ import { useLanguage } from '../../utils/languageContext';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import ModalPresentation from "../../components/ModalPresentation";
 import { getToken } from "../../utils/secureStore";
+import { useFocusEffect } from '@react-navigation/native';
 
 export default function HomeScreen() {
     const { language } = useLanguage();
@@ -95,6 +96,216 @@ export default function HomeScreen() {
     });
     const [codAmounts, setCodAmounts] = useState([{ value: "", currency: "ILS" }]);
     const [activeCurrencyPicker, setActiveCurrencyPicker] = useState(null);
+    const [fromBusinessBalance, setFromBusinessBalance] = useState(false);
+    const [exceedBusinessBalance, setExceedBusinessBalance] = useState(false);
+
+    const CURRENCY_EXCHANGE_RATES = {
+        ILS_TO_USD: 0.27,  // 1 ILS = 0.27 USD
+        ILS_TO_JOD: 0.19,  // 1 ILS = 0.19 JOD
+        USD_TO_ILS: 3.7,   // 1 USD = 3.7 ILS
+        USD_TO_JOD: 0.71,  // 1 USD = 0.71 JOD
+        JOD_TO_ILS: 5,     // 1 JOD = 5 ILS
+        JOD_TO_USD: 1.41,  // 1 JOD = 1.41 USD
+    };
+
+    const convertCurrency = (amount, fromCurrency, toCurrency) => {
+        if (fromCurrency === toCurrency) return amount;
+        
+        const conversionKey = `${fromCurrency}_TO_${toCurrency}`;
+        const rate = CURRENCY_EXCHANGE_RATES[conversionKey];
+        
+        if (!rate) {
+            return null;
+        }
+        
+        return amount * rate;
+    };
+
+    const calculateNetValue = (codValue, codCurrency, deliveryFeeValue, deliveryFeeCurrency, 
+                              commissionValue, commissionCurrency, discountValue, discountCurrency,
+                              targetCurrency) => {
+        // Convert all values to the target currency if they're different
+        const codInTargetCurrency = codCurrency === targetCurrency ? 
+            codValue : convertCurrency(codValue, codCurrency, targetCurrency);
+            
+        const deliveryFeeInTargetCurrency = deliveryFeeCurrency === targetCurrency ?
+            deliveryFeeValue : convertCurrency(deliveryFeeValue, deliveryFeeCurrency, targetCurrency);
+            
+        const commissionInTargetCurrency = commissionCurrency === targetCurrency ?
+            commissionValue : convertCurrency(commissionValue, commissionCurrency, targetCurrency);
+            
+        const discountInTargetCurrency = discountCurrency === targetCurrency ?
+            discountValue : convertCurrency(discountValue, discountCurrency, targetCurrency);
+        
+        // Calculate net value: COD Value - Discount + (Commission + Delivery Fee)
+        const netValue = codInTargetCurrency - discountInTargetCurrency + 
+                         (commissionInTargetCurrency + deliveryFeeInTargetCurrency);
+                         
+        return Math.max(0, netValue); // Don't allow negative net values
+    };
+
+    const getUserBalances = async (userId) => {
+        try {
+            const token = await getToken("userToken");
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/balances`, {
+                method: "GET",
+                credentials: "include",
+                headers: {
+                    'Accept': 'application/json',
+                    "Content-Type": "application/json",
+                    "Cookie": token ? `token=${token}` : ""
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch balances: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            return data.data || { ILS: 0, USD: 0, JOD: 0 };
+        } catch (error) {
+            return { ILS: 0, USD: 0, JOD: 0 };
+        }
+    };
+
+    const submitBalanceDeduction = async (userId, deductions, orderId) => {
+        try {
+            // Add validation
+            if (!userId) {
+                throw new Error('User ID is required for deduction');
+            }
+            
+            // Ensure all deduction values are valid numbers
+            const validatedDeductions = {};
+            Object.entries(deductions).forEach(([currency, amount]) => {
+                const numAmount = parseFloat(amount);
+                if (!isNaN(numAmount) && numAmount > 0) {
+                    validatedDeductions[currency] = numAmount;
+                }
+            });
+            
+            // If no valid deductions, throw error
+            if (Object.keys(validatedDeductions).length === 0) {
+                throw new Error('No valid deduction amounts found');
+            }
+
+            const token = await getToken("userToken");
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/deduct-balance`, {
+                method: 'POST',
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    'Accept-Language': language,
+                    "Cookie": token ? `token=${token}` : ""
+                },
+                body: JSON.stringify({
+                    userId: userId, // Add userId to body as well
+                    deductions: validatedDeductions,
+                    order_id: orderId,
+                    reference_type: 'payment',
+                    notes: 'Order payment deduction'
+                })
+            });
+            
+            const responseData = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Failed to process deduction');
+            }
+            
+            return responseData;
+        } catch (error) {
+            throw error;
+        }
+    };
+
+    const processDeduction = async (orderId, senderId) => {
+        try {
+            // Show loading spinner
+            setShowAlert({
+                visible: true,
+                type: 'loading',
+                title: translations[language].tabs.orders.create.sections.sender.fields.processing_deduction || "Processing Deduction",
+                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait..."
+            });
+
+            const deductionInfo = form.balanceDeduction;
+            let deductions = {};
+                        
+            // Extract values needed for net value calculations
+            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
+            const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
+            
+            const commissionValue = 0; // No commission in mobile app
+            const commissionCurrency = 'ILS';
+            
+            const discountValue = 0; // No discount in mobile app
+            const discountCurrency = 'ILS';
+            
+            // Handle various formats of deduction info
+            if (deductionInfo?.method === 'manual') {
+                if (deductionInfo.currency && !isNaN(parseFloat(deductionInfo.amount))) {
+                    deductions[deductionInfo.currency] = parseFloat(deductionInfo.amount);
+                }
+            } else if (deductionInfo?.method === 'auto') {
+                // For auto method, use deductions object directly
+                if (deductionInfo.deductions && typeof deductionInfo.deductions === 'object') {
+                    deductions = deductionInfo.deductions;
+                }
+            } else if (codAmounts && codAmounts.length > 0) {
+                // Use net value calculation instead of just COD values
+                codAmounts.forEach(cod => {
+                    const codValue = parseFloat(cod.value || 0);
+                    const codCurrency = cod.currency || 'ILS';
+                    
+                    if (codValue > 0) {
+                        // Calculate net value using our helper function
+                        const netValue = calculateNetValue(
+                            codValue, codCurrency,
+                            deliveryFeeValue, deliveryFeeCurrency,
+                            commissionValue, commissionCurrency,
+                            discountValue, discountCurrency,
+                            codCurrency
+                        );
+                        
+                        deductions[codCurrency] = (deductions[codCurrency] || 0) + netValue;
+                    }
+                });
+            }
+            
+            if (!senderId || !deductions || Object.keys(deductions).length === 0) {
+                setShowAlert({
+                    visible: false
+                });
+                throw new Error('Invalid deduction data - missing userId, orderId or deduction amounts');
+            }
+
+            const deductionResult = await submitBalanceDeduction(
+                senderId, 
+                deductions, 
+                orderId
+            );
+
+            // Close loading spinner
+            setShowAlert({
+                visible: false
+            });
+
+            // Show success message
+            Alert.alert(
+                translations[language].tabs.orders.create.sections.sender.fields.deduction_success || "Deduction Successful",
+                translations[language].tabs.orders.create.sections.sender.fields.deduction_processed || "Deduction has been processed successfully",
+                [{ text: "OK" }]
+            );
+
+            return deductionResult;
+        } catch (error) {
+            setShowAlert({
+                visible: false
+            });
+            throw error;
+        }
+    };
 
     const sections = [{
         label: translations[language].tabs.orders.create.sections?.referenceId?.title,
@@ -248,41 +459,205 @@ export default function HomeScreen() {
                 setDeliveryFee(input);
             }
         }, ["business", "admin", "manager"].includes(user.role) ? {
-            label: ["admin", "manager"].includes(user.role) ? translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
+            label: ["admin", "manager"].includes(user.role) ? 
+                translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
+                translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
             type: "toggle",
             name: "from_business_balance",
             value: form.fromBusinessBalance || false,
             onChange: async (value) => {
-                if (value) {
-                    try {
-                        const balance = user.total_amount;
-                        const totalCost = parseFloat(form.codValue) + parseFloat(deliveryFee);
-
-                        if (balance < totalCost) {
-                            Alert.alert(
-                                translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance,
-                                `${translations[language].tabs.orders.create.sections.cost.fields.balance} (${balance}) ${translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance_alert}`
-                            );
+                try {
+                    // If unchecking the box (value is false), confirm with user before changing state
+                    if (!value) {
+                        // Get sender ID based on user role
+                        const senderId = user.role === "business" ? 
+                            user.userId : 
+                            selectedValue.sender.user_id;
+                        
+                        if (!senderId) {
                             return;
                         }
 
-                        if (!form.receiverFirstPhone || !deliveryFee || !form.codValue) {
-                            Alert.alert(
-                                translations[language].tabs.orders.create.sections.cost.fields.missing_fields,
-                                translations[language].tabs.orders.create.sections.cost.fields.fields_required
-                            );
+                        // Only proceed if we're in edit mode and have an order ID
+                        if (!orderId) {
+                            setFromBusinessBalance(false);
+                            setForm(prevForm => ({
+                                ...prevForm,
+                                fromBusinessBalance: false,
+                                balanceDeduction: null
+                            }));
                             return;
                         }
-
-                        setForm((form) => ({ ...form, fromBusinessBalance: value }));
-                    } catch (error) {
+                        
+                        // Confirm with user before returning balance
                         Alert.alert(
-                            "Error",
-                            "Failed to verify balance. Please try again."
+                            translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
+                            translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
+                            [
+                                {
+                                    text: translations[language].no || "No",
+                                    style: "cancel"
+                                },
+                                {
+                                    text: translations[language].yes || "Yes",
+                                    onPress: async () => {
+                                        setFromBusinessBalance(false); // Set state to false only if user confirms
+                                        try {
+                                            // Show loading spinner
+                                            setShowAlert({
+                                                visible: true,
+                                                type: 'loading',
+                                                title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
+                                                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
+                                                onClose: () => setShowAlert({visible: false})
+                                            });
+                                                    
+                                            const token = await getToken("userToken");
+                                            const returnResponse = await fetch(
+                                                `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
+                                                {
+                                                    method: 'POST',
+                                                    credentials: "include",
+                                                    headers: {
+                                                        "Content-Type": "application/json",
+                                                        "Cookie": token ? `token=${token}` : ""
+                                                    },
+                                                    body: JSON.stringify({
+                                                        order_id: orderId,
+                                                        reference_type: 'transaction'
+                                                    })
+                                                }
+                                            );
+
+                                            // Close loading spinner
+                                            setShowAlert({
+                                                visible: false
+                                            });
+                                            
+                                            // Process the response
+                                            const responseData = await returnResponse.json();
+                                            
+                                            if (!returnResponse.ok) {
+                                                throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
+                                            }
+                                            
+                                            // Success message
+                                            Alert.alert(
+                                                translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
+                                                translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
+                                                [{ text: "OK" }]
+                                            );
+                                            
+                                            // Update form data
+                                            setForm(prevForm => ({
+                                                ...prevForm,
+                                                fromBusinessBalance: false,
+                                                balanceDeduction: null
+                                            }));
+                                        } catch (returnError) {
+                                            setShowAlert({
+                                                visible: false
+                                            });
+                                            Alert.alert(
+                                                translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
+                                                returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
+                                                [{ text: "OK" }]
+                                            );
+                                        }
+                                    }
+                                }
+                            ]
+                        );
+                        return;
+                    }
+
+                    // Rest of the existing function for when value is true (toggle is being enabled)
+                    // Get sender ID based on user role
+                    const senderId = user.role === "business" ? user.userId : 
+                                   (selectedValue.sender && selectedValue.sender.user_id ? 
+                                    selectedValue.sender.user_id : null);
+                    
+                    // Validate sender ID
+                    if (!senderId) {
+                        return Alert.alert(
+                            translations[language].tabs.orders.create.error || "Error",
+                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                            [{ text: "OK" }]
                         );
                     }
-                } else {
-                    setForm((form) => ({ ...form, fromBusinessBalance: value }));
+                    
+                    // Get COD values from form data
+                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                        return Alert.alert(
+                            translations[language].tabs.orders.create.error || "Error",
+                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                            [{ text: "OK" }]
+                        );
+                    }
+                    
+                    // Format COD values for display and processing
+                    const formattedCodValues = {};
+                    let totalCodAmount = 0;
+                    
+                    codAmounts.forEach(cod => {
+                        const value = parseFloat(cod.value || 0);
+                        const currency = cod.currency || 'ILS';
+                        
+                        if (value > 0) {
+                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                            
+                            // Convert to ILS for total calculation
+                            if (currency === 'ILS') {
+                                totalCodAmount += value;
+                            } else if (currency === 'USD') {
+                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                            } else if (currency === 'JOD') {
+                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                            }
+                        }
+                    });
+                    
+                    // First show the action selection modal
+                    Alert.alert(
+                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                        [
+                            {
+                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                style: "cancel"
+                            },
+                            {
+                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                onPress: () => {
+                                    // Call the function directly, not wrapped in async/await
+                                    handleManualDeduction(senderId, formattedCodValues);
+                                }
+                            },
+                            {
+                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                onPress: () => {
+                                    // Call the function directly, not wrapped in async/await
+                                    handleAutoDeduction(senderId, formattedCodValues);
+                                }
+                            }
+                        ]
+                    );
+                } catch (error) {
+                    // Make sure to close any potential loading spinners on error
+                    setShowAlert({
+                        visible: false
+                    });
+                    setFromBusinessBalance(false);
+                    setForm(prevForm => ({
+                        ...prevForm,
+                        fromBusinessBalance: false,
+                        balanceDeduction: null
+                    }));
+                    Alert.alert(
+                        translations[language].tabs.orders.create.error || "Error",
+                        error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
+                        [{ text: "OK" }]
+                    );
                 }
             }
         } : { visibility: "hidden" }]
@@ -475,7 +850,6 @@ export default function HomeScreen() {
                     discount: discount[0].value,
                     sender_id: user.role === "business" ? user.userId : selectedValue.sender.user_id,
                     business_branch_id: selectedValue.sender.branch_id || user.branch_id,
-                    current_branch_id: null,
                     title: form.orderItems,
                     quantity: form.numberOfItems,
                     description: form.description,
@@ -498,7 +872,7 @@ export default function HomeScreen() {
                     receiver_area: form.receiverArea,
                     receiver_address: form.receiverAddress,
                     from_business_balance: form.fromBusinessBalance || false,
-                    exceed_balance_limit: false, // Default value for exceed_balance_limit
+                    exceed_balance_limit: exceedBusinessBalance || false,
                     note: form.noteContent,
                     checks: formattedChecks
                 })
@@ -609,18 +983,20 @@ export default function HomeScreen() {
 
             // Process business balance deduction if enabled
             if (form.fromBusinessBalance && data.data?.order_id) {
-                try {
-                    Alert.alert(
-                        translations[language].tabs.orders.create.sections.sender.fields.balance_deduction_success || "Balance Deduction Success",
-                        translations[language].tabs.orders.create.sections.sender.fields.balance_deduction_processed || "Balance has been deducted successfully",
-                        [{ text: "OK" }]
-                    );
-                } catch (error) {
-                    Alert.alert(
-                        translations[language].tabs.orders.create.sections.sender.fields.balance_deduction_error || "Balance Deduction Error",
-                        error.message || translations[language].tabs.orders.create.sections.sender.fields.balance_deduction_failed || "Failed to process balance deduction",
-                        [{ text: "OK" }]
-                    );
+                // Add check to prevent duplicate deductions on edit
+                const shouldDeduct = method === "POST" || 
+                                     (method === "PUT" && !form.originalFromBusinessBalance);
+                
+                if (shouldDeduct) {
+                    try {
+                        await processDeduction(data.data.order_id, user.role === "business" ? user.userId : selectedValue.sender.user_id);
+                    } catch (error) {
+                        Alert.alert(
+                            translations[language].tabs.orders.create.sections.sender.fields.deduction_error || "Deduction Error",
+                            error.message || translations[language].tabs.orders.create.sections.sender.fields.deduction_failed || "Failed to process deduction",
+                            [{ text: "OK" }]
+                        );
+                    }
                 }
             }
 
@@ -788,6 +1164,9 @@ export default function HomeScreen() {
                 receivedQuantity: orderData.received_quantity || 0,
                 noteContent: orderData.note_content || "",
                 fromBusinessBalance: orderData.from_business_balance ? true : false,
+                originalFromBusinessBalance: orderData.from_business_balance ? true : false,
+                balanceDeduction: orderData.balance_deduction || null,
+                originalBalanceDeduction: orderData.balance_deduction || null,
                 referenceId: orderData.reference_id || null
             });
             
@@ -905,8 +1284,48 @@ export default function HomeScreen() {
         }
     }, [selectedValue]);
     
-    const CustomAlert = ({ type, title, message, onClose }) => {
-        const isRTL = language === 'ar' || language === 'he';
+    useEffect(() => {
+        // Check if we have a scanned reference ID from the camera
+        const checkScannedData = () => {
+            if (global.scannedReferenceId) {
+                const scannedValue = global.scannedReferenceId;
+                
+                // Only update if we have a value and we're scanning for the reference ID field
+                if (scannedValue && global.scanTargetField === 'reference_id') {
+                    setForm(prevForm => ({
+                        ...prevForm,
+                        referenceId: scannedValue
+                    }));
+                    
+                    // Clear the global variables after using them
+                    global.scannedReferenceId = null;
+                    global.scanTargetField = null;
+                }
+            }
+        };
+        
+        checkScannedData();
+    }, []);
+    
+    useFocusEffect(
+        useCallback(() => {
+            // Check if we have a scanned reference ID when the screen is focused
+            if (global && global.scannedReferenceId && global.scanTargetField === 'reference_id') {
+                // Update the form with the scanned value
+                setForm(prevForm => ({
+                    ...prevForm,
+                    referenceId: global.scannedReferenceId
+                }));
+                
+                // Clear the global variables
+                global.scannedReferenceId = null;
+                global.scanTargetField = null;
+            }
+        }, [])
+    );
+    
+    const CustomAlert = ({ visible, type, title, message, onClose }) => {
+        if (!visible) return null;
         
         return (
             <View style={styles.alertOverlay}>
@@ -916,40 +1335,312 @@ export default function HomeScreen() {
                     type === 'success' ? styles.successAlert : 
                     styles.warningAlert
                 ]}>
-                    <View style={[
-                        styles.alertHeader, 
-                        { flexDirection: isRTL ? 'row-reverse' : 'row' }
-                    ]}>
-                        <Text style={[
-                            styles.alertTitle, 
-                            { textAlign: isRTL ? 'right' : 'left' }
-                        ]}>{title}</Text>
+                    <View style={styles.alertHeader}>
+                        <Text style={styles.alertTitle}>{title}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Feather name="x" size={22} color="#64748B" />
                         </TouchableOpacity>
                     </View>
-                    <Text style={[
-                        styles.alertMessage, 
-                        { textAlign: isRTL ? 'right' : 'left' }
-                    ]}>{message}</Text>
-                    <TouchableOpacity 
-                        style={[
-                            styles.alertButton, 
-                            type === 'error' ? styles.errorButton : 
-                            type === 'success' ? styles.successButton : 
-                            styles.warningButton
-                        ]}
-                        onPress={onClose}
-                    >
-                        <Text style={styles.alertButtonText}>
-                            {translations[language]?.ok || 'OK'}
-                        </Text>
-                    </TouchableOpacity>
+                    <Text style={styles.alertMessage}>{message}</Text>
+                    {type !== 'loading' ? (
+                        <TouchableOpacity 
+                            style={[
+                                styles.alertButton, 
+                                type === 'error' ? styles.errorButton : 
+                                type === 'success' ? styles.successButton : 
+                                styles.warningButton
+                            ]}
+                            onPress={onClose}
+                        >
+                            <Text style={styles.alertButtonText}>
+                                {translations[language]?.ok || 'OK'}
+                            </Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <ActivityIndicator size="large" color="#4361EE" style={styles.alertLoader} />
+                    )}
                 </View>
             </View>
         );
     };
     
+    const handleManualDeduction = async (senderId, formattedCodValues) => {
+        try {
+            // Show loading while fetching balances
+            setShowAlert({
+                visible: true,
+                type: 'loading',
+                title: translations[language].tabs.orders.create.sections.sender.fields.checking_balance || "Checking Balance",
+                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
+                onClose: () => setShowAlert({visible: false})
+            });
+            
+            // Fetch user balances
+            const balances = await getUserBalances(senderId);
+            
+            // Close loading spinner
+            setShowAlert({
+                visible: false
+            });
+            
+            // Get available currencies with COD values
+            const availableCurrencies = Object.keys(formattedCodValues);
+            
+            if (availableCurrencies.length === 0) {
+                return Alert.alert(
+                    translations[language].tabs.orders.create.error || "Error",
+                    translations[language].tabs.orders.create.sections.sender.fields.no_cod_values || "No COD values found",
+                    [{ text: "OK" }]
+                );
+            }
+            
+            // Create list of currencies to show in picker
+            // For React Native, we'll use multiple Alert buttons for a simple implementation
+            const currencyAlertButtons = [
+                {
+                    text: translations[language].cancel || "Cancel",
+                    style: "cancel"
+                }
+            ];
+            
+            // Add a button for each currency
+            availableCurrencies.forEach(currency => {
+                currencyAlertButtons.push({
+                    text: `${currency} (${translations[language].tabs.orders.create.sections.sender.fields.balance || "Balance"}: ${balances[currency] || 0})`,
+                    onPress: () => processCurrencySelection(currency, balances, formattedCodValues)
+                });
+            });
+            
+            // Show the currency selection alert
+            Alert.alert(
+                translations[language].tabs.orders.create.sections.sender.fields.select_deduction_currency || "Select Deduction Currency",
+                translations[language].tabs.orders.create.sections.sender.fields.choose_currency || "Choose Currency",
+                currencyAlertButtons
+            );
+        } catch (error) {
+            setShowAlert({
+                visible: false
+            });
+            Alert.alert(
+                translations[language].tabs.orders.create.error || "Error",
+                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
+                [{ text: "OK" }]
+            );
+        }
+    };
+
+    const processCurrencySelection = async (selectedCurrency, balances, formattedCodValues) => {
+        try {
+            // Extract values needed for net value calculations
+            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
+            const deliveryFeeCurrency = 'ILS'; // Default for mobile app
+            
+            // Calculate total amount needed for deduction
+            let totalNeeded = 0;
+            
+            if (formattedCodValues[selectedCurrency]) {
+                // If we have a direct match, add COD value and proportional delivery fee
+                totalNeeded = formattedCodValues[selectedCurrency];
+                
+                // Add proportional delivery fee if in same currency
+                if (deliveryFeeCurrency === selectedCurrency) {
+                    totalNeeded += deliveryFeeValue;
+                } else {
+                    // Convert delivery fee to selected currency
+                    const convertedFee = convertCurrency(deliveryFeeValue, deliveryFeeCurrency, selectedCurrency);
+                    if (convertedFee !== null) {
+                        totalNeeded += convertedFee;
+                    }
+                }
+            } else {
+                // Should not happen since we're only showing available currencies
+                Alert.alert(
+                    translations[language].tabs.orders.create.error || "Error",
+                    "Currency mismatch error",
+                    [{ text: "OK" }]
+                );
+                return;
+            }
+            
+            // Round to 2 decimal places
+            totalNeeded = Math.round(totalNeeded * 100) / 100;
+            
+            // Check if balance is sufficient
+            const availableBalance = balances[selectedCurrency] || 0;
+            
+            if (availableBalance < totalNeeded) {
+                return Alert.alert(
+                    translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance || "Insufficient Balance",
+                    `${translations[language].tabs.orders.create.sections.sender.fields.available || "Available"}: ${availableBalance} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.needed || "Needed"}: ${totalNeeded} ${selectedCurrency}`,
+                    [{ text: "OK" }]
+                );
+            }
+            
+            // Confirm deduction
+            Alert.alert(
+                translations[language].tabs.orders.create.sections.sender.fields.confirm_deduction || "Confirm Deduction",
+                `${translations[language].tabs.orders.create.sections.sender.fields.deduct_amount || "Amount to deduct"}: ${totalNeeded} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.current_balance || "Current balance"}: ${availableBalance} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.new_balance || "New balance"}: ${Math.round((availableBalance - totalNeeded) * 100) / 100} ${selectedCurrency}`,
+                [
+                    {
+                        text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                        style: "cancel"
+                    },
+                    {
+                        text: translations[language].tabs.orders.create.sections.sender.fields.confirm || "Confirm",
+                        onPress: () => {
+                            // Set flag for form submission
+                            setFromBusinessBalance(true);
+                            
+                            // Store deduction info
+                            setForm(prevForm => ({
+                                ...prevForm,
+                                fromBusinessBalance: true,
+                                balanceDeduction: {
+                                    method: 'manual',
+                                    currency: selectedCurrency,
+                                    amount: totalNeeded
+                                }
+                            }));
+                            
+                            Alert.alert(
+                                translations[language].tabs.orders.create.sections.sender.fields.deduction_ready || "Deduction Ready",
+                                translations[language].tabs.orders.create.sections.sender.fields.deduction_on_submit || "Deduction will be applied on submit",
+                                [{ text: "OK" }]
+                            );
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            Alert.alert(
+                translations[language].tabs.orders.create.error || "Error",
+                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
+                [{ text: "OK" }]
+            );
+        }
+    };
+
+    const handleAutoDeduction = async (senderId, formattedCodValues) => {
+        try {
+            // Show loading while fetching balances
+            setShowAlert({
+                visible: true,
+                type: 'loading',
+                title: translations[language].tabs.orders.create.sections.sender.fields.checking_balance || "Checking Balance",
+                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
+                onClose: () => setShowAlert({visible: false})
+            });
+            
+            // Fetch user balances
+            const balances = await getUserBalances(senderId);
+            
+            // Close loading spinner
+            setShowAlert({
+                visible: false
+            });
+            
+            // Auto-deduct logic
+            const deductions = {};
+            let insufficientFunds = false;
+            let insufficientCurrency = '';
+            
+            // Extract values needed for net value calculations
+            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
+            const deliveryFeeCurrency = 'ILS'; // Default for mobile app
+            
+            // Calculate net value for each currency
+            for (const [currency, codAmount] of Object.entries(formattedCodValues)) {
+                // Simple calculation: COD value + proportional delivery fee
+                let netValue = codAmount;
+                
+                // Add proportional delivery fee
+                if (deliveryFeeCurrency === currency) {
+                    // If delivery fee is in same currency, add directly
+                    netValue += (deliveryFeeValue / Object.keys(formattedCodValues).length);
+                } else {
+                    // If different currency, convert
+                    const convertedFee = convertCurrency(
+                        (deliveryFeeValue / Object.keys(formattedCodValues).length),
+                        deliveryFeeCurrency,
+                        currency
+                    );
+                    if (convertedFee !== null) {
+                        netValue += convertedFee;
+                    }
+                }
+                
+                // Round to 2 decimal places
+                netValue = Math.round(netValue * 100) / 100;
+                
+                const availableBalance = balances[currency] || 0;
+                
+                if (availableBalance < netValue) {
+                    insufficientFunds = true;
+                    insufficientCurrency = currency;
+                    break;
+                }
+                
+                deductions[currency] = netValue;
+            }
+            
+            if (insufficientFunds) {
+                return Alert.alert(
+                    translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance || "Insufficient Balance",
+                    `${translations[language].tabs.orders.create.sections.sender.fields.insufficient_balance_for || "Insufficient balance for"}: ${insufficientCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.available || "Available"}: ${balances[insufficientCurrency] || 0} ${insufficientCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.needed || "Needed"}: ${deductions[insufficientCurrency] || formattedCodValues[insufficientCurrency]} ${insufficientCurrency}`,
+                    [{ text: "OK" }]
+                );
+            }
+            
+            // Confirm automatic deductions
+            const deductionDetails = Object.entries(deductions)
+                .map(([currency, amount]) => `• ${amount} ${currency}`)
+                .join('\n');
+            
+            Alert.alert(
+                translations[language].tabs.orders.create.sections.sender.fields.confirm_auto_deductions || "Confirm Auto Deductions",
+                `${translations[language].tabs.orders.create.sections.sender.fields.system_will_deduct || "System will deduct"}:\n\n${deductionDetails}\n\n${translations[language].tabs.orders.create.sections.sender.fields.from_available_balances || "from available balances"}`,
+                [
+                    {
+                        text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                        style: "cancel"
+                    },
+                    {
+                        text: translations[language].tabs.orders.create.sections.sender.fields.confirm || "Confirm",
+                        onPress: () => {
+                            // Set flag for form submission
+                            setFromBusinessBalance(true);
+                            
+                            // Store deduction info
+                            setForm(prevForm => ({
+                                ...prevForm,
+                                fromBusinessBalance: true,
+                                balanceDeduction: {
+                                    method: 'auto',
+                                    deductions
+                                }
+                            }));
+                            
+                            Alert.alert(
+                                translations[language].tabs.orders.create.sections.sender.fields.deductions_ready || "Deductions Ready",
+                                `${translations[language].tabs.orders.create.sections.sender.fields.deductions_on_submit || "Deductions will be applied on submit"}:\n\n${deductionDetails}`,
+                                [{ text: "OK" }]
+                            );
+                        }
+                    }
+                ]
+            );
+        } catch (error) {
+            setShowAlert({
+                visible: false
+            });
+            Alert.alert(
+                translations[language].tabs.orders.create.error || "Error",
+                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
+                [{ text: "OK" }]
+            );
+        }
+    };
+
     return (
         <View style={styles.pageContainer}>
             <ScrollView 
@@ -1021,6 +1712,7 @@ export default function HomeScreen() {
             {/* Custom Alert */}
             {showAlert.visible && (
                 <CustomAlert
+                    visible={showAlert.visible}
                     type={showAlert.type}
                     title={showAlert.title}
                     message={showAlert.message}
@@ -1363,5 +2055,8 @@ const styles = StyleSheet.create({
         color: '#92400E',
         lineHeight: 20,
         fontWeight: '500', // Added for better visibility
+    },
+    alertLoader: {
+        marginTop: 16,
     },
 });

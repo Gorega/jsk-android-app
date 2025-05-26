@@ -375,7 +375,7 @@ export default function Notifications() {
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#4361EE" />
       <Text style={styles.loadingText}>
-        {translations[language]?.loading || 'Loading notifications...'}
+        {translations[language]?.notifications?.loading || 'Loading notifications...'}
       </Text>
     </View>
   );

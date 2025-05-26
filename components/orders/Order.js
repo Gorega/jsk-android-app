@@ -15,6 +15,7 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { getToken } from "../../utils/secureStore";
 import { RTLWrapper } from '@/utils/RTLWrapper';
+import Contact from "./userBox/Contact";
 
 // Helper function to format currency values
 const formatCurrencyValue = (value, currency) => {
@@ -77,7 +78,7 @@ export default function Order({ user, order }) {
         outputRange: ['0deg', '180deg']
     });
 
-    const statusOptions = authUser.role === "driver" ? [{
+    const statusOptions = authUser.role === "driver" || authUser.role === "delivery_company" ? [{
         label: translations[language].tabs.orders.order.states.rescheduleReasons?.title, value: "reschedule",
         requiresReason: true,
         reasons: [
@@ -427,6 +428,45 @@ export default function Order({ user, order }) {
                                 </View>
                             </View>
                             
+                            {/* Receiver phone with call and message icons */}
+                            {order.receiver_mobile && (
+                                <View style={[styles.minimizedRow, styles.phoneRow]}>
+                                    <Text style={styles.phoneText}>{order.receiver_mobile}</Text>
+                                    <View style={styles.phoneActions}>
+                                        <Contact
+                                            contact={{
+                                                type: "phone",
+                                                label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
+                                                phone: order.receiver_mobile,
+                                                msg: ""
+                                            }}
+                                        />
+                                        <Contact
+                                            contact={{
+                                                type: "msg",
+                                                label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
+                                                phone: order.receiver_mobile,
+                                                msg: ""
+                                            }}
+                                        />
+                                    </View>
+                                </View>
+                            )}
+                            
+                            {/* Display order type if it's receive or delivery/receive */}
+                            <View style={[styles.minimizedRow]}>
+                                <View style={[styles.minimizedSection]}>
+                                    <Text style={[styles.minimizedLabel]}>
+                                        {translations[language].tabs.orders.order.orderType || 'Order Type'}
+                                    </Text>
+                                    <Text style={[styles.minimizedValue, styles.highlightOrderType]}>
+                                        {order.order_type}
+                                        {order.received_items ? ` (${order.received_items})` : ''}
+                                        {order.received_quantity ? ` - ${order.received_quantity}` : ''}
+                                    </Text>
+                                </View>
+                            </View>
+                            
                             {/* Additional minimized info - location with area and address */}
                             <View style={[styles.minimizedRow]}>
                                 <View style={[
@@ -440,6 +480,43 @@ export default function Order({ user, order }) {
                                     </Text>
                                 </View>
                             </View>
+                            
+                            {/* Show note if available */}
+                            {order.note && (
+                                <View style={[styles.minimizedRow]}>
+                                    <View style={[styles.minimizedSection, styles.noteMinimized]}>
+                                        <Text style={[styles.minimizedLabel]}>
+                                            {translations[language].tabs.orders.order.note || 'Note'}
+                                        </Text>
+                                        <Text style={[styles.minimizedValue, styles.noteText]}>
+                                            {order.note}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+                            
+                            {/* Show checks if exist with navigation */}
+                            {order.checks_value > 0 && (
+                                <TouchableOpacity 
+                                    style={[styles.minimizedRow]}
+                                    onPress={() => router.push({
+                                        pathname: "(order_checks)",
+                                        params: { orderId: order.order_id }
+                                    })}
+                                >
+                                    <View style={[styles.minimizedSection, styles.checksMinimized]}>
+                                        <View style={styles.checksMinimizedHeader}>
+                                            <Text style={[styles.minimizedLabel]}>
+                                                {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
+                                            </Text>
+                                            <MaterialIcons name="chevron-right" size={18} color="#EF4444" />
+                                        </View>
+                                        <Text style={[styles.minimizedValue, styles.checksValueText]}>
+                                            {order.checks_value} {order.currency}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            )}
                             
                             {/* Show to_branch or to_driver if not null */}
                             {(order.to_branch || order.to_driver) && (
@@ -456,6 +533,15 @@ export default function Order({ user, order }) {
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
+                                </View>
+                            )}
+                            
+                            {/* Order date/time info if available */}
+                            {order.created_at && (
+                                <View style={styles.minimizedDateContainer}>
+                                    <Text style={styles.dateTimeText}>
+                                        {new Date(order.created_at).toLocaleString('en-US')}
+                                    </Text>
                                 </View>
                             )}
                         </View>
@@ -487,7 +573,7 @@ export default function Order({ user, order }) {
                                     }} 
                                 />
                                 
-                                {!["driver", "business"].includes(authUser.role) && (
+                                {!["driver","delivery_company", "business"].includes(authUser.role) && (
                                     <UserBox 
                                         box={{
                                             label: translations[language].tabs.orders.order.userDriverBoxLabel,
@@ -557,6 +643,20 @@ export default function Order({ user, order }) {
                                         <Text style={[styles.orderTypeText]}>
                                             {order.order_type}
                                         </Text>
+                                        {(order.received_items || order.received_quantity) && (
+                                            <View style={styles.receivedDetailsContainer}>
+                                                {order.received_items && (
+                                                    <Text style={styles.receivedDetailsText}>
+                                                        {translations[language].tabs.orders.order.receivedItems || 'Received Items'}: {order.received_items}
+                                                    </Text>
+                                                )}
+                                                {order.received_quantity && (
+                                                    <Text style={styles.receivedDetailsText}>
+                                                        {translations[language].tabs.orders.order.receivedQuantity || 'Quantity'}: {order.received_quantity}
+                                                    </Text>
+                                                )}
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
                             </View>
@@ -834,7 +934,7 @@ export default function Order({ user, order }) {
                     setShowPickerModal={setShowStatusUpdateModal}
                     field={{
                         name: 'status',
-                        label: 'Status',
+                        label: translations[language].tabs.orders.order.status,
                         showSearchBar: false
                     }}
                 />
@@ -1572,5 +1672,66 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '600',
         fontSize: 15,
+    },
+    phoneRow: {
+        marginBottom: 10,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    phoneText: {
+        fontSize: 15,
+        fontWeight: '500',
+        color: '#4361EE',
+    },
+    phoneActions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    phoneActionButton: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    noteMinimized: {
+        backgroundColor: 'rgba(67, 97, 238, 0.06)',
+        padding: 8,
+        borderRadius: 8,
+        marginVertical: 4,
+    },
+    checksMinimized: {
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        padding: 8,
+        borderRadius: 8,
+        marginVertical: 4,
+    },
+    checksValueText: {
+        color: '#EF4444',
+    },
+    highlightOrderType: {
+        color: '#7209B7',
+        fontWeight: '700',
+    },
+    checksMinimizedHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    receivedDetailsContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    receivedDetailsText: {
+        fontSize: 12,
+        color: '#64748B',
+        marginLeft: 8,
+    },
+    minimizedDateContainer: {
+        alignItems: 'flex-end',
+        marginTop: 5,
     },
 });

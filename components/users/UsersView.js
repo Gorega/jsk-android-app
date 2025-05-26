@@ -5,13 +5,13 @@ import FlatListData from '../FlatListData';
 import User from "./User";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
-export default function UsersView({data,loadMoreData,loadingMore,isLoading}){
+export default function UsersView({data,loadMoreData,loadingMore,refreshControl,isLoading}){
     const { language } = useLanguage();
 
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#F8C332" />
+                <ActivityIndicator size="large" color="#4361EE" />
             </View>
         );
     }
@@ -27,6 +27,7 @@ export default function UsersView({data,loadMoreData,loadingMore,isLoading}){
                 <User user={item} />
             </View>
         )}
+        refreshControl={refreshControl}
     />
     :
     <View style={styles.empty}>

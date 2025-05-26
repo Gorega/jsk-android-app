@@ -1,10 +1,10 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import UserBox from "../orders/userBox/UserBox";
@@ -16,30 +16,128 @@ export default function User({ user }) {
     const [showControl, setShowControl] = useState(false);
     const socket = useSocket();
     const [isOnline, setIsOnline] = useState(false);
+    const [lastSeen, setLastSeen] = useState(null);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    
+    // Use active_status directly from user prop
+    const isActiveAccount = user?.active_status === 1;
+
+    // Pulse animation for online status
+    useEffect(() => {
+        if (isOnline) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.3,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [isOnline]);
 
     // Listen for online user updates from socket
     useEffect(() => {
         if (!socket) return;
 
-        // Handle initial connection and user status updates
-        const handleUserStatus = (connectedUsers) => {
-            if (connectedUsers && Array.isArray(connectedUsers)) {
-                // Check if this user is in the list of connected users
-                setIsOnline(connectedUsers.some(connectedUser => 
-                    connectedUser.user_id === user.user_id));
+        // Initialize as offline
+        setIsOnline(false);
+
+        // Handle userUpdate events with type USER_ONLINE_STATUS
+        const handleUserUpdate = (notification) => {
+            if (notification.userId === user.user_id || notification.userId === Number(user.user_id)) {
+                if (notification.type === 'USER_ONLINE_STATUS') {
+                    setIsOnline(notification.isOnline);
+                    
+                    if (!notification.isOnline && notification.timestamp) {
+                        try {
+                            const timestamp = new Date(notification.timestamp);
+                            if (!isNaN(timestamp.getTime())) {
+                                setLastSeen(timestamp);
+                            }
+                        } catch (e) {
+                            console.error("Invalid timestamp format:", notification.timestamp);
+                        }
+                    }
+                }
             }
         };
 
-        // Listen for online users update event
-        socket.on('onlineUsers', handleUserStatus);
+        // Handle individual user online status
+        const handleUserOnline = (userId) => {
+            if (userId === user.user_id || userId === Number(user.user_id)) {
+                setIsOnline(true);
+            }
+        };
+
+        // Handle individual user offline status
+        const handleUserOffline = (userId) => {
+            if (userId === user.user_id || userId === Number(user.user_id)) {
+                setIsOnline(false);
+                const now = new Date();
+                setLastSeen(now);
+            }
+        };
         
-        // Request current online users when component mounts
-        socket.emit('getOnlineUsers');
+        // Check if user is already online
+        const checkOnlineStatus = () => {
+            socket.emit('getOnlineUsers', (onlineUsers) => {
+                if (Array.isArray(onlineUsers)) {
+                    const userIsOnline = onlineUsers.some(id => 
+                        id === user.user_id || id === Number(user.user_id)
+                    );
+                    setIsOnline(userIsOnline);
+                }
+            });
+        };
+
+        // Listen for events
+        socket.on('userUpdate', handleUserUpdate);
+        socket.on('userOnline', handleUserOnline);
+        socket.on('userOffline', handleUserOffline);
+        
+        // Check initial status
+        checkOnlineStatus();
 
         return () => {
-            socket.off('onlineUsers', handleUserStatus);
+            socket.off('userUpdate', handleUserUpdate);
+            socket.off('userOnline', handleUserOnline);
+            socket.off('userOffline', handleUserOffline);
         };
     }, [socket, user.user_id]);
+
+    // Format time since last seen
+    const formatLastSeen = () => {
+        if (!lastSeen || !(lastSeen instanceof Date) || isNaN(lastSeen.getTime())) {
+            return translations[language].users.user.offline;
+        }
+        
+        const now = new Date();
+        const diffMs = now - lastSeen;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) {
+            return translations[language].users.user.justNow;
+        } else if (diffMins < 60) {
+            return `${diffMins} ${translations[language].users.user.minutesAgo}`;
+        } else {
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) {
+                return `${diffHours} ${translations[language].users.user.hoursAgo}`;
+            } else {
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays} ${translations[language].users.user.daysAgo}`;
+            }
+        }
+    };
 
     return (
         <>
@@ -50,32 +148,40 @@ export default function User({ user }) {
                     styles.userPressable
                 ]}
             >
-                <View style={styles.user}>
+                <View style={[
+                    styles.user,
+                    isOnline && styles.onlineUserHighlight
+                ]}>
                     {/* Header with ID & Status */}
                     <View style={[styles.header]}>
-                        <View style={[
-                            styles.idContainer
-                        ]}>
+                        <View style={[styles.idContainer]}>
                             <Text style={styles.idText}>#{user?.user_id}</Text>
+                            {isActiveAccount && (
+                                <View style={styles.activeStatusIndicator} />
+                            )}
                         </View>
                         
                         <LinearGradient
                             colors={isOnline ? 
                                 ['#10B981', '#059669'] : 
-                                ['#EF4444', '#DC2626']}
+                                isActiveAccount ? ['#3B82F6', '#2563EB'] : ['#EF4444', '#DC2626']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.statusBadge}
                         >
                             <View style={styles.statusIndicator}>
-                                <View style={[
+                                <Animated.View style={[
                                     styles.statusDot,
-                                    isOnline ? styles.onlineDot : styles.offlineDot
+                                    isOnline ? styles.onlineDot : 
+                                    isActiveAccount ? styles.activeDot : styles.inactiveDot,
+                                    { transform: [{ scale: isOnline ? pulseAnim : 1 }] }
                                 ]} />
                                 <Text style={styles.statusText}>
                                     {isOnline ? 
                                         translations[language].users.user.online : 
-                                        translations[language].users.user.offline}
+                                        isActiveAccount ? 
+                                            (lastSeen ? formatLastSeen() : translations[language].users.user.active) : 
+                                            translations[language].users.user.inactive}
                                 </Text>
                             </View>
                         </LinearGradient>
@@ -100,9 +206,7 @@ export default function User({ user }) {
                                 name="location-outline" 
                                 size={22} 
                                 color="#4361EE" 
-                                style={[
-                                    styles.sectionIcon
-                                ]}
+                                style={[styles.sectionIcon]}
                             />
                             <View style={styles.textContainer}>
                                 <Text style={[styles.sectionTitle]}>
@@ -122,9 +226,7 @@ export default function User({ user }) {
                                 name="admin-panel-settings" 
                                 size={22} 
                                 color="#4361EE" 
-                                style={[
-                                    styles.sectionIcon
-                                ]}
+                                style={[styles.sectionIcon]}
                             />
                             <View style={styles.textContainer}>
                                 <Text style={[styles.sectionTitle]}>
@@ -137,7 +239,6 @@ export default function User({ user }) {
                         </View>
                     </View>
 
-                    {/* Extra info or actions can be added here */}
                 </View>
             </Pressable>
             
@@ -155,9 +256,7 @@ export default function User({ user }) {
                     </View>
 
                     <TouchableOpacity 
-                        style={[
-                            styles.modalItem
-                        ]} 
+                        style={[styles.modalItem]} 
                         onPress={() => {
                             setShowControl(false);
                             router.push({
@@ -166,33 +265,13 @@ export default function User({ user }) {
                             });
                         }}
                     >
-                        <View style={[
-                            styles.modalItemIconContainer
-                        ]}>
+                        <View style={[styles.modalItemIconContainer]}>
                             <Feather name="edit" size={20} color="#4361EE" />
                         </View>
                         <Text style={styles.modalItemText}>
                             {translations[language].users.user.edit}
                         </Text>
                     </TouchableOpacity>
-
-                    {/* <TouchableOpacity 
-                        style={[
-                            styles.modalItem,
-                            { flexDirection: getFlexDirection(), borderBottomWidth: 0 }
-                        ]} 
-                        onPress={() => setShowControl(false)}
-                    >
-                        <View style={[
-                            styles.modalItemIconContainer,
-                            isRTL ? { marginLeft: 12 } : { marginRight: 12 }
-                        ]}>
-                            <Feather name="eye" size={20} color="#4361EE" />
-                        </View>
-                        <Text style={styles.modalItemText}>
-                            {translations[language].users.user.viewDetails}
-                        </Text>
-                    </TouchableOpacity> */}
                 </ModalPresentation>
             )}
         </>
@@ -218,6 +297,10 @@ const styles = StyleSheet.create({
         shadowRadius: 2.65,
         elevation: 2,
     },
+    onlineUserHighlight: {
+        borderLeftWidth: 4,
+        borderLeftColor: "#10B981",
+    },
     header: {
         flexDirection: "row",
         justifyContent: "space-between",
@@ -231,12 +314,21 @@ const styles = StyleSheet.create({
         borderColor: "#4361EE",
         borderWidth: 1,
         backgroundColor: "#EEF2FF",
+        flexDirection: "row",
+        alignItems: "center",
     },
     idText: {
         fontSize: 14,
         fontWeight: "600",
         color: "#4361EE",
         textAlign: "center",
+    },
+    activeStatusIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: "#10B981",
+        marginLeft: 6,
     },
     statusBadge: {
         paddingHorizontal: 12,
@@ -254,6 +346,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         textTransform: "uppercase",
         letterSpacing: 0.5,
+        marginLeft: 6,
     },
     statusIndicator: {
         flexDirection: "row",
@@ -262,7 +355,7 @@ const styles = StyleSheet.create({
     statusDot: {
         width: 8,
         height: 8,
-        borderRadius: 4
+        borderRadius: 4,
     },
     onlineDot: {
         backgroundColor: "#ffffff",
@@ -271,9 +364,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.8,
         shadowRadius: 3,
     },
-    offlineDot: {
+    activeDot: {
         backgroundColor: "#ffffff",
-        opacity: 0.7,
+        opacity: 0.8,
+    },
+    inactiveDot: {
+        backgroundColor: "#ffffff",
+        opacity: 0.6,
     },
     userInfoSection: {
         marginBottom: 12,
@@ -308,6 +405,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#64748B",
     },
+    onlineNowText: {
+        fontSize: 12,
+        color: "#10B981",
+        fontWeight: "500",
+        marginTop: 4,
+    },
     modalHeader: {
         paddingVertical: 12,
         paddingHorizontal: 16,
@@ -326,6 +429,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderBottomColor: "#E2E8F0",
         borderBottomWidth: 1,
+        gap: 12,
     },
     modalItemIconContainer: {
         width: 36,
