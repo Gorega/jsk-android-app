@@ -63,7 +63,7 @@ export default function HomeScreen(){
                         <Feather name="phone" size={20} color="#4361EE" />
                         <View style={[styles.contactTextContainer]}>
                             <Text style={styles.contactLabel}>{translations[language].contact.local}</Text>
-                            <Text style={styles.contactValue}>+970593686817</Text>
+                            <Text style={styles.contactValue}>+972566150002</Text>
                         </View>
                     </View>
                 </View>

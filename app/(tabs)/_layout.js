@@ -142,8 +142,7 @@ export default function TabLayout() {
             {...props}
             onPress={() => {
               router.push({
-                pathname: "/(tabs)/orders",
-                params: { fromTab: true }
+                pathname: "/(tabs)/orders"
               });
             }}
           />

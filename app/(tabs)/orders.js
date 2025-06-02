@@ -24,7 +24,7 @@ export default function Orders() {
     const [selectedDate, setSelectedDate] = useState("");
     const params = useLocalSearchParams();
     const { user } = useAuth();
-    const { orderId, orderIds, fromTab } = params;
+    const { orderIds } = params;
     const [refreshing, setRefreshing] = useState(false);
 
     const onRefresh = useCallback(async () => {
@@ -36,7 +36,7 @@ export default function Orders() {
         } finally {
             setRefreshing(false);
         }
-    }, [language, fromTab]);
+    }, [language]);
 
     const filterByGroup = ["driver", "delivery_company"].includes(user.role) ? [{
         name: translations[language].tabs.orders.filters.all,
@@ -188,9 +188,6 @@ export default function Orders() {
         action: "custom"
     }]
 
-    const clearFilters = () => {
-        router.setParams({ orderIds: "", orderId: "" });
-    };
 
     const fetchData = async (pageNumber = 1, isLoadMore = false) => {
         if (!isLoadMore) setIsLoading(true);
@@ -281,32 +278,10 @@ export default function Orders() {
     }, [socket])
 
     useEffect(() => {
-        const shouldResetFilters = fromTab === "true"; // Convert string param to boolean
-        if (shouldResetFilters) {
-            // Clear filters only when coming from tab navigation
-            setSearchValue("");
-            setActiveFilter("");
-            setActiveSearchBy("");
-            setActiveDate("");
-            setSelectedDate("");
-        }
-    }, [fromTab])
-
-    useEffect(() => {
         setPage(1);
         fetchData(1, false);
-        if (orderIds) {
-            setActiveSearchBy(searchByGroup[0]);
-        }
     }, [searchValue, activeFilter, activeDate, orderIds, language]);
 
-
-    useEffect(() => {
-        if (orderId) {
-            setSearchValue(orderId);
-            setActiveSearchBy(searchByGroup[0]);
-        }
-    }, [orderId]);
 
     return (
         <View style={styles.container}>
@@ -326,8 +301,6 @@ export default function Orders() {
                 setSelectedDate={setSelectedDate}
                 activeDate={activeDate}
                 setActiveDate={setActiveDate}
-                showClearFilters={!!orderIds}
-                onClearFilters={clearFilters}
                 addPaddingSpace={true}
             />
             

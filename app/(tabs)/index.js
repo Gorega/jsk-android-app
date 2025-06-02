@@ -113,14 +113,14 @@ export default function HomeScreen() {
     orderIds: data?.delivered_orders?.order_ids
   } : null];
 
-  const boxes = [user.role === "driver" ? { visibility: "hidden" } : {
+  const boxes = [user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.inWaiting,
     icon: <MaterialIcons name="pending-actions" size={22} color="white" />,
     gradientColors: ['#4CC9F0', '#4361EE'],
     numberOfOrders: data?.waiting_orders?.count,
     money: formatMoney(data?.waiting_orders?.cod_value),
     orderIds: data?.waiting_orders?.order_ids
-  }, user.role === "driver" ? { visibility: "hidden" } : {
+  }, user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.inBranch,
     icon: <Entypo name="flow-branch" size={22} color="white" />,
     gradientColors: ['#4361EE', '#3A0CA3'],
@@ -309,8 +309,8 @@ export default function HomeScreen() {
   const handleSendNotification = async () => {
     if (selectedDrivers.length === 0) {
       Alert.alert(
-        translations[language]?.driverNotification?.selectDrivers || "Select Drivers",
-        translations[language]?.driverNotification?.selectDriversMessage || "Please select at least one driver to notify."
+        translations[language]?.driverNotification?.selectDrivers,
+        translations[language]?.driverNotification?.selectDriversMessage
       );
       return;
     }
@@ -338,21 +338,21 @@ export default function HomeScreen() {
 
       if (data.message && data.notified_drivers) {
         Alert.alert(
-          translations[language]?.driverNotification?.success || "Success",
-          translations[language]?.driverNotification?.notificationSent || "Notification sent successfully!"
+          translations[language]?.driverNotification?.success,
+          translations[language]?.driverNotification?.notificationSent
         );
         setShowDriverModal(false);
         setSelectedDrivers([]);
       } else {
         Alert.alert(
-          translations[language]?.driverNotification?.error || "Error",
-          data.message || translations[language]?.driverNotification?.errorMessage || "Failed to send notification"
+          translations[language]?.driverNotification?.error,
+          data.message || translations[language]?.driverNotification?.errorMessage
         );
       }
     } catch (error) {
       Alert.alert(
-        translations[language]?.driverNotification?.error || "Error",
-        translations[language]?.driverNotification?.errorMessage || "Failed to send notification"
+        translations[language]?.driverNotification?.error,
+        translations[language]?.driverNotification?.errorMessage
       );
     } finally {
       setSendingNotification(false);
@@ -436,7 +436,9 @@ export default function HomeScreen() {
               style={styles.cardTouchable}
               onPress={() => router.push({
                 pathname: "/(tabs)/orders",
-                params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
+                params: {
+                  orderIds: box.orderIds.length > 0 ? box.orderIds : {}
+                }
               })}
               onLongPress={() => {
                 // Handle long press based on which card it is
@@ -619,7 +621,9 @@ export default function HomeScreen() {
                 style={[styles.statusRow]}
                 onPress={() => router.push({
                   pathname: "/(tabs)/orders",
-                  params: {orderIds: box.orderIds?.length > 0 ? box.orderIds : "0"}
+                  params: {
+                    orderIds: box.orderIds.length > 0 ? box.orderIds : {}
+                  }
                 })}
                 activeOpacity={0.9}
               >

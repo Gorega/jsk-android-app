@@ -96,7 +96,10 @@ export const translations = {
       sent:"Sent",
       error:"Error",
       selectDrivers:"Select Drivers",
-      selectDriversMessage:"Please select at least one driver to notify."
+      selectDriversMessage:"Please select at least one driver to notify.",
+      notificationSent:"Notification sent successfully",
+      success:"Success",
+      errorMessage:"Failed to send notification"
     },
     
     common:{
@@ -263,7 +266,7 @@ export const translations = {
               "title": "Return Initiated Before Delivery",
               "businessCancellation": "Cancelled by Business",
               "receiverCancellation": "Cancelled by Receiver",
-              "addressRrror": "Incorrect Address",
+              "addressError": "Incorrect Address",
               "noResponse": "No Response"
             },
             "return_after_delivered_initiated": {
@@ -449,7 +452,9 @@ export const translations = {
                 balance_change_confirmation: "This action will affect the sender's balance. Do you want to continue?",
                 return_balance: "Return Balance",
                 deduction_amounts: "Amounts to deduct",
-                balance_after: "Balance after"
+                balance_after: "Balance after",
+                auto_deduction_notice: "Automatic Deduction Notice",
+                auto_deduction_message: "This order type will be automatically deducted from your balance upon submission."
               }
             },
             client:{
@@ -462,7 +467,12 @@ export const translations = {
                 secondPhone:"Second Phone Number",
                 city:"City",
                 area:"Area",
-                address:"Address"
+                address:"Address",
+                searchReceiver:"Search Receiver",
+                enterPhone:"Enter phone number",
+                noReceivers:"No receivers found",
+                found:"Found",
+                receivers:"receivers"
               }
             },
             cost:{
@@ -470,6 +480,7 @@ export const translations = {
               fields:{
                 checks:"Checks",
                 packageCost:"Package Cost",
+                amount:"Amount",
                 deliveryFee:"Delivery Fee",
                 isReplaced:"Is Replaced",
                 insufficient_balance:"Insufficient Balance",
@@ -481,7 +492,9 @@ export const translations = {
             },
             details:{
               title:"Order Details",
+              paymentDetailsTitle:"Payment Details",
               fields:{
+                description:"Description",
                 product:"Product",
                 quantity:"Quantity",
                 weight:"Weight",
@@ -490,9 +503,11 @@ export const translations = {
             },
             orderTypes:{
               title:"Order Type",
+              titlePlaceholder:"Select Order Type",
               delivery:"Delivery",
               receive:"Receive",
               "delivery/receive":"Delivery / Recieve",
+              payment:"Payment",
               receivedItems:"Received Items",
               receivedQuantity:"Received Quantity",
             },
@@ -863,6 +878,9 @@ export const translations = {
       orderId: "Order ID",
       phone: "Phone",
       call: "Call",
+      whatsapp: "WhatsApp",
+      regularCall: "Regular Call",
+      cancel: "Cancel",
       changeStatus: "Update Status",
       selectStatus: "Select Status",
       selectReason: "Select Reason",
@@ -986,6 +1004,20 @@ export const translations = {
       title:"Track Your Package",
       desc:"Enter Order Number to Start Tracking",
       placeholder:"for ex:12321411",
+    },
+
+    roles: {
+      admin: "Admin",
+      business: "Business",
+      manager: "Manager",
+      driver: "Driver",
+      accountant: "Accountant",
+      entery: "Entry",
+      warehouse_admin: "Warehouse Admin",
+      warehouse_staff: "Warehouse Staff",
+      delivery_company: "Delivery Company",
+      support_agent: "Support Agent",
+      sales_representative: "Sales Representative"
     }
   },
   ar: {
@@ -1078,7 +1110,10 @@ export const translations = {
       sent:"تم إرسال الإشعار",
       error:"فشل إرسال الإشعار",
       selectDrivers:"اختر السائقين",
-      selectDriversMessage:"يرجى اختيار السائقين الذين تريد إشعارهم."
+      selectDriversMessage:"يرجى اختيار السائقين الذين تريد إشعارهم.",
+      success:"تم بنجاح",
+      errorMessage:"فشل إرسال الإشعار",
+      notificationSent:"تم إرسال الإشعار بنجاح",
     },
 
     routes: {
@@ -1109,6 +1144,10 @@ export const translations = {
       markAsCompleted: "تحديد كمكتمل",
       saveRoute: "حفظ المسار",
       removeOrder: "إزالة الطلب",
+      callOptions: "اختيار الاتصال",
+      whatsapp: "واتساب",
+      regularCall: "اتصال عادي",
+      cancel: "إلغاء",
       removeOrderConfirm: "هل أنت متأكد من أنك تريد إزالة هذا الطلب من المسار؟",
       errorLoadingRoute: "خطأ في تحميل تفاصيل المسار",
       cannotModifyCompleted: "لا يمكن تعديل مسار مكتمل",
@@ -1323,7 +1362,7 @@ export const translations = {
               "title": "إرجاع قبل التوصيل",
               "businessCancellation": "إلغاء من التاجر",
               "receiverCancellation": "إلغاء من المستلم",
-              "addressRrror": "خطأ في العنوان",
+              "addressError": "خطأ في العنوان",
               "noResponse": "لا يوجد رد"
             },
             "return_after_delivered_initiated": {
@@ -1510,7 +1549,9 @@ export const translations = {
                 "balance_change_confirmation": "سيؤثر هذا الإجراء على رصيد المرسل. هل ترغب في المتابعة؟",
                 "return_balance": "إعادة الرصيد",
                 "deduction_amounts": "المبالغ المطلوب خصمها",
-                "balance_after": "الرصيد بعد"
+                "balance_after": "الرصيد بعد",
+                "auto_deduction_notice": "ملاحظة خصم تلقائي",
+                "auto_deduction_message": "سيتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال."
               }
             },
             client: {
@@ -1523,14 +1564,21 @@ export const translations = {
                 secondPhone: "رقم الهاتف الثاني",
                 city: "المدينة",
                 area: "المنطقة",
-                address: "العنوان"
+                address: "العنوان",
+                searchReceiver:"ابحث عن الزبون",
+                enterPhone:"ادخل رقم الهاتف",
+                noReceivers:"لا يوجد زبائن",
+                found:"تم ايحاد",
+                receivers:"زبائن"
               }
             },
             cost: {
               title: "التكلفة",
               fields: {
                 "checks":"الشيكات",
-                "packageCost": "تكلفة الطرد",
+                "packageCost": "سعر الطرد غير شامل التوصيل",
+                "totalPackageCost": "سعر الطرد شامل التوصيل",
+                "amount": "المبلغ",
                 "deliveryFee": "رسوم التوصيل",
                 "isReplaced": "تم استبداله",
                 "insufficient_balance": "رصيد غير كافٍ",
@@ -1542,7 +1590,9 @@ export const translations = {
             },
             details: {
               title: "تفاصيل الطرد",
+              paymentDetailsTitle:"تفاصيل الدفع",
               fields: {
+                description:"الوصف",
                 product: "المنتج",
                 quantity: "الكمية",
                 weight: "الوزن",
@@ -1551,9 +1601,11 @@ export const translations = {
             },
             orderTypes: {
               title: "نوع الطرد",
+              titlePlaceholder:"اختر نوع الطرد",
               delivery: "توصيل",
-              receive: "استلام",
-              "delivery/receive": "توصيل / استلام",
+              receive: "احضار",
+              "delivery/receive": "توصيل / تبديل",
+              payment: "دفع",
               receivedItems: "العناصر المستلمة",
               receivedQuantity: "الكمية المستلمة"
             },
@@ -1972,6 +2024,20 @@ export const translations = {
       title: "تتبع حزمتك",
       desc: "أدخل رقم الطرد لبدء التتبع",
       placeholder: "مثال: 12321411"
+    },
+
+    roles: {
+      admin: "مدير",
+      business: "تاجر",
+      manager: "اداري",
+      driver: "سائق",
+      accountant: "محاسب",
+      entery: "مدخل بيانات",
+      warehouse_admin: "مدير المستودع",
+      warehouse_staff: "موظف مستودع",
+      delivery_company: "شركة توصيل",
+      support_agent: "وكيل دعم",
+      sales_representative: "مندوب مبيعات"
     }
   },
   he: {
@@ -2386,6 +2452,20 @@ export const translations = {
       title:"עקוב אחר החבילה שלך",
       desc:"הזן מספר הזמנה כדי להתחיל במעקב",
       placeholder:"לדוגמה: 12321411",
+    },
+
+    roles: {
+      admin: "מנהל מערכת",
+      business: "עסק",
+      manager: "מנהל",
+      driver: "נהג",
+      accountant: "רואה חשבון",
+      entery: "הזנת נתונים",
+      warehouse_admin: "מנהל מחסן",
+      warehouse_staff: "צוות מחסן",
+      delivery_company: "חברת משלוחים",
+      support_agent: "נציג תמיכה",
+      sales_representative: "נציג מכירות"
     }
   }
 };

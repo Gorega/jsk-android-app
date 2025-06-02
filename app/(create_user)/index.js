@@ -83,12 +83,13 @@ export default function HomeScreen() {
             name: "city_id",
             value: selectedValue.city_id.name,
             list: cities
-        }, {
-            label: translations[language].users.create.sections.user.fields.area,
-            type: "input",
-            name: "area",
-            value: form.area || "",
-            onChange: (input) => setForm((form) => ({ ...form, area: input }))
+            .slice(2) // Skip first two cities
+            .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
+            .filter(city => 
+                !prickerSearchValue || 
+                city.name.toLowerCase().includes(prickerSearchValue.toLowerCase())
+            ),
+            showSearchBar: true,
         }, {
             label: translations[language].users.create.sections.user.fields.address,
             type: "input",
@@ -161,7 +162,6 @@ export default function HomeScreen() {
                     country: "palestine",
                     city_id: selectedValue.city_id.city_id,
                     expected_salary:0,
-                    area: form.area,
                     address: form.address,
                     website: form.website,
                     tiktok: form.tiktok,
@@ -172,7 +172,6 @@ export default function HomeScreen() {
             });
 
             const data = await res.json();
-            console.log(data);
 
             if (!res.ok) {
                 setFormSpinner({ status: false });
@@ -257,13 +256,11 @@ export default function HomeScreen() {
                 secondPhone: userData.secondPhone,
                 affiliator: userData.affiliator,
                 city_id: userData.city_id,
-                area: userData.area,
                 address: userData.address,
                 role_id: userData.role_id,
                 priceList_id: userData.priceList_id,
             });
         } catch (err) {
-            console.log(err);
         }
     };
 
@@ -282,7 +279,6 @@ export default function HomeScreen() {
             const data = await res.json();
             setData(data.data);
         } catch (err) {
-            console.log(err);
         }
     };
 

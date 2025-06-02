@@ -2,7 +2,7 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["remote-notification"]
       },
       "bundleIdentifier": "com.taiar",
       "userInterfaceStyle": "automatic",
@@ -32,7 +33,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
-        "android.permission.RESTART_PACKAGES"
+        "android.permission.RESTART_PACKAGES",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE"
       ],
       "userInterfaceStyle": "automatic",
       "allowBackup": false,
@@ -70,7 +73,15 @@
           "faceIDPermission": "Allow app to use Face ID for authentication"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/tayar_logo.png",
+          "color": "#ffffff",
+          "sounds": ["./assets/sounds/notification.wav"]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

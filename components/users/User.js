@@ -213,7 +213,7 @@ export default function User({ user }) {
                                     {translations[language].users.user.location}
                                 </Text>
                                 <Text style={[styles.sectionText]}>
-                                    {user?.city}{user.area ? `, ${user.area}` : ""}{user.address ? `, ${user.address}` : ""}
+                                    {user?.city} {user.address ? `, ${user.address}` : ""}
                                 </Text>
                             </View>
                         </View>

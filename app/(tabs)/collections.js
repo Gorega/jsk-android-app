@@ -43,14 +43,14 @@ export default function Collections({ showModal, setShowModal }) {
             iconBackground: "#EEF2FF",
             iconColor: "#4361EE"
         } : { visibility: "hidden" },
-        ["business"].includes(user.role) ? { visibility: "hidden" } : {
+        ["business","accountant","entery","support_agent","sales_representative"].includes(user.role) ? { visibility: "hidden" } : {
             label:  ["driver","delivery_company"].includes(user.role) ? translations[language].tabs.collections.options.my_returned_collections : translations[language].tabs.collections.options.driver_returned_collections,
             link: "(collection)?type=driver_returned",
             icon: <Octicons name="package-dependencies" size={22} color="#4361EE" />,
             iconBackground: "#EEF2FF",
             iconColor: "#4361EE"
         },
-        ["driver","delivery_company"].includes(user.role) ? { visibility: "hidden" } : {
+        ["driver","delivery_company","accountant","entery","support_agent","sales_representative"].includes(user.role) ? { visibility: "hidden" } : {
             label: ["business"].includes(user.role) ? 
                 translations[language].tabs.collections.options.my_returned_collections : 
                 translations[language].tabs.collections.options.business_returned_collections,

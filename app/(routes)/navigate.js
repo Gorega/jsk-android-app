@@ -35,6 +35,8 @@ export default function RouteNavigate() {
     const [selectedReason, setSelectedReason] = useState(null);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
+    const [showCallOptionsModal, setShowCallOptionsModal] = useState(false);
+    const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
     
     const mapRef = useRef(null);
     
@@ -257,9 +259,10 @@ export default function RouteNavigate() {
     }, [isAllowed, routeId, language]);
     
     const handleCall = (phoneNumber) => {
-        if (phoneNumber) {
-            Linking.openURL(`tel:${phoneNumber}`);
-        }
+        if (!phoneNumber) return;
+        
+        setCurrentPhoneNumber(phoneNumber);
+        setShowCallOptionsModal(true);
     };
     
     const handleStatusUpdate = (order) => {
@@ -325,25 +328,52 @@ export default function RouteNavigate() {
             
             if (!data.error) {
                 // Update order status locally
-                setOrderStatus({
-                    ...orderStatus,
+                setOrderStatus(prevStatus => ({
+                    ...prevStatus,
                     [pendingRescheduleOrder.id]: selectedStatus.value
-                });
+                }));
+                
+                // Update the order in allOrders list
+                setAllOrders(prevOrders => 
+                    prevOrders.map(order => {
+                        if (order.id === pendingRescheduleOrder.id) {
+                            return {
+                                ...order,
+                                delivery_info: {
+                                    ...order.delivery_info,
+                                    status: selectedStatus.label,
+                                    status_key: selectedStatus.value
+                                }
+                            };
+                        }
+                        return order;
+                    })
+                );
                 
                 // If this is the current order, move to next
                 if (currentIndex < route.orders.length - 1 && route.orders[currentIndex].id === pendingRescheduleOrder.id) {
                     const nextIndex = currentIndex + 1;
                     setCurrentIndex(nextIndex);
-                    
-                    // Center map on next destination
-                    if (mapRef.current && route.orders[nextIndex]) {
-                        mapRef.current.animateToRegion({
-                            latitude: route.orders[nextIndex].latitude,
-                            longitude: route.orders[nextIndex].longitude,
-                            latitudeDelta: 0.05,
-                            longitudeDelta: 0.05,
-                        }, 1000);
-                    }
+                }
+
+                // Update route orders as well
+                if (route) {
+                    setRoute(prevRoute => ({
+                        ...prevRoute,
+                        orders: prevRoute.orders.map(order => {
+                            if (order.id === pendingRescheduleOrder.id) {
+                                return {
+                                    ...order,
+                                    delivery_info: {
+                                        ...order.delivery_info,
+                                        status: selectedStatus.label,
+                                        status_key: selectedStatus.value
+                                    }
+                                };
+                            }
+                            return order;
+                        })
+                    }));
                 }
             } else {
                 Alert.alert(
@@ -665,7 +695,9 @@ export default function RouteNavigate() {
                                             <View style={[styles.orderDetailItem]}>
                                                 <MaterialIcons name="attach-money" size={16} color="#64748B" />
                                                 <Text style={[styles.orderDetailLabel]}>
-                                                    {translations[language].tabs?.orders?.order?.codValue || "COD Value"}:
+                                                   {order.order_type_key === "receive" ?  translations[language].tabs?.orders?.create?.sections?.cost?.fields?.packageCost : 
+                                                    order.order_type_key === "payment" ? translations[language].tabs?.orders?.create?.sections?.cost?.fields?.amount : 
+                                                    translations[language].tabs?.orders?.create?.sections?.cost?.fields?.totalPackageCost}:
                                                 </Text>
                                                 <Text style={styles.orderDetailText}>
                                                     {order.cod_value}
@@ -893,6 +925,69 @@ export default function RouteNavigate() {
                                 )}
                             </TouchableOpacity>
                         </View>
+                    </View>
+                </ModalPresentation>
+            )}
+            
+            {showCallOptionsModal && (
+                <ModalPresentation
+                    showModal={showCallOptionsModal}
+                    setShowModal={setShowCallOptionsModal}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalHeaderText}>
+                            {translations[language].routes?.callOptions}
+                        </Text>
+                    </View>
+                    <View style={styles.modalContent}>
+                        <TouchableOpacity
+                            style={styles.modalOption}
+                            onPress={() => {
+                                setShowCallOptionsModal(false);
+                                Linking.openURL(`tel:${currentPhoneNumber}`);
+                            }}
+                        >
+                            <Text style={styles.modalOptionText}>
+                                {translations[language].routes?.regularCall}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={styles.modalOption}
+                            onPress={() => {
+                                setShowCallOptionsModal(false);
+                                const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+                                    currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
+                            }}
+                        >
+                            <Text style={styles.modalOptionText}> {translations[language].routes?.whatsapp} (972)</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={styles.modalOption}
+                            onPress={() => {
+                                setShowCallOptionsModal(false);
+                                const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+                                    currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
+                            }}
+                        >
+                            <Text style={styles.modalOptionText}> {translations[language].routes?.whatsapp} (970)</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalOption, styles.cancelOption]}
+                            onPress={() => {
+                                setShowCallOptionsModal(false);
+                                setCurrentPhoneNumber(null);
+                            }}
+                        >
+                            <Text style={styles.cancelOptionText}>
+                                {translations[language].routes?.cancel}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
                 </ModalPresentation>
             )}
@@ -1419,6 +1514,26 @@ const styles = StyleSheet.create({
     loadingMoreText: {
         marginLeft: 8,
         fontSize: 14,
+        color: '#64748B',
+    },
+    modalContent: {
+        padding: 16,
+    },
+    modalOption: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    modalOptionText: {
+        fontSize: 16,
+        color: '#333',
+    },
+    cancelOption: {
+        borderBottomWidth: 0,
+    },
+    cancelOptionText: {
+        fontSize: 16,
         color: '#64748B',
     },
 });

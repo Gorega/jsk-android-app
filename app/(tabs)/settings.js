@@ -81,7 +81,7 @@ export default function Settings() {
                 </View>
                 <View style={styles.userInfo}>
                     <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userRole}>{user.role}</Text>
+                    <Text style={styles.userRole}>{translations[language].roles[user.role]}</Text>
                 </View>
             </View>
 

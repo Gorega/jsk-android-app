@@ -378,16 +378,16 @@ export default function Order({ user, order }) {
                         <View style={{alignItems: 'center' }}>
                             
                             <TouchableOpacity 
-                                onPress={() => authUser.role !== "business" && setShowStatusUpdateModal(true)} 
+                                onPress={() => !["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && setShowStatusUpdateModal(true)} 
                                 style={[
                                     styles.statusBadge, 
                                     { 
                                         backgroundColor: getStatusColor(order.status_key)
                                     }
                                 ]}
-                                activeOpacity={authUser.role !== "business" ? 0.7 : 1}
+                                activeOpacity={!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) ? 0.7 : 1}
                             >
-                                {authUser.role !== "business" && (
+                                {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && (
                                     <MaterialIcons 
                                         name="published-with-changes" 
                                         size={18} 
@@ -476,7 +476,7 @@ export default function Order({ user, order }) {
                                         {translations[language].tabs.orders.order.location || 'Location'}
                                     </Text>
                                     <Text style={[styles.minimizedValue]}>
-                                        {order.receiver_city}, {order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : ''}
+                                        {order.receiver_city} {order.receiver_address ? `, ${order.receiver_address}` : ''}
                                     </Text>
                                 </View>
                             </View>
@@ -601,7 +601,7 @@ export default function Order({ user, order }) {
                                             {order.receiver_city}
                                         </Text>
                                         <Text style={[styles.locationAddress]}>
-                                            {order.receiver_area}{order.receiver_address ? `, ${order.receiver_address}` : ''}
+                                            {order.receiver_address ? `, ${order.receiver_address}` : ''}
                                         </Text>
                                     </View>
                                 </View>
@@ -643,7 +643,7 @@ export default function Order({ user, order }) {
                                         <Text style={[styles.orderTypeText]}>
                                             {order.order_type}
                                         </Text>
-                                        {(order.received_items || order.received_quantity) && (
+                                        {(order.received_items || order.received_quantity) ? (
                                             <View style={styles.receivedDetailsContainer}>
                                                 {order.received_items && (
                                                     <Text style={styles.receivedDetailsText}>
@@ -656,6 +656,8 @@ export default function Order({ user, order }) {
                                                     </Text>
                                                 )}
                                             </View>
+                                        ) : (
+                                            <></>
                                         )}
                                     </View>
                                 </View>
@@ -881,7 +883,7 @@ export default function Order({ user, order }) {
                             </TouchableOpacity>
                         )}
                         
-                        {!["business"].includes(authUser.role) && (
+                        {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 

@@ -11,55 +11,64 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
     return (
         <View style={[
             styles.section,
-            {display: section.visibility === "hidden" ? "none" : "flex"}
+            {display: section.visibility === "hidden" ? "none" : "flex"},
+            section.isHeader && styles.headerSection
         ]}>
-            <Pressable onPress={() => setShowFields(!showFields)}>
-                <View style={[
-                    styles.label
-                ]}>
-                    <View style={[
-                        styles.labelContent
-                    ]}>
+            {section.isHeader ? (
+                <View style={styles.headerContent}>
+                    {section.fields}
+                </View>
+            ) : (
+                <>
+                    <Pressable onPress={() => setShowFields(!showFields)}>
                         <View style={[
-                            styles.iconContainer
+                            styles.label
                         ]}>
-                            {section.icon}
+                            <View style={[
+                                styles.labelContent
+                            ]}>
+                                <View style={[
+                                    styles.iconContainer
+                                ]}>
+                                    {section.icon}
+                                </View>
+                                <Text style={[
+                                    styles.labelText
+                                ]}>
+                                    {section.label}
+                                </Text>
+                            </View>
+                            <MaterialIcons 
+                                style={[
+                                    styles.arrowIcon, 
+                                    showFields && styles.activeSection,
+                                    rtl.isRTL && {transform: [{rotate: showFields ? '270deg' : '180deg'}]}
+                                ]} 
+                                name={rtl.isRTL ? "arrow-left" : "arrow-right"} 
+                                size={24} 
+                                color="#4361EE" 
+                            />
                         </View>
-                        <Text style={[
-                            styles.labelText
-                        ]}>
-                            {section.label}
-                        </Text>
-                    </View>
-                    <MaterialIcons 
-                        style={[
-                            styles.arrowIcon, 
-                            showFields && styles.activeSection,
-                            rtl.isRTL && {transform: [{rotate: showFields ? '270deg' : '180deg'}]}
-                        ]} 
-                        name={rtl.isRTL ? "arrow-left" : "arrow-right"} 
-                        size={24} 
-                        color="#4361EE" 
-                    />
-                </View>
-            </Pressable>
-            {showFields && (
-                <View style={styles.fields}>
-                    {section?.fields?.flat().map((field, index) => (
-                        <Field
-                            field={field}
-                            key={index}
-                            setSelectedValue={setSelectedValue}
-                            loadMoreData={loadMoreData}
-                            loadingMore={loadingMore}
-                            prickerSearchValue={prickerSearchValue}
-                            setPickerSearchValue={setPickerSearchValue}
-                            error={fieldErrors?.[field.name]}
-                            setFieldErrors={setFieldErrors}
-                            isRTL={rtl}
-                        />
-                    ))}
-                </View>
+                    </Pressable>
+                    {showFields && (
+                        <View style={styles.fields}>
+                            {section?.fields?.flat().map((field, index) => (
+                                <Field
+                                    field={field}
+                                    key={index}
+                                    setSelectedValue={setSelectedValue}
+                                    loadMoreData={loadMoreData}
+                                    loadingMore={loadingMore}
+                                    prickerSearchValue={prickerSearchValue}
+                                    setPickerSearchValue={setPickerSearchValue}
+                                    error={fieldErrors?.[field.name]}
+                                    setFieldErrors={setFieldErrors}
+                                    isRTL={rtl}
+                                />
+                            ))}
+                        </View>
+                    )}
+                </>
             )}
         </View>
     );
@@ -79,6 +88,13 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 3,
         elevation: 2,
+    },
+    headerSection: {
+        padding: 0,
+        overflow: 'hidden',
+    },
+    headerContent: {
+        width: '100%',
     },
     fields: {
         marginTop: 20,

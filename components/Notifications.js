@@ -11,6 +11,19 @@ import { useSocket } from '../utils/socketContext';
 import { getToken } from '../utils/secureStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRTLStyles } from '../utils/RTLWrapper';
+import * as ExpoNotifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform } from 'react-native';
+
+// Configure how notifications are presented when the app is in the foreground
+ExpoNotifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
 export default function Notifications() {
   const socket = useSocket();
@@ -20,7 +33,64 @@ export default function Notifications() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [expoPushToken, setExpoPushToken] = useState('');
   const rtl = useRTLStyles();
+
+  // Register for push notifications
+  useEffect(() => {
+    registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
+  }, []);
+
+  // Function to register for push notifications
+  async function registerForPushNotificationsAsync() {
+    let token;
+    
+    if (Platform.OS === 'android') {
+      await ExpoNotifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: ExpoNotifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+
+    if (Device.isDevice) {
+      const { status: existingStatus } = await ExpoNotifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await ExpoNotifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus !== 'granted') {
+        console.log('Failed to get push token for push notification!');
+        return;
+      }
+      
+      token = (await ExpoNotifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig.extra.eas.projectId,
+      })).data;
+    } else {
+      console.log('Must use physical device for Push Notifications');
+    }
+
+    return token;
+  }
+
+  // Function to schedule a local notification
+  const scheduleLocalNotification = async (notification) => {
+    await ExpoNotifications.scheduleNotificationAsync({
+      content: {
+        title: notification.type === 'order' ? 
+          translations[language]?.notifications?.orderNotification || 'Order Notification' : 
+          translations[language]?.notifications?.appNotification || 'App Notification',
+        body: notification.translated_message,
+        data: { type: notification.type, orderId: notification.order_id },
+      },
+      trigger: null, // Show immediately
+    });
+  };
 
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
@@ -177,26 +247,16 @@ export default function Notifications() {
       try {
         switch (notification.type) {
           case 'NEW_NOTIFICATION':
-            // Ensure we have all required fields
-            // const newNotification = {
-            //   notification_id: notification.notification_id,
-            //   message: notification.message,
-            //   is_read: false,
-            //   is_read_count: false,
-            //   created_at: new Date().toISOString(), // Use current time if timestamp not provided
-            //   user_id: notificationUserId,
-            //   type: notification.notificationType || 'order', // Default to 'order' if not specified
-            //   order_id: notification.orderId
-            // };
-            
-            // setNotificationsData(prev => {
-            //   const exists = prev.some(n => n.notification_id === newNotification.notification_id);
-            //   if (exists) {
-            //     return prev;
-            //   }
-            //   return [newNotification, ...prev];
-            // });
             fetchNotificationsData();
+            
+            // Schedule a system notification
+            if (notification.message) {
+              scheduleLocalNotification({
+                type: notification.notificationType || 'order',
+                translated_message: notification.message,
+                order_id: notification.orderId
+              });
+            }
             break;
               
           case 'NOTIFICATION_UPDATED':
@@ -223,9 +283,26 @@ export default function Notifications() {
             break;
         }
       } catch (error) {
-        
+        console.error('Error handling notification:', error);
       }
     };
+
+    // Add a listener for notification responses
+    const notificationListener = ExpoNotifications.addNotificationReceivedListener(response => {
+      // Handle notification received while app is in foreground
+    });
+
+    // Add a listener for notification responses (when user taps)
+    const responseListener = ExpoNotifications.addNotificationResponseReceivedListener(response => {
+      const { type, orderId } = response.notification.request.content.data;
+      
+      if (type === "order" && orderId) {
+        router.push({
+          pathname: "/(track)",
+          params: { orderId }
+        });
+      }
+    });
 
     // Remove existing listeners before adding new one
     socket.off('notification');
@@ -236,6 +313,8 @@ export default function Notifications() {
 
     return () => {
       socket.off('notification', handleNotification);
+      ExpoNotifications.removeNotificationSubscription(notificationListener);
+      ExpoNotifications.removeNotificationSubscription(responseListener);
     };
   }, [socket, user]);
 

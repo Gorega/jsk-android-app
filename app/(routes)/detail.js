@@ -1134,7 +1134,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                         <View style={[styles.availableAddressContainer]}>
                             <Ionicons name="location-outline" size={14} color="#64748B" />
                             <Text style={[styles.availableOrderAddress]}>
-                                {`${item.receiver_city || ''}, ${item.receiver_area || ''} ${item.receiver_address ? `, ${item.receiver_address}` : ''}`}
+                                {`${item.receiver_city || ''} ${item.receiver_address ? `, ${item.receiver_address}` : ''}`}
                             </Text>
                         </View>
 

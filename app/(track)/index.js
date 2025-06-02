@@ -385,7 +385,7 @@ const TrackingOrder = () => {
                   </Text>
                 </View>
                 <Text style={[styles.infoValue]}>
-                  {order.receiver_city || '-'}{order.receiver_area ? `, ${order.receiver_area}` : ''}
+                  {order.receiver_city || '-'}{order.receiver_address ? `, ${order.receiver_address}` : ''}
                 </Text>
               </View>
               
@@ -474,7 +474,7 @@ const TrackingOrder = () => {
                   </Text>
                 </View>
                 <Text style={[styles.infoValue]}>
-                  {order.sender_city || '-'}{order.sender_area ? `, ${order.sender_area}` : ''}
+                  {order.sender_city || '-'}{order.sender_address ? `, ${order.sender_address}` : ''}
                 </Text>
               </View>
               
@@ -530,7 +530,7 @@ const TrackingOrder = () => {
                   <Text style={styles.detailsValue}>{order.payment_type || '-'}</Text>
                 </View>
                 
-                {order.reference_id && (
+                {order.reference_id ? (
                   <View style={styles.detailsGridItem}>
                     <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
                       <Feather name="hash" size={18} color="#F97316" />
@@ -540,7 +540,7 @@ const TrackingOrder = () => {
                     </Text>
                     <Text style={styles.detailsValue}>{order.reference_id}</Text>
                   </View>
-                )}
+                ) : <></>}
                 
                 <View style={styles.detailsGridItem}>
                   <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
@@ -553,7 +553,7 @@ const TrackingOrder = () => {
                 </View>
               </View>
               
-              {order.driver && (
+              {order.driver ? (
                 <View style={styles.driverContainer}>
                   <View style={styles.driverHeader}>
                     <View style={[styles.driverIconContainer]}>
@@ -577,7 +577,7 @@ const TrackingOrder = () => {
                     )}
                   </View>
                 </View>
-              )}
+              ) : <></>}
             </View>
           </View>
 
@@ -685,7 +685,7 @@ const TrackingOrder = () => {
           </View>
 
           {/* Notes Section if applicable */}
-          {order.note_content && (
+          {order.note_content ? (
             <View style={styles.modernCard}>
               <LinearGradient 
                 colors={['#F59E0B', '#D97706']} 
@@ -710,7 +710,7 @@ const TrackingOrder = () => {
                 </View>
               </View>
             </View>
-          )}
+          ) : <></>}
 
           {/* Package Info Card */}
           <View style={styles.modernCard}>
@@ -773,7 +773,7 @@ const TrackingOrder = () => {
                     </Text>
                   </View>
                   
-                  {order.received_items && (
+                  {order.received_items ? (
                     <View style={[styles.packageInfoRow]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-square" size={16} color="#4361EE" style={styles.packageLabelIcon} />
@@ -785,9 +785,9 @@ const TrackingOrder = () => {
                         {order?.received_items}
                       </Text>
                     </View>
-                  )}
+                  ) : <></>}
                   
-                  {order.received_quantity && (
+                  {order.received_quantity ? (
                     <View style={[styles.packageInfoRow]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-circle" size={16} color="#4361EE" style={styles.packageLabelIcon} />
@@ -799,7 +799,7 @@ const TrackingOrder = () => {
                         {order?.received_quantity}
                       </Text>
                     </View>
-                  )}
+                  ) : <></>}
                 </View>
               </View>
             </View>
@@ -1303,9 +1303,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-  },
-  checkDetailIcon: {
-    marginRight: 8,
+    gap:10
   },
   checkDetailLabel: {
     fontSize: 14,
@@ -1339,9 +1337,7 @@ const styles = StyleSheet.create({
   // Package Styles
   packageWrapper: {
     flexDirection: 'row',
-  },
-  packageImageContainer: {
-    marginRight: 16,
+    gap:10
   },
   packageImagePlaceholder: {
     width: 80,
@@ -1369,9 +1365,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap:7
   },
-  packageLabelIcon: {
-    marginRight: 8,
-  },
   packageInfoLabel: {
     fontSize: 14,
     fontWeight: '500',
@@ -1381,7 +1374,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: '#1F2937',
-    flex: 1,
   },
   
   // Timeline Styles
@@ -1400,10 +1392,11 @@ const styles = StyleSheet.create({
   timelineItem: {
     flexDirection: 'row',
     marginBottom: 30,
-    position: 'relative',
+    position: 'relative'
   },
   lastTimelineItem: {
     marginBottom: 0,
+    gap:10
   },
   timelineIconContainer: {
     width: 42,
@@ -1411,8 +1404,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
-    marginRight: 15,
+    zIndex: 2
   },
   timelineContent: {
     flex: 1,
@@ -1430,9 +1422,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-  },
-  timelineDetailIcon: {
-    marginRight: 8,
+    gap:10
   },
   timelineDetails: {
     fontSize: 14,
@@ -1442,14 +1432,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    gap:10
   },
   timelineDateItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
-  },
-  timelineDateIcon: {
-    marginRight: 4,
+    gap:10
   },
   timelineDate: {
     fontSize: 12,
