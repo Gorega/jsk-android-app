@@ -12,7 +12,6 @@ import { useLanguage,translations } from '../../utils/languageContext';
 export default function RootLayout(){
   const { language, setLanguage } = useLanguage();
   const [showLanguageModal,setShowLanguageModal] = useState(false);
-  const isRTL = language === 'ar' || language === 'he';
 
   const handleLanguageChange = async (newLang) => {
     await setLanguage(newLang);
@@ -69,8 +68,7 @@ return <>
                     >
                         <Text style={[
                             styles.languageText, 
-                            language === 'ar' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'ar' && styles.activeLanguageText
                         ]}>
                             {translations[language]?.tabs.settings.options.language.options.ar}
                         </Text>
@@ -88,8 +86,7 @@ return <>
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'en' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'en' && styles.activeLanguageText
                         ]}>
                             {translations[language]?.tabs.settings.options.language.options.en}
                         </Text>
@@ -108,8 +105,7 @@ return <>
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'he' && styles.activeLanguageText,
-                            { textAlign: isRTL ? "right" : "left" }
+                            language === 'he' && styles.activeLanguageText
                         ]}>
                             {translations[language]?.tabs.settings.options.language.options.he}
                         </Text>

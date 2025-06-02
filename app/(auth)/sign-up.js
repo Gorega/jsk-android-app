@@ -48,7 +48,6 @@ export default function SignUp() {
     password: "",
     confirmPassword: "",
     city_id: "",
-    area: "",
     address: "",
     website: "",
     tiktok: "",
@@ -205,16 +204,16 @@ export default function SignUp() {
       onSelect: () => setFormErrors(prev => ({...prev, city_id: ""}))
     },
     {
-      name: "area",
-      label: translations[language].auth.area,
+      name: "address",
+      label: translations[language].auth.address,
       type: "input",
-      value: registerForm.area,
-      error: formErrors.area || "",
-      placeholder:translations[language].auth.areaPlaceholder,
+      value: registerForm.address,
+      error: formErrors.address || "",
+      placeholder:translations[language].auth.addressPlaceholder,
       keyboardType: "default",
       onChange: (value) => {
-        setFormErrors(prev => ({...prev, area: ""}));
-        setRegisterForm(prev => ({...prev, area: value}));
+        setFormErrors(prev => ({...prev, address: ""}));
+        setRegisterForm(prev => ({...prev, address: value}));
       }
     },
     {
@@ -492,7 +491,6 @@ export default function SignUp() {
           password: registerForm.password,
           country: "palestine",
           city_id: selectedValue?.city?.value,
-          area: registerForm.area,
           address: registerForm.address,
           website: registerForm.website,
           tiktok: registerForm.tiktok,
@@ -875,7 +873,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#4361EE',
     borderRadius: 12,
     flex: 1,
-    marginLeft: 12,
     ...Platform.select({
       ios: {
         shadowColor: '#4361EE',

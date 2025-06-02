@@ -598,9 +598,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  registerLinkContainerRtl: {
-    flexDirection: 'row-reverse',
+    gap:10
   },
   registerText: {
     color: '#64748B',

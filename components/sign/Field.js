@@ -3,24 +3,16 @@ import {
   StyleSheet, 
   TextInput, 
   Text, 
-  Pressable, 
   View, 
   Platform,
-  TouchableOpacity,
-  Keyboard,
-  Alert
+  TouchableOpacity
 } from "react-native";
 import { Feather } from '@expo/vector-icons';
 import PickerModal from "../pickerModal/PickerModal"
-import { useLanguage } from '../../utils/languageContext';
-import { useRouter } from 'expo-router';
 
 export default function Field({field, setSelectedValue}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
-    const { language } = useLanguage();
-    const isRTL = ["he", "ar"].includes(language);
-    const router = useRouter();
 
     // Icon based on field type
     const getFieldIcon = () => {
@@ -58,92 +50,20 @@ export default function Field({field, setSelectedValue}) {
         }
     };
 
-    const registerHandler = async () => {
-        Keyboard.dismiss();
-        setLoading(true);
-        setError('');
-        
-        try {
-            // Final validation of all required fields
-            const isStepValid = validateStep(currentStep);
-            if (!isStepValid) {
-                setLoading(false);
-                return;
-            }
-            
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json",
-                    'Accept-Language': language
-                },
-                body: JSON.stringify({
-                    name: registerForm.username,
-                    comercial_name: registerForm.comercial_name,
-                    email: registerForm.email || null,
-                    phone: registerForm.phone,
-                    password: registerForm.password,
-                    role_id: selectedValue?.role?.value,
-                    manager_id: null,
-                    affiliator: null,
-                    branch_id: null,
-                    pricelist_id: 2,
-                    country: "palestine",
-                    city_id: selectedValue?.city?.value,
-                    area: registerForm.area,
-                    address: registerForm.address,
-                    website: registerForm.website,
-                    tiktok: registerForm.tiktok,
-                    facebook: registerForm.facebook,
-                    instagram: registerForm.instagram
-                })
-            });
-            
-            const data = await res.json();
-            
-            if (!res.ok) {
-                if (data.type === 'VALIDATION_ERROR') {
-                    const errors = {};
-                    data.details.forEach(error => {
-                        errors[error.field] = error.message;
-                    });
-                    setFormErrors(errors);
-                    throw new Error(data.message || 'Validation error');
-                }
-                throw new Error(data.message || 'Registration failed');
-            }
-
-            // Handle successful registration
-            Alert.alert(
-                "Registration Successful",
-                translations[language].auth.registerSuccess,
-                [{ text: "OK", onPress: () => router.replace("/") }]
-            );
-        } catch (err) {
-            setError(err.message);
-            Alert.alert(
-                translations[language].auth.registrationFailed,
-                err.message
-            );
-        } finally {
-            setLoading(false);
-        }
-    };
 
     return (
         <View style={[
             styles.fieldContainer,
             field.containerStyle,
-            { borderColor: field.error ? "#EF4444" : isFocused ? "#4361EE" : "rgba(0,0,0,0.08)" }
+            { 
+                borderColor: field.error ? "#EF4444" : isFocused ? "#4361EE" : "rgba(0,0,0,0.08)",
+                marginBottom: field.error ? 32 : 16 // Dynamic margin based on error
+            }
         ]}>
             {/* Field Label */}
             <Text style={[
                 styles.label,
                 { 
-                    left: isRTL ? undefined : 16,
-                    right: isRTL ? 16 : undefined,
                     backgroundColor: "#fff",
                     color: field.error ? "#EF4444" : isFocused ? "#4361EE" : "#64748B",
                 }
@@ -155,11 +75,7 @@ export default function Field({field, setSelectedValue}) {
                 {field.type === "input" && (
                     <View style={styles.inputWrapper}>
                         <View style={[
-                            styles.iconContainer, 
-                            {
-                                left: isRTL ? undefined : 16,
-                                right: isRTL ? 16 : undefined,
-                            }
+                            styles.iconContainer
                         ]}>
                             <Feather 
                                 name={getFieldIcon()} 
@@ -171,12 +87,7 @@ export default function Field({field, setSelectedValue}) {
                         <TextInput
                             multiline={true}
                             style={[
-                                styles.input,
-                                {
-                                    textAlign: isRTL ? "right" : "left",
-                                    paddingLeft: isRTL ? 16 : 50,
-                                    paddingRight: isRTL ? 50 : 16
-                                }
+                                styles.input
                             ]}
                             value={field.value}
                             onChangeText={field.onChange}
@@ -209,11 +120,7 @@ export default function Field({field, setSelectedValue}) {
                           activeOpacity={0.7}
                         >
                             <View style={[
-                                styles.iconContainer,
-                                {
-                                    left: isRTL ? undefined : 16,
-                                    right: isRTL ? 16 : undefined,
-                                }
+                                styles.iconContainer
                             ]}>
                                 <Feather 
                                     name={getFieldIcon()} 
@@ -224,22 +131,13 @@ export default function Field({field, setSelectedValue}) {
                             
                             <Text style={[
                                 styles.selectText,
-                                field.value ? styles.valueText : styles.placeholderText,
-                                {
-                                    textAlign: isRTL ? "right" : "left",
-                                    paddingLeft: isRTL ? 16 : 50,
-                                    paddingRight: isRTL ? 50 : 16
-                                }
+                                field.value ? styles.valueText : styles.placeholderText
                             ]}>
                                 {field.value || field.placeholder || 'Select...'}
                             </Text>
                             
                             <View style={[
-                                styles.dropdownIconContainer,
-                                {
-                                    right: isRTL ? undefined : 16,
-                                    left: isRTL ? 16 : undefined,
-                                }
+                                styles.dropdownIconContainer
                             ]}>
                                 <Feather name="chevron-down" size={18} color="#94A3B8" />
                             </View>
@@ -294,7 +192,6 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         fontSize: 14,
         fontWeight: '500',
-        backgroundColor: "#fff",
         zIndex: 1,
     },
     inputContent: {
@@ -303,10 +200,12 @@ const styles = StyleSheet.create({
     inputWrapper: {
         position: 'relative',
         width: '100%',
+        flexDirection: 'row',
+        paddingHorizontal: 10,
     },
     iconContainer: {
-        position: 'absolute',
-        top: 18,
+        position: 'relative',
+        top: 15,
         width: 24,
         height: 24,
         justifyContent: 'center',
@@ -314,10 +213,12 @@ const styles = StyleSheet.create({
         zIndex: 2,
     },
     input: {
+        flex: 1,
         fontSize: 16,
         paddingVertical: 18,
+        paddingRight: 16,
+        paddingLeft: 8,
         color: '#1F2937',
-        width: '100%',
         fontWeight: '400',
         minHeight: 58,
     },
@@ -354,7 +255,13 @@ const styles = StyleSheet.create({
         color: '#EF4444',
         fontSize: 12,
         paddingHorizontal: 16,
-        paddingBottom: 8,
         fontWeight: '500',
+        position: 'absolute',
+        zIndex: 2,
+        width: '100%',
+        marginTop: 4,
+        left: 0,
+        right: 0,
+        zIndex: 2,
     }
 });

@@ -27,7 +27,6 @@ export default function SignUp({setSelectedValue, error}) {
   const scrollViewRef = useRef(null);
   
   const { language } = useLanguage();
-  const isRTL = ["he", "ar"].includes(language);
 
   // Translate according to current step
   const handleNextStep = () => {
@@ -352,7 +351,6 @@ export default function SignUp({setSelectedValue, error}) {
               style={styles.formScroll} 
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
-                alignItems: isRTL ? 'flex-end' : 'flex-start',
                 paddingBottom: 20
               }}
             >
@@ -368,7 +366,6 @@ export default function SignUp({setSelectedValue, error}) {
               style={styles.formScroll} 
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
-                alignItems: isRTL ? 'flex-end' : 'flex-start',
                 paddingBottom: 20
               }}
             >
@@ -384,7 +381,6 @@ export default function SignUp({setSelectedValue, error}) {
               style={styles.formScroll} 
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{
-                alignItems: isRTL ? 'flex-end' : 'flex-start',
                 paddingBottom: 20
               }}
             >
@@ -407,7 +403,6 @@ export default function SignUp({setSelectedValue, error}) {
             >
               <View style={styles.buttonContent}>
                 <Feather 
-                  name={isRTL ? "arrow-right" : "arrow-left"} 
                   size={18} 
                   color="#4361EE" 
                   style={{marginRight: 8}}
@@ -431,7 +426,6 @@ export default function SignUp({setSelectedValue, error}) {
               </Text>
               {currentStep < 3 && (
                 <Feather 
-                  name={isRTL ? "arrow-left" : "arrow-right"} 
                   size={18} 
                   color="#FFF" 
                   style={{marginLeft: 8}}
@@ -439,7 +433,7 @@ export default function SignUp({setSelectedValue, error}) {
               )}
             </View>
             </TouchableOpacity>
-</View>
+        </View>
 
         {/* Bottom Note */}
         <View style={styles.bottomNote}>
@@ -526,6 +520,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
+    gap: 10
   },
   stepIconContainer: {
     width: 42,
@@ -533,8 +528,7 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     backgroundColor: '#4361EE',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
+    alignItems: 'center'
   },
   stepTitle: {
     fontSize: 20,
@@ -633,13 +627,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    justifyContent: 'center'
   },
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap:10
   },
   nextButtonText: {
     color: '#FFFFFF',

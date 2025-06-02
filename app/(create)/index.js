@@ -17,7 +17,6 @@ import Field from "../../components/create/Field";
 
 export default function HomeScreen() {
     const { language } = useLanguage();
-    const isRTL = language === 'ar' || language === 'he';
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState({});
     const [formSpinner, setFormSpinner] = useState({})
@@ -1734,7 +1733,6 @@ export default function HomeScreen() {
                             setPickerSearchValue={setPickerSearchValue}
                             fieldErrors={fieldErrors}
                             setFieldErrors={setFieldErrors}
-                            isRTL={isRTL}
                         />
                     })}
                     
