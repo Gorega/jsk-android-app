@@ -102,15 +102,7 @@ export default function HomeScreen() {
     icon: <Octicons name="package-dependencies" size={24} color="white" />,
     gradientColors: ['#7209B7', '#F72585'],
     numberOfOrders: data?.returned_in_branch_orders?.count,
-    money: formatMoney(data?.returned_in_branch_orders?.cod_value),
     orderIds: data?.returned_in_branch_orders?.order_ids
-  } : ["admin","manager"].includes(user.role) ? {
-    label: user.role === "driver" ? translations[language].tabs.index.boxes.moneyWithDriver : translations[language].tabs.index.boxes.moneyWithDrivers,
-    icon: <Feather name="truck" size={24} color="white" />,
-    gradientColors: ['#7209B7', '#F72585'],
-    numberOfOrders: data?.delivered_orders?.count,
-    money: formatMoney(data?.delivered_orders?.cod_value),
-    orderIds: data?.delivered_orders?.order_ids
   } : null];
 
   const boxes = [user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
@@ -423,13 +415,13 @@ export default function HomeScreen() {
         )}
 
         {/* Summary Section */}
-        <View style={[styles.sectionHeader]}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
           <Text style={[styles.sectionTitle]}>
             {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
           </Text>
-        </View>
+        </View>}
         
-        <View style={styles.cardsSection}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={styles.cardsSection}>
           {columnBoxes?.filter(box => box !== null).map((box, index) => (
             <TouchableOpacity 
               key={index} 
@@ -487,7 +479,7 @@ export default function HomeScreen() {
               </View>
             </TouchableOpacity>
           ))}
-        </View>
+        </View>}
 
         {/* Balance Section */}
         <View style={[styles.sectionHeader]}>
@@ -601,13 +593,13 @@ export default function HomeScreen() {
         </View>
 
         {/* Status Section */}
-        <View style={[styles.sectionHeader]}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
           <Text style={[styles.sectionTitle]}>
             {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
           </Text>
-        </View>
+        </View>}
         
-        <View style={styles.statusRowsContainer}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={styles.statusRowsContainer}>
           {(boxes)?.map((box, index) => {
             if (box.visibility === "hidden") return null;
             
@@ -666,7 +658,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
+        </View>}
       </ScrollView>
       
       {/* Money Request Modal */}
