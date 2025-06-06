@@ -18,6 +18,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "@/utils/secureStore";
 import ModalPresentation from "../../components/ModalPresentation";
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 
 export default function HomeScreen() {
@@ -35,6 +38,13 @@ export default function HomeScreen() {
   const [sendingNotification, setSendingNotification] = useState(false);
   const [showDriverModal, setShowDriverModal] = useState(false);
   const [selectedDrivers, setSelectedDrivers] = useState([]);
+  const [showCollectionsModal, setShowCollectionsModal] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [selectedType, setSelectedType] = useState('money');
+  const [moneyCollections, setMoneyCollections] = useState([]);
+  const [packageCollections, setPackageCollections] = useState([]);
+  const [selectedCollections, setSelectedCollections] = useState([]);
+  const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   
   
   const rtl = useRTLStyles();
@@ -358,6 +368,120 @@ export default function HomeScreen() {
     }
   }, [user]);
 
+  const fetchCollections = async () => {
+    try {
+      setIsLoadingCollections(true);
+      const token = await getToken("userToken");
+      const [moneyRes, packageRes] = await Promise.all([
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_money?status_key=money_out`, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Cookie": token ? `token=${token}` : ""
+          }
+        }),
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_returned?status_key=returned_out`, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            "Cookie": token ? `token=${token}` : ""
+          }
+        })
+      ]);
+
+      const moneyData = await moneyRes.json();
+      const packageData = await packageRes.json();
+
+      setMoneyCollections(moneyData.data || []);
+      setPackageCollections(packageData.data || []);
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to fetch collections");
+    } finally {
+      setIsLoadingCollections(false);
+    }
+  };
+
+  const handleCollectionSelect = (collectionId) => {
+    setSelectedCollections(prev => {
+      if (prev.includes(collectionId)) {
+        return prev.filter(id => id !== collectionId);
+      } else {
+        return [...prev, collectionId];
+      }
+    });
+  };
+
+  const handleCollectionConfirm = async () => {
+    if (selectedCollections.length === 0) {
+      Alert.alert(
+        translations[language]?.collections?.collection?.error || "Error",
+        translations[language]?.collections?.collection?.selectCollections || "Please select collections to confirm"
+      );
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      const token = await getToken("userToken");
+      const updates = {
+        collection_ids: selectedCollections,
+        status: selectedType === 'money' ? 'paid' : 'returned_delivered',
+        note_content: null
+      };
+
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/status`, {
+        method: "PUT",
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': language,
+          "Cookie": token ? `token=${token}` : ""
+        },
+        credentials: "include",
+        body: JSON.stringify({ updates })
+      });
+
+      const data = await res.json();
+
+      if (data.failures?.length > 0 && data.successes?.length > 0) {
+        Alert.alert(
+          translations[language]?.collections?.collection?.partialSuccess,
+          `${translations[language]?.collections?.collection?.updatedCollections}: ${data.successes.join(', ')}\n\n${translations[language]?.collections?.collection?.failedCollections}: ${data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')}`
+        );
+      } else if (data.failures?.length > 0) {
+        Alert.alert(
+          translations[language]?.collections?.collection?.error,
+          data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')
+        );
+      } else {
+        Alert.alert(
+          translations[language]?.collections?.collection?.success,
+          `${translations[language]?.collections?.collection?.statusUpdated}: ${data.successes.join(', ')}`
+        );
+      }
+
+      // Reset selections and refresh data
+      setSelectedCollections([]);
+      fetchCollections();
+      onRefresh();
+    } catch (err) {
+      Alert.alert(
+        translations[language]?.collections?.collection?.error,
+        err.message || translations[language]?.collections?.collection?.tryAgainLater
+      );
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showCollectionsModal) {
+      fetchCollections();
+    }
+  }, [showCollectionsModal]);
+
   if (isLoading && !data && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -591,6 +715,182 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* Collections Section */}
+        {user.role === "business" && (
+          <>
+            <View style={[styles.sectionHeader]}>
+              <Text style={[styles.sectionTitle]}>
+                {translations[language]?.collections?.collection?.confirmTitle}
+              </Text>
+            </View>
+
+            <View style={styles.collectionsContainer}>
+              <TouchableOpacity
+                style={styles.collectionCard}
+                onPress={() => setShowCollectionsModal(true)}
+                activeOpacity={0.9}
+              >
+                <LinearGradient
+                  colors={['#4361EE', '#3A0CA3']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.collectionGradient}
+                >
+                  <View style={styles.collectionIconContainer}>
+                    <FontAwesome6 name="money-bill-trend-up" size={24} color="white" />
+                  </View>
+                  <View style={styles.collectionArrow}>
+                    <Text style={styles.collectionSubtitle}>
+                      {translations[language]?.collections?.collection?.actions}
+                    </Text>
+                    <AntDesign name={"arrowleft"} size={20} color="white" />
+                  </View>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            <ModalPresentation
+              showModal={showCollectionsModal}
+              setShowModal={setShowCollectionsModal}
+              position="bottom"
+              customStyles={{ maxHeight: '90%' }}
+            >
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalHeaderText}>
+                    {translations[language]?.collections?.collection?.pendingConfirmations}
+                  </Text>
+                </View>
+
+                <View style={styles.tabsContainer}>
+                  <TouchableOpacity
+                    style={[styles.tab, selectedType === 'money' && styles.activeTab]}
+                    onPress={() => {
+                      setSelectedType('money');
+                      setSelectedCollections([]);
+                    }}
+                  >
+                    <Text style={[styles.tabText, selectedType === 'money' && styles.activeTabText]}>
+                      {translations[language]?.collections?.collection?.moneyCollections}
+                    </Text>
+                    {moneyCollections.length > 0 && (
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>{moneyCollections.length}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.tab, selectedType === 'package' && styles.activeTab]}
+                    onPress={() => {
+                      setSelectedType('package');
+                      setSelectedCollections([]);
+                    }}
+                  >
+                    <Text style={[styles.tabText, selectedType === 'package' && styles.activeTabText]}>
+                      {translations[language]?.collections?.collection?.packageCollections}
+                    </Text>
+                    {packageCollections.length > 0 && (
+                      <View style={styles.badge}>
+                        <Text style={styles.badgeText}>{packageCollections.length}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+
+                {isLoadingCollections ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#4361EE" />
+                  </View>
+                ) : (
+                  <ScrollView style={styles.collectionsScroll}>
+                    {(selectedType === 'money' ? moneyCollections : packageCollections).length === 0 ? (
+                      <View style={styles.noDataContainer}>
+                        <Ionicons name="information-circle-outline" size={48} color="#64748B" />
+                        <Text style={styles.noDataText}>
+                          {translations[language]?.collections?.collection?.noCollectionsToConfirm}
+                        </Text>
+                      </View>
+                    ) : (
+                      (selectedType === 'money' ? moneyCollections : packageCollections).map((collection) => (
+                        <TouchableOpacity
+                          key={collection.collection_id}
+                          style={[
+                            styles.collectionItem,
+                            selectedCollections.includes(collection.collection_id) && styles.selectedCollectionItem
+                          ]}
+                          onPress={() => handleCollectionSelect(collection.collection_id)}
+                          activeOpacity={0.8}
+                        >
+                          <View style={styles.collectionItemHeader}>
+                            <View style={styles.collectionIdContainer}>
+                              <Text style={styles.collectionIdLabel}>
+                                {translations[language]?.collections?.collection?.collectionId}:
+                              </Text>
+                              <Text style={styles.collectionId}>#{collection.collection_id}</Text>
+                            </View>
+                            <View style={styles.orderCountContainer}>
+                              <Text style={styles.orderCount}>
+                                {collection.number_of_orders} {translations[language]?.collections?.collection?.orders}
+                              </Text>
+                            </View>
+                          </View>
+
+                          <View style={styles.collectionItemBody}>
+                            <View style={styles.orderIdsContainer}>
+                              <Text style={styles.orderIdsLabel}>
+                                {translations[language]?.collections?.collection?.orderIds}:
+                              </Text>
+                              <Text style={styles.orderIds}>
+                                {Array.isArray(collection.order_ids) ? collection.order_ids.join(', ') : collection.order_ids || '-'}
+                              </Text>
+                            </View>
+                            <View style={styles.valueContainer}>
+                              <Text style={styles.valueLabel}>
+                                {translations[language]?.collections?.collection?.totalNetValue}:
+                              </Text>
+                              <Text style={styles.value}>{collection.total_net_value}</Text>
+                            </View>
+                          </View>
+
+                          {selectedCollections.includes(collection.collection_id) && (
+                            <View style={styles.checkmarkContainer}>
+                              <Ionicons name="checkmark-circle" size={24} color="#4361EE" />
+                            </View>
+                          )}
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                )}
+
+                {(selectedType === 'money' ? moneyCollections : packageCollections).length > 0 && (
+                  <View style={styles.modalFooter}>
+                    <TouchableOpacity
+                      style={[styles.confirmButton, selectedCollections.length === 0 && styles.disabledButton]}
+                      onPress={handleCollectionConfirm}
+                      disabled={isConfirming || selectedCollections.length === 0}
+                    >
+                      {isConfirming ? (
+                        <ActivityIndicator color="white" size="small" />
+                      ) : (
+                        <>
+                          <MaterialIcons name="cloud-done" size={20} color="white" />
+                          <Text style={styles.confirmButtonText}>
+                            {selectedType === 'money'
+                              ? translations[language]?.collections?.collection?.confirmPayment
+                              : translations[language]?.collections?.collection?.confirmDelivery}
+                            {selectedCollections.length > 0 && ` (${selectedCollections.length})`}
+                          </Text>
+                        </>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </ModalPresentation>
+          </>
+        )}
 
         {/* Status Section */}
         {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
@@ -1313,5 +1613,210 @@ const styles = StyleSheet.create({
   progressGradient: {
     height: '100%',
     width: '100%',
+  },
+  collectionsContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  collectionCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  collectionGradient: {
+    padding: 20,
+    minHeight: 140,
+  },
+  collectionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  collectionTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: 'white',
+    marginBottom: 8,
+  },
+  collectionSubtitle: {
+    fontSize: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    color:"#fff",
+    borderRadius: 18,
+    paddingHorizontal: 10,
+    marginBottom: 16,
+  },
+  collectionArrow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    height: 36,
+  },
+  modalContent: {
+    maxHeight: '90%',
+    backgroundColor: '#fff',
+  },
+  tabsContainer: {
+    flexDirection: 'row',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.1)',
+    gap:7
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    gap:5
+  },
+  activeTab: {
+    backgroundColor: '#EEF2FF',
+  },
+  tabText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  activeTabText: {
+    color: '#4361EE',
+  },
+  badge: {
+    backgroundColor: '#4361EE',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  collectionsScroll: {
+    maxHeight: 400,
+  },
+  noDataContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  noDataText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  collectionItem: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    margin: 8,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  selectedCollectionItem: {
+    borderColor: '#4361EE',
+    backgroundColor: '#EEF2FF',
+  },
+  collectionItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  collectionIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  collectionIdLabel: {
+    fontSize: 14,
+    color: '#64748B',
+    marginRight: 4,
+  },
+  collectionId: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+  },
+  orderCountContainer: {
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  orderCount: {
+    fontSize: 12,
+    color: '#4361EE',
+    fontWeight: '500',
+  },
+  collectionItemBody: {
+    gap: 8,
+  },
+  orderIdsContainer: {
+    marginBottom: 8,
+  },
+  orderIdsLabel: {
+    fontSize: 14,
+    color: '#64748B',
+    marginBottom: 4,
+  },
+  orderIds: {
+    fontSize: 14,
+    color: '#1F2937',
+  },
+  valueContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  valueLabel: {
+    fontSize: 14,
+    color: '#64748B',
+  },
+  value: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#4361EE',
+  },
+  checkmarkContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+  },
+  modalFooter: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)',
+  },
+  confirmButton: {
+    backgroundColor: '#4361EE',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  disabledButton: {
+    backgroundColor: '#A5B4FC',
+  },
+  confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

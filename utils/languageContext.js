@@ -390,6 +390,9 @@ export const translations = {
           error:"Error",
           errorValidationMsg:"Please check the highlighted fields",
           errorMsg:"An unexpected error occurred, Please call the support agent to help",
+          "save": "Save Changes",
+          "cancel": "Cancel",
+          "phoneUpdateSuccess": "Phone numbers updated successfully",
           sections:{
             referenceId:{
               title:"Reference ID (optional)",
@@ -472,7 +475,16 @@ export const translations = {
                 enterPhone:"Enter phone number",
                 noReceivers:"No receivers found",
                 found:"Found",
-                receivers:"receivers"
+                receivers:"receivers",
+                search_error:"Please enter a valid phone number",
+                no_results:"No results found",
+                enter_more:"Enter at least 3 numbers for search",
+                add_new:"Add new receiver",
+                enter_valid_phone:"Please enter a valid phone number",
+                add_new_receiver:"Add new receiver",
+                unnamed:"Unnamed",
+                search_receiver:"Search receiver",
+                search_placeholder:"Enter phone number"
               }
             },
             cost:{
@@ -549,14 +561,7 @@ export const translations = {
           },
           "validation": {
               "required": "This field is required"
-            },
-            "save": "Save Changes",
-            "cancel": "Cancel",
-            "success": "Success",
-            "phoneUpdateSuccess": "Phone numbers updated successfully",
-            "error": "Error",
-            "errorMsg": "An error occurred",
-            "errorValidationMsg": "Please correct the errors in the form",
+            }
         }
       },
       collections:{
@@ -678,7 +683,24 @@ export const translations = {
         confirmPaymentMessage:"By making this process, you are confirming that you received the money, and the company is no longer holding any responsibility about later complaints",
         cancel:"Cancel",
         confirm:"Confirm",
-        confirmReturnedMessage:"By doing this, you confirm that you have received the package, and that the company no longer bears any responsibility for subsequent complaints regarding its receipt."
+        confirmReturnedMessage:"By doing this, you confirm that you have received the package, and that the company no longer bears any responsibility for subsequent complaints regarding its receipt.",
+        confirmTitle:"Confirm Reception",
+        pendingConfirmations:"Pending Confirmations",
+        moneyCollections:"Money Collections",
+        packageCollections:"Package Collections",
+        noCollectionsToConfirm:"No collections to confirm",
+        collectionId:"Collection ID",
+        orderIds:"Order IDs",
+        totalNetValue:"Total Net Value",
+        confirmPayment:"Confirm Payment",
+        confirmDelivery:"Confirm Delivery",
+        partialSuccess:"Partial Success",
+        updatedCollections:"Updated Collections",
+        success:"Success",
+        statusUpdated:"Status Updated",
+        failedCollections:"Failed Collections",
+        error:"Error",
+        tryAgainLater:"Please try again later"
       }
     },
 
@@ -726,7 +748,7 @@ export const translations = {
         errorValidationMsg:"Please check the highlighted fields",
         errorMsg:"An unexpected error occurred, Please call the support agent to help",
         success:"Success",
-        successMsg:"User have been created Successfully",
+        successMsg:"Proccess has been done Successfully",
         sections:{
           user:{
             title:"user",
@@ -1486,6 +1508,9 @@ export const translations = {
           error: "خطأ",
           errorValidationMsg: "يرجى التحقق من الحقول المشار اليها بخطأ",
           errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
+          "save": "حفظ التغييرات",
+          "cancel": "إلغاء",
+          "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
           sections: {
             referenceId:{
               title:"الرقم المرجعي (اختياري)",
@@ -1569,7 +1594,16 @@ export const translations = {
                 enterPhone:"ادخل رقم الهاتف",
                 noReceivers:"لا يوجد زبائن",
                 found:"تم ايحاد",
-                receivers:"زبائن"
+                receivers:"زبائن",
+                search_error:"يجب ادخال رقم هاتف صالح",
+                no_results:"لا يوجد زبائن",
+                enter_more:"ادخل 3 ارقام على الأقل للبحث",
+                add_new:"اضافة زبون جديد",
+                enter_valid_phone:"ادخل رقم هاتف صالح",
+                add_new_receiver:"اضافة زبون جديد",
+                unnamed:"غير معروف",
+                search_receiver:"أدخل هاتف الزبون",
+                search_placeholder:"ادخل رقم الهاتف"
               }
             },
             cost: {
@@ -1647,14 +1681,7 @@ export const translations = {
           },
             "validation": {
             "required": "هذا الحقل مطلوب"
-          },
-            "save": "حفظ التغييرات",
-            "cancel": "إلغاء",
-            "success": "تم بنجاح",
-            "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
-            "error": "خطأ",
-            "errorMsg": "حدث خطأ",
-            "errorValidationMsg": "يرجى تصحيح الأخطاء في النموذج"
+          }
         }
       },
       collections: {
@@ -1773,7 +1800,24 @@ export const translations = {
         "confirmPaymentMessage": "بإتمام هذه العملية، فإنك تؤكد أنك استلمت المبلغ، وأن الشركة لم تعد مسؤولة عن أي شكاوى لاحقة",
         "cancel": "إلغاء",
         "confirm": "تأكيد",
-        "confirmReturnedMessage": "بإجراء هذا، فإنك تؤكد أنك استلمت الطرد، وأن الشركة لم تعد تتحمل أي مسؤولية بخصوص أي شكاوى لاحقة حول استلامه."
+        "confirmReturnedMessage": "بإجراء هذا، فإنك تؤكد أنك استلمت الطرد، وأن الشركة لم تعد تتحمل أي مسؤولية بخصوص أي شكاوى لاحقة حول استلامه.",
+        confirmTitle:"تأكيد الاستلام",
+        pendingConfirmations:"التأكيدات المعلقة",
+        moneyCollections:"التحصيلات المالية",
+        packageCollections:"تحصيلات الطرود",
+        noCollectionsToConfirm:"لا توجد تجميعات لتأكيدها",
+        collectionId:"معرف التجميعة",
+        orderIds:"معرفات الطرود",
+        totalNetValue:"القيمة الصافية الكلية",
+        confirmPayment:"تأكيد الدفع",
+        confirmDelivery:"تأكيد التسليم",
+        partialSuccess:"نجاح جزئي",
+        updatedCollections:"تم تحديث التجميعات",
+        success:"نجاح",
+        statusUpdated:"تم تحديث الحالة",
+        failedCollections:"تجميعات لم يتم تحديثها بنجاح",
+        error:"خطأ",
+        tryAgainLater:"يرجى المحاولة مرة أخرى لاحقًا"
       }
     },
 
@@ -1821,7 +1865,7 @@ export const translations = {
         errorValidationMsg: "يرجى التحقق من الحقول المميزة",
         errorMsg: "حدث خطأ غير متوقع، يرجى الاتصال بوكيل الدعم للمساعدة",
         success:"نجحت العملية",
-        successMsg:"تم إنشاء المستخدم بنجاح",
+        successMsg:"تم القيام بالعملية بنجاح",
         sections: {
           user: {
             title: "المستخدم",
@@ -2488,7 +2532,6 @@ export function LanguageProvider({ children }) {
         const savedLanguage = await getToken('language') || 'ar';
         setLanguageState(savedLanguage);
       } catch (error) {
-        console.error('Error initializing language context:', error);
       } finally {
         setLoading(false);
       }

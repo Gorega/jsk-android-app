@@ -14,6 +14,7 @@ import ModalPresentation from "../../components/ModalPresentation";
 import { getToken } from "../../utils/secureStore";
 import { useFocusEffect } from '@react-navigation/native';
 import Field from "../../components/create/Field";
+import ReceiverSearchModal from "../../components/create/ReceiverSearchModal";
 
 export default function HomeScreen() {
     const { language } = useLanguage();
@@ -101,6 +102,7 @@ export default function HomeScreen() {
     const [activeCurrencyPicker, setActiveCurrencyPicker] = useState(null);
     const [fromBusinessBalance, setFromBusinessBalance] = useState(false);
     const [exceedBusinessBalance, setExceedBusinessBalance] = useState(false);
+    const [showReceiverModal, setShowReceiverModal] = useState(false);
 
     const CURRENCY_EXCHANGE_RATES = {
         ILS_TO_USD: 0.27,  // 1 ILS = 0.27 USD
@@ -323,10 +325,10 @@ export default function HomeScreen() {
                                 type: "orderTypeButton",
                                 label: type.name,
                                 isSelected: selectedValue.orderType?.value === type.value,
-                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={selectedValue.orderType?.value === "delivery" ? "#4361EE" : "#64748B"} /> :
-                                      type.value === "receive" ? <MaterialIcons name="store" size={18} color={selectedValue.orderType?.value === "receive" ? "#4361EE" : "#64748B"} /> :
-                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={selectedValue.orderType?.value === "delivery/receive" ? "#4361EE" : "#64748B"} /> :
-                                      <MaterialIcons name="payments" size={18} color={selectedValue.orderType?.value === "payment" ? "#4361EE" : "#64748B"} />,
+                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} /> :
+                                      type.value === "receive" ? <MaterialIcons name="store" size={18} /> :
+                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} /> :
+                                      <MaterialIcons name="payments" size={18} />,
                                 onPress: () => setSelectedValue(prev => ({
                                     ...prev,
                                     orderType: type
@@ -591,17 +593,15 @@ export default function HomeScreen() {
             type: "input",
             name: "receiver_mobile",
             value: form.receiverFirstPhone || "",
-            onChange: (input) => {
-                clearFieldError('receiver_mobile');
-                setForm((form) => ({ ...form, receiverFirstPhone: input }));
+            onPress: () => {
+                Keyboard.dismiss();
+                setShowReceiverModal(true);
             },
-            enableSearch: true,
-            onReceiverSelect: (receiver) => handleReceiverSelect(receiver),
-            // Add a "reset" button that clears all receiver-related fields
+            onChange: null,  // Explicitly set to null for the phone field only
+            pointerEvents: "auto",
             resetButton: form.receiverName || form.receiverSecondPhone || form.receiverAddress ? {
                 show: true,
                 onPress: () => {
-                    // Clear all receiver fields
                     setForm(prev => ({
                         ...prev,
                         receiverName: "",
@@ -609,20 +609,16 @@ export default function HomeScreen() {
                         receiverSecondPhone: "",
                         receiverAddress: ""
                     }));
-                    
-                    // Reset city selection if there was one
                     if (selectedValue.city && selectedValue.city.city_id) {
                         setSelectedValue(prev => ({
                             ...prev,
                             city: null
                         }));
                     }
-                    
-                    // Clear any returned orders message
                     setReturnedOrdersMessage("");
                 }
             } : null
-        }, { visibility: "hidden" }, {
+        }, {
             name: "receiver_name",
             label: translations[language].tabs.orders.create.sections.client.fields.name,
             type: "input",
@@ -633,15 +629,15 @@ export default function HomeScreen() {
             type: "input",
             name: "receiver_second_mobile",
             value: form.receiverSecondPhone || "",
-            onChange: (input) => setForm((form) => ({ ...form, receiverSecondPhone: input }))
+            onChange: (input) => setForm((form) => ({ ...form, receiverSecondPhone: input })),
         }, {
             label: translations[language].tabs.orders.create.sections.client.fields.city,
             type: "select",
             name: "city",
             value: selectedValue.city ? selectedValue.city.name : form.receiverCity,
             list: cities
-                .slice(2) // Skip first two cities
-                .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
+                .slice(2)
+                .sort((a, b) => a.name.localeCompare(b.name))
                 .filter(city => 
                     !prickerSearchValue || 
                     city.name.toLowerCase().includes(prickerSearchValue.toLowerCase())
@@ -652,7 +648,7 @@ export default function HomeScreen() {
             type: "input",
             name: "receiver_address",
             value: form.receiverAddress || "",
-            onChange: (input) => setForm((form) => ({ ...form, receiverAddress: input }))
+            onChange: (input) => setForm((form) => ({ ...form, receiverAddress: input })),
         }]
     }, {
         label: translations[language].tabs.orders.create.sections.cost.title,
@@ -1715,15 +1711,260 @@ export default function HomeScreen() {
 
     return (
         <View style={styles.pageContainer}>
+            <View style={styles.headerContainer}>
+                <Text style={styles.orderTypeHeaderText}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
+                <View style={styles.orderTypeButtonsContainer}>
+                    {orderTypes.map((type, index) => (
+                        <Field
+                            key={index}
+                            field={{
+                                type: "orderTypeButton",
+                                label: type.name,
+                                isSelected: selectedValue.orderType?.value === type.value,
+                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} /> :
+                                      type.value === "receive" ? <MaterialIcons name="store" size={18} /> :
+                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} /> :
+                                      <MaterialIcons name="payments" size={18} />,
+                                onPress: () => setSelectedValue(prev => ({
+                                    ...prev,
+                                    orderType: type
+                                }))
+                            }}
+                        />
+                    ))}
+                </View>
+                {["business", "admin", "manager"].includes(user.role) && (
+                    <View style={styles.businessBalanceToggleContainer}>
+                        {user.role === "business" && 
+                         (selectedValue.orderType?.value === "receive" || 
+                          selectedValue.orderType?.value === "payment") ? (
+                            <Field
+                                field={{
+                                    type: "message",
+                                    label: translations[language]?.tabs?.orders?.create?.sections?.sender?.fields?.auto_deduction_notice,
+                                    value: translations[language]?.tabs?.orders?.create?.sections?.sender?.fields?.auto_deduction_message
+                                }}
+                            />
+                        ) : (
+                            <Field
+                                field={{
+                                    type: "toggle",
+                                    label: ["admin", "manager"].includes(user.role) ? 
+                                        translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
+                                        translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
+                                    name: "from_business_balance",
+                                    value: form.fromBusinessBalance || false,
+                                    onChange: async (value) => {
+                                        try {
+                                            // If unchecking the box (value is false), confirm with user before changing state
+                                            if (!value) {
+                                                // Get sender ID based on user role
+                                                const senderId = user.role === "business" ? 
+                                                    user.userId : 
+                                                    selectedValue.sender.user_id;
+                                                
+                                                if (!senderId) {
+                                                    return;
+                                                }
+
+                                                // Only proceed if we're in edit mode and have an order ID
+                                                if (!orderId) {
+                                                    setFromBusinessBalance(false);
+                                                    setForm(prevForm => ({
+                                                        ...prevForm,
+                                                        fromBusinessBalance: false,
+                                                        balanceDeduction: null
+                                                    }));
+                                                    return;
+                                                }
+                                                
+                                                // Confirm with user before returning balance
+                                                Alert.alert(
+                                                    translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
+                                                    translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
+                                                    [
+                                                        {
+                                                            text: translations[language].no || "No",
+                                                            style: "cancel"
+                                                        },
+                                                        {
+                                                            text: translations[language].yes || "Yes",
+                                                            onPress: async () => {
+                                                                setFromBusinessBalance(false); // Set state to false only if user confirms
+                                                                try {
+                                                                    // Show loading spinner
+                                                                    setShowAlert({
+                                                                        visible: true,
+                                                                        type: 'loading',
+                                                                        title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
+                                                                        message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
+                                                                        onClose: () => setShowAlert({visible: false})
+                                                                    });
+                                                                            
+                                                                    const token = await getToken("userToken");
+                                                                    const returnResponse = await fetch(
+                                                                        `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
+                                                                        {
+                                                                            method: 'POST',
+                                                                            credentials: "include",
+                                                                            headers: {
+                                                                                "Content-Type": "application/json",
+                                                                                "Cookie": token ? `token=${token}` : ""
+                                                                            },
+                                                                            body: JSON.stringify({
+                                                                                order_id: orderId,
+                                                                                reference_type: 'transaction'
+                                                                            })
+                                                                        }
+                                                                    );
+
+                                                                    // Close loading spinner
+                                                                    setShowAlert({
+                                                                        visible: false
+                                                                    });
+                                                                    
+                                                                    // Process the response
+                                                                    const responseData = await returnResponse.json();
+                                                                    
+                                                                    if (!returnResponse.ok) {
+                                                                        throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
+                                                                    }
+                                                                    
+                                                                    // Success message
+                                                                    Alert.alert(
+                                                                        translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
+                                                                        translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
+                                                                        [{ text: "OK" }]
+                                                                    );
+                                                                    
+                                                                    // Update form data
+                                                                    setForm(prevForm => ({
+                                                                        ...prevForm,
+                                                                        fromBusinessBalance: false,
+                                                                        balanceDeduction: null
+                                                                    }));
+                                                                } catch (returnError) {
+                                                                    setShowAlert({
+                                                                        visible: false
+                                                                    });
+                                                                    Alert.alert(
+                                                                        translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
+                                                                        returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
+                                                                        [{ text: "OK" }]
+                                                                    );
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                );
+                                                return;
+                                            }
+
+                                            // Rest of the existing function for when value is true (toggle is being enabled)
+                                            // Get sender ID based on user role
+                                            const senderId = user.role === "business" ? user.userId : 
+                                                           (selectedValue.sender && selectedValue.sender.user_id ? 
+                                                            selectedValue.sender.user_id : null);
+                                            
+                                            // Validate sender ID
+                                            if (!senderId) {
+                                                return Alert.alert(
+                                                    translations[language].tabs.orders.create.error || "Error",
+                                                    translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                                                    [{ text: "OK" }]
+                                                );
+                                            }
+                                            
+                                            // Get COD values from form data
+                                            if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                                                return Alert.alert(
+                                                    translations[language].tabs.orders.create.error || "Error",
+                                                    translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                                                    [{ text: "OK" }]
+                                                );
+                                            }
+                                            
+                                            // Format COD values for display and processing
+                                            const formattedCodValues = {};
+                                            let totalCodAmount = 0;
+                                            
+                                            codAmounts.forEach(cod => {
+                                                const value = parseFloat(cod.value || 0);
+                                                const currency = cod.currency || 'ILS';
+                                                
+                                                if (value > 0) {
+                                                    formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                    
+                                                    // Convert to ILS for total calculation
+                                                    if (currency === 'ILS') {
+                                                        totalCodAmount += value;
+                                                    } else if (currency === 'USD') {
+                                                        totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                                                    } else if (currency === 'JOD') {
+                                                        totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                                                    }
+                                                }
+                                            });
+                                            
+                                            // First show the action selection modal
+                                            Alert.alert(
+                                                translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                                                translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                                                [
+                                                    {
+                                                        text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                                        style: "cancel"
+                                                    },
+                                                    {
+                                                        text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                                        onPress: () => {
+                                                            // Call the function directly, not wrapped in async/await
+                                                            handleManualDeduction(senderId, formattedCodValues);
+                                                        }
+                                                    },
+                                                    {
+                                                        text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                                        onPress: () => {
+                                                            // Call the function directly, not wrapped in async/await
+                                                            handleAutoDeduction(senderId, formattedCodValues);
+                                                        }
+                                                    }
+                                                ]
+                                            );
+                                        } catch (error) {
+                                            // Make sure to close any potential loading spinners on error
+                                            setShowAlert({
+                                                visible: false
+                                            });
+                                            setFromBusinessBalance(false);
+                                            setForm(prevForm => ({
+                                                ...prevForm,
+                                                fromBusinessBalance: false,
+                                                balanceDeduction: null
+                                            }));
+                                            Alert.alert(
+                                                translations[language].tabs.orders.create.error || "Error",
+                                                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
+                                                [{ text: "OK" }]
+                                            );
+                                        }
+                                    }
+                                }}
+                            />
+                        )}
+                    </View>
+                )}
+            </View>
             <ScrollView 
                 ref={scrollViewRef}
                 style={[styles.container]}
                 contentContainerStyle={styles.contentContainer}
                 keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={true}
             >
                 <View style={styles.main}>
-                    {sections?.map((section, index) => {
-                        return <Section
+                    {sections.slice(1).map((section, index) => (
+                        <Section
                             key={index}
                             section={section}
                             setSelectedValue={setSelectedValue}
@@ -1734,27 +1975,26 @@ export default function HomeScreen() {
                             fieldErrors={fieldErrors}
                             setFieldErrors={setFieldErrors}
                         />
-                    })}
-                    
-                    <TouchableOpacity 
-                        style={styles.submitButton}
-                        onPress={() => orderId 
-                            ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
-                            : handleCreateOrder('/api/orders', "POST")
-                        }
-                        disabled={formSpinner.status}
-                        activeOpacity={0.8}
-                    >
-                        {formSpinner.status ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                            <Text style={styles.submitButtonText}>
-                                {translations[language].tabs.orders.create.submit}
-                            </Text>
-                        )}
-                    </TouchableOpacity>
+                    ))}
                 </View>
             </ScrollView>
+            <TouchableOpacity 
+                style={styles.submitButton}
+                onPress={() => orderId 
+                    ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
+                    : handleCreateOrder('/api/orders', "POST")
+                }
+                disabled={formSpinner.status}
+                activeOpacity={0.8}
+            >
+                {formSpinner.status ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                    <Text style={styles.submitButtonText}>
+                        {translations[language].tabs.orders.create.submit}
+                    </Text>
+                )}
+            </TouchableOpacity>
     
             {/* Loading Spinner */}
             {formSpinner.status && (
@@ -1848,6 +2088,23 @@ export default function HomeScreen() {
                     </View>
                 </ModalPresentation>
             )}
+            {/* Receiver Search Modal */}
+            <ReceiverSearchModal
+                showModal={showReceiverModal}
+                setShowModal={setShowReceiverModal}
+                onReceiverSelect={(receiver) => {
+                    handleReceiverSelect(receiver);
+                    setShowReceiverModal(false);
+                }}
+                onAddNewReceiver={(phone) => {
+                    // Set the phone number in the form
+                    setForm(prev => ({
+                        ...prev,
+                        receiverFirstPhone: phone
+                    }));
+                    setShowReceiverModal(false);
+                }}
+            />
         </View>
     );
 }
@@ -1857,36 +2114,30 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#f8f9fa',
     },
-    header: {
-        backgroundColor: '#4361EE',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
-        borderBottomLeftRadius: 16,
-        borderBottomRightRadius: 16,
-        marginBottom: 16,
+    headerContainer: {
+        backgroundColor: 'white',
+        paddingHorizontal: 12,
+        paddingTop: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 0, 0, 0.1)',
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
             height: 2,
         },
         shadowOpacity: 0.1,
-        shadowRadius: 4,
+        shadowRadius: 3,
         elevation: 3,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: 'white',
-        textAlign: 'center',
-    },
-    main: {
-        padding: 16,
+        zIndex: 1000,
     },
     container: {
         flex: 1,
     },
     contentContainer: {
-        paddingBottom: 30,
+        flexGrow: 1,
+    },
+    main: {
+        padding: 16,
     },
     overlay: {
         position: 'absolute',
@@ -2035,7 +2286,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 20,
+        width: '90%',
+        marginHorizontal: 16,
         shadowColor: '#4361EE',
         shadowOffset: {
             width: 0,
@@ -2044,6 +2296,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 3,
+        marginVertical: 4,
     },
     submitButtonText: {
         color: 'white',
@@ -2108,9 +2361,7 @@ const styles = StyleSheet.create({
     messageContent: {
         flexDirection: 'row',
         padding: 16,
-    },
-    messageIconContainer: {
-        marginRight: 12,
+        gap:10,
     },
     messageTextContainer: {
         flex: 1,
@@ -2119,7 +2370,6 @@ const styles = StyleSheet.create({
         fontSize: 16, // Increased from 15
         fontWeight: '700', // Increased from 600
         color: '#92400E',
-        marginBottom: 6, // Increased from 4
     },
     messageText: {
         fontSize: 14,
@@ -2127,25 +2377,18 @@ const styles = StyleSheet.create({
         lineHeight: 20,
         fontWeight: '500', // Added for better visibility
     },
-    alertLoader: {
-        marginTop: 16,
-    },
     orderTypeHeaderText: {
-        fontSize: 16,
-        fontWeight: '700',
-        paddingHorizontal: 16,
-        paddingTop:10,
-        color: '#4361EE',
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#1F2937',
         textAlign: 'center',
     },
     orderTypeButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        borderRadius: 12,
-        overflow: 'hidden',
+        gap: 8,
     },
     businessBalanceToggleContainer: {
         borderRadius: 12,
-        padding:8,
     },
 });

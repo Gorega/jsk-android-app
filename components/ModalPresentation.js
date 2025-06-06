@@ -146,9 +146,8 @@ const styles = StyleSheet.create({
   main: {
     backgroundColor: "white",
     width: "90%",
-    maxHeight: "80%",
+    maxHeight: "90%",
     borderRadius: 16,
-    padding: 20,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,

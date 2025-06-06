@@ -156,34 +156,52 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             styles.inputWrapper,
                             field.name === "reference_id" && styles.scanInputWrapper
                         ]}>
-                            <TextInput 
-                                multiline={field.name !== "reference_id"}
-                                style={[
-                                    styles.input,
-                                    field.name === "reference_id" && styles.scanInput
-                                ]}
-                                placeholder={field.placeholder || ""}
-                                value={field.value}
-                                onBlur={(e) => {
-                                    setIsFocused(false);
-                                    if(field.onBlur) field.onBlur(e);
-                                }}
-                                defaultValue={field.defaultValue}
-                                onChangeText={(text) => {
-                                    if (field.onChange) {
-                                        field.onChange(text);
-                                    }
-                                    // Clear error when user starts typing
-                                    if (error && field.name) {
-                                        setFieldErrors(prev => ({
-                                            ...prev,
-                                            [field.name]: null
-                                        }));
-                                    }
-                                }}
-                                keyboardType={field.keyboardType || "default"}
-                                placeholderTextColor="#94A3B8"
-                            />
+                            {field.name === "receiver_mobile" ? (
+                                <TouchableOpacity 
+                                    style={styles.receiverInputWrapper}
+                                    onPress={field.onPress}
+                                    activeOpacity={0.7}
+                                >
+                                    <TextInput 
+                                        style={[styles.input]}
+                                        value={field.value || ""}
+                                        editable={false}
+                                        pointerEvents="none"
+                                    />
+                                </TouchableOpacity>
+                            ) : (
+                                <TextInput 
+                                    style={[
+                                        styles.input,
+                                        field.name === "reference_id" && styles.scanInput
+                                    ]}
+                                    value={field.value || ""}
+                                    onFocus={() => {
+                                        if (field.onFocus === null) {
+                                            return;
+                                        }
+                                        setIsFocused(true);
+                                    }}
+                                    onBlur={() => setIsFocused(false)}
+                                    onChangeText={(text) => {
+                                        if (field.onChange === null) {
+                                            return;
+                                        }
+                                        if (field.onChange) {
+                                            field.onChange(text);
+                                        }
+                                        if (error && field.name) {
+                                            setFieldErrors(prev => ({
+                                                ...prev,
+                                                [field.name]: null
+                                            }));
+                                        }
+                                    }}
+                                    placeholder={field.placeholder || ""}
+                                    placeholderTextColor="#94A3B8"
+                                    editable={true}
+                                />
+                            )}
                             
                             {field.name === "reference_id" && (
                                 <TouchableOpacity
@@ -194,14 +212,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     <MaterialIcons name="qr-code-scanner" size={20} color="#FFFFFF" />
                                 </TouchableOpacity>
                             )}
-                            
-                            {field.name === "receiver_mobile" && (
+
+                            {field.rightIcon && (
                                 <TouchableOpacity
-                                    style={styles.searchPhoneButton}
-                                    onPress={() => setShowPhoneSearchModal(true)}
+                                    style={styles.searchButton}
+                                    onPress={field.onPress}
                                     activeOpacity={0.7}
                                 >
-                                    <Feather name="search" size={20} color="#FFFFFF" />
+                                    {field.rightIcon}
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -813,18 +831,13 @@ const styles = StyleSheet.create({
     messageContainer: {
         borderWidth: 1,
         borderRadius: 10,
-        marginVertical: 12,
-        padding: 0,
         borderColor: 'rgba(245, 158, 11, 0.3)',
         backgroundColor: 'rgba(254, 243, 199, 0.5)',
         overflow: 'hidden',
     },
     messageContent: {
         flexDirection: 'row',
-        padding: 16,
-    },
-    messageIconContainer: {
-        marginRight: 12,
+        gap: 10,
     },
     messageTextContainer: {
         flex: 1,
@@ -833,7 +846,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: '#92400E',
-        marginBottom: 4,
     },
     messageText: {
         fontSize: 14,
@@ -844,29 +856,6 @@ const styles = StyleSheet.create({
         color: '#EF4444',
         fontSize: 12,
         marginTop: 5,
-    },
-    toggleContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        borderWidth: 0,
-        borderRadius: 10,
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        marginVertical: 4,
-        backgroundColor: 'transparent',
-    },
-    toggleLabel: {
-        position: 'relative',
-        top: 0,
-        fontSize: 15,
-        fontWeight: '500',
-        color: '#1F2937',
-        backgroundColor: 'transparent',
-        flex: 1,
-    },
-    toggleWrapper: {
-        alignItems: 'flex-end',
     },
     currencyFieldContainer: {
         marginBottom: 12,
@@ -995,32 +984,40 @@ const styles = StyleSheet.create({
         padding: 0,
         borderWidth: 0,
         flex: 1,
-        minWidth: '24%',
+        minWidth: '23%',
     },
     orderTypeButton: {
-        flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 6,
+        backgroundColor: '#F8FAFC',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: 'rgba(226, 232, 240, 0.5)',
-        borderBottomWidth: 2,
-        borderBottomColor: 'transparent',
+        paddingHorizontal: 8,
+        borderRadius: 10,
+        gap: 4,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        minHeight: 60,
     },
     orderTypeButtonSelected: {
-        backgroundColor: 'rgba(67, 97, 238, 0.1)',
-        borderBottomWidth: 2,
-        borderBottomColor: '#4361EE',
+        backgroundColor: '#EEF2FF',
+        borderColor: '#4361EE',
+        shadowColor: '#4361EE',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 3,
     },
     orderTypeButtonText: {
-        fontSize: 12,
-        fontWeight: '500',
+        fontSize: 11,
+        fontWeight: '600',
         color: '#64748B',
         textAlign: 'center',
     },
     orderTypeButtonTextSelected: {
         color: '#4361EE',
-        fontWeight: '600',
     },
     // Phone search modal styles
     phoneSearchContainer: {
@@ -1064,9 +1061,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         padding: 12,
     },
-    searchLoader: {
-        marginVertical: 20,
-    },
     resultsList: {
         flex: 1,
         height: 300,
@@ -1105,5 +1099,30 @@ const styles = StyleSheet.create({
         color: '#64748B',
         fontSize: 16,
         padding: 20,
-    }
+    },
+    inputText: {
+        fontSize: 16,
+        color: '#1F2937',
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+    },
+    placeholderText: {
+        color: '#94A3B8',
+    },
+    receiverInputWrapper: {
+        flex: 1,
+        borderRadius: 8,
+    },
+    searchButton: {
+        backgroundColor: '#4361EE',
+        borderRadius: 8,
+        padding: 8,
+        marginLeft: 8,
+    },
+    searchLoader: {
+        marginTop: 20,
+    },
+    receiverInput: {
+        flex: 1,
+    },
 });

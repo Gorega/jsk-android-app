@@ -9,11 +9,11 @@ import { useLanguage } from '../../utils/languageContext';
 import { useLocalSearchParams, router } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "../../utils/secureStore";
+import { useAuth } from "../../RootLayout";
 
 export default function HomeScreen() {
     const { userId } = useLocalSearchParams();
     const { language } = useLanguage();
-    const isRTL = language === 'ar' || language === 'he';
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const [cities, setCities] = useState([]);
@@ -21,6 +21,7 @@ export default function HomeScreen() {
     const [branches, setBranches] = useState([]);
     const [pricelists, setPricelists] = useState([]);
     const [managers, setManagers] = useState([]);
+    const { user } = useAuth()
     const [prickerSearchValue, setPickerSearchValue] = useState("");
     const [selectedValue, setSelectedValue] = useState({
         city_id: "",
@@ -53,13 +54,13 @@ export default function HomeScreen() {
             type: "input",
             value: form.name || "",
             onChange: (input) => setForm((form) => ({ ...form, name: input }))
-        },{
+        },["admin","manager"].includes(user.role) ? {
             label: translations[language].users.create.sections.details.fields.role,
             type: "select",
             name: "role_id",
-            value: selectedValue.role_id.name,
+            value: selectedValue.role_id.name || form.role,
             list: roles
-        },selectedValue.role_id?.role_id === 2 ? {
+        } : {visibility:"hidden"},(selectedValue.role_id?.role_id === 2 || user.role === "business") ? {
             label: translations[language].users.create.sections.user.fields.commercial,
             type: "input",
             name: "comercial_name",
@@ -81,7 +82,7 @@ export default function HomeScreen() {
             label: translations[language].users.create.sections.user.fields.city,
             type: "select",
             name: "city_id",
-            value: selectedValue.city_id.name,
+            value: selectedValue.city_id.name || form.city,
             list: cities
             .slice(2) // Skip first two cities
             .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
@@ -104,13 +105,13 @@ export default function HomeScreen() {
             label: translations[language].users.create.sections.details.fields.branch,
             type: "select",
             name: "branch_id",
-            value: selectedValue.branch_id.name,
+            value: selectedValue.branch_id.name || form.branch,
             list: branches
         }, selectedValue.role_id?.role_id === 2 ? {
             label: translations[language].users.create.sections.details.fields.pricelist,
             type: "select",
             name: "pricelist_id",
-            value: selectedValue.pricelist_id.name,
+            value: selectedValue.pricelist_id.name || form.priceList,
             list: pricelists
         } : { visibility: "hidden" }]
     }];
@@ -155,12 +156,12 @@ export default function HomeScreen() {
                     phone: form.firstPhone,
                     phone_2: form.secondPhone,
                     password: form.firstPhone,
-                    role_id: selectedValue.role_id.role_id,
-                    branch_id: selectedValue.branch_id.branch_id,
+                    role_id: selectedValue.role_id.role_id || form.role_id,
+                    branch_id: selectedValue.branch_id.branch_id || form.branch_id,
                     affiliator: form.affiliator,
-                    pricelist_id: selectedValue.pricelist_id.pricelist_id,
+                    pricelist_id: selectedValue.pricelist_id.pricelist_id || form.priceList_id,
                     country: "palestine",
-                    city_id: selectedValue.city_id.city_id,
+                    city_id: selectedValue.city_id.city_id || form.city_id,
                     expected_salary:0,
                     address: form.address,
                     website: form.website,
@@ -212,7 +213,7 @@ export default function HomeScreen() {
                 type: 'success',
                 title: translations[language].users.create.success,
                 message: translations[language].users.create.successMsg,
-                onClose: () => router.push("(users)")
+                onClose: () => {["admin","manager"].includes(user.role) ? router.push("(users)") : router.push("(tabs)")}
             });
 
         } catch (err) {
@@ -246,7 +247,8 @@ export default function HomeScreen() {
                     city: { name: userData.city, id: userData.city_id },
                     role: { name: userData.role, id: userData.role_id },
                     branch: { name: userData.branch, id: userData.branch_id },
-                    pricelist: { name: userData.priceList, id: userData.priceList_id }
+                    pricelist: { name: userData.priceList, id: userData.priceList_id },
+                    branch:{name:userData.branch, id: userData.branch_id}
                 }
             ));
             setForm({
@@ -255,10 +257,15 @@ export default function HomeScreen() {
                 firstPhone: userData.firstPhone,
                 secondPhone: userData.secondPhone,
                 affiliator: userData.affiliator,
-                city_id: userData.city_id,
+                city: userData.city,
+                city_id:userData.city_id,
                 address: userData.address,
-                role_id: userData.role_id,
-                priceList_id: userData.priceList_id,
+                role: userData.role,
+                branch: userData.branch,
+                branch_id: userData.branch_id,
+                role_id:userData.role_id,
+                priceList: userData.priceList,
+                priceList_id:user.priceList_id
             });
         } catch (err) {
         }
@@ -316,8 +323,7 @@ export default function HomeScreen() {
         return (
             <View style={styles.alertOverlay}>
                 <View style={[
-                    styles.alertContainer,
-                    { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                    styles.alertContainer
                 ]}>
                     <View style={[
                         styles.alertColorBar,
@@ -327,12 +333,10 @@ export default function HomeScreen() {
                     ]} />
                     <View style={styles.alertContent}>
                         <View style={[
-                            styles.alertHeader,
-                            { flexDirection: isRTL ? 'row-reverse' : 'row' }
+                            styles.alertHeader
                         ]}>
                             <Text style={[
-                                styles.alertTitle,
-                                { textAlign: isRTL ? 'right' : 'left' }
+                                styles.alertTitle
                             ]}>
                                 {title}
                             </Text>
@@ -341,12 +345,11 @@ export default function HomeScreen() {
                             </TouchableOpacity>
                         </View>
                         <Text style={[
-                            styles.alertMessage,
-                            { textAlign: isRTL ? 'right' : 'left' }
+                            styles.alertMessage
                         ]}>
                             {message}
                         </Text>
-                        <View style={{ alignItems: isRTL ? 'flex-start' : 'flex-end' }}>
+                        <View>
                             <TouchableOpacity
                                 style={[
                                     styles.alertButton,
@@ -371,8 +374,7 @@ export default function HomeScreen() {
                 ref={scrollViewRef}
                 style={styles.scrollView}
                 contentContainerStyle={[
-                    styles.contentContainer,
-                    { alignItems: isRTL ? 'flex-end' : 'flex-start' }
+                    styles.contentContainer
                 ]}
                 keyboardShouldPersistTaps="handled"
             >
@@ -387,7 +389,6 @@ export default function HomeScreen() {
                             setSelectedValue={setSelectedValue}
                             fieldErrors={fieldErrors}
                             setFieldErrors={setFieldErrors}
-                            isRTL={isRTL}
                             prickerSearchValue={prickerSearchValue}
                             setPickerSearchValue={setPickerSearchValue}
                         />

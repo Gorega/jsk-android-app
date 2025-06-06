@@ -22,7 +22,9 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                 <>
                     <Pressable onPress={() => setShowFields(!showFields)}>
                         <View style={[
-                            styles.label
+                            styles.label,
+                            styles.stickyHeader,
+                            !showFields && styles.bottomBorder
                         ]}>
                             <View style={[
                                 styles.labelContent
@@ -78,49 +80,60 @@ const styles = StyleSheet.create({
     section: {
         marginBottom: 16,
         backgroundColor: "white",
-        borderRadius: 12,
-        padding: 16,
+        borderRadius: 16,
         shadowColor: '#000',
         shadowOffset: {
             width: 0,
             height: 2,
         },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
+        shadowOpacity: 0.06,
+        shadowRadius: 8,
         elevation: 2,
     },
     headerSection: {
         padding: 0,
         overflow: 'hidden',
+        marginBottom: 0,
     },
     headerContent: {
         width: '100%',
     },
+    stickyHeader: {
+        backgroundColor: 'white',
+        padding: 12,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+    },
+    bottomBorder: {
+        borderBottomLeftRadius: 16,
+        borderBottomRightRadius: 16,
+    },
     fields: {
-        marginTop: 20,
+        padding: 16,
+        paddingTop: 4,
         gap: 16
     },
     label: {
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingVertical: 4,
     },
     labelContent: {
         flexDirection: "row",
         alignItems: "center",
-        gap:12
+        gap: 12
     },
     labelText: {
-        fontSize: 16,
+        fontSize: 15,
         fontWeight: '600',
-        color: '#1F2937',
+        color: '#1e293b',
+        letterSpacing: 0.2,
     },
     iconContainer: {
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        backgroundColor: 'rgba(67, 97, 238, 0.08)',
         justifyContent: 'center',
         alignItems: 'center'
     },

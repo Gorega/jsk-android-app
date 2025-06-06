@@ -28,7 +28,6 @@ export default function Search({
     setActiveDate,
     selectedDate,
     setSelectedDate,
-    onClearFilters,
     showScanButton = true,
     addPaddingSpace
   }){
@@ -63,7 +62,6 @@ export default function Search({
       setActiveSearchBy("");
       setSearchValue("");
       setActiveDate("");
-      onClearFilters();
       Keyboard.dismiss();
     };
 

@@ -1,8 +1,8 @@
-import { View, StyleSheet, RefreshControl, StatusBar } from 'react-native';
+import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import { useCallback, useEffect, useState } from 'react';
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useLocalSearchParams, usePathname } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
@@ -13,6 +13,7 @@ import { RTLWrapper } from '@/utils/RTLWrapper';
 export default function Orders() {
     const socket = useSocket();
     const { language } = useLanguage();
+    const pathname = usePathname();
     const [data, setData] = useState([]);
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -24,8 +25,44 @@ export default function Orders() {
     const [selectedDate, setSelectedDate] = useState("");
     const params = useLocalSearchParams();
     const { user } = useAuth();
-    const { orderIds } = params;
+    const { orderIds, reset } = params;
     const [refreshing, setRefreshing] = useState(false);
+
+    // Reset filters when reset param changes
+    useEffect(() => {
+        if (reset && !orderIds) {
+            setSearchValue("");
+            setActiveFilter("");
+            setActiveSearchBy("");
+            setActiveDate("");
+            setSelectedDate("");
+            setPage(1);
+            fetchData(1, false);
+        }
+    }, [reset]);
+
+    // Function to reset all filters
+    const resetAllFilters = useCallback(() => {
+        setSearchValue("");
+        setActiveFilter("");
+        setActiveSearchBy("");
+        setActiveDate("");
+        setSelectedDate("");
+        setPage(1);
+        fetchData(1, false);
+    }, []);
+
+    // Listen for reset event
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener(
+            'resetOrdersFilters',
+            resetAllFilters
+        );
+
+        return () => {
+            subscription.remove();
+        };
+    }, [resetAllFilters]);
 
     const onRefresh = useCallback(async () => {
         try {
@@ -282,6 +319,21 @@ export default function Orders() {
         fetchData(1, false);
     }, [searchValue, activeFilter, activeDate, orderIds, language]);
 
+    // Reset all filters when re-entering the orders route or when params change
+    useEffect(() => {
+        if (pathname === "/(tabs)/orders") {
+            // Only reset if there are no orderIds in params
+            if (!orderIds) {
+                setSearchValue("");
+                setActiveFilter("");
+                setActiveSearchBy("");
+                setActiveDate("");
+                setSelectedDate("");
+                setPage(1);
+                fetchData(1, false);
+            }
+        }
+    }, [pathname, params]);
 
     return (
         <View style={styles.container}>

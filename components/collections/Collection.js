@@ -75,19 +75,20 @@ export default function Collection({ type, collection }) {
                                 status: status,
                                 note_content: null
                             };
-
+                            const token = await getToken("userToken");
                             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/status`, {
                                 method: "PUT",
                                 headers: {
                                     'Accept': 'application/json',
-                                    'Content-Type': 'application/json'
+                                    'Content-Type': 'application/json',
+                                    'Accept-Language': language,
+                                    "Cookie": token ? `token=${token}` : ""
                                 },
-                                credentials: "include",
+                                credentials: 'include',
                                 body: JSON.stringify({ updates })
                             });
 
                             const data = await res.json();
-
                             if (data.failures?.length > 0 && data.successes?.length > 0) {
                                 return;
                             }
@@ -382,8 +383,7 @@ export default function Collection({ type, collection }) {
                             >
                                 <View style={[
                                     styles.modalIconContainer,
-                                    { backgroundColor: '#F72585' },
-                                    getMargin(isRTL, 12)
+                                    { backgroundColor: '#F72585' }
                                 ]}>
                                     <Feather name="send" size={18} color="#ffffff" />
                                 </View>
@@ -454,8 +454,7 @@ export default function Collection({ type, collection }) {
                             >
                                 <View style={[
                                     styles.modalIconContainer,
-                                    { backgroundColor: '#F72585' },
-                                    getMargin(isRTL, 12)
+                                    { backgroundColor: '#F72585' }
                                 ]}>
                                     <Feather name="send" size={18} color="#ffffff" />
                                 </View>

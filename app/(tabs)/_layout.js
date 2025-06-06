@@ -1,8 +1,8 @@
-import { Tabs, router } from 'expo-router';
+import { Tabs, router, usePathname } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import React, { useState } from 'react';
-import { Text, TouchableOpacity, View, Platform, Animated } from "react-native";
+import React, { useState, useCallback } from 'react';
+import { Text, TouchableOpacity, View, Platform, Animated, DeviceEventEmitter } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Feather from '@expo/vector-icons/Feather';
 import AntDesign from '@expo/vector-icons/AntDesign';
@@ -20,11 +20,23 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 export default function TabLayout() {
   const { language } = useLanguage();
+  const pathname = usePathname();
   const [showModal, setShowModal] = useState(false);
   const [showAddOptionsModal, setShowAddOptionsModal] = useState(false);
   const { user } = useAuth();
   const addButtonScale = new Animated.Value(1);
   const rtl = useRTLStyles();
+
+  // Shared navigation handler for orders tab
+  const handleOrdersPress = useCallback(() => {
+    // Always navigate using replace to ensure a fresh state
+    router.replace({
+      pathname: "/(tabs)/orders",
+      params: {
+        reset: Date.now() // Force a reset by adding a timestamp
+      }
+    });
+  }, []);
 
   // Animation for the add button
   const animateAddButton = () => {
@@ -140,11 +152,7 @@ export default function TabLayout() {
         tabBarButton: (props) => (
           <TouchableOpacity
             {...props}
-            onPress={() => {
-              router.push({
-                pathname: "/(tabs)/orders"
-              });
-            }}
+            onPress={handleOrdersPress}
           />
         ),
       },

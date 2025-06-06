@@ -129,15 +129,7 @@ export default function BalanceHistoryScreen() {
           <Text style={styles.transactionDate}>
             {formatDate(item.created_at)}
           </Text>
-          
-          <View style={styles.balanceChange}>
-            <Text style={styles.balanceLabel}>
-              {translations[language]?.balance?.balanceAfter || "Balance:"}
-            </Text>
-            <Text style={styles.balanceValue}>
-              {item.currency_symbol || ""}{item.new_balance}
-            </Text>
-          </View>
+        
         </View>
       </View>
     </View>
@@ -328,27 +320,13 @@ const styles = StyleSheet.create({
   },
   transactionFooter: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     gap:10
   },
   transactionDate: {
     fontSize: 12,
     color: "#94A3B8",
-  },
-  balanceChange: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap:4
-  },
-  balanceLabel: {
-    fontSize: 12,
-    color: "#64748B"
-  },
-  balanceValue: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#4361EE",
   },
   footerLoader: {
     paddingVertical: 20,
