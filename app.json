@@ -9,6 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "ios": {
+      "workflow": "managed",
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "We need access to your camera.",

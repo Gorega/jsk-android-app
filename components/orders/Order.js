@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, ActivityIndicator,TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform, ActivityIndicator,TextInput } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -49,6 +49,8 @@ export default function Order({ user, order }) {
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    const isRTL = language === 'ar' || language === 'he';
+
     
     // Animation value for smooth transition
     const heightAnim = useRef(new Animated.Value(1)).current;
@@ -405,7 +407,14 @@ export default function Order({ user, order }) {
                         <View style={styles.minimizedContainer}>
                             <View style={[styles.minimizedRow]}>
                                 <View style={[
-                                    styles.minimizedSection 
+                                    styles.minimizedSection,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex--end"
+                                            }
+                                        })
+                                    }
                                 ]}>
                                     <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.userClientBoxLabel || 'Client'}
@@ -417,7 +426,14 @@ export default function Order({ user, order }) {
                                 
                                 <View style={[
                                     styles.minimizedSection, 
-                                    styles.locationMinimized
+                                    styles.locationMinimized,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex--end"
+                                            }
+                                        })
+                                    }
                                 ]}>
                                     <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
@@ -430,7 +446,13 @@ export default function Order({ user, order }) {
                             
                             {/* Receiver phone with call and message icons */}
                             {order.receiver_mobile && (
-                                <View style={[styles.minimizedRow, styles.phoneRow]}>
+                                <View style={[[styles.minimizedRow, styles.phoneRow,{
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems:isRTL ? "flex-start" : "flex--end"
+                                        }
+                                    })
+                                }]]}>
                                     <Text style={styles.phoneText}>{order.receiver_mobile}</Text>
                                     <View style={styles.phoneActions}>
                                         <Contact
@@ -455,7 +477,13 @@ export default function Order({ user, order }) {
                             
                             {/* Display order type if it's receive or delivery/receive */}
                             <View style={[styles.minimizedRow]}>
-                                <View style={[styles.minimizedSection]}>
+                                <View style={[styles.minimizedSection,{
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                            }
+                                        }),
+                                    }]}>
                                     <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
@@ -470,7 +498,14 @@ export default function Order({ user, order }) {
                             {/* Additional minimized info - location with area and address */}
                             <View style={[styles.minimizedRow]}>
                                 <View style={[
-                                    styles.minimizedSection
+                                    styles.minimizedSection,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                            }
+                                        }),
+                                    }
                                 ]}>
                                     <Text style={[styles.minimizedLabel]}>
                                         {translations[language].tabs.orders.order.location || 'Location'}
@@ -483,8 +518,14 @@ export default function Order({ user, order }) {
                             
                             {/* Show note if available */}
                             {order.note && (
-                                <View style={[styles.minimizedRow]}>
-                                    <View style={[styles.minimizedSection, styles.noteMinimized]}>
+                                <View style={[styles.minimizedRow,]}>
+                                    <View style={[styles.minimizedSection, styles.noteMinimized,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                         <Text style={[styles.minimizedLabel]}>
                                             {translations[language].tabs.orders.order.note || 'Note'}
                                         </Text>
@@ -504,7 +545,13 @@ export default function Order({ user, order }) {
                                         params: { orderId: order.order_id }
                                     })}
                                 >
-                                    <View style={[styles.minimizedSection, styles.checksMinimized]}>
+                                    <View style={[styles.minimizedSection, styles.checksMinimized,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                         <View style={styles.checksMinimizedHeader}>
                                             <Text style={[styles.minimizedLabel]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
@@ -522,7 +569,14 @@ export default function Order({ user, order }) {
                             {(order.to_branch || order.to_driver) && (
                                 <View style={[styles.minimizedRow, { marginTop: 10 }]}>
                                     <View style={[
-                                        styles.minimizedSection
+                                        styles.minimizedSection,
+                                        {
+                                            ...Platform.select({
+                                                ios: {
+                                                    alignItems:isRTL ? "flex-start" : "flex-end"
+                                                }
+                                            }),
+                                        }
                                     ]}>
                                         <Text style={[styles.minimizedLabel]}>
                                             {order.to_branch ? 
@@ -593,7 +647,13 @@ export default function Order({ user, order }) {
                                     ]}>
                                         <Ionicons name="location-outline" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={styles.sectionContent}>
+                                    <View style={[styles.sectionContent,{
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                            }
+                                        }),
+                                    }]}>
                                         <Text style={[styles.sectionTitle]}>
                                             {translations[language].tabs.orders.order.location || 'Delivery Location'}
                                         </Text>
@@ -616,7 +676,13 @@ export default function Order({ user, order }) {
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={styles.sectionContent}>
+                                    <View style={[styles.sectionContent,{
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                            }
+                                        }),
+                                    }]}>
                                         <Text style={[styles.sectionTitle]}>
                                             {order.to_branch ? translations[language].tabs.orders.order.to_branch : translations[language].tabs.orders.order.to_driver}
                                         </Text>
@@ -636,7 +702,13 @@ export default function Order({ user, order }) {
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={styles.sectionContent}>
+                                    <View style={[styles.sectionContent,{
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                            }
+                                        }),
+                                    }]}>
                                         <Text style={[styles.sectionTitle]}>
                                             {translations[language].tabs.orders.order.orderType}
                                         </Text>
@@ -664,12 +736,18 @@ export default function Order({ user, order }) {
                             </View>
                             
                             {/* Cost information section */}
-                            <View style={styles.costSectionWrapper}>
-                                <Text style={[styles.costSectionTitle]}>
+                            <View style={[styles.costSectionWrapper]}>
+                                <Text style={[styles.costSectionTitle,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : "right"
+                                        }
+                                    }),
+                                }]}>
                                     {translations[language].tabs.orders.order.financialDetails || 'Financial Details'}
                                 </Text>
                                 
-                                <View style={styles.costSection}>
+                                <View style={[styles.costSection]}>
                                     <View style={[
                                         styles.costCard
                                     ]}>
@@ -679,7 +757,13 @@ export default function Order({ user, order }) {
                                         ]}>
                                             <Feather name="package" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.costLabelContainer]}>
+                                        <View style={[styles.costLabelContainer,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                             <Text style={[styles.costLabel]}>
                                                 {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                             </Text>
@@ -698,7 +782,13 @@ export default function Order({ user, order }) {
                                             ]}>
                                                 <Feather name="truck" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer]}>
+                                            <View style={[styles.costLabelContainer,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                                 <Text style={[styles.costLabel]}>
                                                     {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
                                                 </Text>
@@ -720,7 +810,13 @@ export default function Order({ user, order }) {
                                             ]}>
                                                 <FontAwesome name="money" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer]}>
+                                            <View style={[styles.costLabelContainer,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                                 <Text style={[styles.costLabel]}>
                                                     {translations[language].tabs.orders.order.netValue || 'Net Value'}
                                                 </Text>
@@ -751,7 +847,13 @@ export default function Order({ user, order }) {
                                         ]}>
                                             <FontAwesome name="money" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.checksTextContainer]}>
+                                        <View style={[styles.checksTextContainer,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                             <Text style={[styles.checksTitle]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
@@ -778,7 +880,13 @@ export default function Order({ user, order }) {
                                     ]}>
                                         <FontAwesome name="sticky-note-o" size={16} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.noteContent]}>
+                                    <View style={[styles.noteContent,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    }
+                                                }),
+                                            }]}>
                                         <Text style={[styles.noteTitle]}>
                                             {translations[language].tabs.orders.order.note || 'Notes'}
                                         </Text>

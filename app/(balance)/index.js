@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Platform, RefreshControl } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../RootLayout";
@@ -104,7 +104,13 @@ export default function BalanceHistoryScreen() {
       
       <View style={styles.transactionDetails}>
         <View style={styles.transactionHeader}>
-          <Text style={[styles.transactionType]} numberOfLines={1}>
+          <Text style={[styles.transactionType,{
+      ...Platform.select({
+          ios: {
+              textAlign:rtl.isRTL ? "left" : "right"
+          }
+      }),
+  }]} numberOfLines={1}>
             {item.reference_type === "payment" 
               ? translations[language]?.balance?.paymentType || "Payment" 
               : item.reference_type === "transaction" 
@@ -122,11 +128,17 @@ export default function BalanceHistoryScreen() {
           </Text>
         </View>
         
-        <Text style={[styles.transactionNotes]} numberOfLines={2}>
+        <Text style={[styles.transactionNotes,{
+            ...Platform.select({
+                ios: {
+                    textAlign:rtl.isRTL ? "left" : "right"
+                }
+            }),
+        }]} numberOfLines={2}>
           {item.notes}
         </Text>
-        <View style={[styles.transactionFooter,rtl.isRTL && {marginRight:-50}]}>
-          <Text style={styles.transactionDate}>
+        <View>
+          <Text style={[styles.transactionDate]}>
             {formatDate(item.created_at)}
           </Text>
         

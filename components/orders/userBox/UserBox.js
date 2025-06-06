@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet,Platform } from "react-native";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 import Contact from "./Contact";
 import { translations } from '../../../utils/languageContext';
@@ -7,16 +7,23 @@ import { RTLWrapper } from '../../../utils/RTLWrapper';
 
 export default function BusinessBox({ box }) {
     const { language } = useLanguage();
+    const isRTL = language === 'ar' || language === 'he';
 
     return (
         <RTLWrapper>
             <View style={styles.container}>
             <View style={[styles.contentRow]}>
-                <View style={[styles.userInfo]}>
+                <View style={styles.userInfo}>
                     <View style={styles.iconContainer}>
                         <SimpleLineIcons name="user" size={20} color="#ffffff" />
                     </View>
-                    <View style={styles.textContainer}>
+                    <View style={[styles.textContainer,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                         <Text style={[styles.labelText]}>{box.label}</Text>
                         <Text style={[styles.valueText]}>{box.userName}</Text>
                     </View>

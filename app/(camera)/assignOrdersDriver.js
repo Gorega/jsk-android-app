@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView,Platform } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -436,7 +436,7 @@ export default function CameraScanner() {
       
         {showCreateDispatchedCollectionModal ? (
           <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
+            <View style={[styles.modalHeader]}>
               <Text style={styles.modalTitle}>
                 {translations[language].camera.createCollection}
               </Text>
@@ -455,7 +455,13 @@ export default function CameraScanner() {
             <ScrollView>
             <View style={styles.modalContent}>
               <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel]}>
+                <Text style={[styles.fieldLabel,{
+                    ...Platform.select({
+                        ios: {
+                            textAlign:rtl.isRTL ? "left" : "right"
+                        }
+                    }),
+                }]}>
                   {translations[language].camera.note}
                 </Text>
                 <TextInput
@@ -471,7 +477,13 @@ export default function CameraScanner() {
               </View>
               
               <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel]}>
+                <Text style={[styles.fieldLabel,{
+                    ...Platform.select({
+                        ios: {
+                            textAlign:rtl.isRTL ? "left" : "right"
+                        }
+                    }),
+                }]}>
                   {translations[language].camera.toBranch}
                 </Text>
                 <TouchableOpacity 
@@ -488,8 +500,14 @@ export default function CameraScanner() {
                 </TouchableOpacity>
               </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel]}>
+              <View style={[styles.fieldContainer]}>
+                <Text style={[styles.fieldLabel,{
+                    ...Platform.select({
+                        ios: {
+                            textAlign:rtl.isRTL ? "left" : "right"
+                        }
+                    }),
+                }]}>
                   {translations[language].camera.toDriver}
                 </Text>
                 <TouchableOpacity 
@@ -605,7 +623,13 @@ export default function CameraScanner() {
                       ]}>
                         <Feather name="package" size={16} color="#4361EE" />
                       </View>
-                      <View style={styles.itemTextContainer}>
+                      <View style={[styles.itemTextContainer,{
+                          ...Platform.select({
+                              ios: {
+                                  alignItems:rtl.isRTL ? "flex-start" : "flex-end"
+                              }
+                          }),
+                      }]}>
                         <Text style={[styles.itemText]}>
                           {typeof item === 'object' ? item.order_id : item}
                         </Text>

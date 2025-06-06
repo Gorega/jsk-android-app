@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable, StatusBar, Image } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable, StatusBar, Image,Platform } from "react-native";
 import ModalPresentation from "../../components/ModalPresentation";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -269,7 +269,14 @@ export default function ComplaintsScreen() {
             }
           >
             <View style={[styles.cardHeader]}>
-              <View style={[styles.complaintInfo]}>
+              <View style={[styles.complaintInfo,{
+                  ...Platform.select({
+                      ios: {
+                          flexDirection:"column",
+                          alignItems:rtl.isRTL ? "flex-start" : "flex-end"
+                      }
+                  }),
+              }]}>
                 <Text style={[styles.subject]} numberOfLines={1}>
                   {item.subject}
                 </Text>
@@ -299,7 +306,14 @@ export default function ComplaintsScreen() {
               </LinearGradient>
             </View>
             
-            <Text style={[styles.description]} numberOfLines={2}>
+            <Text style={[styles.description,{
+                  ...Platform.select({
+                      ios: {
+                          flexDirection:"column",
+                          textAlign:rtl.isRTL ? "left" : "right"
+                      }
+                  }),
+              }]} numberOfLines={2}>
               {item.description}
             </Text>
             

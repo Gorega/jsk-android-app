@@ -9,13 +9,13 @@ export default function FixedHeader({children,title,showBackButton=true}){
     const rtl = useRTLStyles();
 
     return <View style={{
-        height:80,
+        height:100,
         backgroundColor:"white",
         boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
         flexDirection:"row",
         alignItems:"flex-end",
         justifyContent:"space-between",
-        padding:15
+        padding:15,
       }}>
     <View style={{flexDirection:"row",alignItems:"center",gap:15}}>
       {showBackButton && <TouchableOpacity onPressIn={()=> router.back()}>

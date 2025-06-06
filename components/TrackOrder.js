@@ -12,10 +12,18 @@ export default function TrackOrder(){
     const [value,setValue] = useState("");
     const [permission,requestPermission] = useCameraPermissions();
     const { language } = useLanguage();
+    const isRTL = language === 'ar' || language === 'he';
 
 
     return <RTLWrapper>
-        <View style={styles.track}>
+        <View style={[styles.track,{
+            ...Platform.select({
+                ios: {
+                    flexDirection:"column",
+                    alignItems:isRTL ? "flex-start" : "flex-end"
+                }
+            }),
+        }]}>
         <Text style={[styles.h2]}>{translations[language].track.title}</Text>
         <Text style={[styles.onPress]}>{translations[language].track.desc}</Text>
         <View style={[styles.flex]}>
@@ -48,8 +56,6 @@ export default function TrackOrder(){
 }
 
 const styles = StyleSheet.create({
-    track:{
-    },
     h2:{
         fontSize:17,
         fontWeight:"500"
@@ -68,7 +74,6 @@ const styles = StyleSheet.create({
     },
     inputBox:{
         flexDirection:"row",
-        justifyContent:"flex-start",
         alignItems:"center",
         gap:7,
         backgroundColor:"white",

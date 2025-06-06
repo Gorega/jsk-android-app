@@ -117,7 +117,7 @@ export default function ModalPresentation({
         ]}
       >
         <Pressable
-          style={StyleSheet.absoluteFill}
+          style={[StyleSheet.absoluteFill]}
           onPress={handleBackdropPress}
         />
         <Animated.View 
@@ -126,7 +126,7 @@ export default function ModalPresentation({
             getAnimationStyle(),
             customStyles,
             position === 'bottom' && styles.bottomModal,
-            position === 'top' && styles.topModal
+            position === 'top' && styles.topModal,
           ]}
         >
           {children}

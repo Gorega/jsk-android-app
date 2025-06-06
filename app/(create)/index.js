@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, I18nManager } from "react-native";
+import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, Platform } from "react-native";
 import Section from "../../components/create/Section";
 import { useEffect, useState, useRef, React, useCallback } from "react";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -1396,9 +1396,9 @@ export default function HomeScreen() {
                     styles.alertContainer, 
                     type === 'error' ? styles.errorAlert : 
                     type === 'success' ? styles.successAlert : 
-                    styles.warningAlert
+                    styles.warningAlert,
                 ]}>
-                    <View style={styles.alertHeader}>
+                    <View style={[styles.alertHeader]}>
                         <Text style={styles.alertTitle}>{title}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
                             <Feather name="x" size={22} color="#64748B" />
@@ -1979,7 +1979,13 @@ export default function HomeScreen() {
                 </View>
             </ScrollView>
             <TouchableOpacity 
-                style={styles.submitButton}
+                style={[styles.submitButton,{
+                    ...Platform.select({
+                        ios: {
+                            marginVertical:20
+                        }
+                    }),
+                }]}
                 onPress={() => orderId 
                     ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
                     : handleCreateOrder('/api/orders', "POST")
@@ -2286,8 +2292,8 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        width: '90%',
-        marginHorizontal: 16,
+        width: '80%',
+        marginHorizontal: 40,
         shadowColor: '#4361EE',
         shadowOffset: {
             width: 0,

@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Alert,Platform, ActivityIndicator } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -19,6 +19,8 @@ export default function Collection({ type, collection }) {
     const { user } = useAuth();
     const [showModal, setShowModal] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const isRTL = language === 'ar' || language === 'he';
+
 
     const handleCollectNotification = async (type, action) => {
         setIsLoading(true);
@@ -178,7 +180,13 @@ export default function Collection({ type, collection }) {
                         ]}>
                             <Feather name="package" size={20} color="#ffffff" />
                         </View>
-                        <View style={styles.sectionContent}>
+                        <View style={[styles.sectionContent,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                             <Text style={[styles.sectionTitle]}>
                                 {type === "driver" 
                                     ? translations[language].collections.collection.numberOfCollections 
@@ -201,7 +209,13 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
-                            <View style={styles.sectionContent}>
+                            <View style={[styles.sectionContent,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {type === "driver" 
                                         ? translations[language].collections.collection.moneyToDeliver 
@@ -225,7 +239,13 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
-                            <View style={styles.sectionContent}>
+                            <View style={[styles.sectionContent,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.checksToDeliver}
                                 </Text>
@@ -247,7 +267,13 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
-                            <View style={styles.sectionContent}>
+                            <View style={[styles.sectionContent,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.currentBranch}
                                 </Text>
@@ -269,7 +295,13 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
-                            <View style={styles.sectionContent}>
+                            <View style={[styles.sectionContent,{
+                         ...Platform.select({
+                            ios: {
+                                alignItems:isRTL ? "flex-start" : "flex-end"
+                            }
+                        }),
+                    }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {translations[language].collections.collection.toBranch}
                                 </Text>

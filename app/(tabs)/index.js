@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, StatusBar, ActivityIndicator, Alert } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl,Platform, StatusBar, ActivityIndicator, Alert } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -581,12 +581,24 @@ export default function HomeScreen() {
                   {box.icon}
                 </LinearGradient>
                 <View style={styles.cardContent}>
-                  <Text style={[styles.cardTitle]}>
+                  <Text style={[[styles.cardTitle,{
+                    ...Platform.select({
+                      ios: {
+                          textAlign:rtl.isRTL ? "left" : "right"
+                      }
+                  })
+                  }]]}>
                     {box.label}
                   </Text>
                   <View style={[styles.statsContainer]}>
                     <View style={styles.statItem}>
-                      <Text style={[styles.statNumber]}>
+                      <Text style={[styles.statNumber,{
+                        ...Platform.select({
+                          ios: {
+                              textAlign:rtl.isRTL ? "left" : "right"
+                          }
+                      })
+                      }]}>
                         {box.numberOfOrders || 0}
                       </Text>
                       <Text style={[styles.statLabel]}>
@@ -1209,7 +1221,7 @@ const styles = StyleSheet.create({
   },
   trackOrderContainer: {
     marginHorizontal: 20,
-    marginTop: 20,
+    marginTop: 32,
     marginBottom: 5,
   },
   sectionHeader: {
@@ -1259,7 +1271,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#1F2937',
-    marginBottom: 10,
+    marginBottom: 10
   },
   statsContainer: {
     flexDirection: 'row',

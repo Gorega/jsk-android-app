@@ -21,6 +21,7 @@ export default function Header({ showGreeting = true, title }) {
     const badgeAnimation = useRef(new Animated.Value(0)).current;
     const balanceAnimation = useRef(new Animated.Value(0)).current;
     const headerAnimation = useRef(new Animated.Value(0)).current;
+    const isRTL = language === 'ar' || language === 'he';
 
     useEffect(() => {
         // Animate header appearance
@@ -225,7 +226,14 @@ export default function Header({ showGreeting = true, title }) {
                             
                             {/* Title or Greeting */}
                             {showGreeting ? (
-                                <View style={styles.greetingContainer}>
+                                <View style={[styles.greetingContainer,{
+                                    ...Platform.select({
+                                        ios: {
+                                            flexDirection:"column",
+                                            alignItems:isRTL ? "flex-start" : "flex-end"
+                                        }
+                                    }),
+                                }]}>
                                     <Text style={styles.greeting}>
                                         {greetingMsg}
                                     </Text>

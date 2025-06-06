@@ -247,11 +247,25 @@ export default function ComplaintDetails() {
             </View>
           </View>
           
-          <Text style={[styles.subject]}>
+          <Text style={[styles.subject,{
+                  ...Platform.select({
+                      ios: {
+                          flexDirection:"column",
+                          textAlign:rtl.isRTL ? "left" : "right"
+                      }
+                  }),
+              }]}>
             {complaint.subject}
           </Text>
           
-          <View style={styles.descriptionContainer}>
+          <View style={[styles.descriptionContainer,{
+                  ...Platform.select({
+                      ios: {
+                          flexDirection:"column",
+                          alignItems:rtl.isRTL ? "flex-start" : "flex-end"
+                      }
+                  }),
+              }]}>
             <Text style={[styles.descriptionLabel]}>
               {translations[language]?.complaints?.issue || 'Issue'}
             </Text>

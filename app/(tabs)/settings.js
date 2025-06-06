@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform, I18nManager } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform } from "react-native";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -345,6 +345,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#334155',
         fontWeight: '500',
+        ...Platform.select({
+            ios: {
+                textAlign:"left"
+            }
+        })
     },
     dangerLabel: {
         color: '#EF4444',

@@ -72,7 +72,7 @@ export function useRTLStyles() {
           
           // Adjust text alignment
           if (style.textAlign === 'left') {
-            rtlTransformedStyles[key].textAlign = 'right';
+            rtlTransformedStyles[key].textAlign = 'keft';
           } else if (style.textAlign === 'right') {
             rtlTransformedStyles[key].textAlign = 'left';
           }
