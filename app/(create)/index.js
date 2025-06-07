@@ -151,14 +151,14 @@ export default function HomeScreen() {
 
     const getUserBalances = async (userId) => {
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/balances`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
@@ -194,14 +194,14 @@ export default function HomeScreen() {
                 throw new Error('No valid deduction amounts found');
             }
 
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/deduct-balance`, {
                 method: 'POST',
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                     'Accept-Language': language,
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
                     userId: userId, // Add userId to body as well
@@ -405,7 +405,7 @@ export default function HomeScreen() {
                                                                         onClose: () => setShowAlert({visible: false})
                                                                     });
                                                                             
-                                                                    const token = await getToken("userToken");
+                                                                    // const token = await getToken("userToken");
                                                                     const returnResponse = await fetch(
                                                                         `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
                                                                         {
@@ -413,7 +413,7 @@ export default function HomeScreen() {
                                                                             credentials: "include",
                                                                             headers: {
                                                                                 "Content-Type": "application/json",
-                                                                                "Cookie": token ? `token=${token}` : ""
+                                                                                // "Cookie": token ? `token=${token}` : ""
                                                                             },
                                                                             body: JSON.stringify({
                                                                                 order_id: orderId,
@@ -899,14 +899,14 @@ export default function HomeScreen() {
         }
 
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}${url}`, {
                 method: method,
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                     'Accept-Language': language,
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
                     reference_id: form.referenceId,
@@ -1147,14 +1147,14 @@ export default function HomeScreen() {
 
     const fetchOrderData = async () => {
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const orderData = await res.json();
@@ -1245,14 +1245,14 @@ export default function HomeScreen() {
 
     const fetchSenders = async (pageNumber = 1, isLoadMore = false) => {
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?page=${pageNumber}&language_code=${language}&role_id=2&np=${prickerSearchValue}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const newData = await res.json();
@@ -1290,14 +1290,14 @@ export default function HomeScreen() {
 
     const fetchDeliveryFee = async () => {
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const data = await res.json();

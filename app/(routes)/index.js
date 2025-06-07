@@ -81,13 +81,13 @@ export default function Routes() {
     const fetchRoutes = async () => {
         setLoading(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes?language_code=${language}`, {
                 method: "GET",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
@@ -128,13 +128,13 @@ export default function Routes() {
         
         setIsSubmitting(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes`, {
                 method: "POST",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : "",
+                    // "Cookie": token ? `token=${token}` : "",
                     "Accept-Language": language
                 },
                 body: JSON.stringify({ name: routeName.trim() })
@@ -178,13 +178,13 @@ export default function Routes() {
         
         setIsSubmitting(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${selectedRoute.id}`, {
                 method: "DELETE",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : "",
+                    // "Cookie": token ? `token=${token}` : "",
                     "Accept-Language": language
                 }
             });

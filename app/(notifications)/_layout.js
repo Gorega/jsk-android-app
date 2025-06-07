@@ -1,13 +1,16 @@
 import { Stack } from "expo-router";
-import Header from "../../components/Header";
+import FixedHeader from "../../components/FixedHeader";
+import { useLanguage } from '../../utils/languageContext';
+import { translations } from '../../utils/languageContext';
 
 export default function RootLayout(){
+  const { language } = useLanguage();
 
 return <Stack>
   <Stack.Screen name="index" options={{
-    title:"index",
+    title:translations[language].notifications?.title,
     header:()=>{
-        return <Header />
+        return <FixedHeader title={translations[language].notifications?.title} />
       },
     }} />
 </Stack>

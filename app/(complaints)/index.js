@@ -141,12 +141,12 @@ export default function ComplaintsScreen() {
 
   const handleChangeStatus = async (item) => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${item.complaint_id}?language_code=${language}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({ status: "closed" }),
       });

@@ -229,7 +229,7 @@ export default function Orders() {
     const fetchData = async (pageNumber = 1, isLoadMore = false) => {
         if (!isLoadMore) setIsLoading(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             if (orderIds) queryParams.append('order_id', orderIds)
@@ -247,7 +247,7 @@ export default function Orders() {
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const newData = await res.json();
@@ -270,7 +270,7 @@ export default function Orders() {
     const loadMoreData = async () => {
         if (!loadingMore && data.data?.length > 0) {
             // Check if there's more data to load
-            if (data.data.length >= data.metadata.total_records) {
+            if (data?.data?.length >= data.metadata.total_records) {
                 return;
             }
 

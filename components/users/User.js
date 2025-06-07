@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
@@ -18,6 +18,7 @@ export default function User({ user }) {
     const [isOnline, setIsOnline] = useState(false);
     const [lastSeen, setLastSeen] = useState(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
+    const isRTL = language === 'ar' || language === 'he';
     
     // Use active_status directly from user prop
     const isActiveAccount = user?.active_status === 1;
@@ -188,7 +189,7 @@ export default function User({ user }) {
                     </View>
 
                     {/* User Info Section */}
-                    <View style={styles.userInfoSection}>
+                    <View style={[styles.userInfoSection]}>
                         <UserBox 
                             styles={styles} 
                             box={{
@@ -208,7 +209,13 @@ export default function User({ user }) {
                                 color="#4361EE" 
                                 style={[styles.sectionIcon]}
                             />
-                            <View style={styles.textContainer}>
+                            <View style={[styles.textContainer,{
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                    }
+                                }),
+                            }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {translations[language].users.user.location}
                                 </Text>
@@ -228,7 +235,13 @@ export default function User({ user }) {
                                 color="#4361EE" 
                                 style={[styles.sectionIcon]}
                             />
-                            <View style={styles.textContainer}>
+                            <View style={[styles.textContainer,{
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                    }
+                                }),
+                            }]}>
                                 <Text style={[styles.sectionTitle]}>
                                     {translations[language].users.user.role}
                                 </Text>

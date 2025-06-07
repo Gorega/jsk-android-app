@@ -113,7 +113,7 @@ export default function HomeScreen() {
     const fetchData = async (pageNumber = 1, isLoadMore = false) => {
         if (!isLoadMore) setIsLoading(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             if (activeFilter) queryParams.append('active_status', activeFilter);
@@ -130,7 +130,7 @@ export default function HomeScreen() {
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             

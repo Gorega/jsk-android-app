@@ -128,7 +128,7 @@ export default function RouteNavigate() {
                 return;
             }
 
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}?language_code=${language}&page=${pageNum}&per_page=${ITEMS_PER_PAGE}`,
                 {
@@ -137,7 +137,7 @@ export default function RouteNavigate() {
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
-                        "Cookie": token ? `token=${token}` : "",
+                        // "Cookie": token ? `token=${token}` : "",
                         "Accept-Language": language
                     }
                 }
@@ -305,14 +305,14 @@ export default function RouteNavigate() {
 
         setIsUpdating(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
                 method: "PUT",
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'Accept-Language': language,
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 credentials: "include",
                 body: JSON.stringify({

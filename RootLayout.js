@@ -90,10 +90,9 @@ export default function RootLayout() {
 
   // Fetch user data
   useEffect(() => {
-    if (userId) {
-      getRequest(`/api/users/${userId}`);
-    }
+    getRequest(`/api/users/${userId}`);
   }, [userId]);
+
 
   // Render loading state until RTL is initialized
   if (!rtlInitialized) {

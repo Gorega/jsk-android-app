@@ -28,12 +28,12 @@ const SubmitComplaint = () => {
 
     setLoading(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints?language_code=${language}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           order_id: orderId,

@@ -20,14 +20,14 @@ const OrderChecks = () => {
   const fetchOrderData = async () => {
     try {
       setLoading(true);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       const data = await res.json();

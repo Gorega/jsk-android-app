@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator,Platform } from 'react-native';
 import { useLanguage } from '../utils/languageContext';
 import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -14,7 +14,6 @@ import { useRTLStyles } from '../utils/RTLWrapper';
 import * as ExpoNotifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
 
 // Configure how notifications are presented when the app is in the foreground
 ExpoNotifications.setNotificationHandler({
@@ -34,7 +33,8 @@ export default function Notifications() {
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [expoPushToken, setExpoPushToken] = useState('');
-  const rtl = useRTLStyles();
+  const isRTL = language === 'ar' || language === 'he';
+
 
   // Register for push notifications
   useEffect(() => {
@@ -95,14 +95,14 @@ export default function Notifications() {
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
       if (pageNum === 1) setIsLoading(true);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications?user_id=${user.userId}&page=${pageNum}&language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
 
@@ -152,14 +152,14 @@ export default function Notifications() {
       }
       
       // Then mark as read (this happens in the background)
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -182,14 +182,14 @@ export default function Notifications() {
 
   const deleteAllNotifications = async () => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/all`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -207,14 +207,14 @@ export default function Notifications() {
 
   const deleteNotification = async (notificationId) => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -416,7 +416,14 @@ export default function Notifications() {
           <Text 
             style={[
               styles.message,
-              !notification.is_read && styles.unreadText
+              !notification.is_read && styles.unreadText,
+              {
+                ...Platform.select({
+                    ios: {
+                        textAlign:isRTL ? "left" : "right"
+                    }
+                }),
+            }
             ]} 
           >
             {notification.translated_message}
@@ -461,7 +468,7 @@ export default function Notifications() {
 
   return (
     <View style={styles.container}>
-      <LinearGradient
+      {/* <LinearGradient
         colors={['#ffffff', '#f8f9fa']}
         style={styles.headerGradient}
       >
@@ -507,7 +514,7 @@ export default function Notifications() {
             </TouchableOpacity>
           )}
         </View>
-      </LinearGradient>
+      </LinearGradient> */}
 
       {isLoading ? (
         renderLoading()
@@ -548,6 +555,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     paddingHorizontal: 20,
     height: 110,
+    zIndex:100
   },
   headerTitle: {
     fontSize: 20,

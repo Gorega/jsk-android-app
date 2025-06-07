@@ -39,14 +39,14 @@ const TrackingOrder = () => {
     try {
       setIsLoading(true);
       setError(null);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       

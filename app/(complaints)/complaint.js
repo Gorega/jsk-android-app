@@ -41,12 +41,12 @@ export default function ComplaintDetails() {
   const fetchComplaintDetails = async () => {
     try {
       setLoading(true);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}?language_code=${language}`, {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       const data = await response.json();
@@ -141,12 +141,12 @@ export default function ComplaintDetails() {
 
     setSending(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/complaints/${complaintId}/messages`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         credentials: "include",
         body: JSON.stringify({

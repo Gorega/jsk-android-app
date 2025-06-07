@@ -117,14 +117,14 @@ export default function RouteDetail() {
                 return;
             }
             
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
@@ -213,14 +213,14 @@ export default function RouteDetail() {
     const confirmRemoveOrder = async (orderId) => {
         setRemovingOrder(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}/orders/${orderId}`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : "",
+                    // "Cookie": token ? `token=${token}` : "",
                     "Accept-Language": language
                 }
             });
@@ -271,14 +271,14 @@ export default function RouteDetail() {
         
         setSavingRoute(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}`, {
                 method: "PUT",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : "",
+                    // "Cookie": token ? `token=${token}` : "",
                     "Accept-Language": language
                 },
                 body: JSON.stringify({ 
@@ -428,14 +428,14 @@ export default function RouteDetail() {
     const confirmCompleteRoute = async () => {
         setLoading(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}/complete`, {
                 method: "PUT",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
@@ -968,7 +968,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
         try {
             setLoading(true);
             const currentPage = refresh ? 1 : page;
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             
             // Use custom URL if provided, otherwise construct default URL
             const url = customUrl || `${process.env.EXPO_PUBLIC_API_URL}/api/orders?language_code=${language}`;
@@ -979,7 +979,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
@@ -1050,14 +1050,14 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
         
         setAddingOrders(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}/orders`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : "",
+                    // "Cookie": token ? `token=${token}` : "",
                     "Accept-Language": language
                 },
                 body: JSON.stringify({ 

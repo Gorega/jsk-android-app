@@ -52,14 +52,14 @@ export default function HomeScreen() {
 
   const fetchUserBalance = async () => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/balances`, {
         method: "GET",
         credentials: "include",
         headers: {
             'Accept': 'application/json',
             "Content-Type": "application/json",
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
         }
     });
     const data = await res.json();
@@ -208,14 +208,14 @@ export default function HomeScreen() {
   const handleGeneralCollectRequest = async (type, action) => {
     setIsProcessing(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
         method: "POST",
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Accept-Language': language,
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         credentials: "include",
         body: JSON.stringify({
@@ -249,7 +249,7 @@ export default function HomeScreen() {
 
   const checkWaitingOrders = async () => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/orders?status_key=waiting&sender_id=${user.userId}`,
         {
@@ -257,12 +257,12 @@ export default function HomeScreen() {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           },
         }
       );
       const response = await res.json();
-      if (response.data && response.data.length > 0) {
+      if (response.data && response?.data?.length > 0) {
         setHasWaitingOrders(true);
       }
     } catch (error) {
@@ -271,7 +271,7 @@ export default function HomeScreen() {
 
   const fetchDrivers = async () => {
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/users/business/drivers?business_ids=${user.userId}`,
         {
@@ -279,7 +279,7 @@ export default function HomeScreen() {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           },
         }
       );
@@ -309,7 +309,7 @@ export default function HomeScreen() {
   };
 
   const handleSendNotification = async () => {
-    if (selectedDrivers.length === 0) {
+    if (selectedDrivers?.length === 0) {
       Alert.alert(
         translations[language]?.driverNotification?.selectDrivers,
         translations[language]?.driverNotification?.selectDriversMessage
@@ -319,7 +319,7 @@ export default function HomeScreen() {
 
     setSendingNotification(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(
         `${process.env.EXPO_PUBLIC_API_URL}/api/users/notify/drivers`,
         {
@@ -328,7 +328,7 @@ export default function HomeScreen() {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           },
           body: JSON.stringify({
             business_id: user.userId,
@@ -371,14 +371,14 @@ export default function HomeScreen() {
   const fetchCollections = async () => {
     try {
       setIsLoadingCollections(true);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const [moneyRes, packageRes] = await Promise.all([
         fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_money?status_key=money_out`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           }
         }),
         fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_returned?status_key=returned_out`, {
@@ -386,7 +386,7 @@ export default function HomeScreen() {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           }
         })
       ]);
@@ -414,7 +414,7 @@ export default function HomeScreen() {
   };
 
   const handleCollectionConfirm = async () => {
-    if (selectedCollections.length === 0) {
+    if (selectedCollections?.length === 0) {
       Alert.alert(
         translations[language]?.collections?.collection?.error || "Error",
         translations[language]?.collections?.collection?.selectCollections || "Please select collections to confirm"
@@ -424,7 +424,7 @@ export default function HomeScreen() {
 
     setIsConfirming(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const updates = {
         collection_ids: selectedCollections,
         status: selectedType === 'money' ? 'paid' : 'returned_delivered',
@@ -437,7 +437,7 @@ export default function HomeScreen() {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
           'Accept-Language': language,
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         credentials: "include",
         body: JSON.stringify({ updates })
@@ -553,7 +553,7 @@ export default function HomeScreen() {
               onPress={() => router.push({
                 pathname: "/(tabs)/orders",
                 params: {
-                  orderIds: box.orderIds.length > 0 ? box.orderIds : {}
+                  orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
                 }
               })}
               onLongPress={() => {
@@ -786,9 +786,9 @@ export default function HomeScreen() {
                     <Text style={[styles.tabText, selectedType === 'money' && styles.activeTabText]}>
                       {translations[language]?.collections?.collection?.moneyCollections}
                     </Text>
-                    {moneyCollections.length > 0 && (
+                    {moneyCollections?.length > 0 && (
                       <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{moneyCollections.length}</Text>
+                        <Text style={styles.badgeText}>{moneyCollections?.length}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -802,9 +802,9 @@ export default function HomeScreen() {
                     <Text style={[styles.tabText, selectedType === 'package' && styles.activeTabText]}>
                       {translations[language]?.collections?.collection?.packageCollections}
                     </Text>
-                    {packageCollections.length > 0 && (
+                    {packageCollections?.length > 0 && (
                       <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{packageCollections.length}</Text>
+                        <Text style={styles.badgeText}>{packageCollections?.length}</Text>
                       </View>
                     )}
                   </TouchableOpacity>
@@ -816,7 +816,7 @@ export default function HomeScreen() {
                   </View>
                 ) : (
                   <ScrollView style={styles.collectionsScroll}>
-                    {(selectedType === 'money' ? moneyCollections : packageCollections).length === 0 ? (
+                    {(selectedType === 'money' ? moneyCollections : packageCollections)?.length === 0 ? (
                       <View style={styles.noDataContainer}>
                         <Ionicons name="information-circle-outline" size={48} color="#64748B" />
                         <Text style={styles.noDataText}>
@@ -876,12 +876,12 @@ export default function HomeScreen() {
                   </ScrollView>
                 )}
 
-                {(selectedType === 'money' ? moneyCollections : packageCollections).length > 0 && (
+                {(selectedType === 'money' ? moneyCollections : packageCollections)?.length > 0 && (
                   <View style={styles.modalFooter}>
                     <TouchableOpacity
-                      style={[styles.confirmButton, selectedCollections.length === 0 && styles.disabledButton]}
+                      style={[styles.confirmButton, selectedCollections?.length === 0 && styles.disabledButton]}
                       onPress={handleCollectionConfirm}
-                      disabled={isConfirming || selectedCollections.length === 0}
+                      disabled={isConfirming || selectedCollections?.length === 0}
                     >
                       {isConfirming ? (
                         <ActivityIndicator color="white" size="small" />
@@ -926,7 +926,7 @@ export default function HomeScreen() {
                 onPress={() => router.push({
                   pathname: "/(tabs)/orders",
                   params: {
-                    orderIds: box.orderIds.length > 0 ? box.orderIds : {}
+                    orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
                   }
                 })}
                 activeOpacity={0.9}

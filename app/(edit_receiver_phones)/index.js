@@ -43,7 +43,7 @@ export default function EditPhoneScreen() {
 
         try {
             setLoading(true);
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`,
                 {
@@ -51,7 +51,7 @@ export default function EditPhoneScreen() {
                     headers: {
                         "Content-Type": "application/json",
                         'Accept-Language': language,
-                        "Cookie": token ? `token=${token}` : ""
+                        // "Cookie": token ? `token=${token}` : ""
                     },
                     credentials: "include"
                 }
@@ -102,7 +102,7 @@ export default function EditPhoneScreen() {
         }
 
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/api/receivers/${orderData.receiver_id}`,
                 {
@@ -112,7 +112,7 @@ export default function EditPhoneScreen() {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'Accept-Language': language,
-                        "Cookie": token ? `token=${token}` : ""
+                        // "Cookie": token ? `token=${token}` : ""
                     },
                     body: JSON.stringify({
                         phone: form.receiverFirstPhone,
