@@ -373,13 +373,29 @@ export default function HomeScreen() {
       setIsLoadingCollections(true);
       // const token = await getToken("userToken");
       const [moneyRes, packageRes] = await Promise.all([
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_money?status_key=money_out`, {
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
-          }
+        Promise.all([
+          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_money?status_key=money_out`, {
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              // "Cookie": token ? `token=${token}` : ""
+            }
+          }),
+          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/exceptional_money?status_key=money_out/pending_driver_collect`, {
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              // "Cookie": token ? `token=${token}` : ""
+            }
+          })
+        ]).then(async ([businessRes, exceptionalRes]) => {
+          const businessData = await businessRes.json();
+          const exceptionalData = await exceptionalRes.json();
+          return {
+            data: [...(businessData.data || []), ...(exceptionalData.data || [])]
+          };
         }),
         fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_returned?status_key=returned_out`, {
           credentials: 'include',
@@ -391,7 +407,7 @@ export default function HomeScreen() {
         })
       ]);
 
-      const moneyData = await moneyRes.json();
+      const moneyData = moneyRes;
       const packageData = await packageRes.json();
 
       setMoneyCollections(moneyData.data || []);

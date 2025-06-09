@@ -6,7 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { useLanguage } from '@/utils/languageContext';
-import { getToken } from '@/utils/secureStore';
+import { getToken, deleteToken } from '@/utils/secureStore';
 import useFetch from '@/utils/useFetch';
 import { SocketProvider } from '@/utils/socketContext';
 import { RTLWrapper } from './utils/RTLWrapper';
@@ -30,7 +30,6 @@ const setupRTL = async () => {
     
     return true;
   } catch (error) {
-    console.error('Error setting up RTL:', error);
     return false;
   }
 };
@@ -67,11 +66,35 @@ export default function RootLayout() {
         // 2) Auth setup
         const token = await getToken('userToken');
         const storedUserId = await getToken('userId');
-        if (token) {
-          setIsAuthenticated(true);
-          if (storedUserId) setUserId(storedUserId);
+        
+        if (token && storedUserId) {
+          // Verify token with the server
+          try {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${storedUserId}`, {
+              method: "GET",
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Accept-Language': savedLanguage || 'ar'
+              },
+              credentials: "include"
+            });
+            
+            if (response.ok) {
+              // Token is valid
+              setIsAuthenticated(true);
+              setUserId(storedUserId);
+            } else {
+              // Token is invalid or expired
+              await deleteToken('userToken');
+              await deleteToken('userId');
+              setIsAuthenticated(false);
+            }
+          } catch (error) {
+            console.warn('Token verification failed:', error);
+            setIsAuthenticated(false);
+          }
         }
-
       } catch (err) {
         console.warn('RootLayout bootstrap error:', err);
       } finally {
