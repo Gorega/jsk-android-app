@@ -624,7 +624,9 @@ export const translations = {
           logout:"Logout",
           preferences:"Preference",
           support:"Support",
-          account:"Account"
+          account:"Account",
+          deleteAccount:"Delete Account",
+          deleteAccountHint:"This action will delete your account and all your data will be lost."
         }
       }
     },
@@ -1741,7 +1743,9 @@ export const translations = {
           contactUs: "اتصل بنا",
           aboutUs: "عنّا",
           locations: "المواقع",
-          logout: "تسجيل الخروج"
+          logout: "تسجيل الخروج",
+          deleteAccount: "حذف الحساب",
+          deleteAccountHint: "هل أنت متأكد من حذف الحساب؟"
         }
       }
     },

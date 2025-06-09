@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform,Alert } from "react-native";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -54,20 +54,74 @@ export default function Settings() {
             icon: <MaterialCommunityIcons name="information-outline" size={22} color="#4361EE" />
         },
         {
+            label: translations[language].tabs.settings.options.deleteAccount,
+            onPress: ()=>handleDeleteAccount(),
+            icon: <MaterialIcons name="delete-outline" size={22} color="#EF4444" />,
+            danger: true
+        },
+        {
             label: translations[language].tabs.settings.options.logout,
-            onPress: async () => {
-                await deleteToken("userToken");
-                setIsAuthenticated(false);
-                router.replace("(auth)");
-            },
+            onPress: ()=>handleLogout(),
             icon: <MaterialIcons name="logout" size={22} color="#EF4444" />,
             danger: true
         }
-    ].filter(Boolean); // Remove null values
-
+    ].filter(Boolean); // Remove null values (future-proof if options become conditional)
+    
+    // Language Change Handler
     const handleLanguageChange = async (newLang) => {
         await setLanguage(newLang);
         setShowLanguageModal(false);
+    };
+    
+    // Logout Handler
+    const handleLogout = async () => {
+        try {
+            await deleteToken("userToken");
+            setIsAuthenticated(false);
+            router.replace("(auth)");
+        } catch (error) {
+            console.log("Error during logout:", error);
+        }
+    };
+    
+    // Delete Account Flow
+    const handleDeleteAccount = () => {
+        Alert.alert(
+            translations[language].tabs.settings.options.deleteAccount,
+            translations[language].tabs.settings.options.deleteAccountHint,
+            [
+                { text: translations[language].common.cancel, style: "cancel" },
+                {
+                    text: translations[language].common.delete,
+                    style: "destructive",
+                    onPress: confirmDeleteAccount
+                }
+            ]
+        );
+    };
+    
+    // Confirm Delete Account Handler
+    const confirmDeleteAccount = async () => {
+        console.log(user.userId)
+        try {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/delete/account`, {
+                method: "DELETE",
+                credentials: "include"
+            });
+    
+            const data = await response.json();
+            console.log(data)
+    
+            if (data.status === "success") {
+                await deleteToken("userToken");
+                setIsAuthenticated(false);
+                router.replace("(auth)");
+            } else {
+                Alert.alert("Error", "Failed to delete account. Please try again.");
+            }
+        } catch (error) {
+            Alert.alert("Error", "An unexpected error occurred.");
+        }
     };
 
     return (
