@@ -14,7 +14,6 @@ import { deleteToken } from "../../utils/secureStore";
 import { useAuth } from "../../RootLayout";
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 
-
 export default function Settings() {
     const { language, setLanguage } = useLanguage();
     const [showLanguageModal, setShowLanguageModal] = useState(false);

@@ -10,7 +10,7 @@ import {
 import { Feather } from '@expo/vector-icons';
 import PickerModal from "../pickerModal/PickerModal"
 
-export default function Field({field, setSelectedValue}) {
+export default function Field({field, setSelectedValue, multiline}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
 
@@ -85,7 +85,7 @@ export default function Field({field, setSelectedValue}) {
                         </View>
                         
                         <TextInput
-                            multiline={true}
+                            multiline={multiline}
                             style={[
                                 styles.input
                             ]}
@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
         marginTop: 4,
         left: 0,
         right: 0,
+        bottom:-22,
         zIndex: 2,
     }
 });

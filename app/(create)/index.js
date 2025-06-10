@@ -730,10 +730,8 @@ export default function HomeScreen() {
             type: "input",
             name: "delivery_fee",
             value: deliveryFee || form.deliveryFee,
-            onChange: (input) => {
-                clearFieldError('delivery_fee');
-                setDeliveryFee(input);
-            }
+            readOnly: true,
+            editable: ["admin", "manager","entery"].includes(user.role) ? true : false
         }]
     },!["payment"].includes(selectedValue.orderType?.value) ? {
         label: translations[language].tabs.orders.create.sections.details.title,

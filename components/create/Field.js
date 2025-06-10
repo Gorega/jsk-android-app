@@ -11,7 +11,7 @@ import { translations } from '../../utils/languageContext';
 import { router } from "expo-router";
 import { getToken } from "../../utils/secureStore";
 
-export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, isRTL}) {
+export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState("");
@@ -199,7 +199,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }}
                                     placeholder={field.placeholder || ""}
                                     placeholderTextColor="#94A3B8"
-                                    editable={true}
+                                    editable={editable}
                                 />
                             )}
                             

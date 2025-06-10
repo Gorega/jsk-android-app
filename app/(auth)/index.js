@@ -406,7 +406,7 @@ export default function SignIn() {
           <View style={styles.formFields}>
             {fields.map((field, index) => (
               <View key={index} style={styles.fieldContainer}>
-                <Field field={field} />
+                <Field field={field} multiline={false} />
               </View>
             ))}
           </View>

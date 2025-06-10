@@ -599,7 +599,7 @@ const TrackingOrder = () => {
             
             <View style={styles.cardContent}>
               <View style={styles.financialSummary}>
-                <View style={[styles.financialItem]}>
+                {!["business"].includes(authUser.role) && (<View style={[styles.financialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="dollar-sign" size={18} color="#10B981" />
                   </View>
@@ -607,10 +607,9 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.codValue}
                   </Text>
                   <Text style={styles.financialValue}>{order.total_cod_value || '0'}</Text>
-                </View>
+                </View>)}
                 
-                {!["driver","delivery_company"].includes(authUser.role) && <>
-                  <View style={[styles.financialItem]}>
+                {!["driver","delivery_company","business"].includes(authUser.role) && (<View style={[styles.financialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
@@ -618,9 +617,9 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.deliveryFee}
                   </Text>
                   <Text style={styles.financialValue}>{order.delivery_fee || '0'}</Text>
-                </View>
+                </View>)}
                 
-                <View style={[styles.financialItem, styles.highlightedFinancialItem]}>
+                {!["driver","delivery_company"].includes(authUser.role) && (<View style={[styles.financialItem, styles.highlightedFinancialItem]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
                     <Feather name="check-circle" size={18} color="#10B981" />
                   </View>
@@ -628,9 +627,8 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.netValue}
                   </Text>
                   <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
-                </View>
-                
-                </>}
+                </View>)}
+
               </View>
               
               {/* Checks Section */}

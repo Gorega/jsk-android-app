@@ -290,6 +290,15 @@ export default function Notifications() {
     // Add a listener for notification responses
     const notificationListener = ExpoNotifications.addNotificationReceivedListener(response => {
       // Handle notification received while app is in foreground
+      const { data } = response.request.content;
+      
+      // Display the notification content to the user
+      // You can use the same scheduleLocalNotification function that's already defined
+      scheduleLocalNotification({
+        type: data.type || 'order',
+        translated_message: response.request.content.body,
+        order_id: data.orderId
+      });
     });
 
     // Add a listener for notification responses (when user taps)

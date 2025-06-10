@@ -4,7 +4,7 @@ import { useState } from "react";
 import Field from "./Field";
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 
-export default function Section({section, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, fieldErrors, setFieldErrors, isRTL}) {
+export default function Section({section, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, fieldErrors, setFieldErrors}) {
     const [showFields, setShowFields] = useState(true);
     const rtl = useRTLStyles();
 
@@ -65,7 +65,7 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                                     setPickerSearchValue={setPickerSearchValue}
                                     error={fieldErrors?.[field.name]}
                                     setFieldErrors={setFieldErrors}
-                                    isRTL={rtl}
+                                    editable={field.editable}
                                 />
                             ))}
                         </View>

@@ -447,7 +447,7 @@ export default function SignUp() {
           keyExtractor={(field, i) => `field-${index}-${i}`}
           renderItem={({ item: field }) => (
             <View style={styles.fieldContainer}>
-              <Field field={field} setSelectedValue={setSelectedValue} />
+              <Field field={field} setSelectedValue={setSelectedValue} multiline={true} />
             </View>
           )}
           keyboardShouldPersistTaps="handled"

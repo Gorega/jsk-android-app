@@ -94,14 +94,14 @@ export default function CameraScanner() {
         return { order_id: orderId };
       });
       
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
           'Accept-Language': language,
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
           type_id: 6,
@@ -138,14 +138,14 @@ export default function CameraScanner() {
   const fetchBranches = async () => {
     setLoading(true)
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       const data = await res.json();
@@ -162,14 +162,14 @@ export default function CameraScanner() {
   const fetchDrivers = async () => {
     setLoading(true)
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?role_id=4,9&language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       const data = await res.json();
@@ -198,14 +198,14 @@ export default function CameraScanner() {
   const fetchOrderDetails = async (orderId) => {
     try {
       setLoading(true);
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/basic_info?language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          "Cookie": token ? `token=${token}` : ""
+          // "Cookie": token ? `token=${token}` : ""
         }
       });
       

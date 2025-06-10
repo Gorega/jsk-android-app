@@ -439,7 +439,7 @@ export default function Order({ user, order }) {
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
                                     <Text style={[styles.minimizedValue]}>
-                                        {order.total_cod_value} {order.currency}
+                                        {["business"].includes(authUser.role) ? order.total_net_value : order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>
@@ -748,7 +748,7 @@ export default function Order({ user, order }) {
                                 </Text>
                                 
                                 <View style={[styles.costSection]}>
-                                    <View style={[
+                                    {!["business"].includes(authUser.role) && (<View style={[
                                         styles.costCard
                                     ]}>
                                         <View style={[
@@ -769,10 +769,10 @@ export default function Order({ user, order }) {
                                             </Text>
                                             {formatCurrencyValue(order.total_cod_value, order.currency)}
                                         </View>
-                                    </View>
+                                    </View>)}
                                     
                                     {/* Only show delivery fee for non-driver/delivery_company roles */}
-                                    {!["driver", "delivery_company"].includes(authUser.role) && (
+                                    {!["driver", "delivery_company","business"].includes(authUser.role) && (
                                         <View style={[
                                             styles.costCard
                                         ]}>
@@ -1031,6 +1031,27 @@ export default function Order({ user, order }) {
                                 {translations[language].tabs.orders.track.orderTracking || 'Track Order'}
                             </Text>
                         </TouchableOpacity>
+
+                        {["business"].includes(authUser.role) && <TouchableOpacity 
+                            style={[
+                                styles.controlOption, 
+                                styles.noBorder
+                            ]} 
+                            onPress={() => router.push({
+                                pathname: "/(complaints)/open_complaint",
+                                params: { orderId: order.order_id }
+                              })}
+                        >
+                            <View style={[
+                                styles.controlIconContainer, 
+                                { backgroundColor: '#EF4444' }
+                            ]}>
+                                <MaterialIcons name="report-problem" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[styles.controlText]}>
+                                {translations[language].tabs.orders.track.openCase}
+                            </Text>
+                        </TouchableOpacity>}
                     </View>
                 </ModalPresentation>
             )}

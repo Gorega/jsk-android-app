@@ -1,5 +1,5 @@
 import { createContext, useContext, useState,useEffect } from 'react';
-import {ActivityIndicator, I18nManager, Platform,Alert,View,Text} from "react-native";
+import {ActivityIndicator} from "react-native";
 import { getToken, saveToken } from './secureStore';
 
 const LanguageContext = createContext();
@@ -1368,7 +1368,7 @@ export const translations = {
           "receivedQuantity": "الكمية المستلمة",
           "deliveryStatus": "حالة التوصيل",
           "needHelp": "تحتاج إلى مساعدة",
-          "openCase": "فتح بلاغ"
+          "openCase": "تقديم شكوى"
         },
         "order": {
           "states": {
@@ -1472,7 +1472,7 @@ export const translations = {
           "to_driver":"مرسل الى السائق",
           "financialDetails": "التفاصيل المالية",
           "codValue": "تكلفة الطرد",
-          "netValue": "المطلوب من التاجر",
+          "netValue": "المطلوب للتاجر",
           "deliveryFee": "تكلفة التوصيل",
           "checksAvailable": "الشيكات المتاحة",
           "note": "ملاحظة",
