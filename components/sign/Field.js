@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   StyleSheet, 
   TextInput, 
@@ -6,13 +6,14 @@ import {
   View, 
   Platform,
   TouchableOpacity,
-  Animated
+  Animated,
+  KeyboardAvoidingView
 } from "react-native";
 import { Feather, Ionicons } from '@expo/vector-icons';
 import PickerModal from "../pickerModal/PickerModal"
 import { useLanguage } from "../../utils/languageContext";
 
-export default function Field({field, setSelectedValue, multiline}) {
+export default function Field({field, setSelectedValue, multiline, onFocus}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [searchValue, setSearchValue] = useState('');
@@ -24,6 +25,9 @@ export default function Field({field, setSelectedValue, multiline}) {
     // Animation when field receives focus
     const handleFocus = () => {
         setIsFocused(true);
+        // Notify parent component that this field is focused
+        if (onFocus) onFocus(field.name);
+        
         Animated.parallel([
             Animated.timing(animatedOpacity, {
                 toValue: 1,

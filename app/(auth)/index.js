@@ -12,7 +12,9 @@ import {
   Dimensions,
   Keyboard,
   ActivityIndicator,
-  Animated
+  Animated,
+  KeyboardAvoidingView,
+  ScrollView
 } from "react-native";
 import { Link, useRouter, Redirect } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
@@ -36,6 +38,8 @@ export default function SignIn() {
   const [biometricType, setBiometricType] = useState(null);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [previousLoginInfo, setPreviousLoginInfo] = useState(null);
+  const [activeField, setActiveField] = useState(null);
+  const scrollViewRef = useRef(null);
   
   const router = useRouter();
   const { language } = useLanguage();
@@ -55,7 +59,7 @@ export default function SignIn() {
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      () => {
+      (event) => {
         setKeyboardVisible(true);
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -82,6 +86,22 @@ export default function SignIn() {
       keyboardWillHideListener.remove();
     };
   }, []);
+
+  // Handle field focus to scroll to the active field
+  const handleFieldFocus = (fieldName) => {
+    setActiveField(fieldName);
+    
+    // Add a small delay to ensure the keyboard is shown before scrolling
+    setTimeout(() => {
+      // Find the index of the focused field
+      const fieldIndex = fields.findIndex(field => field.name === fieldName);
+      if (fieldIndex !== -1 && scrollViewRef.current) {
+        // Calculate scroll position based on field index
+        const scrollPosition = fieldIndex * 70; // Approximate height per field
+        scrollViewRef.current.scrollTo({ y: scrollPosition, animated: true });
+      }
+    }, 100);
+  };
 
   // Check for biometric support and previous login info
   useEffect(() => {
@@ -343,7 +363,11 @@ export default function SignIn() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
-      <View style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         {/* Fixed Header */}
         <View style={[styles.header, keyboardVisible && styles.headerSmall]}>
           <Image 
@@ -358,8 +382,14 @@ export default function SignIn() {
           </Animated.View>
         </View>
         
-        {/* Fixed Content (replacing ScrollView) */}
-        <View style={styles.contentContainer}>
+        {/* Scrollable Content */}
+        <ScrollView 
+          ref={scrollViewRef}
+          style={styles.contentContainer}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Biometric Login Button - Only show if available */}
           {isBiometricAvailable && previousLoginInfo && (
             <View style={styles.biometricContainer}>
@@ -397,7 +427,11 @@ export default function SignIn() {
           <View style={styles.formFields}>
             {fields.map((field, index) => (
               <View key={index} style={styles.fieldContainer}>
-                <Field field={field} multiline={false} />
+                <Field 
+                  field={field} 
+                  multiline={false} 
+                  onFocus={handleFieldFocus}
+                />
               </View>
             ))}
           </View>
@@ -411,7 +445,10 @@ export default function SignIn() {
               {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
             </Text>
           </TouchableOpacity>
-        </View>
+          
+          {/* Add extra space at bottom when keyboard is visible */}
+          {keyboardVisible && <View style={styles.keyboardSpacing} />}
+        </ScrollView>
         
         {/* Fixed Footer */}
         <View style={styles.footer}>
@@ -449,7 +486,7 @@ export default function SignIn() {
             </Link>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -499,9 +536,14 @@ const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
     backgroundColor: '#F9FAFB',
+  },
+  scrollContent: {
     paddingHorizontal: 20,
-    justifyContent: 'flex-start',
     paddingTop: 20,
+    paddingBottom: 20,
+  },
+  keyboardSpacing: {
+    height: 120, // Add extra space when keyboard is visible
   },
   errorAlert: {
     flexDirection: 'row',
@@ -640,5 +682,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     fontSize: 14,
     color: '#64748B',
+  },
+  formFields: {
+    marginBottom: 20,
   },
 });
