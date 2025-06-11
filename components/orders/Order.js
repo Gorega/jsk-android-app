@@ -209,13 +209,13 @@ export default function Order({ user, order }) {
 
     const fetchBranches = async () => {
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`, {
                 method: "GET",
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 credentials: "include"
             });
@@ -267,14 +267,14 @@ export default function Order({ user, order }) {
                 return;
             }
             
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
                 method: "PUT",
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'Accept-Language': language,
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 credentials: "include",
                 body: JSON.stringify({ updates })
@@ -411,7 +411,7 @@ export default function Order({ user, order }) {
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex--end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         })
                                     }
@@ -430,7 +430,7 @@ export default function Order({ user, order }) {
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex--end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         })
                                     }
@@ -449,7 +449,7 @@ export default function Order({ user, order }) {
                                 <View style={[[styles.minimizedRow, styles.phoneRow,{
                                     ...Platform.select({
                                         ios: {
-                                            alignItems:isRTL ? "flex-start" : "flex--end"
+                                            alignItems:isRTL ? "flex-start" : ""
                                         }
                                     })
                                 }]]}>
@@ -480,7 +480,7 @@ export default function Order({ user, order }) {
                                 <View style={[styles.minimizedSection,{
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
@@ -502,7 +502,7 @@ export default function Order({ user, order }) {
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }
@@ -522,7 +522,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.minimizedSection, styles.noteMinimized,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -548,7 +548,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.minimizedSection, styles.checksMinimized,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -573,7 +573,7 @@ export default function Order({ user, order }) {
                                         {
                                             ...Platform.select({
                                                 ios: {
-                                                    alignItems:isRTL ? "flex-start" : "flex-end"
+                                                    alignItems:isRTL ? "flex-start" : ""
                                                 }
                                             }),
                                         }
@@ -650,7 +650,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.sectionContent,{
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
@@ -679,7 +679,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.sectionContent,{
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
@@ -705,7 +705,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.sectionContent,{
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                                alignItems:isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
@@ -740,7 +740,7 @@ export default function Order({ user, order }) {
                                 <Text style={[styles.costSectionTitle,{
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : "right"
+                                            textAlign:isRTL ? "left" : ""
                                         }
                                     }),
                                 }]}>
@@ -760,7 +760,7 @@ export default function Order({ user, order }) {
                                         <View style={[styles.costLabelContainer,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -785,7 +785,7 @@ export default function Order({ user, order }) {
                                             <View style={[styles.costLabelContainer,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -813,7 +813,7 @@ export default function Order({ user, order }) {
                                             <View style={[styles.costLabelContainer,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -850,7 +850,7 @@ export default function Order({ user, order }) {
                                         <View style={[styles.checksTextContainer,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -883,7 +883,7 @@ export default function Order({ user, order }) {
                                     <View style={[styles.noteContent,{
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                                        alignItems:isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
@@ -920,7 +920,13 @@ export default function Order({ user, order }) {
                     customStyles={{ bottom: 15 }}
                 > 
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText]}>
+                        <Text style={[styles.modalHeaderText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                             {translations[language].tabs.orders.order.orderActions || 'Order Actions'}
                         </Text>
                     </View>
@@ -942,10 +948,13 @@ export default function Order({ user, order }) {
                                 style={[
                                     styles.controlOption
                                 ]} 
-                                onPress={() => router.push({
-                                    pathname: "(create)",
-                                    params: { orderId: order.order_id }
-                                })}
+                                onPress={() => {
+                                    setShowControl(false);
+                                    router.push({
+                                        pathname: "(create)",
+                                        params: { orderId: order.order_id }
+                                    });
+                                }}
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
@@ -953,7 +962,13 @@ export default function Order({ user, order }) {
                                 ]}>
                                     <Feather name="edit" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText]}>
+                                <Text style={[styles.controlText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                     {translations[language].tabs.orders.order.edit}
                                 </Text>
                             </TouchableOpacity>
@@ -972,12 +987,15 @@ export default function Order({ user, order }) {
                         ) && (
                             <TouchableOpacity 
                                 style={[
-                                    styles.controlOption 
+                                    styles.controlOption
                                 ]} 
-                                onPress={() => router.push({
-                                    pathname: "(edit_receiver_phones)",
-                                    params: { orderId: order.order_id, editPhoneOnly: true }
-                                })}
+                                onPress={() => {
+                                    setShowControl(false);
+                                    router.push({
+                                        pathname: "(edit_receiver_phones)",
+                                        params: { orderId: order.order_id, editPhoneOnly: true }
+                                    });
+                                }}
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
@@ -985,7 +1003,13 @@ export default function Order({ user, order }) {
                                 ]}>
                                     <Feather name="phone" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText]}>
+                                <Text style={[styles.controlText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                     {translations[language].tabs.orders.order.editPhone || "Edit Receiver Phone"}
                                 </Text>
                             </TouchableOpacity>
@@ -997,7 +1021,10 @@ export default function Order({ user, order }) {
                                     styles.controlOption, 
                                     styles.noBorder
                                 ]} 
-                                onPress={() => setShowStatusUpdateModal(true)}
+                                onPress={() => {
+                                    setShowControl(false);
+                                    setShowStatusUpdateModal(true);
+                                }}
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
@@ -1005,7 +1032,13 @@ export default function Order({ user, order }) {
                                 ]}>
                                     <MaterialIcons name="published-with-changes" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText]}>
+                                <Text style={[styles.controlText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                     {translations[language].tabs.orders.order.changeStatus}
                                 </Text>
                             </TouchableOpacity>
@@ -1016,10 +1049,13 @@ export default function Order({ user, order }) {
                                 styles.controlOption, 
                                 styles.noBorder
                             ]} 
-                            onPress={() => router.push({
-                                pathname: "(track)",
-                                params: { orderId: order.order_id }
-                            })}
+                            onPress={() => {
+                                setShowControl(false);
+                                router.push({
+                                    pathname: "(track)",
+                                    params: { orderId: order.order_id }
+                                });
+                            }}
                         >
                             <View style={[
                                 styles.controlIconContainer, 
@@ -1027,7 +1063,13 @@ export default function Order({ user, order }) {
                             ]}>
                                 <MaterialIcons name="track-changes" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText]}>
+                            <Text style={[styles.controlText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                 {translations[language].tabs.orders.track.orderTracking || 'Track Order'}
                             </Text>
                         </TouchableOpacity>
@@ -1037,10 +1079,13 @@ export default function Order({ user, order }) {
                                 styles.controlOption, 
                                 styles.noBorder
                             ]} 
-                            onPress={() => router.push({
-                                pathname: "/(complaints)/open_complaint",
-                                params: { orderId: order.order_id }
-                              })}
+                            onPress={() => {
+                                setShowControl(false);
+                                router.push({
+                                    pathname: "/(complaints)/open_complaint",
+                                    params: { orderId: order.order_id }
+                                });
+                            }}
                         >
                             <View style={[
                                 styles.controlIconContainer, 
@@ -1048,7 +1093,13 @@ export default function Order({ user, order }) {
                             ]}>
                                 <MaterialIcons name="report-problem" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText]}>
+                            <Text style={[styles.controlText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                 {translations[language].tabs.orders.track.openCase}
                             </Text>
                         </TouchableOpacity>}
@@ -1079,7 +1130,13 @@ export default function Order({ user, order }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
+                        <Text style={[styles.modalHeaderText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                             {translations[language].tabs.orders.order.selectReason || "Select Reason"}
                         </Text>
                     </View>
@@ -1092,7 +1149,13 @@ export default function Order({ user, order }) {
                                 ]}
                                 onPress={() => handleReasonSelect(reason)}
                             >
-                                <Text style={[styles.reasonText]}>
+                                <Text style={[styles.reasonText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                     {reason.label}
                                 </Text>
                             </TouchableOpacity>
@@ -1108,7 +1171,13 @@ export default function Order({ user, order }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
+                        <Text style={[styles.modalHeaderText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                             {translations[language].tabs.orders.order.selectBranch || "Select Branch"}
                         </Text>
                     </View>
@@ -1121,7 +1190,13 @@ export default function Order({ user, order }) {
                                 ]}
                                 onPress={() => handleBranchSelect(branch)}
                             >
-                                <Text style={[styles.branchText]}>
+                                <Text style={[styles.branchText,{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                     {branch.label}
                                 </Text>
                             </TouchableOpacity>
@@ -1138,14 +1213,26 @@ export default function Order({ user, order }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.confirmModalContent}>
-                        <Text style={[styles.confirmModalTitle]}>
+                        <Text style={[styles.confirmModalTitle,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                             {translations[language].tabs.orders.order.changeStatusAlert} 
                             <Text style={styles.highlightText}> {statusOptions.find(option => option.value === selectedValue.status?.value)?.label || ''}</Text>
                         </Text>
                         
                         {selectedBranch && (
                             <View style={[styles.selectedDetailContainer]}>
-                                <Text style={styles.selectedDetailLabel}>
+                                <Text style={[styles.selectedDetailLabel,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {translations[language].tabs.orders.order.branch || "Branch"}:
                                 </Text>
                                 <Text style={styles.selectedDetailValue}>{selectedBranch.label}</Text>
@@ -1154,16 +1241,35 @@ export default function Order({ user, order }) {
                         
                         {selectedReason && (
                             <View style={[styles.selectedDetailContainer]}>
-                                <Text style={styles.selectedDetailLabel}>
+                                <Text style={[styles.selectedDetailLabel,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {translations[language].tabs.orders.order.reason || "Reason"}:
                                 </Text>
-                                <Text style={styles.selectedDetailValue}>{selectedReason.label}</Text>
+                                <Text style={[styles.selectedDetailValue,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>{selectedReason.label}</Text>
                             </View>
                         )}
                         
                         <TextInput
                             style={[
-                                styles.noteInput
+                                styles.noteInput,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "right" : ""
+                                        }
+                                    }),
+                                }
                             ]}
                             placeholder={translations[language].tabs.orders.order.changeStatusAlertNote}
                             value={UpdatedStatusNote}

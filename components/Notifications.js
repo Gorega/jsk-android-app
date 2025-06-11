@@ -429,7 +429,7 @@ export default function Notifications() {
               {
                 ...Platform.select({
                     ios: {
-                        textAlign:isRTL ? "left" : "right"
+                        textAlign:isRTL ? "left" : ""
                     }
                 }),
             }

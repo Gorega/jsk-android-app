@@ -20,7 +20,7 @@ export default function TrackOrder(){
             ...Platform.select({
                 ios: {
                     flexDirection:"column",
-                    alignItems:isRTL ? "flex-start" : "flex-end"
+                    alignItems:isRTL ? "flex-start" : ""
                 }
             }),
         }]}>
@@ -30,7 +30,13 @@ export default function TrackOrder(){
             <View style={[styles.inputBox]}>
                 <Feather name="package" size={24} color="black" />
                 <TextInput
-                    style={[styles.input]}
+                    style={[styles.input,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "right" : ""
+                            }
+                        }),
+                    }]}
                     placeholder={translations[language].track.placeholder} 
                     value={value}
                     onChangeText={(input)=> setValue(input)}

@@ -20,7 +20,7 @@ export default function BusinessBox({ box }) {
                     <View style={[styles.textContainer,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>

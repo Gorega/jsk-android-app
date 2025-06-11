@@ -48,6 +48,7 @@ export const translations = {
       businessActivity:"Business Activity",
       businessActivityPlaceholder:"What do you sell/provide? (optional)",
       cityPlaceHolder:"Select your city",
+      addressPlaceholder:"Enter your address",
       areaPlaceholder:"Enter your area",
       secondPhone:"Second Phone",
       secondPhonePlaceholder:"Enter alternate phone (optional)",
@@ -147,7 +148,8 @@ export const translations = {
           rescheduled:"Rescheduled",
           stuck:"Stuck",
           rejected:"Rejected",
-          ofOrders:"of Orders"
+          ofOrders:"of Orders",
+          withDriver:"With Driver"
         },
         balanceTitle:"Your Balance",
         balance:{
@@ -980,7 +982,8 @@ export const translations = {
       now:"Now",
       local:"Local",
       facebook:"Facebook",
-      messenger:"Messenger",
+      tiktok:"Tiktok",
+      instagram:"Instagram",
       whatsapp:"Whatsapp",
       visitSite:"Visit Out Website",
       openingHours:"Opening hours: 9:00 AM - 10:00 PM",
@@ -1087,6 +1090,7 @@ export const translations = {
       businessActivityPlaceholder: "ماذا تبيع / تقدم؟ (اختياري)",
       cityPlaceHolder: "اختر مدينتك",
       areaPlaceholder: "أدخل منطقتك",
+      addressPlaceholder: "أدخل عنوانك",
       secondPhone: "رقم هاتف إضافي",
       secondPhonePlaceholder: "أدخل رقم هاتف بديل (اختياري)",
       website: "الموقع الإلكتروني",
@@ -1264,10 +1268,11 @@ export const translations = {
           onTheWay: "في الطريق",
           delivered: "تم التوصيل",
           returned: "مرتجع",
-          rescheduled: "معاد جدولته",
+          rescheduled: "مؤجل",
           stuck: "عالق",
           rejected: "مرفوض",
-          ofOrders: "من الطرود"
+          ofOrders: "من الطرود",
+          withDriver: "بعهدة السائق"
         },
         balanceTitle:"رصيدك",
         balance:{
@@ -1287,7 +1292,7 @@ export const translations = {
           stuck: "عالق",
           delayed: "متأخر",
           onTheWay: "في الطريق",
-          rescheduled: "معاد جدولته",
+          rescheduled: "مؤجل",
           returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
           returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
           returned: "مرتجع",
@@ -2024,12 +2029,13 @@ export const translations = {
       now: "الآن",
       local: "محلي",
       facebook: "فيسبوك",
-      messenger: "ماسنجر",
+      tiktok: "تيكتوك",
+      instagram: "انستقرام",
       whatsapp: "واتساب",
       visitSite: "زيارة موقعنا الإلكتروني",
       openingHours:"ساعات العمل: 9:00 صباحًا - 10:00 مساءً",
       closingHours:"سنعود غدًا الساعة 9:00 صباحًا",
-      connectWithUs:""
+      connectWithUs:"تواصل معنا"
     },
 
     // (about_us)
@@ -2121,7 +2127,8 @@ export const translations = {
           rescheduled:"נדחה מחדש",
           stuck:"תקוע",
           rejected:"נדחה",
-          ofOrders:"מתוך הזמנות"
+          ofOrders:"מתוך הזמנות",
+          withDriver:"עם נהג"
         }
       },
       orders:{
@@ -2455,7 +2462,8 @@ export const translations = {
       now:"עכשיו",
       local:"מקומי",
       facebook:"פייסבוק",
-      messenger:"מסנג'ר",
+      tiktok:"טיקטוק",
+      instagram:"אנסטגרם",
       whatsapp:"וואטסאפ",
       visitSite:"בקר באתר שלנו"
     },

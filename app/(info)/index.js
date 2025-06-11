@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, Text, ScrollView, StatusBar } from "react-native";
+import { View, StyleSheet, Text, ScrollView, StatusBar, Platform } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { Feather } from '@expo/vector-icons';
@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function HomeScreen(){
     const { language } = useLanguage();
-
+    const isRTL = language === 'ar' || language === 'he';
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
@@ -26,11 +26,23 @@ export default function HomeScreen(){
                         <Feather name="info" size={24} color="white" />
                     </LinearGradient>
                     
-                    <Text style={[styles.title]}>
+                    <Text style={[styles.title,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {translations[language].about.aboutLabel}
                     </Text>
                     
-                    <Text style={[styles.description]}>
+                    <Text style={[styles.description,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {translations[language].about.aboutDesc}
                     </Text>
                 </View>

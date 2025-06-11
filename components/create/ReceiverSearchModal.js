@@ -3,7 +3,6 @@ import { useState, useEffect } from "react";
 import ModalPresentation from "../ModalPresentation";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { getToken } from "../../utils/secureStore";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
@@ -20,6 +19,7 @@ export default function ReceiverSearchModal({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [debounceTimeout, setDebounceTimeout] = useState(null);
+    const isRTL = language === 'ar' || language === 'he';
 
     const searchReceivers = async (query) => {
         if (!query.trim()) {
@@ -30,7 +30,7 @@ export default function ReceiverSearchModal({
         try {
             setIsLoading(true);
             setError(null);
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/api/receivers?exact_phone=${encodeURIComponent(query)}&language_code=${language}&exact=true`,
                 {
@@ -39,7 +39,7 @@ export default function ReceiverSearchModal({
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
-                        "Cookie": token ? `token=${token}` : ""
+                        // "Cookie": token ? `token=${token}` : ""
                     }
                 }
             );
@@ -149,7 +149,13 @@ export default function ReceiverSearchModal({
                     ]}>
                         <Feather name="search" size={20} color="#64748B" style={styles.searchIcon} />
                         <TextInput
-                            style={styles.searchInput}
+                            style={[styles.searchInput,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "right" : ""
+                                    }
+                                }),
+                            }]}
                             placeholder={translations[language].tabs.orders.create.sections.client.fields.search_placeholder || "Enter phone number..."}
                             value={searchQuery}
                             onChangeText={handlePhoneInput}
@@ -177,46 +183,6 @@ export default function ReceiverSearchModal({
 
                 {/* Results */}
                 <View style={styles.contentContainer}>
-                    <ScrollView style={styles.resultsContainer}>
-                        {isLoading ? (
-                            <View style={styles.centerContainer}>
-                                <ActivityIndicator size="large" color="#4361EE" />
-                            </View>
-                        ) : searchResults.length > 0 ? (
-                            searchResults.map((receiver, index) => (
-                                <TouchableOpacity
-                                    key={index}
-                                    style={styles.receiverItem}
-                                    onPress={() => handleReceiverSelect(receiver)}
-                                >
-                                    <View style={styles.receiverIcon}>
-                                        <MaterialIcons name="person" size={24} color="#4361EE" />
-                                    </View>
-                                    <View style={styles.receiverInfo}>
-                                        <Text style={styles.receiverName}>{receiver.name || translations[language].tabs.orders.create.sections.client.fields.unnamed}</Text>
-                                        <Text style={styles.receiverPhone}>{receiver.phone || receiver.mobile}</Text>
-                                        <Text style={styles.receiverAddress}>
-                                            <MaterialIcons name="location-on" size={14} color="#64748B" />
-                                             {receiver.city} {receiver.address && " , " + receiver.address}
-                                        </Text>
-                                    </View>
-                                </TouchableOpacity>
-                            ))
-                        ) : searchQuery.length >= 3 ? (
-                            <View style={styles.noResultsContainer}>
-                                <Text style={styles.noResultsText}>
-                                    {translations[language].tabs.orders.create.sections.client.fields.no_results}
-                                </Text>
-                            </View>
-                        ) : searchQuery.length > 0 ? (
-                            <View style={styles.centerContainer}>
-                                <Text style={styles.hintText}>
-                                    {translations[language].tabs.orders.create.sections.client.fields.enter_more}
-                                </Text>
-                            </View>
-                        ) : null}
-                    </ScrollView>
-                    
                     {/* Fixed Add New Button */}
                     {searchQuery.length >= 3 && (
                         <View style={styles.bottomButtonContainer}>
@@ -244,6 +210,66 @@ export default function ReceiverSearchModal({
                             </TouchableOpacity>
                         </View>
                     )}
+                    <ScrollView style={styles.resultsContainer}>
+                        {isLoading ? (
+                            <View style={styles.centerContainer}>
+                                <ActivityIndicator size="large" color="#4361EE" />
+                            </View>
+                        ) : searchResults.length > 0 ? (
+                            searchResults.map((receiver, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={styles.receiverItem}
+                                    onPress={() => handleReceiverSelect(receiver)}
+                                >
+                                    <View style={styles.receiverIcon}>
+                                        <MaterialIcons name="person" size={24} color="#4361EE" />
+                                    </View>
+                                    <View style={styles.receiverInfo}>
+                                        <Text style={[styles.receiverName,
+                                            {
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }
+                                        ]}>{receiver.name || translations[language].tabs.orders.create.sections.client.fields.unnamed}</Text>
+                                        <Text style={[styles.receiverPhone,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>{receiver.phone || receiver.mobile}</Text>
+                                        <Text style={[styles.receiverAddress,{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
+                                            <MaterialIcons name="location-on" size={14} color="#64748B" />
+                                             {receiver.city} {receiver.address && " , " + receiver.address}
+                                        </Text>
+                                    </View>
+                                </TouchableOpacity>
+                            ))
+                        ) : searchQuery.length >= 3 ? (
+                            <View style={styles.noResultsContainer}>
+                                <Text style={styles.noResultsText}>
+                                    {translations[language].tabs.orders.create.sections.client.fields.no_results}
+                                </Text>
+                            </View>
+                        ) : searchQuery.length > 0 ? (
+                            <View style={styles.centerContainer}>
+                                <Text style={styles.hintText}>
+                                    {translations[language].tabs.orders.create.sections.client.fields.enter_more}
+                                </Text>
+                            </View>
+                        ) : null}
+                    </ScrollView>
+                    
                 </View>
             </View>
         </ModalPresentation>
@@ -373,9 +399,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#EEF2FF',
         justifyContent: 'center',
         alignItems: 'center'
-    },
-    receiverInfo: {
-        flex: 1,
     },
     receiverName: {
         fontSize: 16,

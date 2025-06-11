@@ -1,14 +1,26 @@
-import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, Dimensions, ActivityIndicator,KeyboardAvoidingView, SafeAreaView } from "react-native";
+import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, Dimensions, ActivityIndicator, KeyboardAvoidingView, SafeAreaView } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import FlatListData from "../FlatListData";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
-export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loading,loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
+export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
     const { language } = useLanguage();
     const { name } = field;
     const [modalHeight, setModalHeight] = useState(Dimensions.get('window').height * 0.7);
+    const isRTL = language === 'ar' || language === 'he';
+
+    // Filter list based on search value
+    const filteredList = useMemo(() => {
+        if (!prickerSearchValue || !list?.length) return list;
+        
+        return list.filter(item => {
+            const searchText = prickerSearchValue.toLowerCase();
+            const itemLabel = (item.label || item.name || '').toLowerCase();
+            return itemLabel.includes(searchText);
+        });
+    }, [list, prickerSearchValue]);
 
     // Adjust modal height on orientation change
     useEffect(() => {
@@ -60,12 +72,20 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                     />
                                     <TextInput
                                         style={[
-                                            styles.searchInput
+                                            styles.searchInput,
+                                            {
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                            }
                                         ]}
                                         placeholder={translations[language].picker.searchPlaceholder}
                                         placeholderTextColor="#9CA3AF"
                                         value={prickerSearchValue}
                                         onChangeText={(input) => setPickerSearchValue(input)}
+                                        autoFocus={true}
                                     />
                                 </View>
                             </View>
@@ -75,7 +95,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                             {loading ? <ActivityIndicator size="small" color="#4361EE" />
                              :
                              <FlatListData
-                                list={list || []}
+                                list={filteredList || []}
                                 loadMoreData={loadMoreData || null}
                                 loadingMore={loadingMore || false}
                                 children={(item) => (
@@ -121,7 +141,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                         </View>
                                         <View style={styles.checkmarkContainer}>
                                             <Ionicons 
-                                                name="chevron-forward" 
+                                                name={isRTL ? "chevron-back" : "chevron-forward"} 
                                                 size={18} 
                                                 color="#4F46E5"
                                             />
@@ -225,11 +245,10 @@ const styles = StyleSheet.create({
         borderBottomColor: '#F3F4F6'
     },
     itemContent: {
-        flex: 1
     },
     itemText: {
         fontSize: 16,
-        color: '#374151'
+        color: '#374151',
     },
     checkmarkContainer: {
         paddingLeft: 8

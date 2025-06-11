@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { 
   View, 
   Text, 
@@ -16,7 +16,7 @@ import {
   Animated
 } from "react-native";
 import TayarLogo from "../../assets/images/tayar_logo.png";
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import Field from "../../components/sign/Field";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
@@ -59,6 +59,8 @@ export default function SignUp() {
     role: "",
     city: ""
   });
+
+  const [searchCity, setSearchCity] = useState('');
 
   // Handle keyboard appearance
   useEffect(() => {
@@ -162,6 +164,15 @@ export default function SignUp() {
     },
   ];
 
+  // Filter cities based on search
+  const filteredCities = useMemo(() => {
+    if (!searchCity || !cities?.length) return cities;
+    
+    return cities.filter(city => 
+      city.name.toLowerCase().includes(searchCity.toLowerCase())
+    );
+  }, [cities, searchCity]);
+
   // Step 2: Business Information
   const step2Fields = [
     {
@@ -197,10 +208,10 @@ export default function SignUp() {
       value: selectedValue.city?.label || "",
       error: formErrors.city_id || "",
       placeholder: translations[language].auth.cityPlaceHolder,
-      list: cities?.map(city => ({
+      list: filteredCities?.map(city => ({
         label: city.name,
         value: city.city_id
-      })) || [],
+      })).slice(2) || [],
       onSelect: () => setFormErrors(prev => ({...prev, city_id: ""}))
     },
     {
@@ -325,9 +336,10 @@ export default function SignUp() {
 
   const handlePrevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+      const prevStep = currentStep - 1;
+      setCurrentStep(prevStep);
       flatListRef.current?.scrollToIndex({
-        index: currentStep - 2,
+        index: prevStep - 1,
         animated: true,
         viewPosition: 0
       });
@@ -375,7 +387,7 @@ export default function SignUp() {
         isValid = false;
       }
       
-      if (!selectedValue.city) {
+      if (!selectedValue.city || !selectedValue.city.value) {
         newErrors.city_id = translations[language].auth.cityRequired;
         isValid = false;
       }
@@ -845,6 +857,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 12,
+    gap: 10
   },
   backButton: {
     flexDirection: 'row',

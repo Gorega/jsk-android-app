@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, StatusBar, Platform } from "react-native";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Feather from '@expo/vector-icons/Feather';
@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 export default function HomeScreen(){
     const { language } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
+    const isRTL = language === 'ar' || language === 'he';
 
     useEffect(() => {
         const currentHour = new Date().getHours();
@@ -42,8 +43,14 @@ export default function HomeScreen(){
                         <Feather name={isOpen ? "clock" : "clock"} size={24} color="white" />
                     </LinearGradient>
                     
-                    <View style={styles.statusTextContainer}>
-                        <Text style={[styles.statusTitle]}>
+                    <View style={[styles.statusTextContainer]}>
+                        <Text style={[styles.statusTitle,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                             {translations[language].contact.weAre}{' '}
                             <Text style={{color: isOpen ? "#059669" : "#DC2626", fontWeight: '700'}}>
                                 {isOpen ? translations[language].contact.open : translations[language].contact.closed} {translations[language].contact.now}
@@ -62,7 +69,13 @@ export default function HomeScreen(){
                     <View style={[styles.contactRow]}>
                         <Feather name="phone" size={20} color="#4361EE" />
                         <View style={[styles.contactTextContainer]}>
-                            <Text style={styles.contactLabel}>{translations[language].contact.local}</Text>
+                            <Text style={[styles.contactLabel,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>{translations[language].contact.local}</Text>
                             <Text style={styles.contactValue}>+972566150002</Text>
                         </View>
                     </View>
@@ -70,8 +83,14 @@ export default function HomeScreen(){
                 
                 {/* Social Media Card */}
                 <View style={styles.socialCard}>
-                    <Text style={[styles.socialTitle]}>
-                        {translations[language].contact?.connectWithUs || "تواصل معنا"}
+                    <Text style={[styles.socialTitle,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
+                        {translations[language].contact?.connectWithUs}
                     </Text>
                     
                     <View style={styles.socialButtonsContainer}>
@@ -89,25 +108,40 @@ export default function HomeScreen(){
                             </LinearGradient>
                             <Text style={styles.socialButtonText}>{translations[language].contact.facebook}</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            style={styles.socialButton}
+                            onPress={() => router.push("https://www.instagram.com/taiar.palestine/?hl=ar")}
+                        >
+                            <LinearGradient
+                                colors={['#C13584', '#833AB4']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.socialIconContainer}
+                            >
+                                <FontAwesome5 name="instagram" size={24} color="white" />
+                            </LinearGradient>
+                            <Text style={styles.socialButtonText}>{translations[language].contact.instagram}</Text>
+                        </TouchableOpacity>
                         
                         <TouchableOpacity 
                             style={styles.socialButton}
                             onPress={() => router.push("")}
                         >
                             <LinearGradient
-                                colors={['#0084ff', '#0078FF']}
+                                colors={['#000000', '#000000']}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 1 }}
                                 style={styles.socialIconContainer}
                             >
-                                <FontAwesome5 name="facebook-messenger" size={24} color="white" />
+                                <FontAwesome5 name="tiktok" size={24} color="white" />
                             </LinearGradient>
-                            <Text style={styles.socialButtonText}>{translations[language].contact.messenger}</Text>
+                            <Text style={styles.socialButtonText}>{translations[language].contact.tiktok}</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
                             style={styles.socialButton}
-                            onPress={() => router.push("")}
+                            onPress={() => router.push("https://wa.me/972566150002")}
                         >
                             <LinearGradient
                                 colors={['#25D366', '#128C7E']}
@@ -123,7 +157,7 @@ export default function HomeScreen(){
                 </View>
                 
                 {/* Visit Website Button */}
-                <TouchableOpacity style={styles.websiteButtonContainer}>
+                <TouchableOpacity style={styles.websiteButtonContainer} onPress={() => router.push("https://taiar.org/ar")}>
                     <LinearGradient
                         colors={['#4361EE', '#3A0CA3']}
                         start={{ x: 0, y: 0 }}
@@ -187,7 +221,6 @@ const styles = StyleSheet.create({
         alignItems: 'center'
     },
     statusTextContainer: {
-        flex: 1,
     },
     statusTitle: {
         fontSize: 17,
@@ -251,7 +284,7 @@ const styles = StyleSheet.create({
     },
     socialButton: {
         alignItems: 'center',
-        width: '30%',
+        width: '20%',
     },
     socialIconContainer: {
         width: 50,

@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl,Platform, StatusBar, ActivityIndicator, Alert } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl,Platform, StatusBar, ActivityIndicator, Alert, Animated } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -14,10 +14,9 @@ import useFetch from "../../utils/useFetch";
 import { router } from "expo-router";
 import { useAuth } from "../../RootLayout";
 import { useSocket } from "../../utils/socketContext";
-import { LinearGradient } from 'expo-linear-gradient';
-import { getToken } from "@/utils/secureStore";
 import ModalPresentation from "../../components/ModalPresentation";
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -46,9 +45,10 @@ export default function HomeScreen() {
   const [selectedCollections, setSelectedCollections] = useState([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   
+  // Animation value for percentage badge
+  const pulseAnim = useRef(new Animated.Value(1)).current;
   
   const rtl = useRTLStyles();
-  const scrollViewRef = useRef(null);
 
   const fetchUserBalance = async () => {
     try {
@@ -95,22 +95,22 @@ export default function HomeScreen() {
 
   const columnBoxes = [{
     label: translations[language].tabs.index.boxes.todayOrders,
-    icon: <Feather name="package" size={24} color="white" />,
-    gradientColors: ['#4361EE', '#3A0CA3'],
+    icon: <MaterialCommunityIcons name="package-variant" size={24} color="white" />,
+    gradientColors: ['#00B4D8', '#0077B6'],
     numberOfOrders: data?.today_orders?.count,
     money: formatMoney(data?.today_orders?.cod_value),
     orderIds: data?.today_orders?.order_ids
   }, (user.role !== "driver" && user.role !== "delivery_company") ? {
     label: user.role === "business" ? translations[language].tabs.index.boxes.readyMoney : translations[language].tabs.index.boxes.moneyInBranches,
-    icon: <MaterialIcons name="attach-money" size={24} color="white" />,
-    gradientColors: ['#3A0CA3', '#480CA8'],
+    icon: <FontAwesome6 name="money-bill-trend-up" size={24} color="white" />,
+    gradientColors: ['#4CC9F0', '#4361EE'],
     numberOfOrders: data?.money_in_branch_orders?.count,
     money: formatMoney(data?.money_in_branch_orders?.cod_value),
     orderIds: data?.money_in_branch_orders?.order_ids
   } : null, user.role === "business" ? {
     label: translations[language].tabs.index.boxes.readyOrders,
-    icon: <Octicons name="package-dependencies" size={24} color="white" />,
-    gradientColors: ['#7209B7', '#F72585'],
+    icon: <MaterialCommunityIcons name="package-variant-closed-check" size={24} color="white" />,
+    gradientColors: ['#8338EC', '#3A0CA3'],
     numberOfOrders: data?.returned_in_branch_orders?.count,
     orderIds: data?.returned_in_branch_orders?.order_ids
   } : null];
@@ -118,56 +118,63 @@ export default function HomeScreen() {
   const boxes = [user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.inWaiting,
     icon: <MaterialIcons name="pending-actions" size={22} color="white" />,
-    gradientColors: ['#4CC9F0', '#4361EE'],
+    gradientColors: ['#48CAE4', '#0096C7'],
     numberOfOrders: data?.waiting_orders?.count,
     money: formatMoney(data?.waiting_orders?.cod_value),
     orderIds: data?.waiting_orders?.order_ids
   }, user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.inBranch,
-    icon: <Entypo name="flow-branch" size={22} color="white" />,
-    gradientColors: ['#4361EE', '#3A0CA3'],
+    icon: <Ionicons name="business" size={22} color="white" />,
+    gradientColors: ['#90E0EF', '#00B4D8'],
     numberOfOrders: data?.in_branch_orders?.count,
     money: formatMoney(data?.in_branch_orders?.cod_value),
     orderIds: data?.in_branch_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.onTheWay,
-    icon: <Feather name="truck" size={22} color="white" />,
-    gradientColors: ['#3A0CA3', '#480CA8'],
+    icon: <FontAwesome5 name="shipping-fast" size={22} color="white" />,
+    gradientColors: ['#0077B6', '#023E8A'],
     numberOfOrders: data?.on_the_way_orders?.count,
     money: formatMoney(data?.on_the_way_orders?.cod_value),
     orderIds: data?.on_the_way_orders?.order_ids
+  },{
+    label: translations[language].tabs.index.boxes.withDriver,
+    icon: <MaterialCommunityIcons name="truck-delivery" size={22} color="white" />,
+    gradientColors: ['#4361EE', '#3F37C9'],
+    numberOfOrders: data?.driver_responsibility_orders?.count,
+    money: formatMoney(data?.driver_responsibility_orders?.cod_value),
+    orderIds: data?.driver_responsibility_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.delivered,
-    icon: <FontAwesome5 name="user-check" size={22} color="white" />,
-    gradientColors: ['#480CA8', '#7209B7'],
+    icon: <MaterialIcons name="delivery-dining" size={22} color="white" />,
+    gradientColors: ['#4895EF', '#4361EE'],
     numberOfOrders: data?.delivered_orders?.count,
     money: formatMoney(data?.delivered_orders?.cod_value),
     orderIds: data?.delivered_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.returned,
-    icon: <Octicons name="package-dependencies" size={22} color="white" />,
-    gradientColors: ['#7209B7', '#F72585'],
+    icon: <MaterialIcons name="assignment-return" size={22} color="white" />,
+    gradientColors: ['#7209B7', '#560BAD'],
     numberOfOrders: data?.returned_orders?.count,
     money: formatMoney(data?.returned_orders?.cod_value),
     orderIds: data?.returned_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.rescheduled,
-    icon: <MaterialIcons name="update" size={22} color="white" />,
-    gradientColors: ['#4CC9F0', '#4361EE'],
+    icon: <MaterialCommunityIcons name="calendar-clock" size={22} color="white" />,
+    gradientColors: ['#B5179E', '#7209B7'],
     numberOfOrders: data?.reschedule_orders?.count,
     money: formatMoney(data?.reschedule_orders?.cod_value),
     orderIds: data?.reschedule_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.stuck,
-    icon: <MaterialIcons name="running-with-errors" size={22} color="white" />,
-    gradientColors: ['#4361EE', '#3A0CA3'],
+    icon: <MaterialCommunityIcons name="alert-circle" size={22} color="white" />,
+    gradientColors: ['#F72585', '#B5179E'],
     numberOfOrders: data?.stuck_orders?.count,
     money: formatMoney(data?.stuck_orders?.cod_value),
     orderIds: data?.stuck_orders?.order_ids
   }, user.role === "driver" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.rejected,
-    icon: <MaterialIcons name="error-outline" size={22} color="white" />,
-    gradientColors: ['#B5179E', '#F72585'],
+    icon: <MaterialCommunityIcons name="close-circle" size={22} color="white" />,
+    gradientColors: ['#D00000', '#9D0208'],
     numberOfOrders: data?.rejected_orders?.count,
     money: formatMoney(data?.rejected_orders?.cod_value),
     orderIds: data?.rejected_orders?.order_ids
@@ -498,6 +505,24 @@ export default function HomeScreen() {
     }
   }, [showCollectionsModal]);
 
+  useEffect(() => {
+    // Start pulsing animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   if (isLoading && !data && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -600,7 +625,7 @@ export default function HomeScreen() {
                   <Text style={[[styles.cardTitle,{
                     ...Platform.select({
                       ios: {
-                          textAlign:rtl.isRTL ? "left" : "right"
+                          textAlign:rtl.isRTL ? "left" : ""
                       }
                   })
                   }]]}>
@@ -611,7 +636,7 @@ export default function HomeScreen() {
                       <Text style={[styles.statNumber,{
                         ...Platform.select({
                           ios: {
-                              textAlign:rtl.isRTL ? "left" : "right"
+                              textAlign:rtl.isRTL ? "left" : ""
                           }
                       })
                       }]}>
@@ -927,66 +952,95 @@ export default function HomeScreen() {
           </Text>
         </View>}
         
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={styles.statusRowsContainer}>
-          {(boxes)?.map((box, index) => {
-            if (box.visibility === "hidden") return null;
-            
-            // Calculate progress percentage (capped at 100%)
-            const totalOrders = data?.total_orders?.count || 100;
-            const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
-            
-            return (
-              <TouchableOpacity 
-                key={index}
-                style={[styles.statusRow]}
-                onPress={() => router.push({
-                  pathname: "/(tabs)/orders",
-                  params: {
-                    orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
-                  }
-                })}
-                activeOpacity={0.9}
-              >
-                <LinearGradient
-                  colors={box.gradientColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.rowIconContainer}
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && (
+          <View style={styles.statusCirclesContainer}>
+            {(boxes)?.map((box, index) => {
+              if (box.visibility === "hidden") return null;
+              
+              // Calculate progress percentage (capped at 100%)
+              const totalOrders = data?.total_orders?.count || 100;
+              const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
+              
+              return (
+                <TouchableOpacity 
+                  key={index}
+                  style={styles.statusCircleItem}
+                  onPress={() => router.push({
+                    pathname: "/(tabs)/orders",
+                    params: {
+                      orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
+                    }
+                  })}
+                  activeOpacity={0.9}
                 >
-                  {box.icon}
-                </LinearGradient>
-                
-                <View style={styles.rowContent}>
-                  <View style={styles.rowTitleContainer}>
-                    <Text style={styles.rowTitle}>{box.label}</Text>
-                    <Text style={styles.rowCount}>{box.numberOfOrders || 0}</Text>
+                  <View style={styles.circleOuterContainer}>
+                    {/* Circular progress track (background) */}
+                    <View style={styles.progressTrack} />
+                    
+                    {/* Circular progress background */}
+                    <View style={[
+                      styles.progressBackground,
+                      { backgroundColor: box.gradientColors[0] + '20' }
+                    ]} />
+                    
+                    {/* Circular progress indicator */}
+                    <View style={[
+                      styles.progressIndicator,
+                      { 
+                        borderColor: box.gradientColors[0],
+                        borderWidth: 2, // Thinner border
+                        width: 80,
+                        height: 80,
+                        borderRadius: 40,
+                        borderTopColor: 'transparent',
+                        transform: [
+                          { rotateZ: `${progressPercentage * 3.6}deg` }
+                        ]
+                      }
+                    ]} />
+                    
+                    {/* Inner circle with gradient background */}
+                    <LinearGradient
+                      colors={box.gradientColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.circleContent}
+                    >
+                      <View style={styles.circleIcon}>
+                        {box.icon}
+                      </View>
+                      <Text style={styles.circleCount}>{box.numberOfOrders || 0}</Text>
+                    </LinearGradient>
+                    
+                    {/* Percentage badge */}
+                    <Animated.View style={[
+                      styles.percentageBadge,
+                      { 
+                        backgroundColor: `${box.gradientColors[0]}`,
+                        transform: [{ scale: pulseAnim }]
+                      }
+                    ]}>
+                      <Text style={styles.percentageText}>
+                        <Text style={styles.percentageValue}>{Math.round(progressPercentage)}</Text>
+                        <Text style={styles.percentageSymbol}>%</Text>
+                      </Text>
+                    </Animated.View>
                   </View>
                   
-                  {/* Progress bar */}
-                  <View style={styles.progressContainer}>
-                    <View 
-                      style={[
-                        styles.progressBar, 
-                        { width: `${progressPercentage}%` }
-                      ]} 
-                    >
-                      <LinearGradient
-                        colors={box.gradientColors}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.progressGradient}
-                      />
-                    </View>
-                  </View>
+                  <Text style={styles.circleTitle} numberOfLines={1}>
+                    {box.label}
+                  </Text>
                   
                   {box.money && (
-                    <Text style={styles.rowMoney}>{box.money}</Text>
+                    <Text style={[styles.circleMoney]} numberOfLines={1}>
+                      {box.money}
+                    </Text>
                   )}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
       </ScrollView>
       
       {/* Money Request Modal */}
@@ -1263,10 +1317,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#ffffff',
-    gap:10,
+    gap: 12,
     borderRadius: 20,
-    paddingHorizontal:10,
-    paddingVertical:12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
@@ -1274,11 +1328,16 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   iconContainer: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
+    width: 54,
+    height: 54,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   cardContent: {
     flex: 1,
@@ -1312,67 +1371,82 @@ const styles = StyleSheet.create({
     color: '#4361EE',
     fontWeight: '600',
   },
-  statusGridContainer: {
+  statusCirclesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 24,
+    paddingHorizontal: 15,
+    marginBottom: 20,
   },
-  statusGridCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    overflow: 'hidden',
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  statusCardHeader: {
-    padding: 16,
-    paddingBottom: 14,
-  },
-  statusHeaderTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: 'white',
-    marginTop: 8,
-  },
-  statusCardContent: {
-    padding: 16,
+  statusCircleItem: {
+    width: '33%',
     alignItems: 'center',
+    marginBottom: 18,
+    padding: 5,
   },
-  statusIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  circleOuterContainer: {
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
+    position: 'relative',
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  statusCount: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  statusSubtitle: {
-    fontSize: 14,
-    color: '#64748B',
-    marginTop: 2,
     marginBottom: 8,
   },
-  statusMoney: {
-    fontSize: 14,
-    color: '#4361EE',
+  progressTrack: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 42.5,
+    backgroundColor: '#F3F4F6',
+  },
+  progressBackground: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    borderRadius: 42.5,
+  },
+  progressIndicator: {
+    position: 'absolute',
+    borderRadius: 42.5,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    transform: [{ scale: 1 }],
+  },
+  circleContent: {
+    position: 'absolute',
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  circleIcon: {
+    marginBottom: 2,
+  },
+  circleCount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
+  },
+  circleTitle: {
+    fontSize: 12,
     fontWeight: '600',
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#EEF2FF',
-    marginTop: 4,
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 2,
+    paddingHorizontal: 5,
+  },
+  circleMoney: {
+    fontSize: 11,
+    fontWeight: '500',
+    textAlign: 'center',
+    paddingHorizontal: 2,
   },
   balanceContainer: {
     flexDirection: 'row',
@@ -1574,74 +1648,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  statusRowsContainer: {
-    paddingHorizontal: 16,
-    marginTop: 8,
-  },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
-    overflow: 'hidden',
-    height: 65,
-  },
-  rowIconContainer: {
-    width: 50,
-    height: 65,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  rowContent: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  rowTitleContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  rowTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  rowMoney: {
-    fontSize: 12,
-    color: '#4361EE',
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  rowCount: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  progressContainer: {
-    height: 4,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 6,
-    marginBottom: 6,
-    width: '100%',
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  progressGradient: {
-    height: '100%',
-    width: '100%',
-  },
   collectionsContainer: {
     paddingHorizontal: 20,
     marginBottom: 15,
@@ -1730,10 +1736,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
   },
   collectionsScroll: {
     maxHeight: 400,
@@ -1845,6 +1847,41 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: 'white',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  percentageBadge: {
+    position: 'absolute',
+    bottom: -6,
+    right: -6,
+    minWidth: 34,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  percentageText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  percentageValue: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  percentageSymbol: {
+    fontSize: 9,
     fontWeight: '600',
   },
 });

@@ -251,7 +251,7 @@ export default function ComplaintDetails() {
                   ...Platform.select({
                       ios: {
                           flexDirection:"column",
-                          textAlign:rtl.isRTL ? "left" : "right"
+                          textAlign:rtl.isRTL ? "left" : ""
                       }
                   }),
               }]}>
@@ -262,7 +262,7 @@ export default function ComplaintDetails() {
                   ...Platform.select({
                       ios: {
                           flexDirection:"column",
-                          alignItems:rtl.isRTL ? "flex-start" : "flex-end"
+                          alignItems:rtl.isRTL ? "flex-start" : ""
                       }
                   }),
               }]}>

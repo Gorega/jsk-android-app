@@ -77,7 +77,7 @@ export default function ComplaintsScreen() {
   const fetchComplaints = async (pageNumber = 1, isLoadMore = false) => {
     if (!isLoadMore) setLoading(true);
     try {
-      const token = await getToken("userToken");
+      // const token = await getToken("userToken");
       const queryParams = new URLSearchParams();
       if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
       if (activeFilter && activeFilter !== "all") queryParams.append('status_key', activeFilter);
@@ -97,7 +97,7 @@ export default function ComplaintsScreen() {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "Cookie": token ? `token=${token}` : ""
+            // "Cookie": token ? `token=${token}` : ""
           }
         },
       );
@@ -273,7 +273,7 @@ export default function ComplaintsScreen() {
                   ...Platform.select({
                       ios: {
                           flexDirection:"column",
-                          alignItems:rtl.isRTL ? "flex-start" : "flex-end"
+                          alignItems:rtl.isRTL ? "flex-start" : ""
                       }
                   }),
               }]}>
@@ -310,7 +310,7 @@ export default function ComplaintsScreen() {
                   ...Platform.select({
                       ios: {
                           flexDirection:"column",
-                          textAlign:rtl.isRTL ? "left" : "right"
+                          textAlign:rtl.isRTL ? "left" : ""
                       }
                   }),
               }]} numberOfLines={2}>

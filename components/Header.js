@@ -67,14 +67,14 @@ export default function Header({ showGreeting = true, title }) {
     
         try {
             // Reset count on server
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count`, {
                 method: "PUT",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
                     user_id: user.userId
@@ -109,14 +109,14 @@ export default function Header({ showGreeting = true, title }) {
         // Fetch initial notification count when component mounts
         const fetchNotificationCount = async () => {
             try {
-                const token = await getToken("userToken");
+                // const token = await getToken("userToken");
                 const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count?user_id=${user.userId}`, {
                     method: "GET",
                     credentials: "include",
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
-                        "Cookie": token ? `token=${token}` : ""
+                        // "Cookie": token ? `token=${token}` : ""
                     }
                 });
     
@@ -209,19 +209,6 @@ export default function Header({ showGreeting = true, title }) {
                                     )}
                                 </View>
                                 
-                                {["business", "driver"].includes(user?.role) && (
-                                    <Animated.View 
-                                        style={[
-                                            styles.balanceBadge,
-                                            { 
-                                                opacity: balanceAnimation,
-                                                transform: [{ scale: balanceAnimation }] 
-                                            }
-                                        ]}
-                                    >
-                                        <Text style={styles.balanceText}>₪{user?.total_amount}</Text>
-                                    </Animated.View>
-                                )}
                             </TouchableOpacity>
                             
                             {/* Title or Greeting */}
@@ -230,7 +217,7 @@ export default function Header({ showGreeting = true, title }) {
                                     ...Platform.select({
                                         ios: {
                                             flexDirection:"column",
-                                            alignItems:isRTL ? "flex-start" : "flex-end"
+                                            alignItems:isRTL ? "flex-start" : ""
                                         }
                                     }),
                                 }]}>
@@ -248,36 +235,41 @@ export default function Header({ showGreeting = true, title }) {
                             )}
                             
                             {/* Notification Button */}
-                            <TouchableOpacity 
-                                style={styles.notificationButton}
-                                onPress={handleNotificationIcon}
-                                activeOpacity={0.7}
-                            >
-                                <LinearGradient
-                                    colors={['#4361EE', '#3A0CA3']}
-                                    style={styles.notificationGradient}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 1 }}
+                            <View style={styles.notificationContainer}>
+                                <TouchableOpacity 
+                                    style={styles.notificationButton}
+                                    onPress={handleNotificationIcon}
+                                    activeOpacity={0.7}
                                 >
-                                    <Ionicons 
-                                        name="notifications" 
-                                        size={24} 
-                                        color="white" 
-                                    />
-                                    {notificationsCount > 0 && (
-                                        <Animated.View 
-                                            style={[
-                                                styles.badge,
-                                                { transform: [{ scale: badgeAnimation }] }
-                                            ]}
-                                        >
-                                            <Text style={styles.badgeText}>
-                                                {notificationsCount > 99 ? '99+' : notificationsCount}
-                                            </Text>
-                                        </Animated.View>
-                                    )}
-                                </LinearGradient>
-                            </TouchableOpacity>
+                                    <LinearGradient
+                                        colors={['#4361EE', '#3A0CA3']}
+                                        style={styles.notificationGradient}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 1 }}
+                                    >
+                                        <Ionicons 
+                                            name="notifications" 
+                                            size={24} 
+                                            color="white" 
+                                        />
+                                    </LinearGradient>
+                                </TouchableOpacity>
+                                {notificationsCount > 0 && (
+                                    <Animated.View 
+                                        style={[
+                                            styles.badge,
+                                            { transform: [
+                                                { scale: badgeAnimation },
+                                                { translateX: 2 }
+                                            ] }
+                                        ]}
+                                    >
+                                        <Text style={styles.badgeText}>
+                                            {notificationsCount > 99 ? '99+' : notificationsCount}
+                                        </Text>
+                                    </Animated.View>
+                                )}
+                            </View>
                         </View>
                     </SafeAreaView>
                 </LinearGradient>
@@ -352,30 +344,6 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#f0f0f0',
     },
-    balanceBadge: {
-        position: 'absolute',
-        bottom: -8,
-        right: -10,
-        backgroundColor: '#10B981',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: 'white',
-        shadowColor: "#000",
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-    },
-    balanceText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
     greetingContainer: {
         flex: 1,
         paddingHorizontal: 16,
@@ -403,6 +371,13 @@ const styles = StyleSheet.create({
         color: '#1F2937',
         letterSpacing: -0.5,
     },
+    notificationContainer: {
+        position: 'relative',
+        width: 60,
+        height: 60,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     notificationButton: {
         shadowColor: "#4361EE",
         shadowOffset: {
@@ -423,21 +398,34 @@ const styles = StyleSheet.create({
     },
     badge: {
         position: 'absolute',
-        right: -6,
-        top: -6,
-        backgroundColor: '#EF4444',
-        borderRadius: 12,
-        minWidth: 24,
-        height: 24,
+        right: 0,
+        top: 0,
+        backgroundColor: '#FF3B30',
+        borderRadius: 14,
+        minWidth: 22,
+        height: 22,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 5,
-        borderWidth: 2,
+        paddingHorizontal: 4,
+        borderWidth: 1.5,
         borderColor: 'white',
+        overflow: 'hidden',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.2,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     badgeText: {
         color: 'white',
-        fontSize: 11,
-        fontWeight: 'bold',
+        fontSize: 10,
+        fontWeight: '700',
+        textAlign: 'center',
     }
 });

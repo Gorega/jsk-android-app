@@ -25,14 +25,14 @@ export default function Collection({ type, collection }) {
     const handleCollectNotification = async (type, action) => {
         setIsLoading(true);
         try {
-            const token = await getToken("userToken");
+            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
                 method: "POST",
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'Accept-Language': language,
-                    "Cookie": token ? `token=${token}` : ""
+                    // "Cookie": token ? `token=${token}` : ""
                 },
                 credentials: "include",
                 body: JSON.stringify({
@@ -77,14 +77,14 @@ export default function Collection({ type, collection }) {
                                 status: status,
                                 note_content: null
                             };
-                            const token = await getToken("userToken");
+                            // const token = await getToken("userToken");
                             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/status`, {
                                 method: "PUT",
                                 headers: {
                                     'Accept': 'application/json',
                                     'Content-Type': 'application/json',
                                     'Accept-Language': language,
-                                    "Cookie": token ? `token=${token}` : ""
+                                    // "Cookie": token ? `token=${token}` : ""
                                 },
                                 credentials: 'include',
                                 body: JSON.stringify({ updates })
@@ -183,7 +183,7 @@ export default function Collection({ type, collection }) {
                         <View style={[styles.sectionContent,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>
@@ -212,7 +212,7 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.sectionContent,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>
@@ -242,7 +242,7 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.sectionContent,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>
@@ -270,7 +270,7 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.sectionContent,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>
@@ -298,7 +298,7 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.sectionContent,{
                          ...Platform.select({
                             ios: {
-                                alignItems:isRTL ? "flex-start" : "flex-end"
+                                alignItems:isRTL ? "flex-start" : ""
                             }
                         }),
                     }]}>

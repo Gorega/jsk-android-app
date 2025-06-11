@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, Linking, StyleSheet, View } from "react-native";
+import { TouchableOpacity, Text, Linking, StyleSheet, View, Platform } from "react-native";
 import ModalPresentation from "../../ModalPresentation";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Feather from '@expo/vector-icons/Feather';
@@ -8,6 +8,7 @@ import { useLanguage } from '../../../utils/languageContext';
 
 export default function Contact({ contact }) {
     const { language } = useLanguage();
+    const isRTL = language === 'ar' || language === 'he';
     const [showContactModal, setShowContactModal] = useState(false);
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
 
@@ -30,7 +31,13 @@ export default function Contact({ contact }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalContent}>
-                        <Text style={[styles.modalTitle]}>
+                        <Text style={[styles.modalTitle,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                             {contact.label}
                         </Text>
                         
@@ -55,7 +62,10 @@ export default function Contact({ contact }) {
                         
                         <TouchableOpacity
                             style={[styles.modalOption, styles.withoutBorder]}
-                            onPress={() => setShowWhatsappOptions(true)}
+                            onPress={() => {
+                                setShowContactModal(false);
+                                setShowWhatsappOptions(true);
+                            }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
@@ -75,7 +85,13 @@ export default function Contact({ contact }) {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalContent}>
-                        <Text style={[styles.modalTitle]}>
+                        <Text style={[styles.modalTitle,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                             {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
                         </Text>
                         

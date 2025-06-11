@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   Platform,
-  ScrollView,
   Alert,
   Dimensions,
   Keyboard,
@@ -25,13 +24,14 @@ import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 
+// Get screen dimensions
+const { height } = Dimensions.get('window');
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const [authCheckComplete, setAuthCheckComplete] = useState(false);
   const [error, setError] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const scrollViewRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [biometricType, setBiometricType] = useState(null);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
@@ -345,7 +345,7 @@ export default function SignIn() {
       
       <View style={styles.container}>
         {/* Fixed Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, keyboardVisible && styles.headerSmall]}>
           <Image 
             style={[styles.logo, keyboardVisible && styles.logoSmall]} 
             source={TayarLogo} 
@@ -358,17 +358,8 @@ export default function SignIn() {
           </Animated.View>
         </View>
         
-        {/* Scrollable Content */}
-        <ScrollView
-          ref={scrollViewRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          scrollEventThrottle={16}
-          bounces={false}
-          overScrollMode="never"
-        >
+        {/* Fixed Content (replacing ScrollView) */}
+        <View style={styles.contentContainer}>
           {/* Biometric Login Button - Only show if available */}
           {isBiometricAvailable && previousLoginInfo && (
             <View style={styles.biometricContainer}>
@@ -420,10 +411,7 @@ export default function SignIn() {
               {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
             </Text>
           </TouchableOpacity>
-          
-          {/* Extra space at bottom to ensure scrollability */}
-          <View style={{height: 100}} />
-        </ScrollView>
+        </View>
         
         {/* Fixed Footer */}
         <View style={styles.footer}>
@@ -477,20 +465,23 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    paddingTop: 20,
     paddingBottom: 15,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
     zIndex: 1,
   },
+  headerSmall: {
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
   logo: {
     width: 80,
     height: 80,
   },
   logoSmall: {
-    width: 60, 
-    height: 60,
+    width: 50, 
+    height: 50,
     marginBottom: 5,
   },
   title: {
@@ -505,14 +496,12 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
   },
-  scrollView: {
+  contentContainer: {
     flex: 1,
     backgroundColor: '#F9FAFB',
-  },
-  scrollContent: {
     paddingHorizontal: 20,
+    justifyContent: 'flex-start',
     paddingTop: 20,
-    paddingBottom: 40,
   },
   errorAlert: {
     flexDirection: 'row',
@@ -530,15 +519,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
   },
-  formFields: {
-    marginBottom: 20,
-  },
   fieldContainer: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    paddingVertical: 8,
     paddingHorizontal: 4,
   },
   forgotPasswordRtl: {
@@ -598,7 +583,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap:10
+    gap: 10
   },
   registerText: {
     color: '#64748B',
@@ -619,7 +604,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   biometricContainer: {
-    marginBottom: 25,
+    marginBottom: 20,
   },
   biometricButton: {
     flexDirection: 'row',
@@ -628,7 +613,7 @@ const styles = StyleSheet.create({
     height: 56,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(67, 97, 238, 0.2)',
   },

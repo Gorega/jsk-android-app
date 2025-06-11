@@ -19,7 +19,7 @@ export default function FixedHeader({children,title,showBackButton=true}){
       }}>
     <View style={{flexDirection:"row",alignItems:"center",gap:15}}>
       {showBackButton && <TouchableOpacity onPressIn={()=> router.back()}>
-        <MaterialIcons style={{transform:rtl.isRTL ? [{ scaleX: -1 }] : []}} name="arrow-back" size={24} color="black" />
+        <MaterialIcons name={rtl.isRTL ? "arrow-forward" : "arrow-back"} size={24} color="black" />
       </TouchableOpacity>}
       <Text style={{fontSize:18,fontWeight:"500"}}>{title}</Text>
     </View>

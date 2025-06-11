@@ -101,7 +101,6 @@ export default function Settings() {
     
     // Confirm Delete Account Handler
     const confirmDeleteAccount = async () => {
-        console.log(user.userId)
         try {
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/delete/account`, {
                 method: "DELETE",
@@ -132,9 +131,21 @@ export default function Settings() {
                         {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                     </Text>
                 </View>
-                <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userRole}>{translations[language].roles[user.role]}</Text>
+                <View>
+                    <Text style={[styles.userName,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:rtl.isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>{user.name}</Text>
+                    <Text style={[styles.userRole,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:rtl.isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>{translations[language].roles[user.role]}</Text>
                 </View>
             </View>
 
@@ -340,9 +351,6 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 20,
         fontWeight: '600',
-    },
-    userInfo: {
-        flex: 1,
     },
     userName: {
         fontSize: 16,

@@ -5,14 +5,55 @@ import {
   Text, 
   View, 
   Platform,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated
 } from "react-native";
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import PickerModal from "../pickerModal/PickerModal"
+import { useLanguage } from "../../utils/languageContext";
 
 export default function Field({field, setSelectedValue, multiline}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
+    const animatedOpacity = useState(new Animated.Value(0))[0];
+    const animatedScale = useState(new Animated.Value(0.95))[0];
+    const { language } = useLanguage();
+    const isRTL = language === 'ar' || language === 'he';
+
+    // Animation when field receives focus
+    const handleFocus = () => {
+        setIsFocused(true);
+        Animated.parallel([
+            Animated.timing(animatedOpacity, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true
+            }),
+            Animated.timing(animatedScale, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: true
+            })
+        ]).start();
+    };
+
+    // Animation when field loses focus
+    const handleBlur = () => {
+        setIsFocused(false);
+        Animated.parallel([
+            Animated.timing(animatedOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true
+            }),
+            Animated.timing(animatedScale, {
+                toValue: 0.95,
+                duration: 200,
+                useNativeDriver: true
+            })
+        ]).start();
+    };
 
     // Icon based on field type
     const getFieldIcon = () => {
@@ -75,7 +116,9 @@ export default function Field({field, setSelectedValue, multiline}) {
                 {field.type === "input" && (
                     <View style={styles.inputWrapper}>
                         <View style={[
-                            styles.iconContainer
+                            styles.iconContainer,
+                            isFocused && styles.activeIconContainer,
+                            {textAlign: isRTL ? 'right' : 'left'}
                         ]}>
                             <Feather 
                                 name={getFieldIcon()} 
@@ -87,13 +130,15 @@ export default function Field({field, setSelectedValue, multiline}) {
                         <TextInput
                             multiline={multiline}
                             style={[
-                                styles.input
+                                styles.input,
+                                isFocused && styles.activeInput,
+                                {textAlign: isRTL ? 'right' : 'left'}
                             ]}
                             value={field.value}
                             onChangeText={field.onChange}
                             secureTextEntry={field.secureTextEntry}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(false)}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
                             placeholderTextColor="#9CA3AF"
                             placeholder={field.placeholder}
                             keyboardType={field.keyboardType || "default"}
@@ -102,8 +147,32 @@ export default function Field({field, setSelectedValue, multiline}) {
                             blurOnSubmit={false}
                         />
                         
+                        {field.rightIcon && (
+                            <View style={styles.rightIconContainer}>
+                                {field.rightIcon}
+                            </View>
+                        )}
+                        
+                        <Animated.View 
+                            style={[
+                                styles.focusBorder,
+                                {
+                                    opacity: animatedOpacity,
+                                    transform: [{ scale: animatedScale }]
+                                }
+                            ]} 
+                        />
+                        
                         {field.error && (
-                            <Text style={styles.errorText}>{field.error}</Text>
+                            <Text style={[styles.errorText,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }
+                            ]}>{field.error}</Text>
                         )}
                     </View>
                 )}
@@ -111,40 +180,63 @@ export default function Field({field, setSelectedValue, multiline}) {
                 {field.type === "select" && (
                     <View style={styles.selectWrapper}>
                         <TouchableOpacity 
-                          style={styles.selectField} 
+                          style={[styles.selectField,
+                            {textAlign: isRTL ? 'right' : 'left'}
+                          ]} 
                           onPress={() => {
                               setShowPickerModal(true);
-                              setIsFocused(true);
+                              handleFocus();
                               field.onSelect && field.onSelect();
                           }}
                           activeOpacity={0.7}
                         >
-                            <View style={[
-                                styles.iconContainer
-                            ]}>
-                                <Feather 
-                                    name={getFieldIcon()} 
-                                    size={18} 
-                                    color={isFocused ? "#4361EE" : "#94A3B8"} 
-                                />
+                            <View style={{flexDirection: 'row'}}>
+                                <View style={[
+                                    styles.iconContainer,
+                                    isFocused && styles.activeIconContainer
+                                ]}>
+                                    <Feather 
+                                        name={getFieldIcon()} 
+                                        size={18} 
+                                        color={isFocused ? "#4361EE" : "#94A3B8"} 
+                                    />
+                                </View>
+                                
+                                <Text style={[
+                                    styles.selectText,
+                                    field.value ? styles.valueText : styles.placeholderText
+                                ]}>
+                                    {field.value || field.placeholder || 'Select...'}
+                                </Text>
                             </View>
-                            
-                            <Text style={[
-                                styles.selectText,
-                                field.value ? styles.valueText : styles.placeholderText
-                            ]}>
-                                {field.value || field.placeholder || 'Select...'}
-                            </Text>
                             
                             <View style={[
                                 styles.dropdownIconContainer
                             ]}>
                                 <Feather name="chevron-down" size={18} color="#94A3B8" />
                             </View>
+                            
+                            <Animated.View 
+                                style={[
+                                    styles.focusBorder,
+                                    {
+                                        opacity: animatedOpacity,
+                                        transform: [{ scale: animatedScale }]
+                                    }
+                                ]} 
+                            />
                         </TouchableOpacity>
                         
                         {field.error && (
-                            <Text style={styles.errorText}>{field.error}</Text>
+                            <Text style={[styles.errorText,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>{field.error}</Text>
                         )}
                     </View>
                 )}
@@ -156,10 +248,15 @@ export default function Field({field, setSelectedValue, multiline}) {
                         showPickerModal={showPickerModal}
                         setShowPickerModal={() => {
                             setShowPickerModal(false);
-                            setIsFocused(false);
+                            handleBlur();
                         }}
                         setSelectedValue={setSelectedValue}
-                        field={field}
+                        field={{
+                            ...field,
+                            showSearchBar: field.name === 'city', // Show search bar for city field
+                        }}
+                        prickerSearchValue={searchValue}
+                        setPickerSearchValue={setSearchValue}
                     />
                 )}
             </View>
@@ -170,7 +267,7 @@ export default function Field({field, setSelectedValue, multiline}) {
 const styles = StyleSheet.create({
     fieldContainer: {
         borderWidth: 1,
-        borderRadius: 12,
+        borderRadius: 16,
         padding: 0,
         position: 'relative',
         backgroundColor: "#FFFFFF",
@@ -202,6 +299,7 @@ const styles = StyleSheet.create({
         width: '100%',
         flexDirection: 'row',
         paddingHorizontal: 10,
+        gap: 10
     },
     iconContainer: {
         position: 'relative',
@@ -211,6 +309,9 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 2,
+    },
+    activeIconContainer: {
+        transform: [{ scale: 1.1 }]
     },
     input: {
         flex: 1,
@@ -222,9 +323,33 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         minHeight: 58,
     },
+    activeInput: {
+        color: '#4361EE',
+    },
+    rightIconContainer: {
+        position: 'absolute',
+        right: 10,
+        top: 0,
+        height: '100%',
+        justifyContent: 'center',
+        zIndex: 2,
+    },
+    focusBorder: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: 16,
+        borderWidth: 2,
+        borderColor: 'rgba(67, 97, 238, 0.2)',
+        pointerEvents: 'none',
+    },
     selectWrapper: {
         position: 'relative',
         width: '100%',
+        flexDirection: 'row',
+        paddingHorizontal: 10,
     },
     selectField: {
         width: '100%',
@@ -246,6 +371,7 @@ const styles = StyleSheet.create({
     dropdownIconContainer: {
         position: 'absolute',
         top: 18,
+        right: 16,
         width: 24,
         height: 24,
         justifyContent: 'center',
