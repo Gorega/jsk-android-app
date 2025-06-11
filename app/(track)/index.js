@@ -23,6 +23,7 @@ const TrackingOrder = () => {
   const [error, setError] = useState(null);
   const { language } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
+  const isRTL = language === 'ar' || language === 'he';
 
   const onRefresh = useCallback(async () => {
     try {
@@ -338,7 +339,13 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue]}>
+                <Text style={[styles.infoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                   {order.receiver_name || '-'}
                 </Text>
               </View>
@@ -384,7 +391,13 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue]}>
+                <Text style={[styles.infoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                   {order.receiver_city || '-'}{order.receiver_address ? `, ${order.receiver_address}` : ''}
                 </Text>
               </View>
@@ -396,7 +409,13 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.address}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue]}>
+                <Text style={[styles.infoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                   {order.receiver_address || '-'}
                 </Text>
               </View>
@@ -427,7 +446,13 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue]}>
+                <Text style={[styles.infoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                   {order.sender || '-'}
                 </Text>
               </View>
@@ -473,22 +498,17 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue]}>
+                <Text style={[styles.infoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                   {order.sender_city || '-'}{order.sender_address ? `, ${order.sender_address}` : ''}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow]}>
-                <View style={[styles.labelContainer]}>
-                  <Feather name="map" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
-                    {translations[language].tabs.orders.track.branch}
-                  </Text>
-                </View>
-                <Text style={[styles.infoValue]}>
-                  {order.sender_branch || '-'}
-                </Text>
-              </View>
             </View>
           </View>
 
@@ -603,7 +623,13 @@ const TrackingOrder = () => {
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="dollar-sign" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel]}>
+                  <Text style={[styles.financialLabel,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                     {translations[language].tabs.orders.track.codValue}
                   </Text>
                   <Text style={styles.financialValue}>{order.total_cod_value || '0'}</Text>
@@ -613,7 +639,13 @@ const TrackingOrder = () => {
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel]}>
+                  <Text style={[styles.financialLabel,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                     {translations[language].tabs.orders.track.deliveryFee}
                   </Text>
                   <Text style={styles.financialValue}>{order.delivery_fee || '0'}</Text>
@@ -623,7 +655,13 @@ const TrackingOrder = () => {
                   <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
                     <Feather name="check-circle" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabelHighlight]}>
+                  <Text style={[styles.financialLabelHighlight,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                     {translations[language].tabs.orders.track.netValue}
                   </Text>
                   <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
@@ -702,7 +740,13 @@ const TrackingOrder = () => {
               <View style={styles.cardContent}>
                 <View style={[styles.noteContainer]}>
                   <Feather name="message-square" size={20} color="#F59E0B" style={styles.noteIcon} />
-                  <Text style={[styles.noteText]}>
+                  <Text style={[styles.noteText,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                     {order.note_content}
                   </Text>
                 </View>
@@ -728,7 +772,7 @@ const TrackingOrder = () => {
             
             <View style={styles.cardContent}>
               <View style={[styles.packageWrapper]}>
-                <View style={styles.packageImageContainer}>
+                <View>
                   <View style={styles.packageImagePlaceholder}>
                     <Feather name="box" size={32} color="#4361EE" />
                   </View>
@@ -742,7 +786,13 @@ const TrackingOrder = () => {
                         {translations[language].tabs.orders.track.package}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue]}>
+                    <Text style={[styles.packageInfoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                       {order?.order_items ? order?.order_items : translations[language].tabs.orders.track.unknown}
                     </Text>
                   </View>
@@ -754,7 +804,13 @@ const TrackingOrder = () => {
                         {translations[language].tabs.orders.track.quantity}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue]}>
+                    <Text style={[styles.packageInfoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                       {order?.number_of_items || 0}
                     </Text>
                   </View>
@@ -766,7 +822,13 @@ const TrackingOrder = () => {
                         {translations[language].tabs.orders.track.weight}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue]}>
+                    <Text style={[styles.packageInfoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                       {order?.order_weight || 0} kg
                     </Text>
                   </View>
@@ -779,7 +841,13 @@ const TrackingOrder = () => {
                           {translations[language].tabs.orders.track.receivedItems}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue]}>
+                      <Text style={[styles.packageInfoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {order?.received_items}
                       </Text>
                     </View>
@@ -793,7 +861,13 @@ const TrackingOrder = () => {
                           {translations[language].tabs.orders.track.receivedQuantity}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue]}>
+                      <Text style={[styles.packageInfoValue,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {order?.received_quantity}
                       </Text>
                     </View>
@@ -849,7 +923,13 @@ const TrackingOrder = () => {
                       <Feather name={statusInfo.icon} size={20} color="#ffffff" />
                     </LinearGradient>
                     <View style={styles.timelineContent}>
-                      <Text style={[styles.timelineStatus]}>
+                      <Text style={[styles.timelineStatus,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {item.new_status} {item?.status_reason ? ` | ${item?.status_reason}` : ''}
                       </Text>
                       
@@ -907,7 +987,13 @@ const TrackingOrder = () => {
               <View style={styles.supportContent}>
                 <View style={styles.supportTextContainer}>
                   <Feather name="alert-circle" size={24} color="#EF4444" style={styles.supportTextIcon} />
-                  <Text style={[styles.supportText]}>
+                  <Text style={[styles.supportText,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                     {translations[language].tabs.orders.track.issue}
                   </Text>
                 </View>
@@ -927,7 +1013,13 @@ const TrackingOrder = () => {
                     style={styles.supportButtonGradient}
                   >
                     <Feather name="message-circle" size={18} color="#ffffff" style={{ marginRight: 10 }} />
-                    <Text style={styles.supportButtonText}>
+                    <Text style={styles.supportButtonText,{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }}>
                       {translations[language].tabs.orders.track.openCase}
                     </Text>
                   </LinearGradient>
