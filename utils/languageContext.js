@@ -847,7 +847,25 @@ export const translations = {
       noNotifications:"No Notifications",
       noNotificationsTitle:"No Notifications",
       order:"Order",
-      loading:"Loading..."
+      loading:"Loading...",
+      confirmation:{
+        processing:"Processing...",
+        pleaseWait:"Please wait...",
+        success:"Success",
+        error:"Error",
+        confirm:"Confirm",
+        ok:"OK",
+        errorFailed:"Something went wrong",
+        errorValidationMsg:"Please fill in all fields",
+        cancelled:"Cancelled",
+        cancelledMessage:"The request has been cancelled.",
+        successMessage:"Your confirmation has been processed successfully.",
+        transactionId:"Transaction ID",
+        title:"Confirmation Required",
+        message:"Do you want to confirm this request?",
+        confirm:"Confirm",
+        cancel:"Cancel"
+      }
     },
 
     routes: {
@@ -1968,7 +1986,25 @@ export const translations = {
       noNotifications:"لا يوجد اشعارات",
       order:"طلب",
       noNotificationsTitle:"لا يوجد اشعارات",
-      loading:"جارٍ التحميل..."
+      loading:"جارٍ التحميل...",
+      confirmation:{
+        processing:"جارٍ المعالجة...",
+        pleaseWait:"يرجى الإنتظار...",
+        success:"نجاح",
+        error:"خطأ",
+        confirm:"تأكيد",
+        ok:"موافق",
+        errorFailed:"حدث خطأ ما",
+        errorValidationMsg:"يرجى ملء جميع الحقول",
+        cancelled:"إلغاء",
+        cancelledMessage:"تم إلغاء الطلب",
+        successMessage:"تم معالجة التأكيد بنجاح",
+        transactionId:"معرف الطلب",
+        title:"تأكيد مطلوب",
+        message:"هل تريد تأكيد هذا الطلب؟",
+        confirm:"تأكيد",
+        cancel:"إلغاء"
+      }
     },
 
     // Search

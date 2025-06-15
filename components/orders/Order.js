@@ -155,6 +155,9 @@ export default function Order({ user, order }) {
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleStatusUpdate = (newStatusOrUpdater) => {
+        // First close any open modals
+        setShowStatusUpdateModal(false);
+        
         // Check if the input is a function (updater) or direct value
         if (typeof newStatusOrUpdater === 'function') {
             // Call the updater function with the current selectedValue
@@ -174,13 +177,13 @@ export default function Order({ user, order }) {
             if (statusOption?.requiresBranch) {
                 // Fetch branches and show branch selection modal
                 fetchBranches();
-                setShowBranchModal(true);
+                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
             } else if (statusOption?.requiresReason) {
                 // Show reason selection modal
-                setShowReasonModal(true);
+                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
             } else {
                 // Directly show confirmation modal if no branch or reason needed
-                setShowConfirmStatusChangeUpdateModal(true);
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
             }
         } else {
             // Direct value (not a function updater)
@@ -198,11 +201,11 @@ export default function Order({ user, order }) {
             
             if (statusOption?.requiresBranch) {
                 fetchBranches();
-                setShowBranchModal(true);
+                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
             } else if (statusOption?.requiresReason) {
-                setShowReasonModal(true);
+                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
             } else {
-                setShowConfirmStatusChangeUpdateModal(true);
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
             }
         }
     };
@@ -221,7 +224,6 @@ export default function Order({ user, order }) {
             });
             
             const data = await response.json();
-            
             if (data && data.data) {
                 const branchOptions = data.data.map(branch => ({
                     label: branch.name,
@@ -235,14 +237,16 @@ export default function Order({ user, order }) {
 
     const handleReasonSelect = (reasonOption) => {
         setSelectedReason(reasonOption);
+        // Close current modal first, then open the next one with a slight delay
         setShowReasonModal(false);
-        setShowConfirmStatusChangeUpdateModal(true);
+        setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
     const handleBranchSelect = (branchOption) => {
         setSelectedBranch(branchOption);
+        // Close current modal first, then open the next one with a slight delay
         setShowBranchModal(false);
-        setShowConfirmStatusChangeUpdateModal(true);
+        setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
     const changeStatusHandler = async () => {
@@ -261,8 +265,12 @@ export default function Order({ user, order }) {
             };
             
             if (!updates.status) {
-                setErrorMessage(translations[language].tabs.orders.order.missingStatus || "Missing status value");
-                setShowErrorModal(true);
+                // Close current modal first, then show error
+                setShowConfirmStatusChangeUpdateModal(false);
+                setTimeout(() => {
+                    setErrorMessage(translations[language].tabs.orders.order.missingStatus || "Missing status value");
+                    setShowErrorModal(true);
+                }, 300);
                 setIsUpdating(false);
                 return;
             }
@@ -282,26 +290,37 @@ export default function Order({ user, order }) {
             
             const data = await res.json();
             
+            // Close current modal first
+            setShowConfirmStatusChangeUpdateModal(false);
+            
             if (!data.error) {
                 // Reset all state values on successful update
-                setShowConfirmStatusChangeUpdateModal(false);
                 setSelectedReason(null);
                 setSelectedBranch(null);
                 setUpdatedStatusNote("");
                 
-                // Show success modal
-                setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully");
-                setShowSuccessModal(true);
-                setTimeout(() => setShowSuccessModal(false), 2500);
+                // Show success modal with a delay
+                setTimeout(() => {
+                    setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully");
+                    setShowSuccessModal(true);
+                    setTimeout(() => setShowSuccessModal(false), 2500);
+                }, 100);
             } else {                
-                // Show error modal with the error message from the backend
-                setErrorMessage(data.error || translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
-                setShowErrorModal(true);
+                // Show error modal with the error message from the backend after a delay
+                setTimeout(() => {
+                    setErrorMessage(translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
+                    setShowErrorModal(true);
+                }, 100);
             }
         } catch (error) {            
-            // Show error modal for network or unexpected errors
-            setErrorMessage(translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
-            setShowErrorModal(true);
+            // Close current modal first
+            setShowConfirmStatusChangeUpdateModal(false);
+            
+            // Show error modal for network or unexpected errors after a delay
+            setTimeout(() => {
+                setErrorMessage(translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
+                setShowErrorModal(true);
+            }, 100);
         } finally {
             setIsUpdating(false);
         }
