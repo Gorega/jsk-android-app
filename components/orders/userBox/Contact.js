@@ -5,12 +5,68 @@ import Feather from '@expo/vector-icons/Feather';
 import { useState } from "react";
 import { translations } from '../../../utils/languageContext';
 import { useLanguage } from '../../../utils/languageContext';
+import { useAuth } from '../../../RootLayout';
 
-export default function Contact({ contact }) {
+export default function Contact({ contact, orderId }) {
     const { language } = useLanguage();
+    const { user } = useAuth();
     const isRTL = language === 'ar' || language === 'he';
     const [showContactModal, setShowContactModal] = useState(false);
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
+
+    // Function to record contact history
+    const recordContactHistory = async (contactType) => {
+        // Only record if user is driver or delivery_company
+        if (!user || !['driver', 'delivery_company'].includes(user.role?.toLowerCase()) || !orderId) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/history/record`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': "en"
+                },
+                body: JSON.stringify({
+                    orderId: orderId,
+                    fieldName: contactType,
+                    oldValue: '',
+                    newValue: `قام السائق بالتواصل مع ${contact.userName} عبر ${contactType}`
+                })
+            });
+            const data = await response.json();
+            console.log(data);
+        } catch (error) {
+            console.error('Error recording contact history:', error);
+        }
+    };
+
+    // Handle phone call
+    const handlePhoneCall = () => {
+        recordContactHistory('اتصال هاتفي');
+        Linking.openURL(`tel:${contact.phone}`);
+    };
+
+    // Handle SMS
+    const handleSMS = () => {
+        recordContactHistory('رسالة SMS');
+        Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(contact.msg)}`);
+    };
+
+    // Handle WhatsApp with 972 prefix
+    const handleWhatsApp972 = () => {
+        recordContactHistory('whatsapp_972');
+        Linking.openURL(`https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`);
+    };
+
+    // Handle WhatsApp with 970 prefix
+    const handleWhatsApp970 = () => {
+        recordContactHistory('whatsapp_970');
+        Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`);
+    };
 
     return (
         <>
@@ -43,11 +99,14 @@ export default function Contact({ contact }) {
                         
                         <TouchableOpacity
                             style={[styles.modalOption]}
-                            onPress={() => Linking.openURL(
-                                contact.type === "phone" 
-                                    ? `tel:${contact.phone}` 
-                                    : `sms:${contact.phone}?body=${encodeURIComponent(contact.msg)}`
-                            )}
+                            onPress={() => {
+                                if (contact.type === "phone") {
+                                    handlePhoneCall();
+                                } else {
+                                    handleSMS();
+                                }
+                                setShowContactModal(false);
+                            }}
                         >
                             <View style={styles.modalIconContainer}>
                                 {contact.type === "phone" 
@@ -97,9 +156,10 @@ export default function Contact({ contact }) {
                         
                         <TouchableOpacity
                             style={[styles.modalOption]}
-                            onPress={() => Linking.openURL(
-                                `https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`
-                            )}
+                            onPress={() => {
+                                handleWhatsApp972();
+                                setShowWhatsappOptions(false);
+                            }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
@@ -111,9 +171,10 @@ export default function Contact({ contact }) {
                         
                         <TouchableOpacity
                             style={[styles.modalOption, styles.withoutBorder]}
-                            onPress={() => Linking.openURL(
-                                `https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`
-                            )}
+                            onPress={() => {
+                                handleWhatsApp970();
+                                setShowWhatsappOptions(false);
+                            }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />

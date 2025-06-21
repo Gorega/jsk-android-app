@@ -5,7 +5,7 @@ import { translations } from '../../../utils/languageContext';
 import { useLanguage } from '../../../utils/languageContext';
 import { RTLWrapper } from '../../../utils/RTLWrapper';
 
-export default function BusinessBox({ box }) {
+export default function BusinessBox({ box, orderId }) {
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
 
@@ -34,16 +34,20 @@ export default function BusinessBox({ box }) {
                             type: "phone",
                             label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                             phone: box.phone,
+                            userName: box.userName,
                             msg: ""
                         }}
+                        orderId={orderId}
                     />
                     <Contact
                         contact={{
                             type: "msg",
                             label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                             phone: box.phone,
+                            userName: box.userName,
                             msg: ""
                         }}
+                        orderId={orderId}
                     />
                 </View>
             </View>

@@ -255,6 +255,7 @@ export const translations = {
         "order": {
           "states": {
             "pickedUp": "Picked Up",
+            "on_the_way_back": "On the Way Back",
             "deliveredToDestinationBranch": "Delivered to Destination Branch",
             "rescheduleReasons": {
               "title": "Reschedule",
@@ -404,6 +405,7 @@ export const translations = {
               title:"Sender",
               fields:{
                 sender: "Sender",
+                with_money_receive: "With Money Receive",
                 my_balance_deduct: "Deduct from my balance",
                 sender_deduct: "Deduct from sender balance",
                 processing_return: "Processing Return",
@@ -848,6 +850,10 @@ export const translations = {
       noNotificationsTitle:"No Notifications",
       order:"Order",
       loading:"Loading...",
+      newNotification:"New Notification",
+      appNotification:"App Notification",
+      orderNotification:"Order Notification",
+      newNotificationMessage:"You have a new notification",
       confirmation:{
         processing:"Processing...",
         pleaseWait:"Please wait...",
@@ -1395,6 +1401,7 @@ export const translations = {
         },
         "order": {
           "states": {
+            "on_the_way_back": "اعادته الى قيد التوصيل",
             "pickedUp": "تم الاستلام",
             "deliveredToDestinationBranch": "تم التوصيل إلى الفرع الوجهة",
             "rescheduleReasons": {
@@ -1545,6 +1552,7 @@ export const translations = {
               title: "المرسل",
               fields: {
                 "sender": "المرسل",
+                "with_money_receive": "مع استلام مبلغ مالي",
                 "my_balance_deduct": "خصم من رصيدي",
                 "sender_deduct": "خصم من رصيد المرسل",
                 "processing_return": "جاري معالجة الإرجاع",
@@ -1581,7 +1589,7 @@ export const translations = {
                 "deductions_ready": "الخصومات جاهزة",
                 "deductions_on_submit": "سيتم تطبيق الخصومات عند الإرسال",
                 "sender_required": "مطلوب إدخال المرسل",
-                "cod_required": "مطلوب قيمة الدفع عند الاستلام",
+                "cod_required": "مطلوب ادخال سعر الطرد",
                 "no_cod_values": "لم يتم العثور على قيم الدفع عند الاستلام",
                 "cancel": "إلغاء",
                 "confirm": "تأكيد",
@@ -1987,6 +1995,9 @@ export const translations = {
       order:"طلب",
       noNotificationsTitle:"لا يوجد اشعارات",
       loading:"جارٍ التحميل...",
+      newNotification:"اشعار جديد",
+      newNotificationMessage:"لديك اشعار جديد",
+      deleteAllConfirm:"هل أنت متأكد من أنك تريد مسح جميع الاشعارات؟",
       confirmation:{
         processing:"جارٍ المعالجة...",
         pleaseWait:"يرجى الإنتظار...",
@@ -2111,7 +2122,7 @@ export const translations = {
 
     // track
     track: {
-      title: "تتبع حزمتك",
+      title: "تتبع طردك",
       desc: "أدخل رقم الطرد لبدء التتبع",
       placeholder: "مثال: 12321411"
     },

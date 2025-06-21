@@ -46,6 +46,10 @@ export default function RouteNavigate() {
     // Add these status options
     const statusOptions = [
         {
+            label: translations[language].tabs?.orders?.order?.states?.on_the_way_back,
+            value: "on_the_way"
+        },
+        {
             label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.title,
             value: "reschedule",
             requiresReason: true,
@@ -428,7 +432,34 @@ export default function RouteNavigate() {
         }
     };
 
-    
+    // Add this function to record contact history
+    const recordContactHistory = async (contactType) => {
+        // Only record if user is driver or delivery_company and orderId exists
+        if (!user || !['driver', 'delivery_company'].includes(user.role?.toLowerCase()) || !currentOrder?.order_id) {
+            return;
+        }
+
+        try {
+            await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${currentOrder.order_id}/history/record`, {
+                method: 'POST',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language
+                },
+                body: JSON.stringify({
+                    orderId: currentOrder.order_id,
+                    fieldName: contactType,
+                    oldValue: '',
+                    newValue: `تواصل السائق مع ${currentOrder.receiver_name} عبر ${contactType}`
+                })
+            });
+        } catch (error) {
+            console.error('Error recording contact history:', error);
+        }
+    };
+
     if (!isAllowed) {
         return null; // Will be redirected in useEffect
     }
@@ -945,6 +976,8 @@ export default function RouteNavigate() {
                             style={styles.modalOption}
                             onPress={() => {
                                 setShowCallOptionsModal(false);
+                                // Record contact history for phone call
+                                recordContactHistory('اتصال هاتفي');
                                 Linking.openURL(`tel:${currentPhoneNumber}`);
                             }}
                         >
@@ -959,6 +992,8 @@ export default function RouteNavigate() {
                                 setShowCallOptionsModal(false);
                                 const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
                                     currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                // Record contact history for WhatsApp 972
+                                recordContactHistory('whatsapp_972');
                                 Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
                             }}
                         >
@@ -971,6 +1006,8 @@ export default function RouteNavigate() {
                                 setShowCallOptionsModal(false);
                                 const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
                                     currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                // Record contact history for WhatsApp 970
+                                recordContactHistory('whatsapp_970');
                                 Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
                             }}
                         >

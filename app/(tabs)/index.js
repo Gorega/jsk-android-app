@@ -109,7 +109,7 @@ export default function HomeScreen() {
     orderIds: data?.money_in_branch_orders?.order_ids
   } : null, user.role === "business" ? {
     label: translations[language].tabs.index.boxes.readyOrders,
-    icon: <MaterialCommunityIcons name="package-variant-closed-check" size={24} color="white" />,
+    icon: <MaterialCommunityIcons name="package-variant-closed" size={24} color="white" />,
     gradientColors: ['#8338EC', '#3A0CA3'],
     numberOfOrders: data?.returned_in_branch_orders?.count,
     orderIds: data?.returned_in_branch_orders?.order_ids
@@ -381,15 +381,7 @@ export default function HomeScreen() {
       // const token = await getToken("userToken");
       const [moneyRes, packageRes] = await Promise.all([
         Promise.all([
-          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_money?status_key=money_out`, {
-            credentials: 'include',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              // "Cookie": token ? `token=${token}` : ""
-            }
-          }),
-          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/exceptional_money?status_key=money_out/pending_driver_collect`, {
+          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?delivery_type=money&status=money_out`, {
             credentials: 'include',
             headers: {
               'Accept': 'application/json',
@@ -397,14 +389,13 @@ export default function HomeScreen() {
               // "Cookie": token ? `token=${token}` : ""
             }
           })
-        ]).then(async ([businessRes, exceptionalRes]) => {
+        ]).then(async ([businessRes]) => {
           const businessData = await businessRes.json();
-          const exceptionalData = await exceptionalRes.json();
           return {
-            data: [...(businessData.data || []), ...(exceptionalData.data || [])]
+            data: [...(businessData.data || [])]
           };
         }),
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/business_returned?status_key=returned_out`, {
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?delivery_type=package&status=returned_out`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',

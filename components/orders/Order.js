@@ -81,6 +81,8 @@ export default function Order({ user, order }) {
     });
 
     const statusOptions = authUser.role === "driver" || authUser.role === "delivery_company" ? [{
+        label: translations[language].tabs?.orders?.order?.states?.on_the_way_back, value: "on_the_way"
+    },{
         label: translations[language].tabs.orders.order.states.rescheduleReasons?.title, value: "reschedule",
         requiresReason: true,
         reasons: [
@@ -479,16 +481,20 @@ export default function Order({ user, order }) {
                                                 type: "phone",
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
+                                                userName: order.receiver_name,
                                                 msg: ""
                                             }}
+                                            orderId={order.order_id}
                                         />
                                         <Contact
                                             contact={{
                                                 type: "msg",
                                                 label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                                                 phone: order.receiver_mobile,
+                                                userName: order.receiver_name,
                                                 msg: ""
                                             }}
+                                            orderId={order.order_id}
                                         />
                                     </View>
                                 </View>
@@ -635,6 +641,7 @@ export default function Order({ user, order }) {
                                             userName: order.sender,
                                             phone: order.sender_mobile
                                         }} 
+                                        orderId={order.order_id}
                                     />
                                 )}
                                 
@@ -644,6 +651,7 @@ export default function Order({ user, order }) {
                                         userName: order.receiver_name,
                                         phone: order.receiver_mobile
                                     }} 
+                                    orderId={order.order_id}
                                 />
                                 
                                 {!["driver","delivery_company", "business"].includes(authUser.role) && (
@@ -653,6 +661,7 @@ export default function Order({ user, order }) {
                                             userName: order.driver ? order.driver : translations[language].tabs.orders.order.unknown,
                                             phone: order.driver_mobile ? order.driver_mobile : ""
                                         }} 
+                                        orderId={order.order_id}
                                     />
                                 )}
                             </View>

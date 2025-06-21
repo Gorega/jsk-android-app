@@ -1,5 +1,5 @@
 // RootLayout.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet, I18nManager, Platform, Alert } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,7 +11,7 @@ import useFetch from '@/utils/useFetch';
 import { SocketProvider } from '@/utils/socketContext';
 import { RTLWrapper } from './utils/RTLWrapper';
 import { LanguageProvider } from './utils/languageContext';
-
+import { initializeNotifications } from './utils/notificationHelper';
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
@@ -43,8 +43,9 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState(null);
   const { getRequest, data: user } = useFetch();
-  const { setLanguage } = useLanguage();   // ← here it works
-
+  const { setLanguage } = useLanguage();
+  const notificationListenerRef = useRef(null);
+  
   // Add state for RTL initialization
   const [rtlInitialized, setRtlInitialized] = useState(false);
   
@@ -52,6 +53,24 @@ export default function RootLayout() {
   useEffect(() => {
     setupRTL().then(() => setRtlInitialized(true));
   }, []);
+
+  useEffect(() => {
+    // Initialize notifications and store the listener reference
+    async function setupNotifications() {
+      if (isAuthenticated) {
+        notificationListenerRef.current = await initializeNotifications();
+      }
+    }
+    
+    setupNotifications();
+    
+    // Clean up notification listeners when component unmounts
+    return () => {
+      if (notificationListenerRef.current) {
+        notificationListenerRef.current.remove();
+      }
+    };
+  }, [isAuthenticated]);
 
   // Bootstrap everything in one effect
   useEffect(() => {

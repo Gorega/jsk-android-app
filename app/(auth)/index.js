@@ -16,7 +16,7 @@ import {
   KeyboardAvoidingView,
   ScrollView
 } from "react-native";
-import { Link, useRouter, Redirect } from "expo-router";
+import { Link, useRouter, Redirect, router } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import Field from "../../components/sign/Field";
@@ -55,12 +55,45 @@ export default function SignIn() {
     password: ""
   });
 
+  // Add state to track keyboard height
+  const [footerHeight, setFooterHeight] = useState(0);
+
+  // Add a new state to track the current active field's position
+  const [activeFieldPosition, setActiveFieldPosition] = useState(0);
+
   // Handle keyboard appearance
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
       (event) => {
         setKeyboardVisible(true);
+        // Store keyboard height for positioning
+        const keyboardHeight = event.endCoordinates.height;
+        setFooterHeight(keyboardHeight);
+        
+        // If we have an active field, ensure it's visible above the keyboard
+        if (activeField && scrollViewRef.current && activeFieldPosition > 0) {
+          // Calculate the screen height
+          const screenHeight = Dimensions.get('window').height;
+          
+          // Calculate if the active field is hidden by the keyboard
+          const fieldBottomPosition = activeFieldPosition + 80; // Field height + some padding
+          const visibleAreaBottom = screenHeight - keyboardHeight - 120; // Account for footer height
+          
+          if (fieldBottomPosition > visibleAreaBottom) {
+            // Calculate how much we need to scroll to make the field visible
+            const scrollAmount = fieldBottomPosition - visibleAreaBottom + 50; // Extra padding
+            
+            // Scroll to make the field visible
+            setTimeout(() => {
+              scrollViewRef.current.scrollTo({ 
+                y: scrollAmount,
+                animated: true 
+              });
+            }, 100);
+          }
+        }
+        
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 200,
@@ -73,6 +106,8 @@ export default function SignIn() {
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
         setKeyboardVisible(false);
+        setFooterHeight(0);
+        setActiveFieldPosition(0);
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 200,
@@ -85,22 +120,21 @@ export default function SignIn() {
       keyboardWillShowListener.remove();
       keyboardWillHideListener.remove();
     };
-  }, []);
+  }, [activeField, activeFieldPosition]);
 
   // Handle field focus to scroll to the active field
   const handleFieldFocus = (fieldName) => {
     setActiveField(fieldName);
     
-    // Add a small delay to ensure the keyboard is shown before scrolling
-    setTimeout(() => {
-      // Find the index of the focused field
-      const fieldIndex = fields.findIndex(field => field.name === fieldName);
-      if (fieldIndex !== -1 && scrollViewRef.current) {
-        // Calculate scroll position based on field index
-        const scrollPosition = fieldIndex * 70; // Approximate height per field
-        scrollViewRef.current.scrollTo({ y: scrollPosition, animated: true });
-      }
-    }, 100);
+    // Find the field's index
+    const fieldIndex = fields.findIndex(field => field.name === fieldName);
+    
+    // Calculate the field's position based on its index
+    // This is an approximation, adjust based on your actual layout
+    const fieldPosition = fieldIndex * 70 + 250; // Base offset + field height * index
+    setActiveFieldPosition(fieldPosition);
+    
+    // No need to manually scroll here, the keyboard listener will handle it
   };
 
   // Check for biometric support and previous login info
@@ -365,10 +399,11 @@ export default function SignIn() {
       
       <KeyboardAvoidingView 
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        enabled={Platform.OS === 'ios'}
       >
-        {/* Fixed Header */}
+        {/* Fixed Header - Make it smaller when keyboard is shown */}
         <View style={[styles.header, keyboardVisible && styles.headerSmall]}>
           <Image 
             style={[styles.logo, keyboardVisible && styles.logoSmall]} 
@@ -376,114 +411,141 @@ export default function SignIn() {
             resizeMode="contain" 
           />
           
-          <Animated.View style={{opacity: fadeAnim}}>
-            <Text style={styles.title}>{translations[language]?.auth.welcome}</Text>
-            <Text style={styles.subtitle}>{translations[language]?.auth.signMessage}</Text>
-          </Animated.View>
-        </View>
-        
-        {/* Scrollable Content */}
-        <ScrollView 
-          ref={scrollViewRef}
-          style={styles.contentContainer}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Biometric Login Button - Only show if available */}
-          {isBiometricAvailable && previousLoginInfo && (
-            <View style={styles.biometricContainer}>
-              <TouchableOpacity
-                style={[styles.biometricButton]}
-                onPress={biometricAuthHandler}
-                disabled={loading}
-                activeOpacity={0.8}
-              >
-                <MaterialIcons name="fingerprint" size={28} color="#4361EE" />
-                <Text style={styles.biometricText}>
-                  {translations[language]?.auth?.loginWithBiometric || 
-                    `Login with ${biometricType === 'face' ? 'Face ID' : 'Fingerprint'}`}
-                </Text>
-              </TouchableOpacity>
-              <View style={styles.dividerContainer}>
-                <View style={styles.divider} />
-                <Text style={styles.dividerText}>
-                  {translations[language]?.auth?.or || 'OR'}
-                </Text>
-                <View style={styles.divider} />
-              </View>
+          {/* Hide welcome text when keyboard is visible */}
+          {!keyboardVisible && (
+            <View>
+              <Text style={styles.title}>{translations[language]?.auth.welcome}</Text>
+              <Text style={styles.subtitle}>{translations[language]?.auth.signMessage}</Text>
             </View>
           )}
-
-          {/* Error alert */}
-          {error ? (
-            <View style={styles.errorAlert}>
-              <Feather name="alert-circle" size={20} color="#EF4444" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-          
-          {/* Fields */}
-          <View style={styles.formFields}>
-            {fields.map((field, index) => (
-              <View key={index} style={styles.fieldContainer}>
-                <Field 
-                  field={field} 
-                  multiline={false} 
-                  onFocus={handleFieldFocus}
-                />
-              </View>
-            ))}
-          </View>
-          
-          {/* Forgot password */}
-          <TouchableOpacity 
-            style={[styles.forgotPassword]}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.forgotPasswordText}>
-              {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
-            </Text>
-          </TouchableOpacity>
-          
-          {/* Add extra space at bottom when keyboard is visible */}
-          {keyboardVisible && <View style={styles.keyboardSpacing} />}
-        </ScrollView>
+        </View>
         
-        {/* Fixed Footer */}
-        <View style={styles.footer}>
-          {/* Login button */}
-          <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
-            onPress={loginHandler}
-            disabled={loading}
-            activeOpacity={0.8}
+        {/* Main content area */}
+        <View style={styles.mainContent}>
+          <ScrollView 
+            ref={scrollViewRef}
+            style={styles.contentContainer}
+            contentContainerStyle={[
+              styles.scrollContent,
+              // Add extra padding at the bottom to ensure content is scrollable above the footer
+              {paddingBottom: keyboardVisible ? 200 : 100} // Increased padding
+            ]}
+            keyboardShouldPersistTaps="always"
+            showsVerticalScrollIndicator={false}
           >
-            {loading ? (
-              <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : (
-              <Text style={styles.loginButtonText}>
-                {translations[language]?.auth.login}
-              </Text>
+            {/* Biometric Login Button - Only show if available */}
+            {isBiometricAvailable && previousLoginInfo && (
+              <View style={styles.biometricContainer}>
+                <TouchableOpacity
+                  style={[styles.biometricButton]}
+                  onPress={biometricAuthHandler}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="fingerprint" size={28} color="#4361EE" />
+                  <Text style={styles.biometricText}>
+                    {translations[language]?.auth?.loginWithBiometric || 
+                      `Login with ${biometricType === 'face' ? 'Face ID' : 'Fingerprint'}`}
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.dividerContainer}>
+                  <View style={styles.divider} />
+                  <Text style={styles.dividerText}>
+                    {translations[language]?.auth?.or || 'OR'}
+                  </Text>
+                  <View style={styles.divider} />
+                </View>
+              </View>
             )}
-          </TouchableOpacity>
+
+            {/* Error alert */}
+            {error ? (
+              <View style={styles.errorAlert}>
+                <Feather name="alert-circle" size={20} color="#EF4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+            
+            {/* Fields */}
+            <View style={styles.formFields}>
+              {fields.map((field, index) => (
+                <View key={index} style={styles.fieldContainer}>
+                  <Field 
+                    field={field} 
+                    multiline={false} 
+                    onFocus={handleFieldFocus}
+                  />
+                </View>
+              ))}
+            </View>
+            
+            {/* Forgot password */}
+            <TouchableOpacity 
+              style={[styles.forgotPassword]}
+              activeOpacity={0.7}
+              onPress={() => router.push("https://wa.me/972566150002")}
+            >
+              <Text style={styles.forgotPasswordText}>
+                {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
           
-          {/* Register link */}
+          {/* Always visible footer */}
           <View style={[
-            styles.registerLinkContainer
+            styles.footer,
+            // Adjust position when keyboard is visible
+            keyboardVisible && Platform.OS === 'ios' ? {
+              position: 'absolute',
+              bottom: footerHeight,
+              left: 0,
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              paddingBottom: 10,
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(0,0,0,0.1)',
+              zIndex: 999,
+            } : keyboardVisible && Platform.OS === 'android' ? {
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: '#FFFFFF',
+              paddingBottom: 10,
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(0,0,0,0.1)',
+              zIndex: 999,
+            } : {}
           ]}>
-            <Text style={styles.registerText}>
-              {translations[language]?.auth.dontHaveAccount}
-            </Text>
-            <Link href="/sign-up" asChild>
-              <TouchableOpacity style={[
-                styles.registerLink
-              ]}>
-                <Text style={styles.registerLinkText}>
-                  {translations[language]?.auth.register}
+            {/* Login button */}
+            <TouchableOpacity
+              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              onPress={loginHandler}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={styles.loginButtonText}>
+                  {translations[language]?.auth.login}
                 </Text>
-              </TouchableOpacity>
-            </Link>
+              )}
+            </TouchableOpacity>
+            
+            {/* Register link */}
+            <View style={styles.registerLinkContainer}>
+              <Text style={styles.registerText}>
+                {translations[language]?.auth.dontHaveAccount}
+              </Text>
+              <Link href="/sign-up" asChild>
+                <TouchableOpacity style={styles.registerLink}>
+                  <Text style={styles.registerLinkText}>
+                    {translations[language]?.auth.register}
+                  </Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -542,9 +604,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
   },
-  keyboardSpacing: {
-    height: 120, // Add extra space when keyboard is visible
-  },
   errorAlert: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -579,7 +638,8 @@ const styles = StyleSheet.create({
   footer: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)',
     ...Platform.select({
@@ -593,6 +653,7 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
+    zIndex: 10,
   },
   loginButton: {
     backgroundColor: '#4361EE',
@@ -685,5 +746,9 @@ const styles = StyleSheet.create({
   },
   formFields: {
     marginBottom: 20,
+  },
+  mainContent: {
+    flex: 1,
+    position: 'relative',
   },
 });

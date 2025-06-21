@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
-import { getToken } from "../../utils/secureStore";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

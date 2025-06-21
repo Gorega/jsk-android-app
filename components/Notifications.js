@@ -1,34 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator,Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
 import { useLanguage } from '../utils/languageContext';
 import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuth } from "../RootLayout";
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import FlatListData from './FlatListData';
-import { useSocket } from '../utils/socketContext';
-import { getToken } from '../utils/secureStore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRTLStyles } from '../utils/RTLWrapper';
-import * as ExpoNotifications from 'expo-notifications';
-import * as Device from 'expo-device';
-import Constants from 'expo-constants';
 import ModalPresentation from './ModalPresentation';
+import { registerForPushNotificationsAsync } from '../utils/notificationHelper';
 
-// Configure how notifications are presented when the app is in the foreground
-ExpoNotifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
-
-export default function Notifications() {
-  const socket = useSocket();
+export default function NotificationsComponent() {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { refreshKey } = useLocalSearchParams();
   const [notificationsData, setNotificationsData] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,83 +34,47 @@ export default function Notifications() {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
   }, []);
 
-  // Function to register for push notifications
-  async function registerForPushNotificationsAsync() {
-    let token;
-    
-    if (Platform.OS === 'android') {
-      await ExpoNotifications.setNotificationChannelAsync('default', {
-        name: 'default',
-        importance: ExpoNotifications.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#FF231F7C',
-      });
+  // Listen for changes in notificationsCount to update UI or refreshKey changes
+  useEffect(() => {
+    if (user?.userId) {
+      // Reset page to 1 when refreshKey changes
+      setPage(1);
+      fetchNotificationsData();
     }
-
-    if (Device.isDevice) {
-      const { status: existingStatus } = await ExpoNotifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await ExpoNotifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      if (finalStatus !== 'granted') {
-        console.log('Failed to get push token for push notification!');
-        return;
-      }
-      
-      token = (await ExpoNotifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig.extra.eas.projectId,
-      })).data;
-    } else {
-      console.log('Must use physical device for Push Notifications');
-    }
-
-    return token;
-  }
-
-  // Function to schedule a local notification
-  const scheduleLocalNotification = async (notification) => {
-    await ExpoNotifications.scheduleNotificationAsync({
-      content: {
-        title: notification.type === 'order' ? 
-          translations[language]?.notifications?.orderNotification || 'Order Notification' : 
-          translations[language]?.notifications?.appNotification || 'App Notification',
-        body: notification.translated_message,
-        data: { type: notification.type, orderId: notification.order_id },
-      },
-      trigger: null, // Show immediately
-    });
-  };
+  }, [user, refreshKey]);
 
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
       if (pageNum === 1) setIsLoading(true);
-      // const token = await getToken("userToken");
+      
+      if (!user || !user.userId) {
+        setIsLoading(false);
+        return false;
+      }
+      
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications?user_id=${user.userId}&page=${pageNum}&language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json",
-          // "Cookie": token ? `token=${token}` : ""
+          "Content-Type": "application/json"
         }
       });
 
       if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
+        setIsLoading(false);
+        return false;
       }
 
       const data = await res.json();
-
+      
       if (pageNum === 1) {
-        setNotificationsData(data.data);
+        setNotificationsData(data.data || []);
       } else {
-        setNotificationsData(prev => [...prev, ...data.data]);
+        setNotificationsData(prev => [...prev, ...(data.data || [])]);
       }
-      return data.data.length > 0;
+      
+      return (data.data || []).length > 0;
     } catch (error) {
       return false;
     } finally {
@@ -169,14 +119,12 @@ export default function Notifications() {
       }
       
       // Then mark as read (this happens in the background)
-      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json",
-          // "Cookie": token ? `token=${token}` : ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -194,6 +142,7 @@ export default function Notifications() {
         )
       );
     } catch (error) {
+      // Error handled silently
     }
   };
 
@@ -251,14 +200,12 @@ export default function Notifications() {
 
   const deleteAllNotifications = async () => {
     try {
-      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/all`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json",
-          // "Cookie": token ? `token=${token}` : ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -271,19 +218,18 @@ export default function Notifications() {
 
       setNotificationsData([]);
     } catch (error) {
+      // Error handled silently
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/${notificationId}`, {
         method: "DELETE",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json",
-          // "Cookie": token ? `token=${token}` : ""
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
           user_id: user.userId
@@ -298,103 +244,9 @@ export default function Notifications() {
         prev.filter(n => n.notification_id !== notificationId)
       );
     } catch (error) {
+      // Error handled silently
     }
   };
-
-  useEffect(() => {
-    if (!socket || !user) return;
-
-    const handleNotification = (notification) => {        
-      // Ensure we're working with numbers for comparison
-      const currentUserId = Number(user.userId);
-      const notificationUserId = Number(notification.user_id);
-      
-      if (currentUserId !== notificationUserId) {
-        return;
-      }
-
-      try {
-        switch (notification.type) {
-          case 'NEW_NOTIFICATION':
-            fetchNotificationsData();
-            
-            // Schedule a system notification
-            if (notification.message) {
-              scheduleLocalNotification({
-                type: notification.notificationType || 'order',
-                translated_message: notification.message,
-                order_id: notification.orderId
-              });
-            }
-            break;
-              
-          case 'NOTIFICATION_UPDATED':
-            setNotificationsData(prev =>
-              prev.map(n => n.notification_id === notification.notification_id
-                ? { ...n, is_read: true }
-                : n
-              )
-            );
-            break;
-
-          case 'NOTIFICATION_DELETED':
-            setNotificationsData(prev => {
-              const filtered = prev.filter(n => n.notification_id !== notification.notification_id);
-              return filtered;
-            });
-            break;
-
-          case 'ALL_NOTIFICATIONS_DELETED':
-            setNotificationsData([]);
-            break;
-
-          default:
-            break;
-        }
-      } catch (error) {
-        console.error('Error handling notification:', error);
-      }
-    };
-
-    // Add a listener for notification responses
-    const notificationListener = ExpoNotifications.addNotificationReceivedListener(response => {
-      // Handle notification received while app is in foreground
-      const { data } = response.request.content;
-      
-      // Display the notification content to the user
-      // You can use the same scheduleLocalNotification function that's already defined
-      scheduleLocalNotification({
-        type: data.type || 'order',
-        translated_message: response.request.content.body,
-        order_id: data.orderId
-      });
-    });
-
-    // Add a listener for notification responses (when user taps)
-    const responseListener = ExpoNotifications.addNotificationResponseReceivedListener(response => {
-      const { type, orderId } = response.notification.request.content.data;
-      
-      if (type === "order" && orderId) {
-        router.push({
-          pathname: "/(track)",
-          params: { orderId }
-        });
-      }
-    });
-
-    // Remove existing listeners before adding new one
-    socket.off('notification');
-    socket.on('notification', handleNotification);
-
-    // Initial fetch
-    fetchNotificationsData();
-
-    return () => {
-      socket.off('notification', handleNotification);
-      ExpoNotifications.removeNotificationSubscription(notificationListener);
-      ExpoNotifications.removeNotificationSubscription(responseListener);
-    };
-  }, [socket, user]);
 
   const getIcon = (type) => {
     switch (type) {
@@ -480,12 +332,6 @@ export default function Notifications() {
           <View style={[
             styles.notificationHeader
           ]}>
-            {/* <Text style={[
-              styles.title,
-              { textAlign: isRTL ? "right" : "left" }
-            ]} numberOfLines={1}>
-              {`${translations[language].notifications.order} #${notification.order_id}`}
-            </Text> */}
             <Text style={styles.time}>
               {formatDate(notification.created_at)}
             </Text>
@@ -498,7 +344,7 @@ export default function Notifications() {
               {
                 ...Platform.select({
                     ios: {
-                        textAlign:isRTL ? "left" : ""
+                        textAlign: isRTL ? "left" : ""
                     }
                 }),
             }
@@ -546,54 +392,6 @@ export default function Notifications() {
 
   return (
     <View style={styles.container}>
-      {/* <LinearGradient
-        colors={['#ffffff', '#f8f9fa']}
-        style={styles.headerGradient}
-      >
-        <View style={[
-          styles.header
-        ]}>
-          <View style={[
-            styles.headerTitleContainer
-          ]}>
-            <TouchableOpacity 
-              onPress={() => router.back()}
-              style={styles.backButton}
-              hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-            >
-              <MaterialIcons 
-                style={{ transform: rtl.isRTL ? [{ scaleX: -1 }] : [] }}
-                name="arrow-back-ios" 
-                size={22} 
-                color="#1F2937" 
-              />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>
-              {translations[language]?.notifications?.title || 'Notifications'}
-            </Text>
-          </View>
-          
-          {notificationsData.length > 0 && (
-            <TouchableOpacity 
-              style={styles.deleteAllButton}
-              onPress={deleteAllNotifications}
-              activeOpacity={0.7}
-            >
-              <LinearGradient
-                colors={['#F72585', '#7209B7']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.deleteAllGradient}
-              >
-                <Text style={styles.deleteAllText}>
-                  {translations[language]?.notifications?.deleteAll || 'Clear All'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </View>
-      </LinearGradient> */}
-
       {isLoading ? (
         renderLoading()
       ) : notificationsData.length === 0 ? (

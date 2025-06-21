@@ -40,14 +40,16 @@ const TrackingOrder = () => {
     try {
       setIsLoading(true);
       setError(null);
-      // const token = await getToken("userToken");
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
+      
+      // Ensure orderId is properly formatted for the API request
+      const formattedOrderId = String(orderId).trim();
+            
+      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${formattedOrderId}?language_code=${language}`, {
         method: "GET",
         credentials: "include",
         headers: {
           'Accept': 'application/json',
           "Content-Type": "application/json",
-          // "Cookie": token ? `token=${token}` : ""
         }
       });
       
@@ -135,8 +137,10 @@ const TrackingOrder = () => {
   }, [fetchOrderData]);
 
   useEffect(() => {
-    fetchOrderData();
-  }, [fetchOrderData, language]);
+    if (orderId) {
+      fetchOrderData();
+    }
+  }, [fetchOrderData, language, orderId]);
 
   useEffect(() => {
     if (socket) {
@@ -1013,13 +1017,13 @@ const TrackingOrder = () => {
                     style={styles.supportButtonGradient}
                   >
                     <Feather name="message-circle" size={18} color="#ffffff" style={{ marginRight: 10 }} />
-                    <Text style={styles.supportButtonText,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }}>
+                      <Text style={[styles.supportButtonText,{
+                          ...Platform.select({
+                              ios: {
+                                  textAlign:isRTL ? "left" : ""
+                              }
+                          }),
+                      }]}>
                       {translations[language].tabs.orders.track.openCase}
                     </Text>
                   </LinearGradient>

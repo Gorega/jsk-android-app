@@ -1,11 +1,17 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import { getToken } from './secureStore';
-
+import { registerForPushNotificationsAsync,scheduleLocalNotification } from './notificationHelper';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import { useLanguage } from './languageContext';
+import { translations } from '../utils/languageContext';
 const SocketContext = createContext(null);
 
 export function SocketProvider({ children, isAuthenticated }) {
     const socketRef = useRef(null);
+    const {language} = useLanguage();
+    
 
     useEffect(() => {
       const connectSocket = async () => {
@@ -31,10 +37,10 @@ export function SocketProvider({ children, isAuthenticated }) {
               reconnectionAttempts: 5,
               reconnectionDelay: 1000,
               timeout: 20000,
-              auth: { token },
+              auth: { token, language },
               forceNew: true,
               reconnection: true,
-              autoConnect: true,
+              autoConnect: true
             });
     
             // Add connection event before other events
@@ -48,7 +54,31 @@ export function SocketProvider({ children, isAuthenticated }) {
             });
     
             socketRef.current.on('connect', () => {
-              // console.log('Socket successfully connected with ID:', socketRef.current.id);
+              console.log("Socket connected");
+
+              socketRef.current.on('notification', (notification) => {
+                
+                // Get current user ID
+                const getCurrentUserId = async () => {
+                  return await getToken('userId');
+                };
+                
+                // Only process if it's for this user
+                if (notification && notification.type === 'NEW_NOTIFICATION') {
+                  getCurrentUserId().then(userId => {
+                    if (userId && notification.user_id && Number(userId) === Number(notification.user_id)) {
+                      const { title, message, translated_message, data = {} } = notification;
+                      
+                      // Schedule a local notification when in foreground
+                      scheduleLocalNotification(
+                        title || translations[language]?.notifications?.newNotification || "New Notification",
+                        translated_message || message || translations[language]?.notifications?.newNotificationMessage || "You have a new notification",
+                        data
+                      );
+                    }
+                  });
+                }
+              });
             });
 
                 socketRef.current.on('connect_error', (error) => {
@@ -65,7 +95,6 @@ export function SocketProvider({ children, isAuthenticated }) {
                 });
 
                 socketRef.current.on('disconnect', (reason) => {
-                    // console.log('Socket disconnected:', reason);
                     if (reason === 'io server disconnect') {
                         socketRef.current.connect();
                     }
@@ -74,6 +103,20 @@ export function SocketProvider({ children, isAuthenticated }) {
                 socketRef.current.on('error', (error) => {
                   // console.error('Socket error:', error);
                 });
+
+                if (isAuthenticated) {
+                  const pushToken = await registerForPushNotificationsAsync();
+                  if (pushToken && socketRef.current) {
+                    // Send token to server via socket
+                    socketRef.current.emit('register_push_token', { 
+                      token: pushToken, 
+                      platform: Platform.OS,
+                      deviceName: Device.deviceName || 'Unknown Device',
+                      deviceYearClass: Device.deviceYearClass || 'Unknown',
+                      isDevice: Device.isDevice
+                    });
+                  }
+                }
               } catch (error) {
                 // console.error('Socket initialization error:', error);
               }

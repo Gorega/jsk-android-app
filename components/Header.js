@@ -8,7 +8,6 @@ import { useLanguage } from '../utils/languageContext';
 import { router } from "expo-router";
 import { useSocket } from '../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getToken } from "@/utils/secureStore";
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import { StatusBar } from 'expo-status-bar';
 
@@ -119,12 +118,14 @@ export default function Header({ showGreeting = true, title }) {
                         // "Cookie": token ? `token=${token}` : ""
                     }
                 });
+
+                const data = await response.json();
     
                 if (response.ok) {
-                    const data = await response.json();
-                    setNotificationsCount(data.count || 0);
+                    setNotificationsCount(data.unread_count || 0);
                 }
             } catch (error) {
+                console.error("Error fetching notification count:", error);
             }
         };
         
@@ -141,8 +142,8 @@ export default function Header({ showGreeting = true, title }) {
                     break;
                 case 'UPDATE_COUNT':
                     // Set to the exact count provided in the notification
-                    if (notification.count !== undefined) {
-                        setNotificationsCount(notification.count);
+                    if (notification.unread_count !== undefined) {
+                        setNotificationsCount(notification.unread_count);
                     } else {
                         setNotificationsCount(prev => prev + 1);
                     }
@@ -162,7 +163,7 @@ export default function Header({ showGreeting = true, title }) {
             }
         };
     
-        socket.off('notification').on('notification', handleNotification);
+        socket.on('notification', handleNotification);
         
         return () => {
             socket.off('notification', handleNotification);
