@@ -17,6 +17,7 @@ export default function BalanceHistoryScreen() {
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [historyData, setHistoryData] = useState([]);
   const rtl = useRTLStyles();
 
   const fetchBalanceHistory = async (pageNum = 1) => {
@@ -27,6 +28,16 @@ export default function BalanceHistoryScreen() {
   };
 
   useEffect(() => {
+    if (data?.history) {
+      if (page === 1) {
+        setHistoryData(data.history);
+      } else {
+        setHistoryData(prevData => [...prevData, ...data.history]);
+      }
+    }
+  }, [data?.history, page]);
+
+  useEffect(() => {
     fetchBalanceHistory();
   }, [currency]);
 
@@ -34,6 +45,7 @@ export default function BalanceHistoryScreen() {
     try {
       setRefreshing(true);
       setPage(1);
+      setHistoryData([]);
       await fetchBalanceHistory(1);
     } catch (error) {
     } finally {
@@ -208,9 +220,9 @@ export default function BalanceHistoryScreen() {
   return (
     <View style={styles.container}>
       <FlatList
-        data={data?.history || []}
+        data={historyData}
         renderItem={renderBalanceItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderHeader}
         ListFooterComponent={renderFooter}

@@ -20,7 +20,7 @@ export default function Collections({ showModal, setShowModal }) {
     };
 
     const collections = [
-        ["driver","delivery_company","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(user.role) ? { visibility: "hidden" } : {
+        ["business","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(user.role) ? { visibility: "hidden" } : {
             label: ["driver","delivery_company"].includes(user.role) ? translations[language].tabs.collections.options.driver_own_collections : translations[language].tabs.collections.options.driver_money_collections,
             link: "(collection)?type=driver_money",
             icon: <FontAwesome name="money" size={22} color="#4361EE" />,

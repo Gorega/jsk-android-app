@@ -706,7 +706,10 @@ export const translations = {
         statusUpdated:"Status Updated",
         failedCollections:"Failed Collections",
         error:"Error",
-        tryAgainLater:"Please try again later"
+        tryAgainLater:"Please try again later",
+        deliveryType:"Delivery Type",
+        orderCount:"Order Count",
+        whatsappOptions:"Whatsapp Options"
       }
     },
 
@@ -1852,7 +1855,10 @@ export const translations = {
         statusUpdated:"تم تحديث الحالة",
         failedCollections:"تجميعات لم يتم تحديثها بنجاح",
         error:"خطأ",
-        tryAgainLater:"يرجى المحاولة مرة أخرى لاحقًا"
+        tryAgainLater:"يرجى المحاولة مرة أخرى لاحقًا",
+        deliveryType:"نوع التوصيل",
+        orderCount:"عدد الطرود",
+        whatsappOptions:"خيارات واتساب"
       }
     },
 

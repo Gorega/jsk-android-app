@@ -11,7 +11,6 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import ModalPresentation from "../../components/ModalPresentation";
-import { getToken } from "../../utils/secureStore";
 import { useFocusEffect } from '@react-navigation/native';
 import Field from "../../components/create/Field";
 import ReceiverSearchModal from "../../components/create/ReceiverSearchModal";
@@ -330,17 +329,43 @@ export default function HomeScreen() {
                                       type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} /> :
                                       <MaterialIcons name="payments" size={18} />,
                                 onPress: () => {
+                                    // Reset toggle states when switching order types
+                                    setFromBusinessBalance(false);
+                                    setWithMoneyReceive(false);
+                                    setForm(prevForm => ({
+                                        ...prevForm,
+                                        fromBusinessBalance: false,
+                                        withMoneyReceive: false,
+                                        balanceDeduction: null
+                                    }));
+                                    
                                     setSelectedValue(prev => ({
                                         ...prev,
                                         orderType: type
                                     }));
                                 
+                                    // Show alert for business users when selecting receive or payment order types
+                                    if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
+                                        Alert.alert(
+                                            translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
+                                            translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message,
+                                            [{ 
+                                                text: translations[language].ok || "OK",
+                                                style: "default"
+                                            }],
+                                            { 
+                                                cancelable: false,
+                                                icon: type.value === "receive" ? <MaterialIcons name="store" size={24} color="#4361EE" /> : 
+                                                      <MaterialIcons name="payments" size={24} color="#4361EE" />
+                                            }
+                                        );
+                                    }
                                 }
                             }}
                         />
                     ))}
                 </View>
-                {["business", "admin", "manager"].includes(user.role) && (
+                {["admin", "manager"].includes(user.role) && (
                     <View style={styles.businessBalanceToggleContainer}>
                         {/* Show both toggles for "receive" order type */}
                         {selectedValue.orderType?.value === "receive" ? (
@@ -353,9 +378,15 @@ export default function HomeScreen() {
                                                 translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
                                                 translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
                                             name: "from_business_balance",
-                                            value: form.fromBusinessBalance || false,
+                                            value: user.role === "business" && !form.withMoneyReceive ? true : (form.fromBusinessBalance || false),
+                                            disabled: user.role === "business" && !form.withMoneyReceive,
                                             onChange: async (value) => {
-                                                // Existing onChange handler for from_business_balance
+                                                // For business users with specific conditions, prevent toggling off
+                                                if (user.role === "business" && !form.withMoneyReceive && value === false) {
+                                                    return;
+                                                }
+                                                
+                                                // Original balance checking logic for non-business users
                                                 try {
                                                     // If unchecking the box (value is false), confirm with user before changing state
                                                     if (!value) {
@@ -461,77 +492,86 @@ export default function HomeScreen() {
                                                         return;
                                                     }
 
-                                                    // Rest of the existing function for when value is true (toggle is being enabled)
-                                                     // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? user.userId : 
-                                                                   (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                    selectedValue.sender.user_id : null);
-                                                     
-                                                    // Validate sender ID
-                                                     if (!senderId) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                     }
-                                                    
-                                                    // Get COD values from form data
-                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                     }
-                                                     
-                                                    // Format COD values for display and processing
-                                                    const formattedCodValues = {};
-                                                    let totalCodAmount = 0;
-                                                    
-                                                    codAmounts.forEach(cod => {
-                                                        const value = parseFloat(cod.value || 0);
-                                                        const currency = cod.currency || 'ILS';
+                                                    // Only run balance checking for non-business users or business users with with_money_receive=true
+                                                    if (user.role !== "business" || (user.role === "business" && form.withMoneyReceive)) {
+                                                        // Get sender ID based on user role
+                                                        const senderId = user.role === "business" ? user.userId : 
+                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
+                                                                        selectedValue.sender.user_id : null);
+                                                         
+                                                        // Validate sender ID
+                                                         if (!senderId) {
+                                                            return Alert.alert(
+                                                                translations[language].tabs.orders.create.error || "Error",
+                                                                translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                                                                [{ text: "OK" }]
+                                                            );
+                                                         }
                                                         
-                                                        if (value > 0) {
-                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                        // Get COD values from form data
+                                                        if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                                                            return Alert.alert(
+                                                                translations[language].tabs.orders.create.error || "Error",
+                                                                translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                                                                [{ text: "OK" }]
+                                                            );
+                                                         }
+                                                         
+                                                        // Format COD values for display and processing
+                                                        const formattedCodValues = {};
+                                                        let totalCodAmount = 0;
+                                                        
+                                                        codAmounts.forEach(cod => {
+                                                            const value = parseFloat(cod.value || 0);
+                                                            const currency = cod.currency || 'ILS';
                                                             
-                                                            // Convert to ILS for total calculation
-                                                            if (currency === 'ILS') {
-                                                                totalCodAmount += value;
-                                                            } else if (currency === 'USD') {
-                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                            } else if (currency === 'JOD') {
-                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                                                            if (value > 0) {
+                                                                formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                                
+                                                                // Convert to ILS for total calculation
+                                                                if (currency === 'ILS') {
+                                                                    totalCodAmount += value;
+                                                                } else if (currency === 'USD') {
+                                                                    totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                                                                } else if (currency === 'JOD') {
+                                                                    totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                                                                }
                                                             }
-                                                        }
-                                                    });
-                                                    
-                                                    // First show the action selection modal
-                                                     Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                         [
-                                                             {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                 style: "cancel"
-                                                             },
-                                                             {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleManualDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleAutoDeduction(senderId, formattedCodValues);
-                                                                }
-                                                             }
-                                                         ]
-                                                     );
+                                                        });
+                                                        
+                                                        // First show the action selection modal
+                                                         Alert.alert(
+                                                            translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                                                             [
+                                                                 {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                                                     style: "cancel"
+                                                                 },
+                                                                 {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                                                    onPress: () => {
+                                                                        // Call the function directly, not wrapped in async/await
+                                                                        handleManualDeduction(senderId, formattedCodValues);
+                                                                    }
+                                                                },
+                                                                {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                                                    onPress: () => {
+                                                                        // Call the function directly, not wrapped in async/await
+                                                                        handleAutoDeduction(senderId, formattedCodValues);
+                                                                    }
+                                                                 }
+                                                             ]
+                                                         );
+                                                    } else {
+                                                        // For business users with auto-enabled toggle, just set the state
+                                                        setFromBusinessBalance(true);
+                                                        setForm(prevForm => ({
+                                                            ...prevForm,
+                                                            fromBusinessBalance: true
+                                                        }));
+                                                    }
                                                 } catch (error) {
                                                     // Make sure to close any potential loading spinners on error
                                                     setShowAlert({
@@ -566,6 +606,15 @@ export default function HomeScreen() {
                                                     ...prevForm,
                                                     withMoneyReceive: value
                                                 }));
+                                                
+                                                // For business users, auto-set from_business_balance based on with_money_receive
+                                                if (user.role === "business" && !value) {
+                                                    setFromBusinessBalance(true);
+                                                    setForm(prevForm => ({
+                                                        ...prevForm,
+                                                        fromBusinessBalance: true
+                                                    }));
+                                                }
                                             }
                                         }}
                                     />
@@ -581,9 +630,15 @@ export default function HomeScreen() {
                                             translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
                                             translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
                                         name: "from_business_balance",
-                                        value: form.fromBusinessBalance || false,
+                                        value: user.role === "business" && selectedValue.orderType?.value === "payment" ? true : (form.fromBusinessBalance || false),
+                                        disabled: user.role === "business" && selectedValue.orderType?.value === "payment",
                                         onChange: async (value) => {
-                                            // Existing onChange handler
+                                            // For business users with payment order type, prevent toggling off
+                                            if (user.role === "business" && selectedValue.orderType?.value === "payment" && value === false) {
+                                                return;
+                                            }
+                                            
+                                            // Original balance checking logic for non-business users or other order types
                                             try {
                                                 // If unchecking the box (value is false), confirm with user before changing state
                                                 if (!value) {
@@ -689,77 +744,86 @@ export default function HomeScreen() {
                                                     return;
                                                 }
 
-                                                // Rest of the existing function for when value is true (toggle is being enabled)
-                                                // Get sender ID based on user role
-                                                const senderId = user.role === "business" ? user.userId : 
-                                                               (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                selectedValue.sender.user_id : null);
-                                                
-                                                // Validate sender ID
-                                                if (!senderId) {
-                                                    return Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                                
-                                                // Get COD values from form data
-                                                if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                    return Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                                
-                                                // Format COD values for display and processing
-                                                const formattedCodValues = {};
-                                                let totalCodAmount = 0;
-                                                
-                                                codAmounts.forEach(cod => {
-                                                    const value = parseFloat(cod.value || 0);
-                                                    const currency = cod.currency || 'ILS';
+                                                // Only run balance checking for non-business users or business users with non-payment order types
+                                                if (user.role !== "business" || (user.role === "business" && selectedValue.orderType?.value !== "payment")) {
+                                                    // Get sender ID based on user role
+                                                    const senderId = user.role === "business" ? user.userId : 
+                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
+                                                                        selectedValue.sender.user_id : null);
                                                     
-                                                    if (value > 0) {
-                                                        formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                        
-                                                        // Convert to ILS for total calculation
-                                                        if (currency === 'ILS') {
-                                                            totalCodAmount += value;
-                                                        } else if (currency === 'USD') {
-                                                            totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                        } else if (currency === 'JOD') {
-                                                            totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                        }
+                                                    // Validate sender ID
+                                                    if (!senderId) {
+                                                        return Alert.alert(
+                                                            translations[language].tabs.orders.create.error || "Error",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                                                            [{ text: "OK" }]
+                                                        );
                                                     }
-                                                });
-                                                
-                                                // First show the action selection modal
-                                                Alert.alert(
-                                                    translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                    translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                    [
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                            style: "cancel"
-                                                        },
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                            onPress: () => {
-                                                                // Call the function directly, not wrapped in async/await
-                                                                handleManualDeduction(senderId, formattedCodValues);
-                                                            }
-                                                        },
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                            onPress: () => {
-                                                                // Call the function directly, not wrapped in async/await
-                                                                handleAutoDeduction(senderId, formattedCodValues);
+                                                    
+                                                    // Get COD values from form data
+                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                                                        return Alert.alert(
+                                                            translations[language].tabs.orders.create.error || "Error",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                                                            [{ text: "OK" }]
+                                                        );
+                                                    }
+                                                    
+                                                    // Format COD values for display and processing
+                                                    const formattedCodValues = {};
+                                                    let totalCodAmount = 0;
+                                                    
+                                                    codAmounts.forEach(cod => {
+                                                        const value = parseFloat(cod.value || 0);
+                                                        const currency = cod.currency || 'ILS';
+                                                        
+                                                        if (value > 0) {
+                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                            
+                                                            // Convert to ILS for total calculation
+                                                            if (currency === 'ILS') {
+                                                                totalCodAmount += value;
+                                                            } else if (currency === 'USD') {
+                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                                                            } else if (currency === 'JOD') {
+                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
                                                             }
                                                         }
-                                                    ]
-                                                );
+                                                    });
+                                                    
+                                                    // First show the action selection modal
+                                                    Alert.alert(
+                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                                                        [
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                                                style: "cancel"
+                                                            },
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                                                onPress: () => {
+                                                                    // Call the function directly, not wrapped in async/await
+                                                                    handleManualDeduction(senderId, formattedCodValues);
+                                                                }
+                                                            },
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                                                onPress: () => {
+                                                                    // Call the function directly, not wrapped in async/await
+                                                                    handleAutoDeduction(senderId, formattedCodValues);
+                                                                }
+                                                            }
+                                                        ]
+                                                    );
+                                                } else {
+                                                    // For business users with auto-enabled toggle, just set the state
+                                                    setFromBusinessBalance(true);
+                                                    setForm(prevForm => ({
+                                                        ...prevForm,
+                                                        fromBusinessBalance: true
+                                                    }));
+                                                }
                                             } catch (error) {
                                                 // Make sure to close any potential loading spinners on error
                                                 setShowAlert({
@@ -1935,6 +1999,20 @@ export default function HomeScreen() {
         }
     };
 
+    // Add this useEffect to handle auto-setting from_business_balance for business users
+    useEffect(() => {
+        if (user.role === "business") {
+            if (selectedValue.orderType?.value === "payment" || 
+                (selectedValue.orderType?.value === "receive" && !form.withMoneyReceive)) {
+                setFromBusinessBalance(true);
+                setForm(prevForm => ({
+                    ...prevForm,
+                    fromBusinessBalance: true
+                }));
+            }
+        }
+    }, [selectedValue.orderType, form.withMoneyReceive]);
+
     return (
         <View style={styles.pageContainer}>
             <View style={styles.headerContainer}>
@@ -1952,11 +2030,21 @@ export default function HomeScreen() {
                                       type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} /> :
                                       <MaterialIcons name="payments" size={18} />,
                                 onPress: () => {
+                                    // Reset toggle states when switching order types
+                                    setFromBusinessBalance(false);
+                                    setWithMoneyReceive(false);
+                                    setForm(prevForm => ({
+                                        ...prevForm,
+                                        fromBusinessBalance: false,
+                                        withMoneyReceive: false,
+                                        balanceDeduction: null
+                                    }));
+                                    
                                     setSelectedValue(prev => ({
                                         ...prev,
                                         orderType: type
                                     }));
-                                    
+                                
                                     // Show alert for business users when selecting receive or payment order types
                                     if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
                                         Alert.alert(
@@ -1991,9 +2079,15 @@ export default function HomeScreen() {
                                                 translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
                                                 translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
                                             name: "from_business_balance",
-                                            value: form.fromBusinessBalance || false,
+                                            value: user.role === "business" && !form.withMoneyReceive ? true : (form.fromBusinessBalance || false),
+                                            disabled: user.role === "business" && !form.withMoneyReceive,
                                             onChange: async (value) => {
-                                                // Existing onChange handler for from_business_balance
+                                                // For business users with specific conditions, prevent toggling off
+                                                if (user.role === "business" && !form.withMoneyReceive && value === false) {
+                                                    return;
+                                                }
+                                                
+                                                // Original balance checking logic for non-business users
                                                 try {
                                                     // If unchecking the box (value is false), confirm with user before changing state
                                                     if (!value) {
@@ -2099,77 +2193,86 @@ export default function HomeScreen() {
                                                         return;
                                                     }
 
-                                                    // Rest of the existing function for when value is true (toggle is being enabled)
-                                                     // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? user.userId : 
-                                                                   (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                    selectedValue.sender.user_id : null);
-                                                     
-                                                    // Validate sender ID
-                                                     if (!senderId) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                     }
-                                                    
-                                                    // Get COD values from form data
-                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                     }
-                                                     
-                                                    // Format COD values for display and processing
-                                                    const formattedCodValues = {};
-                                                    let totalCodAmount = 0;
-                                                    
-                                                    codAmounts.forEach(cod => {
-                                                        const value = parseFloat(cod.value || 0);
-                                                        const currency = cod.currency || 'ILS';
+                                                    // Only run balance checking for non-business users or business users with with_money_receive=true
+                                                    if (user.role !== "business" || (user.role === "business" && form.withMoneyReceive)) {
+                                                        // Get sender ID based on user role
+                                                        const senderId = user.role === "business" ? user.userId : 
+                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
+                                                                        selectedValue.sender.user_id : null);
+                                                         
+                                                        // Validate sender ID
+                                                         if (!senderId) {
+                                                            return Alert.alert(
+                                                                translations[language].tabs.orders.create.error || "Error",
+                                                                translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                                                                [{ text: "OK" }]
+                                                            );
+                                                         }
                                                         
-                                                        if (value > 0) {
-                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                        // Get COD values from form data
+                                                        if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                                                            return Alert.alert(
+                                                                translations[language].tabs.orders.create.error || "Error",
+                                                                translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                                                                [{ text: "OK" }]
+                                                            );
+                                                         }
+                                                         
+                                                        // Format COD values for display and processing
+                                                        const formattedCodValues = {};
+                                                        let totalCodAmount = 0;
+                                                        
+                                                        codAmounts.forEach(cod => {
+                                                            const value = parseFloat(cod.value || 0);
+                                                            const currency = cod.currency || 'ILS';
                                                             
-                                                            // Convert to ILS for total calculation
-                                                            if (currency === 'ILS') {
-                                                                totalCodAmount += value;
-                                                            } else if (currency === 'USD') {
-                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                            } else if (currency === 'JOD') {
-                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                                                            if (value > 0) {
+                                                                formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                                
+                                                                // Convert to ILS for total calculation
+                                                                if (currency === 'ILS') {
+                                                                    totalCodAmount += value;
+                                                                } else if (currency === 'USD') {
+                                                                    totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                                                                } else if (currency === 'JOD') {
+                                                                    totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
+                                                                }
                                                             }
-                                                        }
-                                                    });
-                                                    
-                                                    // First show the action selection modal
-                                                     Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                         [
-                                                             {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                 style: "cancel"
-                                                             },
-                                                             {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleManualDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleAutoDeduction(senderId, formattedCodValues);
-                                                                }
-                                                             }
-                                                         ]
-                                                     );
+                                                        });
+                                                        
+                                                        // First show the action selection modal
+                                                         Alert.alert(
+                                                            translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                                                             [
+                                                                 {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                                                     style: "cancel"
+                                                                 },
+                                                                 {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                                                    onPress: () => {
+                                                                        // Call the function directly, not wrapped in async/await
+                                                                        handleManualDeduction(senderId, formattedCodValues);
+                                                                    }
+                                                                },
+                                                                {
+                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                                                    onPress: () => {
+                                                                        // Call the function directly, not wrapped in async/await
+                                                                        handleAutoDeduction(senderId, formattedCodValues);
+                                                                    }
+                                                                 }
+                                                             ]
+                                                         );
+                                                    } else {
+                                                        // For business users with auto-enabled toggle, just set the state
+                                                        setFromBusinessBalance(true);
+                                                        setForm(prevForm => ({
+                                                            ...prevForm,
+                                                            fromBusinessBalance: true
+                                                        }));
+                                                    }
                                                 } catch (error) {
                                                     // Make sure to close any potential loading spinners on error
                                                     setShowAlert({
@@ -2204,6 +2307,15 @@ export default function HomeScreen() {
                                                     ...prevForm,
                                                     withMoneyReceive: value
                                                 }));
+                                                
+                                                // For business users, auto-set from_business_balance based on with_money_receive
+                                                if (user.role === "business" && !value) {
+                                                    setFromBusinessBalance(true);
+                                                    setForm(prevForm => ({
+                                                        ...prevForm,
+                                                        fromBusinessBalance: true
+                                                    }));
+                                                }
                                             }
                                         }}
                                     />
@@ -2219,9 +2331,15 @@ export default function HomeScreen() {
                                             translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
                                             translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
                                         name: "from_business_balance",
-                                        value: form.fromBusinessBalance || false,
+                                        value: user.role === "business" && selectedValue.orderType?.value === "payment" ? true : (form.fromBusinessBalance || false),
+                                        disabled: user.role === "business" && selectedValue.orderType?.value === "payment",
                                         onChange: async (value) => {
-                                            // Existing onChange handler
+                                            // For business users with payment order type, prevent toggling off
+                                            if (user.role === "business" && selectedValue.orderType?.value === "payment" && value === false) {
+                                                return;
+                                            }
+                                            
+                                            // Original balance checking logic for non-business users or other order types
                                             try {
                                                 // If unchecking the box (value is false), confirm with user before changing state
                                                 if (!value) {
@@ -2327,77 +2445,86 @@ export default function HomeScreen() {
                                                     return;
                                                 }
 
-                                                // Rest of the existing function for when value is true (toggle is being enabled)
-                                                // Get sender ID based on user role
-                                                const senderId = user.role === "business" ? user.userId : 
-                                                               (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                selectedValue.sender.user_id : null);
-                                                
-                                                // Validate sender ID
-                                                if (!senderId) {
-                                                    return Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                                
-                                                // Get COD values from form data
-                                                if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                    return Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                                
-                                                // Format COD values for display and processing
-                                                const formattedCodValues = {};
-                                                let totalCodAmount = 0;
-                                                
-                                                codAmounts.forEach(cod => {
-                                                    const value = parseFloat(cod.value || 0);
-                                                    const currency = cod.currency || 'ILS';
+                                                // Only run balance checking for non-business users or business users with non-payment order types
+                                                if (user.role !== "business" || (user.role === "business" && selectedValue.orderType?.value !== "payment")) {
+                                                    // Get sender ID based on user role
+                                                    const senderId = user.role === "business" ? user.userId : 
+                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
+                                                                        selectedValue.sender.user_id : null);
                                                     
-                                                    if (value > 0) {
-                                                        formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                        
-                                                        // Convert to ILS for total calculation
-                                                        if (currency === 'ILS') {
-                                                            totalCodAmount += value;
-                                                        } else if (currency === 'USD') {
-                                                            totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                        } else if (currency === 'JOD') {
-                                                            totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                        }
+                                                    // Validate sender ID
+                                                    if (!senderId) {
+                                                        return Alert.alert(
+                                                            translations[language].tabs.orders.create.error || "Error",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
+                                                            [{ text: "OK" }]
+                                                        );
                                                     }
-                                                });
-                                                
-                                                // First show the action selection modal
-                                                Alert.alert(
-                                                    translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                    translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                    [
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                            style: "cancel"
-                                                        },
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                            onPress: () => {
-                                                                // Call the function directly, not wrapped in async/await
-                                                                handleManualDeduction(senderId, formattedCodValues);
-                                                            }
-                                                        },
-                                                        {
-                                                            text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                            onPress: () => {
-                                                                // Call the function directly, not wrapped in async/await
-                                                                handleAutoDeduction(senderId, formattedCodValues);
+                                                    
+                                                    // Get COD values from form data
+                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
+                                                        return Alert.alert(
+                                                            translations[language].tabs.orders.create.error || "Error",
+                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
+                                                            [{ text: "OK" }]
+                                                        );
+                                                    }
+                                                    
+                                                    // Format COD values for display and processing
+                                                    const formattedCodValues = {};
+                                                    let totalCodAmount = 0;
+                                                    
+                                                    codAmounts.forEach(cod => {
+                                                        const value = parseFloat(cod.value || 0);
+                                                        const currency = cod.currency || 'ILS';
+                                                        
+                                                        if (value > 0) {
+                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
+                                                            
+                                                            // Convert to ILS for total calculation
+                                                            if (currency === 'ILS') {
+                                                                totalCodAmount += value;
+                                                            } else if (currency === 'USD') {
+                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
+                                                            } else if (currency === 'JOD') {
+                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
                                                             }
                                                         }
-                                                    ]
-                                                );
+                                                    });
+                                                    
+                                                    // First show the action selection modal
+                                                    Alert.alert(
+                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
+                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
+                                                        [
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
+                                                                style: "cancel"
+                                                            },
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
+                                                                onPress: () => {
+                                                                    // Call the function directly, not wrapped in async/await
+                                                                    handleManualDeduction(senderId, formattedCodValues);
+                                                                }
+                                                            },
+                                                            {
+                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
+                                                                onPress: () => {
+                                                                    // Call the function directly, not wrapped in async/await
+                                                                    handleAutoDeduction(senderId, formattedCodValues);
+                                                                }
+                                                            }
+                                                        ]
+                                                    );
+                                                } else {
+                                                    // For business users with auto-enabled toggle, just set the state
+                                                    setFromBusinessBalance(true);
+                                                    setForm(prevForm => ({
+                                                        ...prevForm,
+                                                        fromBusinessBalance: true
+                                                    }));
+                                                }
                                             } catch (error) {
                                                 // Make sure to close any potential loading spinners on error
                                                 setShowAlert({

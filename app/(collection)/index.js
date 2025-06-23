@@ -105,23 +105,24 @@ export default function HomeScreen(){
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             // if (collectionIds) queryParams.append('collection_ids', collectionIds)
-            if (activeFilter) queryParams.append('status_key', activeFilter);
+            if (activeFilter) queryParams.append(type === "sent" ? "status" : "status_key", activeFilter);
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
             if (activeDate) queryParams.append("date_range", activeDate.action)
             if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
             if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
             queryParams.append('page', pageNumber);
             queryParams.append('language_code', language);
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type}?${queryParams.toString()}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type === "sent" ? "sent/sm" : type}?${queryParams.toString()}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
+                    "Accept-Language": language
                     // "Cookie": token ? `token=${token}` : ""
                 }
             });
-            const newData = await res.json();            
+            const newData = await res.json();
             if (isLoadMore) {
                 setData(prevData => ({
                     ...prevData,
