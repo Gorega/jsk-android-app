@@ -104,214 +104,6 @@ export default function HomeScreen() {
     const [exceedBusinessBalance, setExceedBusinessBalance] = useState(false);
     const [showReceiverModal, setShowReceiverModal] = useState(false);
 
-    const CURRENCY_EXCHANGE_RATES = {
-        ILS_TO_USD: 0.27,  // 1 ILS = 0.27 USD
-        ILS_TO_JOD: 0.19,  // 1 ILS = 0.19 JOD
-        USD_TO_ILS: 3.7,   // 1 USD = 3.7 ILS
-        USD_TO_JOD: 0.71,  // 1 USD = 0.71 JOD
-        JOD_TO_ILS: 5,     // 1 JOD = 5 ILS
-        JOD_TO_USD: 1.41,  // 1 JOD = 1.41 USD
-    };
-
-    const convertCurrency = (amount, fromCurrency, toCurrency) => {
-        if (fromCurrency === toCurrency) return amount;
-        
-        const conversionKey = `${fromCurrency}_TO_${toCurrency}`;
-        const rate = CURRENCY_EXCHANGE_RATES[conversionKey];
-        
-        if (!rate) {
-            return null;
-        }
-        
-        return amount * rate;
-    };
-
-    const calculateNetValue = (codValue, codCurrency, deliveryFeeValue, deliveryFeeCurrency, 
-                              commissionValue, commissionCurrency, discountValue, discountCurrency,
-                              targetCurrency) => {
-        // Convert all values to the target currency if they're different
-        const codInTargetCurrency = codCurrency === targetCurrency ? 
-            codValue : convertCurrency(codValue, codCurrency, targetCurrency);
-            
-        const deliveryFeeInTargetCurrency = deliveryFeeCurrency === targetCurrency ?
-            deliveryFeeValue : convertCurrency(deliveryFeeValue, deliveryFeeCurrency, targetCurrency);
-            
-        const commissionInTargetCurrency = commissionCurrency === targetCurrency ?
-            commissionValue : convertCurrency(commissionValue, commissionCurrency, targetCurrency);
-            
-        const discountInTargetCurrency = discountCurrency === targetCurrency ?
-            discountValue : convertCurrency(discountValue, discountCurrency, targetCurrency);
-        
-        // Calculate net value: COD Value - Discount + (Commission + Delivery Fee)
-        const netValue = codInTargetCurrency - discountInTargetCurrency + 
-                         (commissionInTargetCurrency + deliveryFeeInTargetCurrency);
-                         
-        return Math.max(0, netValue); // Don't allow negative net values
-    };
-
-    const getUserBalances = async (userId) => {
-        try {
-            // const token = await getToken("userToken");
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/balances`, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json",
-                    // "Cookie": token ? `token=${token}` : ""
-                }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Failed to fetch balances: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            return data.data || { ILS: 0, USD: 0, JOD: 0 };
-        } catch (error) {
-            return { ILS: 0, USD: 0, JOD: 0 };
-        }
-    };
-
-    const submitBalanceDeduction = async (userId, deductions, orderId) => {
-        try {
-            // Add validation
-            if (!userId) {
-                throw new Error('User ID is required for deduction');
-            }
-            
-            // Ensure all deduction values are valid numbers
-            const validatedDeductions = {};
-            Object.entries(deductions).forEach(([currency, amount]) => {
-                const numAmount = parseFloat(amount);
-                if (!isNaN(numAmount) && numAmount > 0) {
-                    validatedDeductions[currency] = numAmount;
-                }
-            });
-            
-            // If no valid deductions, throw error
-            if (Object.keys(validatedDeductions).length === 0) {
-                throw new Error('No valid deduction amounts found');
-            }
-
-            // const token = await getToken("userToken");
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${userId}/deduct-balance`, {
-                method: 'POST',
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    'Accept-Language': language,
-                    // "Cookie": token ? `token=${token}` : ""
-                },
-                body: JSON.stringify({
-                    userId: userId, // Add userId to body as well
-                    deductions: validatedDeductions,
-                    order_id: orderId,
-                    reference_type: 'payment',
-                    notes: 'Order payment deduction'
-                })
-            });
-            
-            const responseData = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(responseData.message || 'Failed to process deduction');
-            }
-            
-            return responseData;
-        } catch (error) {
-            throw error;
-        }
-    };
-
-    const processDeduction = async (orderId, senderId) => {
-        try {
-            // Show loading spinner
-            setShowAlert({
-                visible: true,
-                type: 'loading',
-                title: translations[language].tabs.orders.create.sections.sender.fields.processing_deduction || "Processing Deduction",
-                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait..."
-            });
-
-            const deductionInfo = form.balanceDeduction;
-            let deductions = {};
-                        
-            // Extract values needed for net value calculations
-            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
-            const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
-            
-            const commissionValue = 0; // No commission in mobile app
-            const commissionCurrency = 'ILS';
-            
-            const discountValue = 0; // No discount in mobile app
-            const discountCurrency = 'ILS';
-            
-            // Handle various formats of deduction info
-            if (deductionInfo?.method === 'manual') {
-                if (deductionInfo.currency && !isNaN(parseFloat(deductionInfo.amount))) {
-                    deductions[deductionInfo.currency] = parseFloat(deductionInfo.amount);
-                }
-            } else if (deductionInfo?.method === 'auto') {
-                // For auto method, use deductions object directly
-                if (deductionInfo.deductions && typeof deductionInfo.deductions === 'object') {
-                    deductions = deductionInfo.deductions;
-                }
-            } else if (codAmounts && codAmounts.length > 0) {
-                // Use net value calculation instead of just COD values
-                codAmounts.forEach(cod => {
-                    const codValue = parseFloat(cod.value || 0);
-                    const codCurrency = cod.currency || 'ILS';
-                    
-                    if (codValue > 0) {
-                        // Calculate net value using our helper function
-                        const netValue = calculateNetValue(
-                            codValue, codCurrency,
-                            deliveryFeeValue, deliveryFeeCurrency,
-                            commissionValue, commissionCurrency,
-                            discountValue, discountCurrency,
-                            codCurrency
-                        );
-                        
-                        deductions[codCurrency] = (deductions[codCurrency] || 0) + netValue;
-                    }
-                });
-            }
-            
-            if (!senderId || !deductions || Object.keys(deductions).length === 0) {
-                setShowAlert({
-                    visible: false
-                });
-                throw new Error('Invalid deduction data - missing userId, orderId or deduction amounts');
-            }
-
-            const deductionResult = await submitBalanceDeduction(
-                senderId, 
-                deductions, 
-                orderId
-            );
-
-            // Close loading spinner
-            setShowAlert({
-                visible: false
-            });
-
-            // Show success message
-            Alert.alert(
-                translations[language].tabs.orders.create.sections.sender.fields.deduction_success || "Deduction Successful",
-                translations[language].tabs.orders.create.sections.sender.fields.deduction_processed || "Deduction has been processed successfully",
-                [{ text: "OK" }]
-            );
-
-            return deductionResult;
-        } catch (error) {
-            setShowAlert({
-                visible: false
-            });
-            throw error;
-        }
-    };
-
     const sections = [{
         isHeader: true,
         fields: (
@@ -365,487 +157,34 @@ export default function HomeScreen() {
                         />
                     ))}
                 </View>
-                {["admin", "manager"].includes(user.role) && (
+                
+                {/* Always show with_money_receive toggle when order type is "receive" */}
+                {selectedValue.orderType?.value === "receive" && (
                     <View style={styles.businessBalanceToggleContainer}>
-                        {/* Show both toggles for "receive" order type */}
-                        {selectedValue.orderType?.value === "receive" ? (
-                            <View style={styles.togglesRowContainer}>
-                                <View style={styles.toggleItem}>
-                                    <Field
-                                        field={{
-                                            type: "toggle",
-                                            label: ["admin", "manager"].includes(user.role) ? 
-                                                translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
-                                                translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
-                                            name: "from_business_balance",
-                                            value: user.role === "business" && !form.withMoneyReceive ? true : (form.fromBusinessBalance || false),
-                                            disabled: user.role === "business" && !form.withMoneyReceive,
-                                            onChange: async (value) => {
-                                                // For business users with specific conditions, prevent toggling off
-                                                if (user.role === "business" && !form.withMoneyReceive && value === false) {
-                                                    return;
-                                                }
-                                                
-                                                // Original balance checking logic for non-business users
-                                                try {
-                                                    // If unchecking the box (value is false), confirm with user before changing state
-                                                    if (!value) {
-                                                        // Get sender ID based on user role
-                                                        const senderId = user.role === "business" ? 
-                                                            user.userId : 
-                                                            selectedValue.sender.user_id;
-                                                        
-                                                        if (!senderId) {
-                                                            return;
-                                                        }
-
-                                                        // Only proceed if we're in edit mode and have an order ID
-                                                        if (!orderId) {
-                                                            setFromBusinessBalance(false);
-                                                            setForm(prevForm => ({
-                                                                ...prevForm,
-                                                                fromBusinessBalance: false,
-                                                                balanceDeduction: null
-                                                            }));
-                                                            return;
-                                                        }
-                                                        
-                                                        // Confirm with user before returning balance
-                                                        Alert.alert(
-                                                            translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
-                                                            [
-                                                                {
-                                                                    text: translations[language].no || "No",
-                                                                    style: "cancel"
-                                                                },
-                                                                {
-                                                                    text: translations[language].yes || "Yes",
-                                                                    onPress: async () => {
-                                                                        setFromBusinessBalance(false); // Set state to false only if user confirms
-                                                                        try {
-                                                                            // Show loading spinner
-                                                                            setShowAlert({
-                                                                                visible: true,
-                                                                                type: 'loading',
-                                                                                title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
-                                                                                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                                                                                onClose: () => setShowAlert({visible: false})
-                                                                            });
-                                                                                
-                                                                            // const token = await getToken("userToken");
-                                                                            const returnResponse = await fetch(
-                                                                                `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
-                                                                                {
-                                                                                    method: 'POST',
-                                                                                    credentials: "include",
-                                                                                    headers: {
-                                                                                        "Content-Type": "application/json",
-                                                                                        // "Cookie": token ? `token=${token}` : ""
-                                                                                    },
-                                                                                    body: JSON.stringify({
-                                                                                        order_id: orderId,
-                                                                                        reference_type: 'transaction'
-                                                                                    })
-                                                                                }
-                                                                            );
-
-                                                                            // Close loading spinner
-                                                                            setShowAlert({
-                                                                                visible: false
-                                                                            });
-                                                                            
-                                                                            // Process the response
-                                                                            const responseData = await returnResponse.json();
-                                                                            
-                                                                            if (!returnResponse.ok) {
-                                                                                throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
-                                                                            }
-                                                                            
-                                                                            // Success message
-                                                                            Alert.alert(
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
-                                                                                [{ text: "OK" }]
-                                                                            );
-                                                                            
-                                                                            // Update form data
-                                                                            setForm(prevForm => ({
-                                                                                ...prevForm,
-                                                                                fromBusinessBalance: false,
-                                                                                balanceDeduction: null
-                                                                            }));
-                                                                        } catch (returnError) {
-                                                                            setShowAlert({
-                                                                                visible: false
-                                                                            });
-                                                                            Alert.alert(
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
-                                                                                returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
-                                                                                [{ text: "OK" }]
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                }
-                                                            ]
-                                                        );
-                                                        return;
-                                                    }
-
-                                                    // Only run balance checking for non-business users or business users with with_money_receive=true
-                                                    if (user.role !== "business" || (user.role === "business" && form.withMoneyReceive)) {
-                                                        // Get sender ID based on user role
-                                                        const senderId = user.role === "business" ? user.userId : 
-                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                        selectedValue.sender.user_id : null);
-                                                         
-                                                        // Validate sender ID
-                                                         if (!senderId) {
-                                                            return Alert.alert(
-                                                                translations[language].tabs.orders.create.error || "Error",
-                                                                translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                                [{ text: "OK" }]
-                                                            );
-                                                         }
-                                                        
-                                                        // Get COD values from form data
-                                                        if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                            return Alert.alert(
-                                                                translations[language].tabs.orders.create.error || "Error",
-                                                                translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                                [{ text: "OK" }]
-                                                            );
-                                                         }
-                                                         
-                                                        // Format COD values for display and processing
-                                                        const formattedCodValues = {};
-                                                        let totalCodAmount = 0;
-                                                        
-                                                        codAmounts.forEach(cod => {
-                                                            const value = parseFloat(cod.value || 0);
-                                                            const currency = cod.currency || 'ILS';
-                                                            
-                                                            if (value > 0) {
-                                                                formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                                
-                                                                // Convert to ILS for total calculation
-                                                                if (currency === 'ILS') {
-                                                                    totalCodAmount += value;
-                                                                } else if (currency === 'USD') {
-                                                                    totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                                } else if (currency === 'JOD') {
-                                                                    totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                                }
-                                                            }
-                                                        });
-                                                        
-                                                        // First show the action selection modal
-                                                         Alert.alert(
-                                                            translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                             [
-                                                                 {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                     style: "cancel"
-                                                                 },
-                                                                 {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                    onPress: () => {
-                                                                        // Call the function directly, not wrapped in async/await
-                                                                        handleManualDeduction(senderId, formattedCodValues);
-                                                                    }
-                                                                },
-                                                                {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                    onPress: () => {
-                                                                        // Call the function directly, not wrapped in async/await
-                                                                        handleAutoDeduction(senderId, formattedCodValues);
-                                                                    }
-                                                                 }
-                                                             ]
-                                                         );
-                                                    } else {
-                                                        // For business users with auto-enabled toggle, just set the state
-                                                        setFromBusinessBalance(true);
-                                                        setForm(prevForm => ({
-                                                            ...prevForm,
-                                                            fromBusinessBalance: true
-                                                        }));
-                                                    }
-                                                } catch (error) {
-                                                    // Make sure to close any potential loading spinners on error
-                                                    setShowAlert({
-                                                        visible: false
-                                                    });
-                                                    setFromBusinessBalance(false);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: false,
-                                                        balanceDeduction: null
-                                                    }));
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </View>
-                                <View style={styles.toggleItem}>
-                                    <Field
-                                        field={{
-                                            type: "toggle",
-                                            label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
-                                            name: "with_money_receive",
-                                            value: form.withMoneyReceive || false,
-                                            onChange: (value) => {
-                                                setWithMoneyReceive(value);
-                                                setForm(prevForm => ({
-                                                    ...prevForm,
-                                                    withMoneyReceive: value
-                                                }));
-                                                
-                                                // For business users, auto-set from_business_balance based on with_money_receive
-                                                if (user.role === "business" && !value) {
-                                                    setFromBusinessBalance(true);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: true
-                                                    }));
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </View>
-                            </View>
-                        ) : (
-                            // For non-receive order types, show only from_business_balance if not "receive"
-                            selectedValue.orderType?.value !== "receive" && (
-                                <Field
-                                    field={{
-                                        type: "toggle",
-                                        label: ["admin", "manager"].includes(user.role) ? 
-                                            translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
-                                            translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
-                                        name: "from_business_balance",
-                                        value: user.role === "business" && selectedValue.orderType?.value === "payment" ? true : (form.fromBusinessBalance || false),
-                                        disabled: user.role === "business" && selectedValue.orderType?.value === "payment",
-                                        onChange: async (value) => {
-                                            // For business users with payment order type, prevent toggling off
-                                            if (user.role === "business" && selectedValue.orderType?.value === "payment" && value === false) {
-                                                return;
-                                            }
-                                            
-                                            // Original balance checking logic for non-business users or other order types
-                                            try {
-                                                // If unchecking the box (value is false), confirm with user before changing state
-                                                if (!value) {
-                                                    // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? 
-                                                        user.userId : 
-                                                        selectedValue.sender.user_id;
-                                                    
-                                                    if (!senderId) {
-                                                        return;
-                                                    }
-
-                                                    // Only proceed if we're in edit mode and have an order ID
-                                                    if (!orderId) {
-                                                        setFromBusinessBalance(false);
-                                                        setForm(prevForm => ({
-                                                            ...prevForm,
-                                                            fromBusinessBalance: false,
-                                                            balanceDeduction: null
-                                                        }));
-                                                        return;
-                                                    }
-                                                    
-                                                    // Confirm with user before returning balance
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
-                                                        [
-                                                            {
-                                                                text: translations[language].no || "No",
-                                                                style: "cancel"
-                                                            },
-                                                            {
-                                                                text: translations[language].yes || "Yes",
-                                                                onPress: async () => {
-                                                                    setFromBusinessBalance(false); // Set state to false only if user confirms
-                                                                    try {
-                                                                        // Show loading spinner
-                                                                        setShowAlert({
-                                                                            visible: true,
-                                                                            type: 'loading',
-                                                                            title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
-                                                                            message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                                                                            onClose: () => setShowAlert({visible: false})
-                                                                        });
-                                                                                
-                                                                        // const token = await getToken("userToken");
-                                                                        const returnResponse = await fetch(
-                                                                            `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
-                                                                            {
-                                                                                method: 'POST',
-                                                                                credentials: "include",
-                                                                                headers: {
-                                                                                    "Content-Type": "application/json",
-                                                                                    // "Cookie": token ? `token=${token}` : ""
-                                                                                },
-                                                                                body: JSON.stringify({
-                                                                                    order_id: orderId,
-                                                                                    reference_type: 'transaction'
-                                                                                })
-                                                                            }
-                                                                        );
-
-                                                                        // Close loading spinner
-                                                                        setShowAlert({
-                                                                            visible: false
-                                                                        });
-                                                                        
-                                                                        // Process the response
-                                                                        const responseData = await returnResponse.json();
-                                                                        
-                                                                        if (!returnResponse.ok) {
-                                                                            throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
-                                                                        }
-                                                                        
-                                                                        // Success message
-                                                                        Alert.alert(
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
-                                                                            [{ text: "OK" }]
-                                                                        );
-                                                                        
-                                                                        // Update form data
-                                                                        setForm(prevForm => ({
-                                                                            ...prevForm,
-                                                                            fromBusinessBalance: false,
-                                                                            balanceDeduction: null
-                                                                        }));
-                                                                    } catch (returnError) {
-                                                                        setShowAlert({
-                                                                            visible: false
-                                                                        });
-                                                                        Alert.alert(
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
-                                                                            returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
-                                                                            [{ text: "OK" }]
-                                                                        );
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
-                                                    );
-                                                    return;
-                                                }
-
-                                                // Only run balance checking for non-business users or business users with non-payment order types
-                                                if (user.role !== "business" || (user.role === "business" && selectedValue.orderType?.value !== "payment")) {
-                                                    // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? user.userId : 
-                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                        selectedValue.sender.user_id : null);
-                                                    
-                                                    // Validate sender ID
-                                                    if (!senderId) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                    }
-                                                    
-                                                    // Get COD values from form data
-                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                    }
-                                                    
-                                                    // Format COD values for display and processing
-                                                    const formattedCodValues = {};
-                                                    let totalCodAmount = 0;
-                                                    
-                                                    codAmounts.forEach(cod => {
-                                                        const value = parseFloat(cod.value || 0);
-                                                        const currency = cod.currency || 'ILS';
-                                                        
-                                                        if (value > 0) {
-                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                            
-                                                            // Convert to ILS for total calculation
-                                                            if (currency === 'ILS') {
-                                                                totalCodAmount += value;
-                                                            } else if (currency === 'USD') {
-                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                            } else if (currency === 'JOD') {
-                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                            }
-                                                        }
-                                                    });
-                                                    
-                                                    // First show the action selection modal
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                        [
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                style: "cancel"
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleManualDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleAutoDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            }
-                                                        ]
-                                                    );
-                                                } else {
-                                                    // For business users with auto-enabled toggle, just set the state
-                                                    setFromBusinessBalance(true);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: true
-                                                    }));
-                                                }
-                                            } catch (error) {
-                                                // Make sure to close any potential loading spinners on error
-                                                setShowAlert({
-                                                    visible: false
-                                                });
-                                                setFromBusinessBalance(false);
-                                                setForm(prevForm => ({
-                                                    ...prevForm,
-                                                    fromBusinessBalance: false,
-                                                    balanceDeduction: null
-                                                }));
-                                                Alert.alert(
-                                                    translations[language].tabs.orders.create.error || "Error",
-                                                    error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                                                    [{ text: "OK" }]
-                                                );
-                                            }
-                                        }
-                                    }}
-                                />
-                            )
-                        )}
+                        <Field
+                            field={{
+                                type: "toggle",
+                                label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
+                                name: "with_money_receive",
+                                value: form.withMoneyReceive || false,
+                                onChange: (value) => {
+                                    setWithMoneyReceive(value);
+                                    setForm(prevForm => ({
+                                        ...prevForm,
+                                        withMoneyReceive: value
+                                    }));
+                                    
+                                    // For business users, auto-set from_business_balance based on with_money_receive
+                                    if (user.role === "business" && !value) {
+                                        setFromBusinessBalance(true);
+                                        setForm(prevForm => ({
+                                            ...prevForm,
+                                            fromBusinessBalance: true
+                                        }));
+                                    }
+                                }
+                            }}
+                        />
                     </View>
                 )}
             </View>
@@ -943,86 +282,107 @@ export default function HomeScreen() {
     }, {
         label: translations[language].tabs.orders.create.sections.cost.title,
         icon: <MaterialIcons name="attach-money" size={22} color="#4361EE" />,
-        fields: [{
-            label: translations[language].tabs.orders.create.sections.paymentType.title,
-            type: "select",
-            name: "paymentType",
-            defaultValue: "cash",
-            value: selectedValue.paymentType.name,
-            list: paymentTypes
-        },
-        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
-        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
-        (selectedValue.paymentType?.value || form.paymentTypeId) === "check"
-        ? [
-            // Only show COD amount fields and Add Currency button for cash or cash/check
-            ...((selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
-            (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" 
+        fields: [
+            {
+                label: translations[language].tabs.orders.create.sections.paymentType.title,
+                type: "select",
+                name: "paymentType",
+                defaultValue: "cash",
+                value: selectedValue.paymentType.name,
+                list: paymentTypes
+            },
+            ["business", "admin", "manager"].includes(user.role) ? {
+                type: "toggle",
+                label: ["admin", "manager"].includes(user.role) ? 
+                    translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
+                    translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
+                name: "from_business_balance",
+                value: user.role === "business" && selectedValue.orderType?.value === "receive" && !form.withMoneyReceive ? true : 
+                      user.role === "business" && selectedValue.orderType?.value === "payment" ? true : 
+                      (form.fromBusinessBalance || false),
+                disabled: (user.role === "business" && selectedValue.orderType?.value === "receive" && !form.withMoneyReceive) || 
+                         (user.role === "business" && selectedValue.orderType?.value === "payment"),
+                onChange: async (value) => {
+                    setFromBusinessBalance(value);
+                    setForm(prevForm => ({
+                        ...prevForm,
+                        fromBusinessBalance: value
+                    }));
+                }
+            } : null,
+            (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
+            (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
+            (selectedValue.paymentType?.value || form.paymentTypeId) === "check"
             ? [
-                ...codAmounts.map((item, index) => ({
-                    label: selectedValue.orderType?.value !== "payment" 
-                        ? selectedValue.orderType?.value === "receive" ? 
-                        translations[language].tabs.orders.create.sections.cost.fields.packageCost
-                        :translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
-                        : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
-                    type: "currencyInput",
-                    name: index === 0 ? "cod_value" : `cod_value_${index}`,
-                    value: item.value,
-                    currency: item.currency,
-                    index: index,
-                    error: index === 0 ? fieldErrors.cod_value : null,
-                    showCurrencyPicker: (idx) => setActiveCurrencyPicker(idx),
-                    availableCurrencies: currencyList
-                        .filter(c => !codAmounts.some((item, i) => i !== index && item.currency === c.value))
-                        .map(c => ({ name: c.name, value: c.value })),
-                    onChange: (input) => {
-                        clearFieldError('cod_value');
-                        const newAmounts = [...codAmounts];
-                        newAmounts[index].value = input;
-                        setCodAmounts(newAmounts);
-                        
-                        if (index === 0) {
-                            setForm((form) => ({ ...form, codValue: input }));
+                // Only show COD amount fields and Add Currency button for cash or cash/check
+                ...((selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
+                (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" 
+                ? [
+                    ...codAmounts.map((item, index) => ({
+                        label: selectedValue.orderType?.value !== "payment" 
+                            ? selectedValue.orderType?.value === "receive" ? 
+                            translations[language].tabs.orders.create.sections.cost.fields.packageCost
+                            :translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
+                            : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
+                        type: "currencyInput",
+                        name: index === 0 ? "cod_value" : `cod_value_${index}`,
+                        value: item.value,
+                        currency: item.currency,
+                        index: index,
+                        error: index === 0 ? fieldErrors.cod_value : null,
+                        showCurrencyPicker: (idx) => setActiveCurrencyPicker(idx),
+                        availableCurrencies: currencyList
+                            .filter(c => !codAmounts.some((item, i) => i !== index && item.currency === c.value))
+                            .map(c => ({ name: c.name, value: c.value })),
+                        onChange: (input) => {
+                            clearFieldError('cod_value');
+                            const newAmounts = [...codAmounts];
+                            newAmounts[index].value = input;
+                            setCodAmounts(newAmounts);
+                            
+                            if (index === 0) {
+                                setForm((form) => ({ ...form, codValue: input }));
+                            }
+                        },
+                        onCurrencyChange: (currency) => {
+                            const newAmounts = [...codAmounts];
+                            newAmounts[index].currency = currency;
+                            setCodAmounts(newAmounts);
                         }
-                    },
-                    onCurrencyChange: (currency) => {
-                        const newAmounts = [...codAmounts];
-                        newAmounts[index].currency = currency;
-                        setCodAmounts(newAmounts);
-                    }
-                })),
-                codAmounts.length < 3 ? {
-                    type: "addCurrencyButton",
-                    value: translations[language].tabs.orders.create.sections.cost.fields.addCurrency,
-                    onPress: () => {
-                        const usedCurrencies = codAmounts.map(item => item.currency);
-                        const unused = ["ILS", "USD", "JOD"].find(c => !usedCurrencies.includes(c));
-                        
-                        if (unused) {
-                            setCodAmounts([...codAmounts, { value: "", currency: unused }]);
+                    })),
+                    codAmounts.length < 3 ? {
+                        type: "addCurrencyButton",
+                        value: translations[language].tabs.orders.create.sections.cost.fields.addCurrency,
+                        onPress: () => {
+                            const usedCurrencies = codAmounts.map(item => item.currency);
+                            const unused = ["ILS", "USD", "JOD"].find(c => !usedCurrencies.includes(c));
+                            
+                            if (unused) {
+                                setCodAmounts([...codAmounts, { value: "", currency: unused }]);
+                            }
                         }
-                    }
+                    } : null
+                ] : []),
+                
+                // Show checks input for check or cash/check
+                (selectedValue.paymentType?.value === "check" || selectedValue.paymentType?.value === "cash/check") ? {
+                    type: "checksInput",
+                    name: "checks",
+                    label: translations[language].tabs.orders.create.sections.cost.fields.checks || "Checks",
+                    value: checks,
+                    onChange: (updatedChecks) => setChecks(updatedChecks)
                 } : null
-            ] : []),
-            
-            // Show checks input for check or cash/check
-            (selectedValue.paymentType?.value === "check" || selectedValue.paymentType?.value === "cash/check") ? {
-                type: "checksInput",
-                name: "checks",
-                label: translations[language].tabs.orders.create.sections.cost.fields.checks || "Checks",
-                value: checks,
-                onChange: (updatedChecks) => setChecks(updatedChecks)
-            } : null
+            ].filter(Boolean)
+            : { visibility: "hidden" },
+            {
+                label: translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
+                type: "input",
+                name: "delivery_fee",
+                value: deliveryFee || form.deliveryFee,
+                readOnly: true,
+                editable: ["admin", "manager","entery"].includes(user.role) ? true : false
+            }
         ].filter(Boolean)
-        : { visibility: "hidden" },
-        {
-            label: translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
-            type: "input",
-            name: "delivery_fee",
-            value: deliveryFee || form.deliveryFee,
-            readOnly: true,
-            editable: ["admin", "manager","entery"].includes(user.role) ? true : false
-        }]
     },!["payment"].includes(selectedValue.orderType?.value) ? {
         label: translations[language].tabs.orders.create.sections.details.title,
         icon: <Feather name="box" size={22} color="#4361EE" />,
@@ -1148,7 +508,7 @@ export default function HomeScreen() {
         
         // Calculate total COD value from all currency inputs
         const totalCodValue = codAmounts.reduce((sum, item) => {
-            const value = parseFloat(item.value) || null;
+            const value = parseFloat(item.value) || 0;
             return sum + value;
         }, 0);
         
@@ -1174,7 +534,6 @@ export default function HomeScreen() {
         if (codValues.length === 0 && !["check"].includes(selectedValue.paymentType.value)) {
             codValues.push({ value: null, currency: 'ILS' });
         }
-        
 
         // Ensure commission exists (required field)
         const commission = [{ value: 0, currency: 'ILS' }];
@@ -1187,14 +546,12 @@ export default function HomeScreen() {
         }
 
         try {
-            // const token = await getToken("userToken");
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}${url}`, {
                 method: method,
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
                     'Accept-Language': language,
-                    // "Cookie": token ? `token=${token}` : ""
                 },
                 body: JSON.stringify({
                     reference_id: form.referenceId,
@@ -1224,7 +581,7 @@ export default function HomeScreen() {
                     receiver_city: selectedValue.city.city_id || form.senderCityId,
                     receiver_address: form.receiverAddress,
                     from_business_balance: form.fromBusinessBalance || false,
-                    with_money_receive: form.withMoneyReceive || false, // Add this line
+                    with_money_receive: form.withMoneyReceive || false,
                     exceed_balance_limit: exceedBusinessBalance || false,
                     note: form.noteContent,
                     checks: formattedChecks
@@ -1234,111 +591,17 @@ export default function HomeScreen() {
             const data = await res.json();
 
             if (!res.ok) {
-                setFormSpinner({ status: false });
-                if (data.details && Array.isArray(data.details)) {
-                    // Handle validation errors from server (Joi validation)
-                    const errors = {};
-                    
-                    // Check for direct value errors first
-                    for (const error of data.details) {
-                        // Direct value error case
-                        if (error.field === "value") {
-                            errors['cod_value'] = error.message;
-                            continue;
-                        }
-                        
-                        // Handle nested fields for cod_values
-                        if (error.field.includes('cod_values') && error.field.includes('value')) {
-                            errors['cod_value'] = error.message;
-                            continue;
-                        }
-                        
-                        // For other fields, map as normal
-                        const fieldName = mapServerFieldToFormField(error.field);
-                        errors[fieldName] = error.message;
-                    }
-                    
-                    setFieldErrors(errors);
-
-                    // Improve scroll to error logic by finding the field in sections
-                    if (Object.keys(errors).length > 0) {
-                        // Find section containing the first error
-                        const firstErrorField = Object.keys(errors)[0];
-                        
-                        // Find section index containing the error field
-                        let sectionWithErrorIndex = -1;
-                        let sectionWithError = null;
-                        
-                        // Search all sections for the field with error
-                        for (let i = 0; i < sections.length; i++) {
-                            const section = sections[i];
-                            if (!section.fields) continue;
-                            
-                            // Handle array of fields or single field
-                            const fields = Array.isArray(section.fields) ? section.fields : [section.fields];
-                            
-                            // Flatten nested arrays (for conditional rendering)
-                            const flatFields = fields.flat().filter(f => f && typeof f === 'object');
-                            
-                            // Check if this section contains the error field
-                            const hasErrorField = flatFields.some(field => 
-                                field.name === firstErrorField || 
-                                (field.name === 'cod_value' && firstErrorField === 'cod_value')
-                            );
-                            
-                            if (hasErrorField) {
-                                sectionWithErrorIndex = i;
-                                sectionWithError = section;
-                                break;
-                            }
-                        }
-                        
-                        // If found section with error, scroll to it
-                        if (sectionWithErrorIndex >= 0 && scrollViewRef.current) {
-                            // Calculate position based on section index
-                            const approximatePosition = sectionWithErrorIndex * 280;
-                            
-                            // Scroll with offset
-                            scrollViewRef.current.scrollTo({
-                                y: Math.max(0, approximatePosition - 60),
-                                animated: true
-                            });
-                        }
-                    }
-
-                    // Rest of error handling
-                    setError({
-                        status: true,
-                        msg: translations[language].tabs.orders.create.errorValidationMsg
-                    });
-
-                    setShowAlert({
-                        visible: true,
-                        type: 'error',
-                        title: translations[language].tabs.orders.create.error,
-                        message: translations[language].tabs.orders.create.errorValidationMsg
-                    });
-                } else {
-                    setError({
-                        status: true,
-                        msg: data.message || translations[language].tabs.orders.create.errorMsg
-                    });
-
-                    setShowAlert({
-                        visible: true,
-                        type: 'error',
-                        title: translations[language].tabs.orders.create.error,
-                        message: data.message || translations[language].tabs.orders.create.errorMsg
-                    });
-                }
-                return;
+                throw {
+                    status: res.status,
+                    ...data
+                };
             }
 
             // Process business balance deduction if enabled
             if (form.fromBusinessBalance && data.data?.order_id) {
                 // Add check to prevent duplicate deductions on edit
                 const shouldDeduct = method === "POST" || 
-                                     (method === "PUT" && !form.originalFromBusinessBalance);
+                                    (method === "PUT" && !form.originalFromBusinessBalance);
                 
                 if (shouldDeduct) {
                     try {
@@ -1366,18 +629,119 @@ export default function HomeScreen() {
 
         } catch (err) {
             setFormSpinner({ status: false });
+            
+            if (err.type === 'VALIDATION_ERROR' && err.details) {
+                // Handle validation errors
+                const errors = {};
+                err.details.forEach(error => {
+                    // Map server field names to form field names
+                        const fieldName = mapServerFieldToFormField(error.field);
+                        errors[fieldName] = error.message;
+                });
+                    
+                    setFieldErrors(errors);
 
+                // Set general error message
+                setError({
+                    status: true,
+                    msg: translations[language].tabs.orders.create.errorValidationMsg
+                });
+                
+                // Find section with first error and scroll to it
+                if (Object.keys(errors).length > 0 && scrollViewRef.current) {
+                        const firstErrorField = Object.keys(errors)[0];
+                        
+                        // Find section index containing the error field
+                        let sectionWithErrorIndex = -1;
+                        
+                        // Search all sections for the field with error
+                        for (let i = 0; i < sections.length; i++) {
+                            const section = sections[i];
+                            if (!section.fields) continue;
+                            
+                            // Handle array of fields or single field
+                            const fields = Array.isArray(section.fields) ? section.fields : [section.fields];
+                            
+                            // Flatten nested arrays (for conditional rendering)
+                            const flatFields = fields.flat().filter(f => f && typeof f === 'object');
+                            
+                            // Check if this section contains the error field
+                            const hasErrorField = flatFields.some(field => 
+                                field.name === firstErrorField || 
+                                (field.name === 'cod_value' && firstErrorField === 'cod_value')
+                            );
+                            
+                            if (hasErrorField) {
+                                sectionWithErrorIndex = i;
+                                break;
+                            }
+                        }
+                        
+                        // If found section with error, scroll to it
+                    if (sectionWithErrorIndex >= 0) {
+                            // Calculate position based on section index
+                            const approximatePosition = sectionWithErrorIndex * 280;
+                            
+                            // Scroll with offset
+                            scrollViewRef.current.scrollTo({
+                                y: Math.max(0, approximatePosition - 60),
+                                animated: true
+                            });
+                        }
+                    }
+
+            } else if (err.type === 'INSUFFICIENT_BALANCE') {
+                // Handle insufficient balance error specifically
+                    setError({
+                        status: true,
+                    msg: err.details || err.message || translations[language].tabs.orders.create.insufficientBalanceMsg
+                    });
+
+                // Show alert for insufficient balance
+                    setShowAlert({
+                        visible: true,
+                        type: 'error',
+                    title: translations[language].tabs.orders.create.insufficientBalance || "Insufficient Balance",
+                    message: err.details || err.message || translations[language].tabs.orders.create.balanceTooLow
+                });
+                
+                // Reset business balance checkbox since the operation failed
+                setFromBusinessBalance(false);
+                setForm(prev => ({
+                    ...prev,
+                    fromBusinessBalance: false,
+                    balanceDeduction: null
+                }));
+                
+            } else if (err.type === 'FORBIDDEN_STATUS') {
+                // Handle forbidden status error
             setError({
                 status: true,
-                msg: translations[language].tabs.orders.create.errorMsg
+                    msg: err.details || err.message || translations[language].tabs.orders.create.forbiddenStatus
             });
 
             setShowAlert({
                 visible: true,
                 type: 'error',
                 title: translations[language].tabs.orders.create.error,
-                message: translations[language].tabs.orders.create.errorMsg
-            });
+                    message: err.details || err.message || translations[language].tabs.orders.create.forbiddenStatus
+                });
+                
+            } else {
+                // Handle any other error types
+                setError({
+                    status: true,
+                    msg: err.type === "FORBIDDEN" ? err.message : 
+                        (err.message || translations[language].tabs.orders.create.errorMsg)
+                });
+                
+                setShowAlert({
+                    visible: true,
+                    type: 'error',
+                    title: translations[language].tabs.orders.create.error,
+                    message: err.message || translations[language].tabs.orders.create.errorMsg
+                });
+            }
         }
     };
 
@@ -1716,288 +1080,6 @@ export default function HomeScreen() {
             </View>
         );
     };
-    
-    const handleManualDeduction = async (senderId, formattedCodValues) => {
-        try {
-            // Show loading while fetching balances
-            setShowAlert({
-                visible: true,
-                type: 'loading',
-                title: translations[language].tabs.orders.create.sections.sender.fields.checking_balance || "Checking Balance",
-                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                onClose: () => setShowAlert({visible: false})
-            });
-            
-            // Fetch user balances
-            const balances = await getUserBalances(senderId);
-            
-            // Close loading spinner
-            setShowAlert({
-                visible: false
-            });
-            
-            // Get available currencies with COD values
-            const availableCurrencies = Object.keys(formattedCodValues);
-            
-            if (availableCurrencies.length === 0) {
-                return Alert.alert(
-                    translations[language].tabs.orders.create.error || "Error",
-                    translations[language].tabs.orders.create.sections.sender.fields.no_cod_values || "No COD values found",
-                    [{ text: "OK" }]
-                );
-            }
-            
-            // Create list of currencies to show in picker
-            // For React Native, we'll use multiple Alert buttons for a simple implementation
-            const currencyAlertButtons = [
-                {
-                    text: translations[language].cancel || "Cancel",
-                    style: "cancel"
-                }
-            ];
-            
-            // Add a button for each currency
-            availableCurrencies.forEach(currency => {
-                currencyAlertButtons.push({
-                    text: `${currency} (${translations[language].tabs.orders.create.sections.sender.fields.balance || "Balance"}: ${balances[currency] || 0})`,
-                    onPress: () => processCurrencySelection(currency, balances, formattedCodValues)
-                });
-            });
-            
-            // Show the currency selection alert
-            Alert.alert(
-                translations[language].tabs.orders.create.sections.sender.fields.select_deduction_currency || "Select Deduction Currency",
-                translations[language].tabs.orders.create.sections.sender.fields.choose_currency || "Choose Currency",
-                currencyAlertButtons
-            );
-        } catch (error) {
-            setShowAlert({
-                visible: false
-            });
-            Alert.alert(
-                translations[language].tabs.orders.create.error || "Error",
-                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                [{ text: "OK" }]
-            );
-        }
-    };
-
-    const processCurrencySelection = async (selectedCurrency, balances, formattedCodValues) => {
-        try {
-            // Extract values needed for net value calculations
-            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
-            const deliveryFeeCurrency = 'ILS'; // Default for mobile app
-            
-            // Calculate total amount needed for deduction
-            let totalNeeded = 0;
-            
-            if (formattedCodValues[selectedCurrency]) {
-                // If we have a direct match, start with COD value
-                totalNeeded = formattedCodValues[selectedCurrency];
-                
-                // Only add delivery fee for payment or receive order types
-                if (selectedValue.orderType?.value === "payment" || selectedValue.orderType?.value === "receive") {
-                    // Add proportional delivery fee if in same currency
-                    if (deliveryFeeCurrency === selectedCurrency) {
-                        totalNeeded += deliveryFeeValue;
-                    } else {
-                        // Convert delivery fee to selected currency
-                        const convertedFee = convertCurrency(deliveryFeeValue, deliveryFeeCurrency, selectedCurrency);
-                        if (convertedFee !== null) {
-                            totalNeeded += convertedFee;
-                        }
-                    }
-                }
-            } else {
-                Alert.alert(
-                    translations[language].tabs.orders.create.error || "Error",
-                    "Currency mismatch error",
-                    [{ text: "OK" }]
-                );
-                return;
-            }
-            
-            // Round to 2 decimal places
-            totalNeeded = Math.round(totalNeeded * 100) / 100;
-            
-            // Check if balance is sufficient
-            const availableBalance = balances[selectedCurrency] || 0;
-            
-            if (availableBalance < totalNeeded) {
-                return Alert.alert(
-                    translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance || "Insufficient Balance",
-                    `${translations[language].tabs.orders.create.sections.sender.fields.available || "Available"}: ${availableBalance} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.needed || "Needed"}: ${totalNeeded} ${selectedCurrency}`,
-                    [{ text: "OK" }]
-                );
-            }
-            
-            // Confirm deduction
-            Alert.alert(
-                translations[language].tabs.orders.create.sections.sender.fields.confirm_deduction || "Confirm Deduction",
-                `${translations[language].tabs.orders.create.sections.sender.fields.deduct_amount || "Amount to deduct"}: ${totalNeeded} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.current_balance || "Current balance"}: ${availableBalance} ${selectedCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.new_balance || "New balance"}: ${Math.round((availableBalance - totalNeeded) * 100) / 100} ${selectedCurrency}`,
-                [
-                    {
-                        text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                        style: "cancel"
-                    },
-                    {
-                        text: translations[language].tabs.orders.create.sections.sender.fields.confirm || "Confirm",
-                        onPress: () => {
-                            // Set flag for form submission
-                            setFromBusinessBalance(true);
-                            
-                            // Store deduction info
-                            setForm(prevForm => ({
-                                ...prevForm,
-                                fromBusinessBalance: true,
-                                balanceDeduction: {
-                                    method: 'manual',
-                                    currency: selectedCurrency,
-                                    amount: totalNeeded
-                                }
-                            }));
-                            
-                            Alert.alert(
-                                translations[language].tabs.orders.create.sections.sender.fields.deduction_ready || "Deduction Ready",
-                                translations[language].tabs.orders.create.sections.sender.fields.deduction_on_submit || "Deduction will be applied on submit",
-                                [{ text: "OK" }]
-                            );
-                        }
-                    }
-                ]
-            );
-        } catch (error) {
-            Alert.alert(
-                translations[language].tabs.orders.create.error || "Error",
-                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                [{ text: "OK" }]
-            );
-        }
-    };
-
-    const handleAutoDeduction = async (senderId, formattedCodValues) => {
-        try {
-            // Show loading while fetching balances
-            setShowAlert({
-                visible: true,
-                type: 'loading',
-                title: translations[language].tabs.orders.create.sections.sender.fields.checking_balance || "Checking Balance",
-                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                onClose: () => setShowAlert({visible: false})
-            });
-            
-            // Fetch user balances
-            const balances = await getUserBalances(senderId);
-            
-            // Close loading spinner
-            setShowAlert({
-                visible: false
-            });
-            
-            // Auto-deduct logic
-            const deductions = {};
-            let insufficientFunds = false;
-            let insufficientCurrency = '';
-            
-            // Extract values needed for net value calculations
-            const deliveryFeeValue = parseFloat(deliveryFee) || 0;
-            const deliveryFeeCurrency = 'ILS'; // Default for mobile app
-            
-            // Calculate net value for each currency
-            for (const [currency, codAmount] of Object.entries(formattedCodValues)) {
-                // Start with COD value
-                let netValue = codAmount;
-                
-                // Only add delivery fee for payment or receive order types
-                if (selectedValue.orderType?.value === "payment" || selectedValue.orderType?.value === "receive") {
-                    // Add proportional delivery fee
-                    if (deliveryFeeCurrency === currency) {
-                        // If delivery fee is in same currency, add directly
-                        netValue += (deliveryFeeValue / Object.keys(formattedCodValues).length);
-                    } else {
-                        // If different currency, convert
-                        const convertedFee = convertCurrency(
-                            (deliveryFeeValue / Object.keys(formattedCodValues).length),
-                            deliveryFeeCurrency,
-                            currency
-                        );
-                        if (convertedFee !== null) {
-                            netValue += convertedFee;
-                        }
-                    }
-                }
-                
-                // Round to 2 decimal places
-                netValue = Math.round(netValue * 100) / 100;
-                
-                const availableBalance = balances[currency] || 0;
-                
-                if (availableBalance < netValue) {
-                    insufficientFunds = true;
-                    insufficientCurrency = currency;
-                    break;
-                }
-                
-                deductions[currency] = netValue;
-            }
-            
-            if (insufficientFunds) {
-                return Alert.alert(
-                    translations[language].tabs.orders.create.sections.cost.fields.insufficient_balance || "Insufficient Balance",
-                    `${translations[language].tabs.orders.create.sections.sender.fields.insufficient_balance_for || "Insufficient balance for"}: ${insufficientCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.available || "Available"}: ${balances[insufficientCurrency] || 0} ${insufficientCurrency}\n${translations[language].tabs.orders.create.sections.sender.fields.needed || "Needed"}: ${deductions[insufficientCurrency] || formattedCodValues[insufficientCurrency]} ${insufficientCurrency}`,
-                    [{ text: "OK" }]
-                );
-            }
-            
-            // Confirm automatic deductions
-            const deductionDetails = Object.entries(deductions)
-                .map(([currency, amount]) => `• ${amount} ${currency}`)
-                .join('\n');
-            
-            Alert.alert(
-                translations[language].tabs.orders.create.sections.sender.fields.confirm_auto_deductions || "Confirm Auto Deductions",
-                `${translations[language].tabs.orders.create.sections.sender.fields.system_will_deduct || "System will deduct"}:\n\n${deductionDetails}\n\n${translations[language].tabs.orders.create.sections.sender.fields.from_available_balances || "from available balances"}`,
-                [
-                    {
-                        text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                        style: "cancel"
-                    },
-                    {
-                        text: translations[language].tabs.orders.create.sections.sender.fields.confirm || "Confirm",
-                        onPress: () => {
-                            // Set flag for form submission
-                            setFromBusinessBalance(true);
-                            
-                            // Store deduction info
-                            setForm(prevForm => ({
-                                ...prevForm,
-                                fromBusinessBalance: true,
-                                balanceDeduction: {
-                                    method: 'auto',
-                                    deductions
-                                }
-                            }));
-                            
-                            Alert.alert(
-                                translations[language].tabs.orders.create.sections.sender.fields.deductions_ready || "Deductions Ready",
-                                `${translations[language].tabs.orders.create.sections.sender.fields.deductions_on_submit || "Deductions will be applied on submit"}:\n\n${deductionDetails}`,
-                                [{ text: "OK" }]
-                            );
-                        }
-                    }
-                ]
-            );
-        } catch (error) {
-            setShowAlert({
-                visible: false
-            });
-            Alert.alert(
-                translations[language].tabs.orders.create.error || "Error",
-                error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                [{ text: "OK" }]
-            );
-        }
-    };
 
     // Add this useEffect to handle auto-setting from_business_balance for business users
     useEffect(() => {
@@ -2066,487 +1148,34 @@ export default function HomeScreen() {
                         />
                     ))}
                 </View>
-                {["business", "admin", "manager"].includes(user.role) && (
+                
+                {/* Add with_money_receive toggle directly in the header */}
+                {selectedValue.orderType?.value === "receive" && (
                     <View style={styles.businessBalanceToggleContainer}>
-                        {/* Show both toggles for "receive" order type */}
-                        {selectedValue.orderType?.value === "receive" ? (
-                            <View style={styles.togglesRowContainer}>
-                                <View style={styles.toggleItem}>
-                                    <Field
-                                        field={{
-                                            type: "toggle",
-                                            label: ["admin", "manager"].includes(user.role) ? 
-                                                translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
-                                                translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
-                                            name: "from_business_balance",
-                                            value: user.role === "business" && !form.withMoneyReceive ? true : (form.fromBusinessBalance || false),
-                                            disabled: user.role === "business" && !form.withMoneyReceive,
-                                            onChange: async (value) => {
-                                                // For business users with specific conditions, prevent toggling off
-                                                if (user.role === "business" && !form.withMoneyReceive && value === false) {
-                                                    return;
-                                                }
-                                                
-                                                // Original balance checking logic for non-business users
-                                                try {
-                                                    // If unchecking the box (value is false), confirm with user before changing state
-                                                    if (!value) {
-                                                        // Get sender ID based on user role
-                                                        const senderId = user.role === "business" ? 
-                                                            user.userId : 
-                                                            selectedValue.sender.user_id;
-                                                        
-                                                        if (!senderId) {
-                                                            return;
-                                                        }
-
-                                                        // Only proceed if we're in edit mode and have an order ID
-                                                        if (!orderId) {
-                                                            setFromBusinessBalance(false);
-                                                            setForm(prevForm => ({
-                                                                ...prevForm,
-                                                                fromBusinessBalance: false,
-                                                                balanceDeduction: null
-                                                            }));
-                                                            return;
-                                                        }
-                                                        
-                                                        // Confirm with user before returning balance
-                                                        Alert.alert(
-                                                            translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
-                                                            [
-                                                                {
-                                                                    text: translations[language].no || "No",
-                                                                    style: "cancel"
-                                                                },
-                                                                {
-                                                                    text: translations[language].yes || "Yes",
-                                                                    onPress: async () => {
-                                                                        setFromBusinessBalance(false); // Set state to false only if user confirms
-                                                                        try {
-                                                                            // Show loading spinner
-                                                                            setShowAlert({
-                                                                                visible: true,
-                                                                                type: 'loading',
-                                                                                title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
-                                                                                message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                                                                                onClose: () => setShowAlert({visible: false})
-                                                                            });
-                                                                                
-                                                                            // const token = await getToken("userToken");
-                                                                            const returnResponse = await fetch(
-                                                                                `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
-                                                                                {
-                                                                                    method: 'POST',
-                                                                                    credentials: "include",
-                                                                                    headers: {
-                                                                                        "Content-Type": "application/json",
-                                                                                        // "Cookie": token ? `token=${token}` : ""
-                                                                                    },
-                                                                                    body: JSON.stringify({
-                                                                                        order_id: orderId,
-                                                                                        reference_type: 'transaction'
-                                                                                    })
-                                                                                }
-                                                                            );
-
-                                                                            // Close loading spinner
-                                                                            setShowAlert({
-                                                                                visible: false
-                                                                            });
-                                                                            
-                                                                            // Process the response
-                                                                            const responseData = await returnResponse.json();
-                                                                            
-                                                                            if (!returnResponse.ok) {
-                                                                                throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
-                                                                            }
-                                                                            
-                                                                            // Success message
-                                                                            Alert.alert(
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
-                                                                                [{ text: "OK" }]
-                                                                            );
-                                                                            
-                                                                            // Update form data
-                                                                            setForm(prevForm => ({
-                                                                                ...prevForm,
-                                                                                fromBusinessBalance: false,
-                                                                                balanceDeduction: null
-                                                                            }));
-                                                                        } catch (returnError) {
-                                                                            setShowAlert({
-                                                                                visible: false
-                                                                            });
-                                                                            Alert.alert(
-                                                                                translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
-                                                                                returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
-                                                                                [{ text: "OK" }]
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                }
-                                                            ]
-                                                        );
-                                                        return;
-                                                    }
-
-                                                    // Only run balance checking for non-business users or business users with with_money_receive=true
-                                                    if (user.role !== "business" || (user.role === "business" && form.withMoneyReceive)) {
-                                                        // Get sender ID based on user role
-                                                        const senderId = user.role === "business" ? user.userId : 
-                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                        selectedValue.sender.user_id : null);
-                                                         
-                                                        // Validate sender ID
-                                                         if (!senderId) {
-                                                            return Alert.alert(
-                                                                translations[language].tabs.orders.create.error || "Error",
-                                                                translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                                [{ text: "OK" }]
-                                                            );
-                                                         }
-                                                        
-                                                        // Get COD values from form data
-                                                        if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                            return Alert.alert(
-                                                                translations[language].tabs.orders.create.error || "Error",
-                                                                translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                                [{ text: "OK" }]
-                                                            );
-                                                         }
-                                                         
-                                                        // Format COD values for display and processing
-                                                        const formattedCodValues = {};
-                                                        let totalCodAmount = 0;
-                                                        
-                                                        codAmounts.forEach(cod => {
-                                                            const value = parseFloat(cod.value || 0);
-                                                            const currency = cod.currency || 'ILS';
-                                                            
-                                                            if (value > 0) {
-                                                                formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                                
-                                                                // Convert to ILS for total calculation
-                                                                if (currency === 'ILS') {
-                                                                    totalCodAmount += value;
-                                                                } else if (currency === 'USD') {
-                                                                    totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                                } else if (currency === 'JOD') {
-                                                                    totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                                }
-                                                            }
-                                                        });
-                                                        
-                                                        // First show the action selection modal
-                                                         Alert.alert(
-                                                            translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                             [
-                                                                 {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                     style: "cancel"
-                                                                 },
-                                                                 {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                    onPress: () => {
-                                                                        // Call the function directly, not wrapped in async/await
-                                                                        handleManualDeduction(senderId, formattedCodValues);
-                                                                    }
-                                                                },
-                                                                {
-                                                                    text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                    onPress: () => {
-                                                                        // Call the function directly, not wrapped in async/await
-                                                                        handleAutoDeduction(senderId, formattedCodValues);
-                                                                    }
-                                                                 }
-                                                             ]
-                                                         );
-                                                    } else {
-                                                        // For business users with auto-enabled toggle, just set the state
-                                                        setFromBusinessBalance(true);
-                                                        setForm(prevForm => ({
-                                                            ...prevForm,
-                                                            fromBusinessBalance: true
-                                                        }));
-                                                    }
-                                                } catch (error) {
-                                                    // Make sure to close any potential loading spinners on error
-                                                    setShowAlert({
-                                                        visible: false
-                                                    });
-                                                    setFromBusinessBalance(false);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: false,
-                                                        balanceDeduction: null
-                                                    }));
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.error || "Error",
-                                                        error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                                                        [{ text: "OK" }]
-                                                    );
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </View>
-                                <View style={styles.toggleItem}>
-                                    <Field
-                                        field={{
-                                            type: "toggle",
-                                            label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
-                                            name: "with_money_receive",
-                                            value: form.withMoneyReceive || false,
-                                            onChange: (value) => {
-                                                setWithMoneyReceive(value);
-                                                setForm(prevForm => ({
-                                                    ...prevForm,
-                                                    withMoneyReceive: value
-                                                }));
-                                                
-                                                // For business users, auto-set from_business_balance based on with_money_receive
-                                                if (user.role === "business" && !value) {
-                                                    setFromBusinessBalance(true);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: true
-                                                    }));
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </View>
-                            </View>
-                        ) : (
-                            // For non-receive order types, show only from_business_balance if not "receive"
-                            selectedValue.orderType?.value !== "receive" && (
-                                <Field
-                                    field={{
-                                        type: "toggle",
-                                        label: ["admin", "manager"].includes(user.role) ? 
-                                            translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
-                                            translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
-                                        name: "from_business_balance",
-                                        value: user.role === "business" && selectedValue.orderType?.value === "payment" ? true : (form.fromBusinessBalance || false),
-                                        disabled: user.role === "business" && selectedValue.orderType?.value === "payment",
-                                        onChange: async (value) => {
-                                            // For business users with payment order type, prevent toggling off
-                                            if (user.role === "business" && selectedValue.orderType?.value === "payment" && value === false) {
-                                                return;
-                                            }
-                                            
-                                            // Original balance checking logic for non-business users or other order types
-                                            try {
-                                                // If unchecking the box (value is false), confirm with user before changing state
-                                                if (!value) {
-                                                    // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? 
-                                                        user.userId : 
-                                                        selectedValue.sender.user_id;
-                                                    
-                                                    if (!senderId) {
-                                                        return;
-                                                    }
-
-                                                    // Only proceed if we're in edit mode and have an order ID
-                                                    if (!orderId) {
-                                                        setFromBusinessBalance(false);
-                                                        setForm(prevForm => ({
-                                                            ...prevForm,
-                                                            fromBusinessBalance: false,
-                                                            balanceDeduction: null
-                                                        }));
-                                                        return;
-                                                    }
-                                                    
-                                                    // Confirm with user before returning balance
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.confirm_balance_return || "Confirm Balance Return",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.return_balance_confirmation || "Do you want to return the previously deducted amounts to the sender's balance?",
-                                                        [
-                                                            {
-                                                                text: translations[language].no || "No",
-                                                                style: "cancel"
-                                                            },
-                                                            {
-                                                                text: translations[language].yes || "Yes",
-                                                                onPress: async () => {
-                                                                    setFromBusinessBalance(false); // Set state to false only if user confirms
-                                                                    try {
-                                                                        // Show loading spinner
-                                                                        setShowAlert({
-                                                                            visible: true,
-                                                                            type: 'loading',
-                                                                            title: translations[language].tabs.orders.create.sections.sender.fields.processing_return || "Processing Return",
-                                                                            message: translations[language].tabs.orders.create.sections.sender.fields.please_wait || "Please wait...",
-                                                                            onClose: () => setShowAlert({visible: false})
-                                                                        });
-                                                                                
-                                                                        // const token = await getToken("userToken");
-                                                                        const returnResponse = await fetch(
-                                                                            `${process.env.EXPO_PUBLIC_API_URL}/api/users/${senderId}/return-balance`,
-                                                                            {
-                                                                                method: 'POST',
-                                                                                credentials: "include",
-                                                                                headers: {
-                                                                                    "Content-Type": "application/json",
-                                                                                    // "Cookie": token ? `token=${token}` : ""
-                                                                                },
-                                                                                body: JSON.stringify({
-                                                                                    order_id: orderId,
-                                                                                    reference_type: 'transaction'
-                                                                                })
-                                                                            }
-                                                                        );
-
-                                                                        // Close loading spinner
-                                                                        setShowAlert({
-                                                                            visible: false
-                                                                        });
-                                                                        
-                                                                        // Process the response
-                                                                        const responseData = await returnResponse.json();
-                                                                        
-                                                                        if (!returnResponse.ok) {
-                                                                            throw new Error(responseData.message || `Failed to return balance: ${returnResponse.status}`);
-                                                                        }
-                                                                        
-                                                                        // Success message
-                                                                        Alert.alert(
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.return_success || "Return Successful",
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.balance_returned || "Balance has been returned successfully",
-                                                                            [{ text: "OK" }]
-                                                                        );
-                                                                        
-                                                                        // Update form data
-                                                                        setForm(prevForm => ({
-                                                                            ...prevForm,
-                                                                            fromBusinessBalance: false,
-                                                                            balanceDeduction: null
-                                                                        }));
-                                                                    } catch (returnError) {
-                                                                        setShowAlert({
-                                                                            visible: false
-                                                                        });
-                                                                        Alert.alert(
-                                                                            translations[language].tabs.orders.create.sections.sender.fields.return_error || "Return Error",
-                                                                            returnError.message || translations[language].tabs.orders.create.sections.sender.fields.return_failed || "Failed to return balance",
-                                                                            [{ text: "OK" }]
-                                                                        );
-                                                                    }
-                                                                }
-                                                            }
-                                                        ]
-                                                    );
-                                                    return;
-                                                }
-
-                                                // Only run balance checking for non-business users or business users with non-payment order types
-                                                if (user.role !== "business" || (user.role === "business" && selectedValue.orderType?.value !== "payment")) {
-                                                    // Get sender ID based on user role
-                                                    const senderId = user.role === "business" ? user.userId : 
-                                                                       (selectedValue.sender && selectedValue.sender.user_id ? 
-                                                                        selectedValue.sender.user_id : null);
-                                                    
-                                                    // Validate sender ID
-                                                    if (!senderId) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.sender_required || "Sender is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                    }
-                                                    
-                                                    // Get COD values from form data
-                                                    if (!codAmounts || codAmounts.length === 0 || codAmounts.every(cod => !cod.value || parseFloat(cod.value) <= 0)) {
-                                                        return Alert.alert(
-                                                            translations[language].tabs.orders.create.error || "Error",
-                                                            translations[language].tabs.orders.create.sections.sender.fields.cod_required || "COD is required",
-                                                            [{ text: "OK" }]
-                                                        );
-                                                    }
-                                                    
-                                                    // Format COD values for display and processing
-                                                    const formattedCodValues = {};
-                                                    let totalCodAmount = 0;
-                                                    
-                                                    codAmounts.forEach(cod => {
-                                                        const value = parseFloat(cod.value || 0);
-                                                        const currency = cod.currency || 'ILS';
-                                                        
-                                                        if (value > 0) {
-                                                            formattedCodValues[currency] = (formattedCodValues[currency] || 0) + value;
-                                                            
-                                                            // Convert to ILS for total calculation
-                                                            if (currency === 'ILS') {
-                                                                totalCodAmount += value;
-                                                            } else if (currency === 'USD') {
-                                                                totalCodAmount += convertCurrency(value, 'USD', 'ILS');
-                                                            } else if (currency === 'JOD') {
-                                                                totalCodAmount += convertCurrency(value, 'JOD', 'ILS');
-                                                            }
-                                                        }
-                                                    });
-                                                    
-                                                    // First show the action selection modal
-                                                    Alert.alert(
-                                                        translations[language].tabs.orders.create.sections.sender.fields.select_deduction_method || "Select Deduction Method",
-                                                        translations[language].tabs.orders.create.sections.sender.fields.choose_deduction_method || "Choose how you want to deduct the balance",
-                                                        [
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.cancel || "Cancel",
-                                                                style: "cancel"
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.manual_deduction || "Manual Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleManualDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            },
-                                                            {
-                                                                text: translations[language].tabs.orders.create.sections.sender.fields.auto_deduction || "Auto Deduction",
-                                                                onPress: () => {
-                                                                    // Call the function directly, not wrapped in async/await
-                                                                    handleAutoDeduction(senderId, formattedCodValues);
-                                                                }
-                                                            }
-                                                        ]
-                                                    );
-                                                } else {
-                                                    // For business users with auto-enabled toggle, just set the state
-                                                    setFromBusinessBalance(true);
-                                                    setForm(prevForm => ({
-                                                        ...prevForm,
-                                                        fromBusinessBalance: true
-                                                    }));
-                                                }
-                                            } catch (error) {
-                                                // Make sure to close any potential loading spinners on error
-                                                setShowAlert({
-                                                    visible: false
-                                                });
-                                                setFromBusinessBalance(false);
-                                                setForm(prevForm => ({
-                                                    ...prevForm,
-                                                    fromBusinessBalance: false,
-                                                    balanceDeduction: null
-                                                }));
-                                                Alert.alert(
-                                                    translations[language].tabs.orders.create.error || "Error",
-                                                    error.message || translations[language].tabs.orders.create.errorMsg || "An unexpected error occurred",
-                                                    [{ text: "OK" }]
-                                                );
-                                            }
-                                        }
-                                    }}
-                                />
-                            )
-                        )}
+                        <Field
+                            field={{
+                                type: "toggle",
+                                label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
+                                name: "with_money_receive",
+                                value: form.withMoneyReceive || false,
+                                onChange: (value) => {
+                                    setWithMoneyReceive(value);
+                                    setForm(prevForm => ({
+                                        ...prevForm,
+                                        withMoneyReceive: value
+                                    }));
+                                    
+                                    // For business users, auto-set from_business_balance based on with_money_receive
+                                    if (user.role === "business" && !value) {
+                                        setFromBusinessBalance(true);
+                                        setForm(prevForm => ({
+                                            ...prevForm,
+                                            fromBusinessBalance: true
+                                        }));
+                                    }
+                                }
+                            }}
+                        />
                     </View>
                 )}
             </View>
@@ -2716,10 +1345,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#f8f9fa',
     },
     headerContainer: {
+        paddingTop:5,
         backgroundColor: 'white',
         paddingHorizontal: 12,
-        paddingTop: 4, // Reduced from 6
-        paddingBottom: 4, // Reduced from 6
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0, 0, 0, 0.1)',
         shadowColor: '#000',
@@ -2739,7 +1367,7 @@ const styles = StyleSheet.create({
         flexGrow: 1,
     },
     main: {
-        padding: 16,
+        padding: 12,
     },
     overlay: {
         position: 'absolute',
@@ -2983,14 +1611,12 @@ const styles = StyleSheet.create({
         fontSize: 12, // Reduced from 13
         fontWeight: '600',
         color: '#1F2937',
-        textAlign: 'center',
-        marginBottom: 2, // Reduced from 4
+        textAlign: 'center'
     },
     orderTypeButtonsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         gap: 4,
-        marginBottom: 8,
     },
     businessBalanceToggleContainer: {
         borderRadius: 8,
