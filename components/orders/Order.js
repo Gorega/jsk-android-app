@@ -5,7 +5,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import PickerModal from "../pickerModal/PickerModal";
@@ -13,9 +13,11 @@ import { useAuth } from "../../RootLayout";
 import UserBox from "./userBox/UserBox";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { getToken } from "../../utils/secureStore";
+import { getToken, saveUserData, getUserData } from "../../utils/secureStore";
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import Contact from "./userBox/Contact";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
 
 // Helper function to format currency values
 const formatCurrencyValue = (value, currency) => {
@@ -36,7 +38,7 @@ const formatCurrencyValue = (value, currency) => {
     return <Text style={[styles.costText]}>{value} {currency}</Text>;
 };
 
-export default function Order({ user, order }) {
+export default function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true }) {
     const { language } = useLanguage();
     const { user: authUser } = useAuth();
     const [showControl, setShowControl] = useState(false);
@@ -50,6 +52,8 @@ export default function Order({ user, order }) {
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
     const isRTL = language === 'ar' || language === 'he';
+    const [isConnected, setIsConnected] = useState(!globalOfflineMode);
+    const [pendingStatusUpdates, setPendingStatusUpdates] = useState([]);
 
     
     // Animation value for smooth transition
@@ -138,14 +142,6 @@ export default function Order({ user, order }) {
         reasons: [
             { value: 'payment_issue', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.paymentIssue || "Payment Issue" },
             { value: 'incorrect_address', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.incorrectAddress || "Incorrect Address" }
-        ]
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.delayed?.title, value: "delayed",
-        requiresReason: true,
-        reasons: [
-            { value: 'sorting_delay', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.sortingDelay || "Sorting Delay" },
-            { value: 'high_order_volume', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.highOrderVolume || "High Order Volume" },
-            { value: 'technical_issue', label: translations[language].tabs?.orders?.order?.states?.delayed?.delayReasons?.technicalIssue || "Technical Issue" }
         ]
     }];
 
@@ -251,6 +247,269 @@ export default function Order({ user, order }) {
         setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
+    // Add this function to manually retry pending updates
+    const retryPendingUpdates = async () => {
+        if (pendingStatusUpdates.length === 0) {
+            setErrorMessage(translations[language]?.common?.noPendingUpdates || "No pending updates to retry");
+            setShowErrorModal(true);
+            return;
+        }
+        
+        const networkState = await NetInfo.fetch();
+        if (!networkState.isConnected || !networkState.isInternetReachable) {
+            setErrorMessage(translations[language]?.common?.noInternetConnection || "No internet connection");
+            setShowErrorModal(true);
+            return;
+        }
+        
+        // Show loading indicator
+        setIsUpdating(true);
+        
+        try {
+            await processPendingStatusUpdates();
+            // If we still have failed updates, show an error
+            if (pendingStatusUpdates.length > 0) {
+                setErrorMessage(translations[language]?.common?.someUpdatesFailed || "Some updates failed. Please try again later.");
+                setShowErrorModal(true);
+            }
+        } catch (error) {
+            setErrorMessage(translations[language]?.common?.updateError || "Error processing updates");
+            setShowErrorModal(true);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    // Process any pending status updates when online - complete rewrite
+    const processPendingStatusUpdates = async (updates = pendingStatusUpdates, showSuccessMessage = true) => {
+        if (!updates || updates.length === 0) {
+            return;
+        }
+                
+        // Make a copy of the updates to avoid any state mutation issues
+        const updatesToProcess = [...updates];
+        const failedUpdates = [];
+        let successCount = 0;
+        
+        for (const update of updatesToProcess) {
+            try {
+                
+                // Attempt to send the update to the server
+                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+                    method: "PUT",
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Accept-Language': language,
+                    },
+                    credentials: "include",
+                    body: JSON.stringify({ updates: update })
+                });
+                
+                // Get the response text for debugging
+                const responseText = await res.text();
+                
+                // Try to parse the response as JSON
+                let data;
+                try {
+                    data = JSON.parse(responseText);
+                } catch (parseError) {
+                    failedUpdates.push(update);
+                    continue;
+                }
+                
+                if (data.error) {
+                    // Check if this is the "already has status" error
+                    const alreadyHasStatusRegex = /لديه بالفعل الحالة|already has the status/i;
+                    
+                    if (alreadyHasStatusRegex.test(data.details || '')) {
+                        successCount++;
+                        
+                        // Update the cached order with the status (to be safe)
+                        await updateCachedOrder(update);
+                    } else {
+                        // It's a real error
+                        failedUpdates.push(update);
+                    }
+                } else {
+                    successCount++;
+                    
+                    // Update the cached order with the new status
+                    await updateCachedOrder(update);
+                }
+            } catch (error) {
+                failedUpdates.push(update);
+            }
+        }
+                
+        // Update the pending updates list with only the failed ones
+        setPendingStatusUpdates(failedUpdates);
+        await savePendingStatusUpdates(failedUpdates);
+        
+        // If there were successful updates and showSuccessMessage is true, show a success message
+        if (successCount > 0 && showSuccessMessage) {
+            setSuccessMessage(
+                successCount === 1 
+                    ? (translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully") 
+                    : (translations[language].tabs.orders.order.multipleStatusesUpdated || `${successCount} statuses updated successfully`)
+            );
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2500);
+        }
+        
+        return { successCount, failedUpdates };
+    };
+
+    // Helper function to update cached order
+    const updateCachedOrder = async (update) => {
+        try {
+            // Get user ID from multiple possible sources
+            let userId = null;
+            
+            // Try from authUser first
+            if (authUser?.id) {
+                userId = authUser.id;
+            } else if (authUser?.user_id) {
+                userId = authUser.user_id;
+            }
+            
+            // If not found, try from secure storage
+            if (!userId) {
+                userId = await getToken("userId");
+            }
+            
+            if (!userId) {
+                return;
+            }
+            
+            const cachedOrdersJson = await AsyncStorage.getItem(`cached_orders_${userId}`);
+            if (!cachedOrdersJson) return;
+            
+            const cachedOrders = JSON.parse(cachedOrdersJson);
+            if (!cachedOrders[update.order_id]) return;
+            
+            // Find the status label from the options
+            const statusOption = statusOptions.find(option => option.value === update.status);
+            const statusLabel = statusOption?.label || update.status;
+            
+            // Update the cached order
+            cachedOrders[update.order_id] = {
+                ...cachedOrders[update.order_id],
+                status: statusLabel,
+                status_key: update.status
+            };
+            
+            // Save back to storage
+            await AsyncStorage.setItem(`cached_orders_${userId}`, JSON.stringify(cachedOrders));
+        } catch (error) {
+        }
+    };
+
+    // Completely rewritten loadPendingStatusUpdates with better error handling
+    const loadPendingStatusUpdates = async () => {
+        try {
+            // Get user ID from multiple possible sources
+            let userId = null;
+            
+            // Try from authUser first
+            if (authUser?.id) {
+                userId = authUser.id;
+            } else if (authUser?.user_id) {
+                userId = authUser.user_id;
+            }
+            
+            // If not found, try from secure storage
+            if (!userId) {
+                userId = await getToken("userId");
+            }
+            
+            if (!userId) {
+                return;
+            }
+            
+            // Try to get pending updates from storage
+            const storageKey = `pending_status_updates_${userId}`;
+            
+            const pendingUpdatesJson = await AsyncStorage.getItem(storageKey);
+            if (!pendingUpdatesJson) {
+                return;
+            }
+            
+            try {
+                const pendingUpdates = JSON.parse(pendingUpdatesJson);
+                setPendingStatusUpdates(pendingUpdates);
+                
+                // If we're connected, try to process them
+                const networkState = await NetInfo.fetch();
+                if (networkState.isConnected && networkState.isInternetReachable) {
+                    processPendingStatusUpdates(pendingUpdates);
+                }
+            } catch (parseError) {
+                // Clear corrupted data
+                await AsyncStorage.removeItem(storageKey);
+            }
+        } catch (error) {
+        }
+    };
+    
+    // Save pending status updates to AsyncStorage
+    const savePendingStatusUpdates = async (updates) => {
+        try {
+            // Get user ID from multiple possible sources
+            let userId = null;
+            
+            // Try from authUser first
+            if (authUser?.id) {
+                userId = authUser.id;
+            } else if (authUser?.user_id) {
+                userId = authUser.user_id;
+            }
+            
+            // If not found, try from secure storage
+            if (!userId) {
+                userId = await getToken("userId");
+            }
+            
+            if (!userId) {
+                return;
+            }
+            
+            const storageKey = `pending_status_updates_${userId}`;
+            await AsyncStorage.setItem(storageKey, JSON.stringify(updates));
+        } catch (error) {
+        }
+    };
+    
+    // Cache orders for offline viewing
+    const cacheOrder = async (orderData) => {
+        try {
+            const userId = authUser?.id || authUser?.user_id;
+            if (!userId) return;
+            
+            // Get existing cached orders
+            const cachedOrdersJson = await AsyncStorage.getItem(`cached_orders_${userId}`);
+            let cachedOrders = cachedOrdersJson ? JSON.parse(cachedOrdersJson) : {};
+            
+            // Update or add the order to the cache
+            cachedOrders[orderData.order_id] = {
+                ...orderData,
+                cached_at: new Date().toISOString()
+            };
+            
+            // Save back to storage
+            await AsyncStorage.setItem(`cached_orders_${userId}`, JSON.stringify(cachedOrders));
+        } catch (error) {
+        }
+    };
+    
+    // Cache the current order when component mounts
+    useEffect(() => {
+        if (order) {
+            cacheOrder(order);
+        }
+    }, [order]);
+
+    // Modified changeStatusHandler with better error handling
     const changeStatusHandler = async () => {
         // Prevent multiple rapid clicks
         if (isUpdating) return;
@@ -263,69 +522,135 @@ export default function Order({ user, order }) {
                 status: selectedValue.status?.value,
                 note_content: UpdatedStatusNote,
                 ...(selectedBranch && { current_branch: selectedBranch.value }),
-                ...(selectedReason && { reason: selectedReason.value })
+                ...(selectedReason && { reason: selectedReason.value }),
+                timestamp: new Date().toISOString() // Add timestamp for ordering
             };
             
             if (!updates.status) {
                 // Close current modal first, then show error
                 setShowConfirmStatusChangeUpdateModal(false);
                 setTimeout(() => {
-                    setErrorMessage(translations[language].tabs.orders.order.missingStatus || "Missing status value");
+                    setErrorMessage(translations[language].tabs.orders.order.missingStatus);
                     setShowErrorModal(true);
                 }, 300);
                 setIsUpdating(false);
                 return;
             }
             
-            // const token = await getToken("userToken");
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
-                method: "PUT",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Accept-Language': language,
-                    // "Cookie": token ? `token=${token}` : ""
-                },
-                credentials: "include",
-                body: JSON.stringify({ updates })
-            });
-            
-            const data = await res.json();
-            
             // Close current modal first
             setShowConfirmStatusChangeUpdateModal(false);
             
-            if (!data.error) {
-                // Reset all state values on successful update
-                setSelectedReason(null);
-                setSelectedBranch(null);
-                setUpdatedStatusNote("");
-                
-                // Show success modal with a delay
-                setTimeout(() => {
-                    setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully");
-                    setShowSuccessModal(true);
-                    setTimeout(() => setShowSuccessModal(false), 2500);
-                }, 100);
-            } else {                
-                // Show error modal with the error message from the backend after a delay
-                setTimeout(() => {
-                    setErrorMessage(translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
-                    setShowErrorModal(true);
-                }, 100);
+            // Check if we're online
+            const networkState = await NetInfo.fetch();
+            const isOnline = networkState.isConnected && networkState.isInternetReachable;
+            
+            if (isOnline) {
+                // We're online, send the update directly
+                try {
+                    
+                    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+                        method: "PUT",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept-Language': language,
+                        },
+                        credentials: "include",
+                        body: JSON.stringify({ updates }) // This is the expected format by the API
+                    });
+                    
+                    // Log the raw response for debugging
+                    const responseText = await res.text();
+                    
+                    // Try to parse the response
+                    let data;
+                    try {
+                        data = JSON.parse(responseText);
+                    } catch (parseError) {
+                        throw new Error('Invalid server response');
+                    }
+                    
+                    if (!data.error) {
+                        // Update was successful
+                        
+                        // Update the cached order with the new status
+                        const updatedOrder = {
+                            ...order,
+                            status: selectedValue.status?.label,
+                            status_key: selectedValue.status?.value
+                        };
+                        await cacheOrder(updatedOrder);
+                        
+                        // Reset state values
+                        setSelectedReason(null);
+                        setSelectedBranch(null);
+                        setUpdatedStatusNote("");
+                        
+                        // Show success message
+                        setTimeout(() => {
+                            setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess);
+                            setShowSuccessModal(true);
+                            setTimeout(() => setShowSuccessModal(false), 2500);
+                        }, 100);
+                    } else {
+                        // Show error message
+                        setTimeout(() => {
+                            setErrorMessage(data.error || translations[language].tabs.orders.order.statusChangeError);
+                            setShowErrorModal(true);
+                        }, 100);
+                    }
+                } catch (error) {
+                    // Network error while trying to update - fall back to offline mode
+                    handleOfflineStatusUpdate(updates);
+                }
+            } else {
+                // We're offline, store the update for later
+                handleOfflineStatusUpdate(updates);
             }
-        } catch (error) {            
+        } catch (error) {
             // Close current modal first
             setShowConfirmStatusChangeUpdateModal(false);
             
-            // Show error modal for network or unexpected errors after a delay
+            // Show error modal
             setTimeout(() => {
-                setErrorMessage(translations[language].tabs.orders.order.statusChangeError || "Failed to update status");
+                setErrorMessage(translations[language].tabs.orders.order.statusChangeError);
                 setShowErrorModal(true);
             }, 100);
         } finally {
             setIsUpdating(false);
         }
+    };
+    
+    // Handle status updates when offline
+    const handleOfflineStatusUpdate = async (updates) => {
+        // Add to pending updates
+        const newPendingUpdates = [...pendingStatusUpdates, updates];
+        setPendingStatusUpdates(newPendingUpdates);
+        await savePendingStatusUpdates(newPendingUpdates);
+        
+        // Update the cached order with the new status (optimistic update)
+        const updatedOrder = {
+            ...order,
+            status: selectedValue.status?.label,
+            status_key: selectedValue.status?.value
+        };
+        await cacheOrder(updatedOrder);
+        
+        // Reset state values
+        setSelectedReason(null);
+        setSelectedBranch(null);
+        setUpdatedStatusNote("");
+        
+        // Show offline success message
+        setTimeout(() => {
+            setSuccessMessage(
+                isConnected 
+                    ? translations[language].tabs.orders.order.statusChangeSuccess 
+                    : (translations[language].tabs.orders.order.statusChangeOffline)
+            );
+            setShowSuccessModal(true);
+            setTimeout(() => setShowSuccessModal(false), 2500);
+        }, 100);
     };
 
     // Get status color based on status key
@@ -355,6 +680,205 @@ export default function Order({ user, order }) {
         return statusColors[statusKey] || "#64748B";
     };
 
+    // Add a small indicator for offline mode in the header
+    const renderConnectivityStatus = () => {
+        if (isConnected || hideSyncUI) return null;
+        
+        return (
+            <View style={styles.offlineIndicator}>
+                <MaterialIcons name="cloud-off" size={16} color="#FFFFFF" />
+                <Text style={styles.offlineText}>
+                    {translations[language]?.common?.offline || "Offline"}
+                </Text>
+            </View>
+        );
+    };
+
+    // Modify the auto-sync effect to not show success messages for automatic syncs
+    useEffect(() => {
+        // Set up an immediate sync check when component mounts or network state changes
+        const attemptSync = async () => {
+            if (isConnected && pendingStatusUpdates.length > 0) {
+                await processPendingStatusUpdates(pendingStatusUpdates, false); // Don't show success message for auto-sync
+            }
+        };
+        
+        attemptSync();
+        
+        // Set up a more frequent sync interval when online
+        let syncInterval;
+        if (isConnected) {
+            syncInterval = setInterval(attemptSync, 30000); // Check every 30 seconds when online
+        }
+        
+        return () => {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+        };
+    }, [isConnected]);
+
+    // Modify the network state monitoring effect to not show success messages for auto-reconnect syncs
+    useEffect(() => {
+        // If we're using global offline mode, update our local state
+        if (globalOfflineMode !== undefined) {
+            setIsConnected(!globalOfflineMode);
+        }
+        
+        // Set up network listener
+        const unsubscribe = NetInfo.addEventListener(async (state) => {
+            const wasConnected = isConnected;
+            const nowConnected = state.isConnected && state.isInternetReachable;
+            
+            // Update connection state
+            setIsConnected(nowConnected);
+            
+            // If we just came back online, try to sync immediately
+            if (!wasConnected && nowConnected && pendingStatusUpdates.length > 0) {
+                await processPendingStatusUpdates(pendingStatusUpdates, false); // Don't show success message for auto-reconnect
+            }
+        });
+        
+        // Initial check
+        NetInfo.fetch().then(state => {
+            setIsConnected(state.isConnected && state.isInternetReachable);
+        });
+        
+        // Cleanup subscription
+        return () => {
+            unsubscribe();
+        };
+    }, [globalOfflineMode, pendingStatusUpdates]);
+
+    // Add this effect to handle network connectivity changes
+    useEffect(() => {
+        // If we're using global offline mode, update our local state
+        if (globalOfflineMode !== undefined) {
+            setIsConnected(!globalOfflineMode);
+        }
+        
+        // Only set up network listener if we're not using global offline mode
+        let unsubscribe;
+        if (globalOfflineMode === undefined) {
+        // Function to handle connectivity change
+        const handleConnectivityChange = async (state) => {
+            const connected = state.isConnected && state.isInternetReachable;
+            setIsConnected(connected);
+        };
+        
+        // Subscribe to network state changes
+            unsubscribe = NetInfo.addEventListener(handleConnectivityChange);
+        
+        // Initial check
+        NetInfo.fetch().then(state => {
+            setIsConnected(state.isConnected && state.isInternetReachable);
+        });
+        }
+        
+        // Cleanup subscription
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, [globalOfflineMode]);
+
+    // Add this effect to periodically check for pending updates
+    useEffect(() => {
+        let syncInterval;
+        
+        // Only set up the interval if we have pending updates and are connected
+        if (isConnected && pendingStatusUpdates.length > 0) {
+            syncInterval = setInterval(async () => {
+                await processPendingStatusUpdates();
+            }, 60000); // Check every minute
+        }
+        
+        // Clean up the interval
+        return () => {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+        };
+    }, [isConnected, pendingStatusUpdates.length]);
+
+    // Monitor changes to pendingStatusUpdates
+    useEffect(() => {
+        // If we have pending updates and we're connected, try to process them
+        if (isConnected && pendingStatusUpdates.length > 0) {
+            processPendingStatusUpdates();
+        }
+    }, [pendingStatusUpdates.length]);
+
+    // Add this function to clean up stale pending updates
+    const cleanupStaleUpdates = async () => {
+        if (pendingStatusUpdates.length === 0) return;
+        
+        try {
+            // Get the current status of all orders with pending updates
+            const orderIds = [...new Set(pendingStatusUpdates.map(update => update.order_id))];
+            const stalePendingUpdates = [];
+            
+            // For each order with pending updates
+            for (const orderId of orderIds) {
+                try {
+                    // Get the current status from the server
+                    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
+                        method: "GET",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept-Language': language,
+                        },
+                        credentials: "include"
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (data && data.status_key) {
+                        // Find any pending updates for this order
+                        const updatesForOrder = pendingStatusUpdates.filter(update => 
+                            update.order_id === orderId
+                        );
+                        
+                        // Check if any of the pending updates match the current status
+                        for (const update of updatesForOrder) {
+                            if (update.status === data.status_key) {
+                                stalePendingUpdates.push(update);
+                            }
+                        }
+                    }
+                } catch (error) {
+                }
+            }
+            
+            // Remove stale updates
+            if (stalePendingUpdates.length > 0) {
+                const newPendingUpdates = pendingStatusUpdates.filter(update => 
+                    !stalePendingUpdates.some(staleUpdate => 
+                        staleUpdate.order_id === update.order_id && 
+                        staleUpdate.status === update.status
+                    )
+                );
+                
+                setPendingStatusUpdates(newPendingUpdates);
+                await savePendingStatusUpdates(newPendingUpdates);
+                
+            }
+        } catch (error) {
+        }
+    };
+
+    // Update pendingStatusUpdates to use global pendingUpdates if provided
+    useEffect(() => {
+        if (pendingUpdates) {
+            // Filter to only include updates for this specific order
+            const orderUpdates = pendingUpdates.filter(update => update.order_id === order.order_id);
+            setPendingStatusUpdates(orderUpdates);
+        } else {
+            // If not using global updates, load from storage as before
+            loadPendingStatusUpdates();
+        }
+    }, [pendingUpdates, order.order_id]);
+
     return (
         <RTLWrapper>
             <Pressable 
@@ -373,23 +897,28 @@ export default function Order({ user, order }) {
                     <View style={[styles.header]}>
                         {/* Minimize/Expand toggle button */}
                         <TouchableOpacity 
-                                onPress={toggleMinimize}
-                                style={styles.toggleButton}
-                                activeOpacity={0.7}
-                            >
-                                <Animated.View style={{ 
-                                    transform: [{ rotate: rotateInterpolation }],
-                                }}>
-                                    <MaterialIcons 
-                                        name="expand-more" 
-                                        size={24} 
-                                        color="#4361EE" 
-                                    />
-                                </Animated.View>
-                            </TouchableOpacity>
+                            onPress={toggleMinimize}
+                            style={styles.toggleButton}
+                            activeOpacity={0.7}
+                        >
+                            <Animated.View style={{ 
+                                transform: [{ rotate: rotateInterpolation }],
+                            }}>
+                                <MaterialIcons 
+                                    name="expand-more" 
+                                    size={24} 
+                                    color="#4361EE" 
+                                />
+                            </Animated.View>
+                        </TouchableOpacity>
                         <View style={[styles.orderIdSection]}>
                             <View style={[styles.orderIdContainer]}>
                                 <Text style={styles.orderIdText}>#{order.order_id}</Text>
+                                {!isConnected && pendingStatusUpdates.some(update => update.order_id === order.order_id) && (
+                                    <View style={styles.pendingIndicator}>
+                                        <MaterialIcons name="sync" size={14} color="#F59E0B" />
+                                    </View>
+                                )}
                             </View>
                             {order.reference_id && !isMinimized && (
                                 <Text style={[styles.referenceId]}>
@@ -398,8 +927,8 @@ export default function Order({ user, order }) {
                             )}
                         </View>
                         
-                        <View style={{alignItems: 'center' }}>
-                            
+                        <View style={{alignItems: 'center', flexDirection: 'row' }}>
+                            {renderConnectivityStatus()}
                             <TouchableOpacity 
                                 onPress={() => !["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && setShowStatusUpdateModal(true)} 
                                 style={[
@@ -1131,6 +1660,30 @@ export default function Order({ user, order }) {
                                 {translations[language].tabs.orders.track.openCase}
                             </Text>
                         </TouchableOpacity>}
+
+                        {pendingStatusUpdates.length > 0 && (
+                            <TouchableOpacity 
+                                style={[
+                                    styles.controlOption, 
+                                    styles.noBorder,
+                                    { backgroundColor: isConnected ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
+                                ]} 
+                                onPress={retryPendingUpdates}
+                            >
+                                <View style={[
+                                    styles.controlIconContainer, 
+                                    { backgroundColor: isConnected ? '#F59E0B' : '#EF4444' }
+                                ]}>
+                                    <MaterialIcons name="sync" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.controlText]}>
+                                    {isConnected 
+                                        ? (translations[language]?.common?.retryPendingUpdates || `Retry Pending Updates (${pendingStatusUpdates.length})`)
+                                        : (translations[language]?.common?.pendingUpdatesOffline || `Pending Updates (${pendingStatusUpdates.length}) - Offline`)}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
                     </View>
                 </ModalPresentation>
             )}
@@ -1356,7 +1909,7 @@ export default function Order({ user, order }) {
                             <FontAwesome5 name="check-circle" size={32} color="#FFFFFF" />
                         </View>
                         <Text style={styles.successModalTitle}>
-                            {translations[language].tabs.orders.order.success || "Success"}
+                            {translations[language].tabs.orders.order.success}
                         </Text>
                         <Text style={styles.successModalMessage}>
                             {successMessage}
@@ -1377,7 +1930,7 @@ export default function Order({ user, order }) {
                             <FontAwesome5 name="exclamation-circle" size={32} color="#FFFFFF" />
                         </View>
                         <Text style={styles.errorModalTitle}>
-                            {translations[language].tabs.orders.order.error || "Error"}
+                            {translations[language].tabs.orders.order.error}
                         </Text>
                         <Text style={styles.errorModalMessage}>
                             {errorMessage}
@@ -1998,5 +2551,69 @@ const styles = StyleSheet.create({
     minimizedDateContainer: {
         alignItems: 'flex-end',
         marginTop: 5,
+    },
+    offlineIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#64748B',
+        borderRadius: 12,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        marginRight: 8,
+    },
+    offlineText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+    pendingIndicator: {
+        marginLeft: 6,
+        width: 20,
+        height: 20,
+        borderRadius: 10,
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    syncBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F59E0B',
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        marginBottom: -1, // Overlap with the card border
+    },
+    syncBannerText: {
+        color: '#FFFFFF',
+        fontWeight: '600',
+        flex: 1,
+        marginLeft: 8,
+    },
+    pendingUpdatesIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F59E0B',
+        padding: 8,
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    pendingUpdatesText: {
+        color: '#FFFFFF',
+        marginLeft: 8,
+        flex: 1,
+    },
+    syncNowButton: {
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 4,
+    },
+    syncNowText: {
+        color: '#F59E0B',
+        fontWeight: '600',
     },
 });

@@ -98,23 +98,23 @@ export default function HomeScreen() {
             value: form.address || "",
             onChange: (input) => setForm((form) => ({ ...form, address: input }))
         }]
-    }, {
+    }, ["admin","manager"].includes(user.role) ? {
         label: translations[language].users.create.sections.details.title,
         icon: <MaterialIcons name="admin-panel-settings" size={24} color="#4361EE" />,
-        fields: [{
+        fields: [["admin","manager"].includes(user.role) ? {
             label: translations[language].users.create.sections.details.fields.branch,
             type: "select",
             name: "branch_id",
             value: selectedValue.branch_id.name || form.branch,
             list: branches
-        }, selectedValue.role_id?.role_id === 2 ? {
+        } : { visibility: "hidden" }, selectedValue.role_id?.role_id === 2 || form.role_id === 2 ? {
             label: translations[language].users.create.sections.details.fields.pricelist,
             type: "select",
             name: "pricelist_id",
             value: selectedValue.pricelist_id.name || form.priceList,
             list: pricelists
         } : { visibility: "hidden" }]
-    }];
+    } : {visibility: "hidden"}];
 
     const scrollToError = (fieldName) => {
         const sectionWithError = sections.find(section =>

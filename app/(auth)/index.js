@@ -16,12 +16,12 @@ import {
   KeyboardAvoidingView,
   ScrollView
 } from "react-native";
-import { Link, useRouter, Redirect, router } from "expo-router";
+import { Link, useRouter, Redirect } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import Field from "../../components/sign/Field";
 import { useAuth } from "../../RootLayout";
-import { saveToken, getToken } from "../../utils/secureStore";
+import { saveToken, getToken, setMasterAccountId, addAccountToMaster, setDirectLogin } from "../../utils/secureStore";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -349,6 +349,27 @@ export default function SignIn() {
       if (data.userId) {
         await saveToken("userId", data.userId.toString());
         setUserId(data.userId);
+        
+        // This is a direct login
+        await setDirectLogin(true);
+        
+        // Set this user as the master account
+        await setMasterAccountId(data.userId.toString());
+        
+        // Create account object
+        const account = {
+          userId: data.userId.toString(),
+          name: data.name || data.username || loginForm.phone,
+          phone: loginForm.phone,
+          role: data.role,
+          token: data.token,
+          lastLoginPhone: loginForm.phone,
+          lastLoginPassword: loginForm.password,
+          isMasterAccount: true
+        };
+        
+        // Add to master's accounts registry
+        await addAccountToMaster(data.userId.toString(), account);
       }
 
       if (data.token) {
@@ -376,7 +397,6 @@ export default function SignIn() {
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.log("Auth check error:", error);
       } finally {
         setAuthCheckComplete(true);
       }

@@ -3,10 +3,8 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
 import Feather from '@expo/vector-icons/Feather';
-import Entypo from '@expo/vector-icons/Entypo';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import Octicons from '@expo/vector-icons/Octicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import { useCallback, useEffect, useState, useRef } from "react";
@@ -171,7 +169,7 @@ export default function HomeScreen() {
     numberOfOrders: data?.stuck_orders?.count,
     money: formatMoney(data?.stuck_orders?.cod_value),
     orderIds: data?.stuck_orders?.order_ids
-  }, user.role === "driver" ? { visibility: "hidden" } : {
+  }, user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
     label: translations[language].tabs.index.boxes.rejected,
     icon: <MaterialCommunityIcons name="close-circle" size={22} color="white" />,
     gradientColors: ['#D00000', '#9D0208'],

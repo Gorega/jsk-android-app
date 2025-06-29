@@ -325,7 +325,7 @@ export default function HomeScreen() {
                             :translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
                             : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
                         type: "currencyInput",
-                        name: index === 0 ? "cod_value" : `cod_value_${index}`,
+                        name: "value",
                         value: item.value,
                         currency: item.currency,
                         index: index,
@@ -395,13 +395,13 @@ export default function HomeScreen() {
         }, {
             label: translations[language].tabs.orders.create.sections.details.fields.quantity,
             type: "input",
-            name: "quantity",
+            name: "number_of_items",
             value: form.numberOfItems || "",
             onChange: (input) => setForm((form) => ({ ...form, numberOfItems: input }))
         }, {
             label: translations[language].tabs.orders.create.sections.details.fields.weight,
             type: "input",
-            name: "weight",
+            name: "order_weight",
             value: form.orderWeight || "",
             onChange: (input) => setForm((form) => ({ ...form, orderWeight: input }))
         },
@@ -560,6 +560,7 @@ export default function HomeScreen() {
                     discount: discount[0].value,
                     sender_id: user.role === "business" ? user.userId : selectedValue.sender.user_id,
                     business_branch_id: selectedValue.sender.branch_id || user.branch_id,
+                    current_branch_id: !["business"].includes(user.role) ? user.branch_id : null,
                     title: form.orderItems,
                     quantity: form.numberOfItems,
                     description: form.description,
@@ -633,13 +634,14 @@ export default function HomeScreen() {
             if (err.type === 'VALIDATION_ERROR' && err.details) {
                 // Handle validation errors
                 const errors = {};
+                
                 err.details.forEach(error => {
                     // Map server field names to form field names
-                        const fieldName = mapServerFieldToFormField(error.field);
-                        errors[fieldName] = error.message;
+                    const fieldName = mapServerFieldToFormField(error.field);
+                    errors[fieldName] = error.message;
                 });
-                    
-                    setFieldErrors(errors);
+                
+                setFieldErrors(errors);
 
                 // Set general error message
                 setError({
@@ -647,49 +649,56 @@ export default function HomeScreen() {
                     msg: translations[language].tabs.orders.create.errorValidationMsg
                 });
                 
+                // Add this code to show alert for validation errors
+                setShowAlert({
+                    visible: true,
+                    type: 'error',
+                    title: translations[language].tabs.orders.create.error || "Validation Error",
+                    message: translations[language].tabs.orders.create.errorValidationMsg || "Please check the form for errors"
+                });
+                
                 // Find section with first error and scroll to it
                 if (Object.keys(errors).length > 0 && scrollViewRef.current) {
-                        const firstErrorField = Object.keys(errors)[0];
+                    const firstErrorField = Object.keys(errors)[0];
+                    
+                    // Find section index containing the error field
+                    let sectionWithErrorIndex = -1;
+                    
+                    // Search all sections for the field with error
+                    for (let i = 0; i < sections.length; i++) {
+                        const section = sections[i];
+                        if (!section.fields) continue;
                         
-                        // Find section index containing the error field
-                        let sectionWithErrorIndex = -1;
+                        // Handle array of fields or single field
+                        const fields = Array.isArray(section.fields) ? section.fields : [section.fields];
                         
-                        // Search all sections for the field with error
-                        for (let i = 0; i < sections.length; i++) {
-                            const section = sections[i];
-                            if (!section.fields) continue;
-                            
-                            // Handle array of fields or single field
-                            const fields = Array.isArray(section.fields) ? section.fields : [section.fields];
-                            
-                            // Flatten nested arrays (for conditional rendering)
-                            const flatFields = fields.flat().filter(f => f && typeof f === 'object');
-                            
-                            // Check if this section contains the error field
-                            const hasErrorField = flatFields.some(field => 
-                                field.name === firstErrorField || 
-                                (field.name === 'cod_value' && firstErrorField === 'cod_value')
-                            );
-                            
-                            if (hasErrorField) {
-                                sectionWithErrorIndex = i;
-                                break;
-                            }
-                        }
+                        // Flatten nested arrays (for conditional rendering)
+                        const flatFields = fields.flat().filter(f => f && typeof f === 'object');
                         
-                        // If found section with error, scroll to it
-                    if (sectionWithErrorIndex >= 0) {
-                            // Calculate position based on section index
-                            const approximatePosition = sectionWithErrorIndex * 280;
-                            
-                            // Scroll with offset
-                            scrollViewRef.current.scrollTo({
-                                y: Math.max(0, approximatePosition - 60),
-                                animated: true
-                            });
+                        // Check if this section contains the error field
+                        const hasErrorField = flatFields.some(field => 
+                            field.name === firstErrorField || 
+                            (field.name === 'cod_value' && firstErrorField === 'cod_value')
+                        );
+                        
+                        if (hasErrorField) {
+                            sectionWithErrorIndex = i;
+                            break;
                         }
                     }
-
+                    
+                    // If found section with error, scroll to it
+                    if (sectionWithErrorIndex >= 0) {
+                        // Calculate position based on section index
+                        const approximatePosition = sectionWithErrorIndex * 280;
+                        
+                        // Scroll with offset
+                        scrollViewRef.current.scrollTo({
+                            y: Math.max(0, approximatePosition - 60),
+                            animated: true
+                        });
+                    }
+                }
             } else if (err.type === 'INSUFFICIENT_BALANCE') {
                 // Handle insufficient balance error specifically
                     setError({
@@ -715,18 +724,17 @@ export default function HomeScreen() {
                 
             } else if (err.type === 'FORBIDDEN_STATUS') {
                 // Handle forbidden status error
-            setError({
-                status: true,
+                setError({
+                    status: true,
                     msg: err.details || err.message || translations[language].tabs.orders.create.forbiddenStatus
-            });
+                });
 
-            setShowAlert({
-                visible: true,
-                type: 'error',
-                title: translations[language].tabs.orders.create.error,
+                setShowAlert({
+                    visible: true,
+                    type: 'error',
+                    title: translations[language].tabs.orders.create.error,
                     message: err.details || err.message || translations[language].tabs.orders.create.forbiddenStatus
                 });
-                
             } else {
                 // Handle any other error types
                 setError({

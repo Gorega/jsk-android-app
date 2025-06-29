@@ -363,6 +363,8 @@ export const translations = {
           "status":"Status",
           "receivedItems":"Received Items",
           "receivedQuantity":"Received Quantity",
+          "statusChangeOffline": "Status will update when online",
+          "success": "Success",
           "orderChecks": {
             "addCheck": "Add Check",
             "title": "Order Checks",
@@ -632,7 +634,23 @@ export const translations = {
           support:"Support",
           account:"Account",
           deleteAccount:"Delete Account",
-          deleteAccountHint:"This action will delete your account and all your data will be lost."
+          deleteAccountHint:"This action will delete your account and all your data will be lost.",
+          switchAccount:"Switch Account",
+          otherAccounts:"Other Accounts",
+          addNewAccount:"Add New Account",
+          currentAccount:"Current Account",
+          active:"Active",
+          addAccount:"Add Account",
+          addNewAccount:"Add New Account",
+          accountSwitched:"Account Switched",
+          accountSwitchedMessage:"Account switched successfully",
+          accountAlreadyExists:"Account already exists",
+          accountAdded:"Account Added",
+          accountAddedMessage:"Account added successfully",
+          removeAccount:"Remove Account",
+          removeAccountMessage:"Are you sure you want to remove this account? You can add it again later.",
+          cancel:"Cancel",
+          remove:"Remove"
         }
       }
     },
@@ -1454,7 +1472,7 @@ export const translations = {
               }
             },
             "stuck": {
-              "title": "متوقف",
+              "title": "عالق",
               "stuckReasons": {
                 "paymentIssue": "مشكلة في الدفع",
                 "incorrectAddress": "عنوان غير صحيح"
@@ -1512,9 +1530,11 @@ export const translations = {
           "checksAvailable": "الشيكات المتاحة",
           "note": "ملاحظة",
           "add_currency": "إضافة عملة أخرى",
+          "success": "نجاح",
           "orderActions": "إجراءات الطلب",
           "receivedItems": "العناصر المستلمة",
           "receivedQuantity": "الكمية المستلمة",
+          "statusChangeOffline": "سيتم تحديث الحالة عند الاتصال بالانترنت",
           "orderChecks": {
             "addCheck": "إضافة شيك",
             "title": "شيكات الطلب",
@@ -1783,7 +1803,23 @@ export const translations = {
           locations: "المواقع",
           logout: "تسجيل الخروج",
           deleteAccount: "حذف الحساب",
-          deleteAccountHint: "هل أنت متأكد من حذف الحساب؟"
+          deleteAccountHint: "هل أنت متأكد من حذف الحساب؟",
+          switchAccount:"تبديل الحساب",
+          otherAccounts:"حسابات أخرى",
+          addNewAccount:"إضافة حساب جديد",
+          currentAccount:"الحساب الحالي",
+          active:"نشط",
+          addNewAccount: "إضافة حساب جديد",
+          addAccount:"إضافة حساب",
+          accountSwitched:"تم تبديل الحساب",
+          accountSwitchedMessage:"تم تبديل الحساب بنجاح",
+          accountAlreadyExists:"الحساب موجود بالفعل",
+          accountAdded:"حساب مضاف",
+          accountAddedMessage:"تم إضافة الحساب بنجاح",
+          removeAccount:"حذف الحساب",
+          removeAccountMessage:"هل أنت متأكد من حذف الحساب؟ يمكنك إضافته مرة أخرى لاحقًا.",
+          cancel:"إلغاء",
+          remove:"حذف"
         }
       }
     },

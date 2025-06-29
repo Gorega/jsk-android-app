@@ -1,12 +1,12 @@
 // RootLayout.js
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, I18nManager, Platform, Alert } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, I18nManager } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { useLanguage } from '@/utils/languageContext';
-import { getToken, deleteToken } from '@/utils/secureStore';
+import { getToken, deleteToken, getMasterAccountId, setMasterAccountId, addAccountToMaster, isDirectLogin } from '@/utils/secureStore';
 import useFetch from '@/utils/useFetch';
 import { SocketProvider } from '@/utils/socketContext';
 import { RTLWrapper } from './utils/RTLWrapper';
@@ -103,6 +103,36 @@ export default function RootLayout() {
               // Token is valid
               setIsAuthenticated(true);
               setUserId(storedUserId);
+              
+              // Get user data
+              const userData = await response.json();
+              
+              // Check if this is a direct login
+              const directLogin = await isDirectLogin();
+              
+              if (directLogin) {
+                // This is a direct login, set this user as the master account
+                await setMasterAccountId(storedUserId);
+              }
+              
+              // Get master account ID
+              const masterId = await getMasterAccountId();
+              
+              // Update account in master's registry with latest data
+              const lastLoginPhone = await getToken("lastLoginPhone");
+              const lastLoginPassword = await getToken("lastLoginPassword");
+              
+              if (masterId) {
+                await addAccountToMaster(masterId, {
+                  userId: storedUserId,
+                  name: userData.name || userData.username || "",
+                  phone: lastLoginPhone || "",
+                  role: userData.role || "user",
+                  token: token,
+                  lastLoginPhone: lastLoginPhone || "",
+                  lastLoginPassword: lastLoginPassword || ""
+                });
+              }
             } else {
               // Token is invalid or expired
               await deleteToken('userToken');
