@@ -246,14 +246,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             )}
                         </View>
-                        {error && <Text style={[styles.errorText, { color: colors.text },{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        textAlign:isRTL ? "right" : ""
-                                                    }
-                                                }),
-                                                color: colors.text
-                                            }]}>{error}</Text>}
+                        {error && <Text style={[styles.errorText,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "right" : ""
+                                }
+                            }),
+                        }]}>{error}</Text>}
                     </>
                 )}
 
@@ -370,7 +369,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 color="#64748B"
                             />
                         </View>
-                        {error && <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>}
+                        {error && <Text style={[styles.errorText]}>{error}</Text>}
                     </Pressable>
                 )}
 
@@ -450,7 +449,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "right" : ""
+                                            textAlign:isRTL ? "left" : ""
                                         }
                                     }),
                                     color: colors.text
@@ -464,7 +463,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "right" : ""
+                                            textAlign:isRTL ? "left" : ""
                                         }
                                     }),
                                     color: colors.text

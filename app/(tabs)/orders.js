@@ -263,7 +263,6 @@ export default function Orders() {
                 setData(newData);
             }
         } catch (err) {
-            console.log(err);
         } finally {
             setLoadingMore(false);
             setIsLoading(false);

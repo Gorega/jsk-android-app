@@ -1941,7 +1941,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             {translations[language].tabs.orders.order.success}
                         </Text>
                         <Text style={[styles.successModalMessage,{
-                            color: colors.text
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
                         }]}>
                             {successMessage}
                         </Text>

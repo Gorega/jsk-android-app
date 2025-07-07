@@ -550,6 +550,46 @@ export default function HomeScreen() {
         }
 
         try {
+            // Create the request body based on the method
+            const requestBody = {
+                reference_id: form.referenceId,
+                delivery_fee: parseFloat(deliveryFee) || parseFloat(form.deliveryFee) || 0,
+                commission: commission[0].value,
+                discount: discount[0].value,
+                sender_id: user.role === "business" ? user.userId : selectedValue.sender.user_id,
+                business_branch_id: selectedValue.sender.branch_id || user.branch_id,
+                title: form.orderItems,
+                quantity: form.numberOfItems,
+                description: form.description,
+                cod_value: totalCodValue,
+                cod_values: codValues,
+                type: selectedValue.itemsType.value,
+                weight: form.orderWeight,
+                item_price: form.codValue,
+                extra_cost: form.extraCost,
+                order_type: selectedValue.orderType.value,
+                received_items: form.receivedItems,
+                received_quantity: form.receivedQuantity,
+                currency: selectedValue.currency.value,
+                payment_type: selectedValue.paymentType.value,
+                receiver_name: form.receiverName,
+                receiver_mobile: form.receiverFirstPhone,
+                receiver_second_mobile: sanitizeInput(form.receiverSecondPhone),
+                receiver_country: sanitizeInput("palestine"),
+                receiver_city: selectedValue.city.city_id || form.senderCityId,
+                receiver_address: form.receiverAddress,
+                from_business_balance: form.fromBusinessBalance || false,
+                with_money_receive: form.withMoneyReceive || false,
+                exceed_balance_limit: exceedBusinessBalance || false,
+                note: form.noteContent,
+                checks: formattedChecks
+            };
+            
+            // Only add current_branch_id for POST requests
+            if (method === "POST" && !["business"].includes(user.role)) {
+                requestBody.current_branch_id = user.branch_id;
+            }
+
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}${url}`, {
                 method: method,
                 credentials: "include",
@@ -557,40 +597,7 @@ export default function HomeScreen() {
                     "Content-Type": "application/json",
                     'Accept-Language': language,
                 },
-                body: JSON.stringify({
-                    reference_id: form.referenceId,
-                    delivery_fee: parseFloat(deliveryFee) || parseFloat(form.deliveryFee) || 0,
-                    commission: commission[0].value,
-                    discount: discount[0].value,
-                    sender_id: user.role === "business" ? user.userId : selectedValue.sender.user_id,
-                    business_branch_id: selectedValue.sender.branch_id || user.branch_id,
-                    current_branch_id: !["business"].includes(user.role) ? user.branch_id : null,
-                    title: form.orderItems,
-                    quantity: form.numberOfItems,
-                    description: form.description,
-                    cod_value: totalCodValue,
-                    cod_values: codValues,
-                    type: selectedValue.itemsType.value,
-                    weight: form.orderWeight,
-                    item_price: form.codValue,
-                    extra_cost: form.extraCost,
-                    order_type: selectedValue.orderType.value,
-                    received_items: form.receivedItems,
-                    received_quantity: form.receivedQuantity,
-                    currency: selectedValue.currency.value,
-                    payment_type: selectedValue.paymentType.value,
-                    receiver_name: form.receiverName,
-                    receiver_mobile: form.receiverFirstPhone,
-                    receiver_second_mobile: sanitizeInput(form.receiverSecondPhone),
-                    receiver_country: sanitizeInput("palestine"),
-                    receiver_city: selectedValue.city.city_id || form.senderCityId,
-                    receiver_address: form.receiverAddress,
-                    from_business_balance: form.fromBusinessBalance || false,
-                    with_money_receive: form.withMoneyReceive || false,
-                    exceed_balance_limit: exceedBusinessBalance || false,
-                    note: form.noteContent,
-                    checks: formattedChecks
-                })
+                body: JSON.stringify(requestBody)
             });
 
             const data = await res.json();
