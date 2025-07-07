@@ -909,31 +909,24 @@ export default function HomeScreen() {
         }
     };
 
-    const fetchSenders = async (pageNumber = 1, isLoadMore = false) => {
+    const fetchSenders = async () => {
         try {
-            // const token = await getToken("userToken");
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?page=${pageNumber}&language_code=${language}&role_id=2&np=${prickerSearchValue}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?language_code=${language}&role_id=2&np=${prickerSearchValue}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
-            const newData = await res.json();
-            if (isLoadMore) {
-                setSenders(prevData => ({
-                    ...prevData,
-                    data: [...prevData.data, ...newData.data],
-                }));
-            } else {
-                setSenders(newData);
-            }
+            const data = await res.json();
+            // Make sure we're setting the data in the expected format
+            setSenders({
+                data: data.data || [],
+                metadata: data.metadata || {}
+            });
         } catch (err) {
-            
-        } finally {
-            setLoadingMore(false);
+            // Error handling
         }
     }
 
@@ -1002,7 +995,6 @@ export default function HomeScreen() {
     
     useEffect(() => {
         fetchCities();
-        fetchSenders(1, false);
     }, [])
     
     useEffect(() => {
@@ -1010,17 +1002,6 @@ export default function HomeScreen() {
             fetchDeliveryFee();
         }
     }, [selectedValue]);
-
-    useEffect(() => {
-    // Add a small delay to prevent too many API calls while typing
-    const delayDebounceFn = setTimeout(() => {
-        // Reset to page 1 and fetch with the new search value
-        setPage(1);
-        fetchSenders(1, false);
-    }, 300);
-    
-    return () => clearTimeout(delayDebounceFn);
-}, [prickerSearchValue]);
     
     useEffect(() => {
         // Check if we have a scanned reference ID from the camera
@@ -1117,6 +1098,12 @@ export default function HomeScreen() {
             }
         }
     }, [selectedValue.orderType, form.withMoneyReceive]);
+
+    useEffect(() => {
+        if (user.role !== "business") {
+            fetchSenders();
+        }
+    }, [prickerSearchValue, user.role, language]);
 
     return (
         <View style={[styles.pageContainer, { backgroundColor: colors.background }]}>
@@ -1243,7 +1230,7 @@ export default function HomeScreen() {
                 {formSpinner.status ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                    <Text style={[styles.submitButtonText, { color: colors.text }]}>
+                    <Text style={[styles.submitButtonText]}>
                         {translations[language].tabs.orders.create.submit}
                     </Text>
                 )}

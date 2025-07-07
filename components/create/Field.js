@@ -1,4 +1,4 @@
-import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
+import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch, Platform } from "react-native";
 import PickerModal from "../pickerModal/PickerModal";
 import { useState, useEffect } from "react";
 import { useLanguage } from '../../utils/languageContext';
@@ -26,6 +26,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
     const [searchLoading, setSearchLoading] = useState(false);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const isRTL = language === 'ar' || language === 'he';
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
@@ -167,7 +168,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     <TextInput 
                                         style={[
                                             styles.input,
-                                            { color: colors.text }
+                                            { color: colors.text },
+                                            {
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }
                                         ]}
                                         value={field.value || ""}
                                         editable={false}
@@ -179,7 +188,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     style={[
                                         styles.input,
                                         field.name === "reference_id" && styles.scanInput,
-                                        { color: colors.text }
+                                        { color: colors.text },
+                                        {
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign:isRTL ? "right" : ""
+                                                }
+                                            }),
+                                            color: colors.text
+                                        }
                                     ]}
                                     value={field.value || ""}
                                     onFocus={() => {
@@ -229,7 +246,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             )}
                         </View>
-                        {error && <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>{error}</Text>}
                     </>
                 )}
 
@@ -241,7 +265,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         <TextInput 
                             style={[
                                 styles.currencyInput,
-                                { color: colors.text }
+                                { color: colors.text },
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "right" : ""
+                                        }
+                                    }),
+                                    color: colors.text
+                                }
                             ]}
                             value={field.value}
                             onFocus={() => setIsFocused(true)}
@@ -320,7 +352,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         ]}>
                             <Text style={[
                                 styles.selectText,
-                                { color: colors.text }
+                                { color: colors.text },
+                                {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }
                             ]}>
                                 {field.value || field.placeholder}
                             </Text>
@@ -360,8 +400,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         )}
                         <Text style={[
                             styles.orderTypeButtonText,
-                            field.isSelected && styles.orderTypeButtonTextSelected,
-                            { color: colors.text }
+                            field.isSelected && styles.orderTypeButtonTextSelected
                         ]}>
                             {field.label}
                         </Text>
@@ -385,7 +424,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 styles.buttonContent
                             ]}>
                                 <Feather name="plus" size={16} color="#FFFFFF" />
-                                <Text style={[styles.buttonText, { color: colors.text }]}>
+                                <Text style={[styles.buttonText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                     {field.value}
                                 </Text>
                             </View>
@@ -401,13 +446,29 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         <View style={styles.messageTextContainer}>
                             <Text style={[
                                 styles.messageTitle,
-                                { color: colors.text }
+                                { color: colors.text },
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "right" : ""
+                                        }
+                                    }),
+                                    color: colors.text
+                                }
                             ]}>
                                 {field.label}
                             </Text>
                             <Text style={[
                                 styles.messageText,
-                                { color: colors.text }
+                                { color: colors.text },
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "right" : ""
+                                        }
+                                    }),
+                                    color: colors.text
+                                }
                             ]}>
                                 {field.value}
                             </Text>
@@ -427,7 +488,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }
                                 ]}>
                                     <View style={styles.checkHeader}>
-                                        <Text style={[styles.checkTitle, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
+                                        <Text style={[styles.checkTitle, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
                                         <TouchableOpacity
                                             style={styles.removeCheckButton}
                                             onPress={() => {
@@ -441,9 +509,23 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     </View>
                                     
                                     <View style={styles.checkField}>
-                                        <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
+                                        <Text style={[styles.checkFieldLabel, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
                                         <TextInput
-                                            style={[styles.checkInput, { color: colors.text }]}
+                                            style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}
                                             value={check.number}
                                             onChangeText={(text) => {
                                                 const updatedChecks = [...field.value];
@@ -457,9 +539,23 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     
                                     <View style={styles.checkRow}>
                                         <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
                                             <TextInput
-                                                style={[styles.checkInput, { color: colors.text }]}
+                                                style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
+                                                    ...Platform.select({
+                                                        ios: {
+                                                            textAlign:isRTL ? "right" : ""
+                                                        }
+                                                    }),
+                                                    color: colors.text
+                                                }]}
                                                 value={check.value ? check.value.toString() : ''}
                                                 onChangeText={(text) => {
                                                     const updatedChecks = [...field.value];
@@ -473,8 +569,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         </View>
                                         
                                         <View style={[styles.checkField, { flex: 1 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
-                                            <View style={styles.checkCurrencySelect}>
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
+                                            <View style={[styles.checkCurrencySelect,{ backgroundColor: colors.inputBg,border:colors.border }]}>
                                                 <Pressable
                                                     style={[styles.currencySelector, { backgroundColor: isDark ? colors.inputBg : 'rgba(203, 213, 225, 0.2)' }]}
                                                     onPress={() => {
@@ -491,7 +594,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                         field.onChange(updatedChecks);
                                                     }}
                                                 >
-                                                    <Text style={[styles.currencyText, { color: colors.primary }]}>
+                                                    <Text style={[styles.currencyText, { color: colors.primary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "right" : ""
+                                                    }
+                                                }),
+                                                color: colors.text
+                                            }]}>
                                                         {getCurrencySymbol(check.currency || 'ILS')} {check.currency || 'ILS'}
                                                     </Text>
                                                     <Feather 
@@ -507,7 +617,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </View>
                             ))
                         ) : (
-                            <Text style={[styles.noChecksText, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
+                            <Text style={[styles.noChecksText, { color: colors.text },{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "right" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }]}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
                         )}
                         
                         <TouchableOpacity
@@ -523,7 +640,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             }}
                         >
                             <Feather name="plus" size={18} color="#FFFFFF" />
-                            <Text style={[styles.addCheckButtonText, { color: colors.text }]}>
+                            <Text style={[styles.addCheckButtonText]}>
                                 {translations[language].tabs.orders.order.orderChecks.addCheck}
                             </Text>
                         </TouchableOpacity>

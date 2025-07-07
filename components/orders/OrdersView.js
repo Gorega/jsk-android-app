@@ -16,6 +16,12 @@ const OrderItem = React.memo(function OrderItem({ item, metadata }) {
             <Order user={metadata} order={item} />
         </View>
     );
+}, (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    // Only re-render if the order ID changes or if metadata changes
+    return prevProps.item.order_id === nextProps.item.order_id && 
+           prevProps.item.status_key === nextProps.item.status_key &&
+           JSON.stringify(prevProps.metadata) === JSON.stringify(nextProps.metadata);
 });
 
 export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading }) {
@@ -23,9 +29,13 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
 
+    // Memoize the renderOrderItem function to prevent recreating it on each render
     const renderOrderItem = React.useCallback(({ item }) => {
         return <OrderItem item={item} metadata={metadata} />;
     }, [metadata]);
+
+    // Memoize the keyExtractor function
+    const keyExtractor = React.useCallback((item) => item.order_id.toString(), []);
 
     if (isLoading) {
         return (
@@ -48,8 +58,14 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
             loadMoreData={loadMoreData}
             loadingMore={loadingMore}
             renderItem={renderOrderItem}
-            keyExtractor={(item) => item.order_id.toString()}
+            keyExtractor={keyExtractor}
             refreshControl={refreshControl}
+            // Add these props to optimize FlatList performance
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            updateCellsBatchingPeriod={50}
+            windowSize={10}
+            initialNumToRender={8}
         />
     ) : (
         <View style={[styles.empty, { backgroundColor: colors.background }]}>

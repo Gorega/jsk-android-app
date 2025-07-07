@@ -2,6 +2,7 @@ import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl,Pl
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
+import CheckReceiver from "../../components/CheckReceiver";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
@@ -46,6 +47,7 @@ export default function HomeScreen() {
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+  const [activeTab, setActiveTab] = useState('track');
   
   // Animation value for percentage badge
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -544,9 +546,46 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Track Order */}
+        {/* Tabs for TrackOrder and CheckReceiver */}
+        <View style={styles.tabsContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'track' && styles.activeTab,
+              { backgroundColor: activeTab === 'track' ? colors.buttonPrimary : colors.card }
+            ]}
+            onPress={() => setActiveTab('track')}
+          >
+            <Feather name="package" size={20} color={activeTab === 'track' ? colors.buttonText : colors.iconDefault} />
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'track' ? colors.buttonText : colors.text }
+            ]}>
+              {translations[language]?.track?.title || 'Track Order'}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              activeTab === 'check' && styles.activeTab,
+              { backgroundColor: activeTab === 'check' ? colors.buttonPrimary : colors.card }
+            ]}
+            onPress={() => setActiveTab('check')}
+          >
+            <Feather name="user" size={20} color={activeTab === 'check' ? colors.buttonText : colors.iconDefault} />
+            <Text style={[
+              styles.tabText,
+              { color: activeTab === 'check' ? colors.buttonText : colors.text }
+            ]}>
+              {translations[language]?.check?.receiver?.title || 'Check Receiver'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Track Order or Check Receiver Component based on active tab */}
         <View style={styles.trackOrderContainer}>
-          <TrackOrder />
+          {activeTab === 'track' ? <TrackOrder /> : <CheckReceiver />}
         </View>
 
         {/* Driver Notification Button - Only show for business users with waiting orders */}
@@ -768,7 +807,14 @@ export default function HomeScreen() {
         {user.role === "business" && (
           <>
             <View style={[styles.sectionHeader]}>
-            <Text style={[styles.sectionTitle,{color:colors.text}]}>
+            <Text style={[styles.sectionTitle,{color:colors.text},
+              {
+                ...Platform.select({
+                  ios: {
+                    textAlign:rtl.isRTL ? "left" : ""
+                  }
+                }),
+              }]}>
                 {translations[language]?.collections?.collection?.confirmTitle}
               </Text>
             </View>
@@ -806,7 +852,14 @@ export default function HomeScreen() {
             >
                <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
                 <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.modalHeaderText, { color: colors.text }]}>
+                  <Text style={[styles.modalHeaderText, { color: colors.text },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign:rtl.isRTL ? "left" : ""
+                        }
+                      }),
+                    }]}>
                     {translations[language]?.collections?.collection?.pendingConfirmations}
                   </Text>
                 </View>
@@ -1073,6 +1126,12 @@ export default function HomeScreen() {
         }]}>
           <Text style={[styles.modalHeaderText,{
             color: colors.text
+          },{
+            ...Platform.select({
+              ios: {
+                textAlign:rtl.isRTL ? "left" : ""
+              }
+            }),
           }]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
@@ -1097,6 +1156,12 @@ export default function HomeScreen() {
               </View>
               <Text style={[styles.modalOptionText,{
                 color: colors.text
+              },{
+                ...Platform.select({
+                  ios: {
+                    textAlign:rtl.isRTL ? "left" : ""
+                  }
+                }),
               }]}>
                 {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
               </Text>
@@ -1134,6 +1199,12 @@ export default function HomeScreen() {
         }]}>
         <Text style={[styles.modalHeaderText,{
             color: colors.text
+          },{
+            ...Platform.select({
+              ios: {
+                textAlign:rtl.isRTL ? "left" : ""
+              }
+            }),
           }]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
@@ -1219,11 +1290,23 @@ export default function HomeScreen() {
               <View style={styles.driverInfo}>
               <Text style={[styles.driverName,{
                   color: colors.text
+                },{
+                  ...Platform.select({
+                    ios: {
+                      textAlign:rtl.isRTL ? "left" : ""
+                    }
+                  }),
                 }]}>
                   {driver.name}
                 </Text>
                 <Text style={[styles.driverPhone,{
                   color: colors.textSecondary
+                },{
+                  ...Platform.select({
+                    ios: {
+                      textAlign:rtl.isRTL ? "left" : ""
+                    }
+                  }),
                 }]}>
                   {driver.phone}
                 </Text>
@@ -1268,7 +1351,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f9fa',
-    paddingTop: 110,
+    paddingTop: 130,
   },
   loadingContainer: {
     flex: 1,
@@ -1337,7 +1420,7 @@ const styles = StyleSheet.create({
   },
   trackOrderContainer: {
     marginHorizontal: 20,
-    marginTop: 32,
+    marginTop: 15,
     marginBottom: 5,
   },
   sectionHeader: {
@@ -1422,7 +1505,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    marginBottom: 20,
   },
   statusCircleItem: {
     width: '33%',
@@ -1745,10 +1827,10 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.1)',
-    gap:7
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    marginTop: 20,
+    gap: 10,
   },
   tab: {
     flex: 1,
@@ -1756,21 +1838,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
-    gap:5
+    borderRadius: 10,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   activeTab: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#4361EE',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#64748B',
-  },
-  activeTabText: {
-    color: '#4361EE',
   },
   badge: {
     backgroundColor: '#4361EE',

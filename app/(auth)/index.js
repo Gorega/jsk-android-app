@@ -16,13 +16,13 @@ import {
   KeyboardAvoidingView,
   ScrollView
 } from "react-native";
-import { Link, useRouter, Redirect } from "expo-router";
+import { Link, useRouter, Redirect, router } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
 import Field from "../../components/sign/Field";
 import { useAuth } from "../../RootLayout";
-import { saveToken, getToken, setMasterAccountId, addAccountToMaster, setDirectLogin } from "../../utils/secureStore";
+import { saveToken, getToken, setDirectLogin, setMasterAccountId, addAccountToMaster, getMasterAccountId } from "../../utils/secureStore";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -41,14 +41,14 @@ export default function SignIn() {
   const [biometricType, setBiometricType] = useState(null);
   const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
   const [previousLoginInfo, setPreviousLoginInfo] = useState(null);
-  const [activeField, setActiveField] = useState(null);
   const scrollViewRef = useRef(null);
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+  
   
   const router = useRouter();
   const { language } = useLanguage();
   const { isAuthenticated, setIsAuthenticated, setUserId } = useAuth();
-  const { isDark, colorScheme } = useTheme();
-  const colors = Colors[colorScheme];
 
   const [loginForm, setLoginForm] = useState({
     phone: "",
@@ -60,45 +60,12 @@ export default function SignIn() {
     password: ""
   });
 
-  // Add state to track keyboard height
-  const [footerHeight, setFooterHeight] = useState(0);
-
-  // Add a new state to track the current active field's position
-  const [activeFieldPosition, setActiveFieldPosition] = useState(0);
-
-  // Handle keyboard appearance
+  // Simplified keyboard handling
   useEffect(() => {
     const keyboardWillShowListener = Keyboard.addListener(
       Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      (event) => {
+      () => {
         setKeyboardVisible(true);
-        // Store keyboard height for positioning
-        const keyboardHeight = event.endCoordinates.height;
-        setFooterHeight(keyboardHeight);
-        
-        // If we have an active field, ensure it's visible above the keyboard
-        if (activeField && scrollViewRef.current && activeFieldPosition > 0) {
-          // Calculate the screen height
-          const screenHeight = Dimensions.get('window').height;
-          
-          // Calculate if the active field is hidden by the keyboard
-          const fieldBottomPosition = activeFieldPosition + 80; // Field height + some padding
-          const visibleAreaBottom = screenHeight - keyboardHeight - 120; // Account for footer height
-          
-          if (fieldBottomPosition > visibleAreaBottom) {
-            // Calculate how much we need to scroll to make the field visible
-            const scrollAmount = fieldBottomPosition - visibleAreaBottom + 50; // Extra padding
-            
-            // Scroll to make the field visible
-            setTimeout(() => {
-              scrollViewRef.current.scrollTo({ 
-                y: scrollAmount,
-                animated: true 
-              });
-            }, 100);
-          }
-        }
-        
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 200,
@@ -111,8 +78,6 @@ export default function SignIn() {
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
       () => {
         setKeyboardVisible(false);
-        setFooterHeight(0);
-        setActiveFieldPosition(0);
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 200,
@@ -125,22 +90,7 @@ export default function SignIn() {
       keyboardWillShowListener.remove();
       keyboardWillHideListener.remove();
     };
-  }, [activeField, activeFieldPosition]);
-
-  // Handle field focus to scroll to the active field
-  const handleFieldFocus = (fieldName) => {
-    setActiveField(fieldName);
-    
-    // Find the field's index
-    const fieldIndex = fields.findIndex(field => field.name === fieldName);
-    
-    // Calculate the field's position based on its index
-    // This is an approximation, adjust based on your actual layout
-    const fieldPosition = fieldIndex * 70 + 250; // Base offset + field height * index
-    setActiveFieldPosition(fieldPosition);
-    
-    // No need to manually scroll here, the keyboard listener will handle it
-  };
+  }, []);
 
   // Check for biometric support and previous login info
   useEffect(() => {
@@ -279,6 +229,29 @@ export default function SignIn() {
 
       if (data.token) {
         await saveToken("userToken", data.token);
+        // Set this as a direct login since user logged in directly
+        await setDirectLogin(true);
+        
+        // Set up master account logic
+        const existingMasterId = await getMasterAccountId();
+        if (!existingMasterId) {
+          await setMasterAccountId(data.userId.toString());
+        }
+        
+        // Add account to master's registry
+        const masterId = await getMasterAccountId();
+        if (masterId) {
+          await addAccountToMaster(masterId, {
+            userId: data.userId.toString(),
+            name: data.name || data.username || savedPhone || "",
+            phone: savedPhone || "",
+            role: data.role || "user",
+            token: data.token,
+            lastLoginPhone: savedPhone || "",
+            lastLoginPassword: savedPassword || ""
+          });
+        }
+        
         setIsAuthenticated(true);
         router.replace("/(tabs)");
       } else {
@@ -304,6 +277,10 @@ export default function SignIn() {
       
       // Basic validation
       let hasError = false;
+      if (!loginForm.phone) {
+        setFormErrors(prev => ({...prev, phone:translations[language]?.auth.phoneRequired}));
+        hasError = true;
+      }
       if (!loginForm.password) {
         setFormErrors(prev => ({...prev, password:translations[language]?.auth.passwordRequired}));
         hasError = true;
@@ -350,31 +327,33 @@ export default function SignIn() {
       if (data.userId) {
         await saveToken("userId", data.userId.toString());
         setUserId(data.userId);
-        
-        // This is a direct login
-        await setDirectLogin(true);
-        
-        // Set this user as the master account
-        await setMasterAccountId(data.userId.toString());
-        
-        // Create account object
-        const account = {
-          userId: data.userId.toString(),
-          name: data.name || data.username || loginForm.phone,
-          phone: loginForm.phone,
-          role: data.role,
-          token: data.token,
-          lastLoginPhone: loginForm.phone,
-          lastLoginPassword: loginForm.password,
-          isMasterAccount: true
-        };
-        
-        // Add to master's accounts registry
-        await addAccountToMaster(data.userId.toString(), account);
       }
 
       if (data.token) {
         await saveToken("userToken", data.token);
+        // Set this as a direct login since user logged in directly
+        await setDirectLogin(true);
+        
+        // Set up master account logic
+        const existingMasterId = await getMasterAccountId();
+        if (!existingMasterId) {
+          await setMasterAccountId(data.userId.toString());
+        }
+        
+        // Add account to master's registry
+        const masterId = await getMasterAccountId();
+        if (masterId) {
+          await addAccountToMaster(masterId, {
+            userId: data.userId.toString(),
+            name: data.name || data.username || loginForm.phone || "",
+            phone: loginForm.phone || "",
+            role: data.role || "user",
+            token: data.token,
+            lastLoginPhone: loginForm.phone || "",
+            lastLoginPassword: loginForm.password || ""
+          });
+        }
+        
         setIsAuthenticated(true);
         router.replace("/(tabs)");
       } else {
@@ -420,12 +399,12 @@ export default function SignIn() {
       
       <KeyboardAvoidingView 
         style={[styles.container, { backgroundColor: colors.card }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : null}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        enabled={Platform.OS === 'ios'}
+        enabled={true}
       >
-        {/* Fixed Header - Make it smaller when keyboard is shown */}
-        <View style={[
+         {/* Fixed Header - Make it smaller when keyboard is shown */}
+         <View style={[
           styles.header, 
           keyboardVisible && styles.headerSmall,
           { backgroundColor: colors.card, borderBottomColor: colors.border }
@@ -461,13 +440,13 @@ export default function SignIn() {
         <View style={[styles.mainContent, { backgroundColor: colors.background }]}>
           <ScrollView 
             ref={scrollViewRef}
-            style={styles.contentContainer}
+            style={[styles.contentContainer, { backgroundColor: colors.background }]}
             contentContainerStyle={[
               styles.scrollContent,
-              // Add extra padding at the bottom to ensure content is scrollable above the footer
-              {paddingBottom: keyboardVisible ? 200 : 100} // Increased padding
+              // Add extra padding when keyboard is visible to ensure content is scrollable
+              { paddingBottom: keyboardVisible ? 150 : 20 }
             ]}
-            keyboardShouldPersistTaps="always"
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {/* Biometric Login Button - Only show if available */}
@@ -492,7 +471,7 @@ export default function SignIn() {
                   </Text>
                 </TouchableOpacity>
                 <View style={styles.dividerContainer}>
-                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
                   <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
                     {translations[language]?.auth?.or || 'OR'}
                   </Text>
@@ -516,7 +495,6 @@ export default function SignIn() {
                   <Field 
                     field={field} 
                     multiline={false} 
-                    onFocus={handleFieldFocus}
                   />
                 </View>
               ))}
@@ -533,69 +511,50 @@ export default function SignIn() {
               </Text>
             </TouchableOpacity>
           </ScrollView>
+        </View>
+        
+        {/* Footer - Always at bottom */}
+        <View style={[
+          styles.footer,
+          { backgroundColor: colors.card, borderTopColor: colors.border },
+          // Add extra spacing when keyboard is visible to push button higher
+          keyboardVisible && styles.footerWithKeyboard
+        ]}>
+          {/* Login button */}
+          <TouchableOpacity
+            style={[
+              styles.loginButton, 
+              { backgroundColor: colors.primary },
+              loading && [
+                styles.loginButtonDisabled,
+                { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
+              ]
+            ]}
+            onPress={loginHandler}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>
+                {translations[language]?.auth.login}
+              </Text>
+            )}
+          </TouchableOpacity>
           
-          {/* Always visible footer */}
-          <View style={[
-            styles.footer,
-            { 
-              backgroundColor: colors.card,
-              borderTopColor: colors.border
-            },
-            // Adjust position when keyboard is visible
-            keyboardVisible && Platform.OS === 'ios' ? {
-              position: 'absolute',
-              bottom: footerHeight,
-              left: 0,
-              right: 0,
-              paddingBottom: 10,
-              borderTopWidth: 1,
-              zIndex: 999,
-            } : keyboardVisible && Platform.OS === 'android' ? {
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              paddingBottom: 10,
-              borderTopWidth: 1,
-              zIndex: 999,
-            } : {}
-          ]}>
-            {/* Login button */}
-            <TouchableOpacity
-              style={[
-                styles.loginButton, 
-                { backgroundColor: colors.primary },
-                loading && [
-                  styles.loginButtonDisabled,
-                  { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
-                ]
-              ]}
-              onPress={loginHandler}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <Text style={styles.loginButtonText}>
-                  {translations[language]?.auth.login}
-                </Text>
-              )}
-            </TouchableOpacity>
-            
-            {/* Register link */}
-            <View style={styles.registerLinkContainer}>
-              <Text style={[styles.registerText, { color: colors.textSecondary }]}>
+          {/* Register link */}
+          <View style={styles.registerLinkContainer}>
+          <Text style={[styles.registerText, { color: colors.textSecondary }]}>
                 {translations[language]?.auth.dontHaveAccount}
               </Text>
-              <Link href="/sign-up" asChild>
-                <TouchableOpacity style={styles.registerLink}>
-                  <Text style={[styles.registerLinkText, { color: colors.primary }]}>
-                    {translations[language]?.auth.register}
-                  </Text>
-                </TouchableOpacity>
-              </Link>
-            </View>
+            <Link href="/sign-up" asChild>
+              <TouchableOpacity style={styles.registerLink}>
+                <Text style={[styles.registerLinkText, { color: colors.primary }]}>
+                  {translations[language]?.auth.register}
+                </Text>
+              </TouchableOpacity>
+            </Link>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -645,13 +604,17 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
   },
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
   contentContainer: {
     flex: 1,
+    backgroundColor: '#F9FAFB',
   },
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 20,
   },
   errorAlert: {
     flexDirection: 'row',
@@ -676,9 +639,6 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     paddingHorizontal: 4,
   },
-  forgotPasswordRtl: {
-    alignSelf: 'flex-start',
-  },
   forgotPasswordText: {
     color: '#4361EE',
     fontSize: 14,
@@ -688,7 +648,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)',
     ...Platform.select({
@@ -702,7 +662,12 @@ const styles = StyleSheet.create({
         elevation: 4,
       },
     }),
-    zIndex: 10,
+  },
+  footerWithKeyboard: {
+    // Add extra padding when keyboard is visible to push button higher
+    paddingBottom: Platform.OS === 'ios' ? 70 : 30,
+    // Add margin to push the footer higher
+    marginBottom: Platform.OS === 'ios' ? 0 : -10,
   },
   loginButton: {
     backgroundColor: '#4361EE',
@@ -746,10 +711,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 4,
   },
-  registerLinkRtl: {
-    marginLeft: 0,
-    marginRight: 8,
-  },
   registerLinkText: {
     color: '#4361EE',
     fontSize: 14,
@@ -768,9 +729,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'rgba(67, 97, 238, 0.2)',
-  },
-  biometricButtonRtl: {
-    flexDirection: 'row-reverse',
   },
   biometricText: {
     color: '#4361EE',
@@ -795,9 +753,5 @@ const styles = StyleSheet.create({
   },
   formFields: {
     marginBottom: 20,
-  },
-  mainContent: {
-    flex: 1,
-    position: 'relative',
   },
 });

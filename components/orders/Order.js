@@ -20,8 +20,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import React from 'react';
 
-export default function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true }) {
+function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true }) {
     const { language } = useLanguage();
     const { user: authUser } = useAuth();
     const [showControl, setShowControl] = useState(false);
@@ -872,7 +873,13 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 )}
                             </View>
                             {order.reference_id && !isMinimized && (
-                               <Text style={[styles.referenceId, { color: colors.textSecondary }]}>
+                               <Text style={[styles.referenceId, { color: colors.textSecondary },{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                     Ref: {order.reference_id}
                                 </Text>
                             )}
@@ -1179,7 +1186,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                         <Text style={[styles.locationAddress,{
                                             color: colors.text
                                         }]}>
-                                            {order.receiver_address ? `, ${order.receiver_address}` : ''}
+                                           {order.receiver_address}
                                         </Text>
                                     </View>
                                 </View>
@@ -2386,8 +2393,7 @@ const styles = StyleSheet.create({
         paddingLeft: 16,
     },
     reasonContainer: {
-        width: '100%',
-        maxHeight: 300,
+        width: '100%'
     },
     reasonOption: {
         padding: 16,
@@ -2401,7 +2407,6 @@ const styles = StyleSheet.create({
     },
     branchContainer: {
         width: '100%',
-        maxHeight: 300,
     },
     branchOption: {
         padding: 16,
@@ -2647,3 +2652,17 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 });
+
+function areEqual(prevProps, nextProps) {
+    // Only re-render if order or user or other relevant props actually change
+    return (
+        prevProps.order.order_id === nextProps.order.order_id &&
+        prevProps.order.status_key === nextProps.order.status_key &&
+        prevProps.order.status === nextProps.order.status &&
+        prevProps.globalOfflineMode === nextProps.globalOfflineMode &&
+        JSON.stringify(prevProps.pendingUpdates) === JSON.stringify(nextProps.pendingUpdates) &&
+        prevProps.hideSyncUI === nextProps.hideSyncUI
+    );
+}
+
+export default React.memo(Order, areEqual);

@@ -5,7 +5,7 @@ import { useLanguage } from '../../utils/languageContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 import FlatListData from "../FlatListData";
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
 export default function PickerModal({list, showPickerModal, setShowModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue: externalSearchValue, setPickerSearchValue: setExternalSearchValue, setFieldErrors, searchLoading}) {
     const { language } = useLanguage();
@@ -59,7 +59,14 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
                         <View style={[styles.header, {
                             borderBottomColor: colors.border
                         }]}>
-                            <Text style={[styles.headerTitle, { color: colors.text }]}>
+                            <Text style={[styles.headerTitle, { color: colors.text },{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "right" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }]}>
                                 {translations[language].picker.choose} {field.label}
                             </Text>
                             <TouchableOpacity

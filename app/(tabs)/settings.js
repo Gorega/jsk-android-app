@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Platform, Alert, Image, TextInput, ActivityIndicator } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Alert, Platform, ActivityIndicator } from "react-native";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -14,11 +14,9 @@ import {
   deleteToken, 
   saveToken, 
   getAccount, 
-  getAllAccounts, 
   addAccount, 
   removeAccount, 
   getMasterAccountId, 
-  setMasterAccountId, 
   clearMasterAccountId, 
   isDirectLogin, 
   getAccountsForMaster, 
@@ -42,6 +40,7 @@ export default function Settings() {
     const [savedAccounts, setSavedAccounts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [masterAccountId, setMasterAccountId] = useState(null);
+    const isRTL = ["he", "ar"].includes(language);
     
     // Login form state for adding new account
     const [loginForm, setLoginForm] = useState({
@@ -583,7 +582,13 @@ export default function Settings() {
                 </View>
                 <View>
                     <Text style={[styles.userName, { color: colors.text }]}>{user?.name}</Text>
-                    <Text style={[styles.userRole, { color: colors.textSecondary }]}>
+                    <Text style={[styles.userRole, { color: colors.textSecondary },{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {translations[language].roles[user?.role]}
                     </Text>
                 </View>
@@ -879,14 +884,26 @@ export default function Settings() {
                         backgroundColor: colors.card,
                         borderBottomColor: colors.border 
                     }]}>
-                        <Text style={[styles.modalTitle, { color: colors.text }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:rtl.isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language].tabs.settings.options.switchAccount}
                         </Text>
                     </View>
                     
                     {/* Current Account */}
                     <View style={[styles.accountsSection, { backgroundColor: colors.background }]}>
-                        <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary }]}>
+                        <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:rtl.isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language].tabs.settings.options.currentAccount}
                         </Text>
                         
@@ -904,8 +921,20 @@ export default function Settings() {
                                 </Text>
                             </View>
                             <View style={styles.accountInfo}>
-                                <Text style={[styles.accountName, { color: colors.text }]}>{user?.name}</Text>
-                                <Text style={[styles.accountRole, { color: colors.textSecondary }]}>
+                                <Text style={[styles.accountName, { color: colors.text },{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:rtl.isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>{user?.name}</Text>
+                                <Text style={[styles.accountRole, { color: colors.textSecondary },{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:rtl.isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {translations[language].roles[user?.role]}
                                 </Text>
                             </View>
@@ -920,7 +949,13 @@ export default function Settings() {
                     {/* Other Accounts */}
                     {savedAccounts.length > 0 && (
                         <View style={[styles.accountsSection, { backgroundColor: colors.background }]}>
-                            <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary }]}>
+                            <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary },{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:rtl.isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language].tabs.settings.options.otherAccounts}
                             </Text>
                             
@@ -942,7 +977,13 @@ export default function Settings() {
                                             </Text>
                                         </View>
                                         <View style={styles.accountInfo}>
-                                            <Text style={[styles.accountName, { color: colors.text }]}>
+                                            <Text style={[styles.accountName, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:rtl.isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {account.phone}
                                             </Text>
                                         </View>

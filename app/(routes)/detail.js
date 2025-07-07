@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, FlatList, TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, FlatList, TextInput,Platform } from 'react-native';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
@@ -27,6 +27,7 @@ export default function RouteDetail() {
     const colors = Colors[colorScheme];
     const params = useLocalSearchParams();
     const { routeId } = params;
+    const isRTL = ["ar","he"].includes(language);
     const mapRef = useRef(null);
     
     // Main state
@@ -295,6 +296,7 @@ export default function RouteDetail() {
             });
             
             const data = await res.json();
+            console.log(data);
             
             if (res.ok && data.success) {
                 Alert.alert(
@@ -523,20 +525,38 @@ export default function RouteDetail() {
                         )}
                     </View>
                     
-                    <Text style={[styles.orderName, { color: colors.text }]}>
+                    <Text style={[styles.orderName, { color: colors.text },{
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "left" : ""
+                            }
+                        }),
+                    }]}>
                         {item.receiver_name} | {item.receiver_mobile}
                     </Text>
                     
                     <View style={[styles.addressContainer]}>
                         <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
-                        <Text style={[styles.orderAddress, { color: colors.textSecondary }]}>
+                        <Text style={[styles.orderAddress, { color: colors.textSecondary },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {item.receiver_address}
                         </Text>
                     </View>
 
                     {(item.delivery_info.to_branch || item.delivery_info.to_driver) && <View style={[styles.availableAddressContainer]}>
                         <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-                        <Text style={[styles.availableOrderAddress, { color: colors.textSecondary }]}>
+                        <Text style={[styles.availableOrderAddress, { color: colors.textSecondary },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.dispatchTo} {`${item.delivery_info.to_branch || item.delivery_info.to_driver || ''}`}
                         </Text>
                     </View>}
@@ -678,7 +698,13 @@ export default function RouteDetail() {
                 
                 <View style={styles.content}>
                     <View style={[styles.routeInfoCard, { backgroundColor: colors.card }]}>
-                        <Text style={[styles.routeInfoLabel, { color: colors.textSecondary }]}>
+                        <Text style={[styles.routeInfoLabel, { color: colors.textSecondary },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.routeName || "Route Name"}
                         </Text>
                         <TextInput 
@@ -701,7 +727,13 @@ export default function RouteDetail() {
                         <View style={[styles.routeStats, { borderTopColor: colors.divider }]}>
                             <View style={[styles.statItem]}>
                                 <Feather name="package" size={16} color={colors.textSecondary} />
-                                <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                                <Text style={[styles.statText, { color: colors.textSecondary },{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {orders.length} {translations[language]?.routes?.orders || "Orders"}
                                 </Text>
                             </View>
@@ -709,14 +741,26 @@ export default function RouteDetail() {
                             {isCompleted ? (
                                 <View style={[styles.statItem]}>
                                     <Ionicons name="checkmark-circle" size={16} color={colors.success} />
-                                    <Text style={[styles.statText, { color: colors.textSecondary }]}>
+                                    <Text style={[styles.statText, { color: colors.textSecondary },{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         {translations[language]?.routes?.completed || "Completed"}
                                     </Text>
                                 </View>
                             ) : route?.optimized ? (
                                 <View style={[styles.statItem]}>
                                     <MaterialIcons name="route" size={16} color={colors.primary} />
-                                    <Text style={[styles.statText, { color: colors.primary }]}>
+                                    <Text style={[styles.statText, { color: colors.primary },{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         {translations[language]?.routes?.optimized || "Optimized"}
                                     </Text>
                                 </View>
@@ -735,7 +779,13 @@ export default function RouteDetail() {
                                     disabled={isCompleted}
                                 >
                                     <Feather name="plus" size={16} color={colors.primary} />
-                                    <Text style={[styles.addOrdersText, { color: colors.primary }]}>
+                                    <Text style={[styles.addOrdersText, { color: colors.primary },{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         {translations[language]?.routes?.addOrders || "Add Orders"}
                                     </Text>
                                 </TouchableOpacity>
@@ -750,7 +800,13 @@ export default function RouteDetail() {
                                     ) : (
                                         <>
                                             <MaterialIcons name="route" size={16} color={colors.buttonText} />
-                                            <Text style={[styles.optimizeText, { color: colors.buttonText }]}>
+                                            <Text style={[styles.optimizeText, { color: colors.buttonText },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {translations[language]?.routes?.optimize || "Optimize"}
                                             </Text>
                                         </>
@@ -868,6 +924,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded, colors
     const [searchText, setSearchText] = useState('');
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(true);
+    const isRTL = ["ar","he"].includes(language);
     
     // Fetch available orders when component mounts
     useEffect(() => {
@@ -1065,24 +1122,50 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded, colors
                     </View>
                     
                     <View style={styles.availableOrderDetails}>
-                        <Text style={[styles.availableOrderId]}>
+                        <Text style={[styles.availableOrderId,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {item.order_id || item.reference_id}
                         </Text>
                         
-                        <Text style={[styles.availableOrderName,{color: colors.text}]}>
+                        <Text style={[styles.availableOrderName,{color: colors.text},
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                             {item.receiver_name} | {item.receiver_mobile}
                         </Text>
                         
                         <View style={[styles.availableAddressContainer]}>
                             <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
-                            <Text style={[styles.availableOrderAddress,{color: colors.text}]}>
+                            <Text style={[styles.availableOrderAddress,{color: colors.text},
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                 {`${item.receiver_city || ''} ${item.receiver_address ? `, ${item.receiver_address}` : ''}`}
                             </Text>
                         </View>
 
                         {(item.to_branch || item.to_driver) && <View style={[styles.availableAddressContainer]}>
                             <Ionicons name="location-outline" size={14} color="#64748B" />
-                            <Text style={[styles.availableOrderAddress]}>
+                            <Text style={[styles.availableOrderAddress,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                  {translations[language]?.routes?.dispatchTo} {`${item.to_branch || item.to_driver || ''}`}
                             </Text>
                         </View>}

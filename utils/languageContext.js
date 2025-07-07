@@ -118,6 +118,19 @@ export const translations = {
       success:"Success"
     },
 
+      "check": {
+        "receiver": {
+          "title": "Check Receiver",
+          "desc": "Enter phone number to check if receiver exists",
+          "placeholder": "Enter phone number",
+          "results": "Receiver Results",
+          "noResults": "No receiver found with this phone number",
+          "totalOrders": "Total Orders",
+          "returnedOrders": "Returned",
+          "comment": "Comment"
+        }
+      },
+
     driverNotification:{
       title:"Notify Drivers",
       cancel:"Cancel",
@@ -142,7 +155,11 @@ export const translations = {
       edit:"Edit",
       view:"View",
       success:"Success",
-      error:"Error"
+      error:"Error",
+      loadingOrders:"Loading available orders...",
+      retry:"Retry",
+      loading:"Loading...",
+      loadingMore:"Loading more orders..."
     },
 
     balance:{
@@ -1214,6 +1231,19 @@ export const translations = {
       success:"تم بنجاح"
     },
 
+    "check": {
+    "receiver": {
+      "title": "التحقق من المستلم",
+      "desc": "أدخل رقم الهاتف للتحقق من وجود المستلم",
+      "placeholder": "أدخل رقم الهاتف",
+      "results": "نتائج البحث",
+      "noResults": "لم يتم العثور على مستلم بهذا الرقم",
+      "totalOrders": "إجمالي الطلبات",
+      "returnedOrders": "المرتجعات",
+      "comment": "ملاحظات"
+    }
+  },
+
     driverNotification:{
       title:"إشعار السائقين بوجود طرود جاهزة للاستلام",
       cancel:"إلغاء",
@@ -1321,6 +1351,10 @@ export const translations = {
       complete:"مكتمل",
       selectOption:"اختر",
       assignOrders:"تعيين الطرود",
+      loadingOrders:"جارٍ التحميل...",
+      retry:"حاول مرة أخرى",
+      loading:"جارٍ التحميل...",
+      loadingMore:"جارٍ التحميل..."
     },
 
     balance:{

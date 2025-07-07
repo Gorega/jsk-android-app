@@ -1,9 +1,8 @@
-import { View, StyleSheet, Text, TouchableOpacity, Modal, TextInput, Alert, FlatList, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Modal, TextInput, Alert, FlatList, ActivityIndicator,Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
-import { getToken } from "../../utils/secureStore";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -245,6 +244,7 @@ export default function Routes() {
         const orderCount = item.orders?.length || 0;
         const deliveredCount = item.orders?.filter(o => o.status === 'delivered').length || 0;
         const isCompletedRoute = item.status === 'completed';
+        const isRTL = ["he", "ar"].includes(language);
         
         return (
             <TouchableOpacity
@@ -258,10 +258,22 @@ export default function Routes() {
                     </View>
                     
                     <View style={styles.routeTitleContainer}>
-                        <Text style={[styles.routeName, { color: colors.text }]}>
+                        <Text style={[styles.routeName, { color: colors.text },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {item.name}
                         </Text>
-                        <Text style={[styles.routeDate, { color: colors.textSecondary }]}>
+                        <Text style={[styles.routeDate, { color: colors.textSecondary },{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {new Date(item.created_at).toLocaleDateString(
                                 'en-US',
                                 { year: 'numeric', month: 'short', day: 'numeric' }

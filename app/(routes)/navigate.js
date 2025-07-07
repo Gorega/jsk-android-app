@@ -1,12 +1,10 @@
-import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, TextInput, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
-import { getToken } from "../../utils/secureStore";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { LinearGradient } from 'expo-linear-gradient';
 import FixedHeader from "../../components/FixedHeader";
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 // import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -23,6 +21,7 @@ export default function RouteNavigate() {
     const colors = Colors[colorScheme];
     const params = useLocalSearchParams();
     const { routeId } = params;
+    const isRTL = ["ar","he"].includes(language);
     
     const [loading, setLoading] = useState(true);
     const [route, setRoute] = useState(null);
@@ -581,15 +580,33 @@ export default function RouteNavigate() {
                                 </View>
                                 
                                 <View style={styles.listItemTitleContainer}>
-                                    <Text style={[styles.listItemName, { color: colors.text }]}>
+                                    <Text style={[styles.listItemName, { color: colors.text },{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         {order.receiver_name}
                                     </Text>
-                                    <Text style={[styles.listItemAddress, { color: colors.textSecondary }]}>
+                                    <Text style={[styles.listItemAddress, { color: colors.textSecondary },{
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         {order.receiver_address}
                                     </Text>
     
                                     {(order.delivery_info.to_branch || order.delivery_info.to_driver) && (
-                                        <Text style={[styles.listItemAddress, { color: colors.textSecondary }]}>
+                                        <Text style={[styles.listItemAddress, { color: colors.textSecondary },{
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign:isRTL ? "left" : ""
+                                                }
+                                            }),
+                                        }]}>
                                             {translations[language]?.routes?.dispatchTo} {order.delivery_info.to_branch || order.delivery_info.to_driver}
                                         </Text>
                                     )}
@@ -617,52 +634,112 @@ export default function RouteNavigate() {
                                     <View style={styles.orderDetails}>
                                         <View style={[styles.orderDetailItem]}>
                                             <Feather name="package" size={16} color={colors.textSecondary} />
-                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {translations[language]?.routes?.orderId || "Order ID"}:
                                             </Text>
-                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                            <Text style={[styles.orderDetailText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {order.order_id}
                                             </Text>
                                         </View>
                                         
                                         <View style={[styles.orderDetailItem]}>
                                             <Feather name="phone" size={16} color={colors.textSecondary} />
-                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {translations[language]?.routes?.phone || "Phone"}:
                                             </Text>
-                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                            <Text style={[styles.orderDetailText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {order.receiver_mobile}
                                             </Text>
                                         </View>
 
                                         <View style={[styles.orderDetailItem]}>
                                             <Feather name="package" size={16} color={colors.textSecondary} />
-                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {translations[language].tabs?.orders?.order?.orderType || "Order Type"}:
                                             </Text>
-                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                            <Text style={[styles.orderDetailText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {order.order_type}
                                             </Text>
                                         </View>
 
                                         <View style={[styles.orderDetailItem]}>
                                             <MaterialIcons name="payment" size={16} color={colors.textSecondary} />
-                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {translations[language].tabs?.orders?.track?.paymentType || "Payment Type"}:
                                             </Text>
-                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                            <Text style={[styles.orderDetailText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {order.payment_type}
                                             </Text>
                                         </View>
 
                                         <View style={[styles.orderDetailItem]}>
                                             <MaterialIcons name="attach-money" size={16} color={colors.textSecondary} />
-                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                {order.order_type_key === "receive" ?  translations[language].tabs?.orders?.create?.sections?.cost?.fields?.packageCost : 
                                                 order.order_type_key === "payment" ? translations[language].tabs?.orders?.create?.sections?.cost?.fields?.amount : 
                                                 translations[language].tabs?.orders?.create?.sections?.cost?.fields?.totalPackageCost}:
                                             </Text>
-                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                            <Text style={[styles.orderDetailText, { color: colors.text },{
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign:isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }]}>
                                                 {order.cod_value}
                                             </Text>
                                         </View>
@@ -709,7 +786,14 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                        <Text style={[styles.modalHeaderText,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                             {translations[language]?.routes?.selectStatus || "Select Status"}
                         </Text>
                     </View>
@@ -722,7 +806,13 @@ export default function RouteNavigate() {
                                 ]}
                                 onPress={() => handleStatusSelect(status)}
                             >
-                                <Text style={[styles.reasonText,{color: colors.text}]}>
+                                <Text style={[styles.reasonText,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {status.label}
                                 </Text>
                             </TouchableOpacity>
@@ -738,7 +828,13 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                        <Text style={[styles.modalHeaderText,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.selectReason || "Select Reason"}
                         </Text>
                     </View>
@@ -751,7 +847,13 @@ export default function RouteNavigate() {
                                 ]}
                                 onPress={() => handleReasonSelect(reason)}
                             >
-                                <Text style={[styles.reasonText,{color: colors.text}]}>
+                                <Text style={[styles.reasonText,{
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign:isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {reason.label}
                                 </Text>
                             </TouchableOpacity>
@@ -767,16 +869,34 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                        <Text style={[styles.modalHeaderText,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.confirmStatusChange || "Confirm Status Change"}
                         </Text>
                     </View>
                     <View style={styles.confirmContainer}>
-                        <Text style={[styles.confirmText,{color: colors.text}]}>
+                        <Text style={[styles.confirmText,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.confirmStatusChangeMessage || "Are you sure you want to change the status to"} {selectedStatus?.label}?
                         </Text>
                         {selectedReason && (
-                            <Text style={[styles.reasonText]}>
+                            <Text style={[styles.reasonText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language]?.routes?.reason || "Reason"}: {selectedReason.label}
                             </Text>
                         )}
@@ -819,7 +939,13 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
+                        <Text style={[styles.modalHeaderText,{
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language]?.routes?.callOptions}
                         </Text>
                     </View>
@@ -833,7 +959,13 @@ export default function RouteNavigate() {
                                 Linking.openURL(`tel:${currentPhoneNumber}`);
                             }}
                         >
-                            <Text style={[styles.modalOptionText,{color: colors.text}]}>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language]?.routes?.regularCall}
                             </Text>
                         </TouchableOpacity>
@@ -849,7 +981,13 @@ export default function RouteNavigate() {
                                 Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
                             }}
                         >
-                            <Text style={[styles.modalOptionText,{color: colors.text}]}> {translations[language]?.routes?.whatsapp} (972)</Text>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}> {translations[language]?.routes?.whatsapp} (972)</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
@@ -863,7 +1001,13 @@ export default function RouteNavigate() {
                                 Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
                             }}
                         >
-                            <Text style={[styles.modalOptionText,{color: colors.text}]}> {translations[language]?.routes?.whatsapp} (970)</Text>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}> {translations[language]?.routes?.whatsapp} (970)</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
@@ -873,7 +1017,13 @@ export default function RouteNavigate() {
                                 setCurrentPhoneNumber(null);
                             }}
                         >
-                            <Text style={[styles.cancelOptionText,{color: colors.text}]}>
+                            <Text style={[styles.cancelOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language]?.routes?.cancel}
                             </Text>
                         </TouchableOpacity>

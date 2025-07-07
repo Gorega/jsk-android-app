@@ -1,7 +1,7 @@
 import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useLocalSearchParams, usePathname } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -77,7 +77,8 @@ export default function Orders() {
         }
     }, [language]);
 
-    const filterByGroup = ["driver", "delivery_company"].includes(user.role) ? [{
+    // Memoize filter groups to prevent unnecessary re-renders
+    const filterByGroup = useMemo(() => ["driver", "delivery_company"].includes(user.role) ? [{
         name: translations[language].tabs.orders.filters.all,
         action: "",
     }, {
@@ -176,9 +177,9 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.completed,
         action: "completed"
-    }]
+    }], [language, user.role, translations]);
 
-    const searchByGroup = [{
+    const searchByGroup = useMemo(() => [{
         name: translations[language].tabs.orders.filters.orderId,
         action: "order_id"
     }, {
@@ -205,9 +206,9 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.driverName,
         action: "driver"
-    }]
+    }], [language, translations]);
 
-    const searchByDateGroup = [{
+    const searchByDateGroup = useMemo(() => [{
         name: translations[language].tabs.orders.filters.today,
         action: "today"
     }, {
@@ -225,10 +226,10 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.selectDate,
         action: "custom"
-    }]
+    }], [language, translations]);
 
 
-    const fetchData = async (pageNumber = 1, isLoadMore = false) => {
+    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false) => {
         if (!isLoadMore) setIsLoading(true);
         try {
             // const token = await getToken("userToken");
@@ -267,9 +268,9 @@ export default function Orders() {
             setLoadingMore(false);
             setIsLoading(false);
         }
-    }
+    }, [activeDate, activeFilter, activeSearchBy, language, orderIds, searchValue, selectedDate]);
 
-    const loadMoreData = async () => {
+    const loadMoreData = useCallback(async () => {
         if (!loadingMore && data.data?.length > 0) {
             // Check if there's more data to load
             if (data?.data?.length >= data.metadata.total_records) {
@@ -287,7 +288,7 @@ export default function Orders() {
                 setLoadingMore(false);
             }
         }
-    };
+    }, [loadingMore, data, page, fetchData]);
 
     useEffect(() => {
         if (!socket) return;
@@ -314,12 +315,12 @@ export default function Orders() {
             socket.off('orderUpdate', handleOrderUpdate);
             socket.off('collectionUpdate', handleOrderUpdate);
         };
-    }, [socket])
+    }, [socket, fetchData]);
 
     useEffect(() => {
         setPage(1);
         fetchData(1, false);
-    }, [searchValue, activeFilter, activeDate, orderIds, language]);
+    }, [searchValue, activeFilter, activeDate, orderIds, language, fetchData]);
 
     // Reset all filters when re-entering the orders route or when params change
     useEffect(() => {
@@ -335,28 +336,50 @@ export default function Orders() {
                 fetchData(1, false);
             }
         }
-    }, [pathname, params]);
+    }, [pathname, params, fetchData, orderIds]);
+
+    // Memoize the refresh control to prevent unnecessary re-renders
+    const refreshControl = useMemo(() => (
+        <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+        />
+    ), [refreshing, onRefresh, colors.primary]);
+
+    // Memoize the search component props to prevent unnecessary re-renders
+    const searchProps = useMemo(() => ({
+        searchValue,
+        setSearchValue: (input) => setSearchValue(input),
+        filterByGroup,
+        searchByGroup,
+        activeFilter,
+        setActiveFilter,
+        activeSearchBy,
+        setActiveSearchBy,
+        searchByDateGroup,
+        selectedDate,
+        setSelectedDate,
+        activeDate,
+        setActiveDate,
+        addPaddingSpace: true
+    }), [
+        searchValue, 
+        filterByGroup, 
+        searchByGroup, 
+        activeFilter, 
+        activeSearchBy, 
+        searchByDateGroup, 
+        selectedDate, 
+        activeDate
+    ]);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             
-            <Search
-                searchValue={searchValue}
-                setSearchValue={(input) => setSearchValue(input)}
-                filterByGroup={filterByGroup}
-                searchByGroup={searchByGroup}
-                activeFilter={activeFilter}
-                setActiveFilter={setActiveFilter}
-                activeSearchBy={activeSearchBy}
-                setActiveSearchBy={setActiveSearchBy}
-                searchByDateGroup={searchByDateGroup}
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                activeDate={activeDate}
-                setActiveDate={setActiveDate}
-                addPaddingSpace={true}
-            />
+            <Search {...searchProps} />
             
             <View style={styles.ordersList}>
                 <OrdersView
@@ -365,14 +388,7 @@ export default function Orders() {
                     loadMoreData={loadMoreData}
                     loadingMore={loadingMore}
                     isLoading={isLoading}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[colors.primary]}
-                            tintColor={colors.primary}
-                        />
-                    }
+                    refreshControl={refreshControl}
                 />
             </View>
         </View>

@@ -264,7 +264,13 @@ export default function ChangePasswordScreen() {
             
             {/* New Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
+              <Text style={[styles.inputLabel, { color: colors.text },{
+                ...Platform.select({
+                  ios: {
+                    textAlign:rtl.isRTL ? "left" : ""
+                  }
+                }),
+              }]}>
                 {translations[language].tabs.settings.options.changePasswordFields?.newPass || "New Password"}
               </Text>
               <View style={[
@@ -280,7 +286,14 @@ export default function ChangePasswordScreen() {
                 <TextInput 
                   style={[
                     styles.input,
-                    { color: colors.text }
+                    { color: colors.text },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign:rtl.isRTL ? "right" : ""
+                        }
+                      }),
+                    }
                   ]} 
                   secureTextEntry={secureNewPassword} 
                   value={newPassword} 
@@ -306,7 +319,13 @@ export default function ChangePasswordScreen() {
                 </TouchableOpacity>
               </View>
               {errors.newPassword ? (
-                <Text style={styles.errorText}>{errors.newPassword}</Text>
+                <Text style={[styles.errorText,{
+                  ...Platform.select({
+                    ios: {
+                      textAlign:rtl.isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>{errors.newPassword}</Text>
               ) : newPassword ? (
                 <View style={styles.strengthContainer}>
                   <View style={styles.strengthBarContainer}>
@@ -335,7 +354,13 @@ export default function ChangePasswordScreen() {
             
             {/* Confirm Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel, { color: colors.text }]}>
+              <Text style={[styles.inputLabel, { color: colors.text },{
+                ...Platform.select({
+                  ios: {
+                    textAlign:rtl.isRTL ? "left" : ""
+                  }
+                }),
+              }]}>
                {translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
               </Text>
               <View style={[
@@ -351,7 +376,14 @@ export default function ChangePasswordScreen() {
                 <TextInput 
                   style={[
                     styles.input,
-                    { color: colors.text }
+                    { color: colors.text },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign:rtl.isRTL ? "right" : ""
+                        }
+                      }),
+                    }
                   ]} 
                   secureTextEntry={secureConfirmPassword} 
                   value={confirmPassword} 

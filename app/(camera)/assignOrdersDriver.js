@@ -389,7 +389,8 @@ export default function CameraScanner() {
               <TouchableOpacity 
                 style={[
                   styles.backButtonContainer,
-                  isRTL ? { right: 20 } : { left: 20 }
+                  isRTL ? { left: 20 } : { left: 20 },
+                  { direction: 'ltr' }
                 ]}
                 onPress={() => router.back()}
               >
@@ -763,7 +764,7 @@ const styles = StyleSheet.create({
   backButtonContainer: {
     position: 'absolute',
     top: 50,
-    zIndex: 10,
+    zIndex: 10
   },
   backButtonCircle: {
     width: 40,
@@ -780,6 +781,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    direction: 'ltr',
   },
   corner: {
     position: 'absolute',

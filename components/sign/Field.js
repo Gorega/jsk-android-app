@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, forwardRef } from "react";
 import { 
   StyleSheet, 
   TextInput, 
@@ -15,7 +15,7 @@ import { useLanguage } from "../../utils/languageContext";
 import { useTheme } from "../../utils/themeContext";
 import { Colors } from "../../constants/Colors";
 
-export default function Field({field, setSelectedValue, multiline, onFocus, isDark, colors}) {
+const Field = forwardRef(function Field({field, setSelectedValue, multiline, onFocus, isDark, colors}, ref) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [searchValue, setSearchValue] = useState('');
@@ -33,7 +33,7 @@ export default function Field({field, setSelectedValue, multiline, onFocus, isDa
     const handleFocus = () => {
         setIsFocused(true);
         // Notify parent component that this field is focused
-        if (onFocus) onFocus(field.name);
+        if (onFocus) onFocus(field.name, ref);
         
         Animated.parallel([
             Animated.timing(animatedOpacity, {
@@ -105,13 +105,39 @@ export default function Field({field, setSelectedValue, multiline, onFocus, isDa
     // Handle input field press - ensure focus
     const handleInputPress = () => {
         // This will programmatically focus the TextInput
-        if (inputRef && inputRef.current) {
-            inputRef.current.focus();
+        if (ref && ref.current) {
+            ref.current.focus();
         }
     };
 
-    // Create a ref for the TextInput
-    const inputRef = React.createRef();
+    // Get iOS textContentType based on field name
+    const getTextContentType = (fieldName) => {
+        if (Platform.OS !== 'ios') return undefined;
+        
+        switch(fieldName) {
+            case 'email':
+                return 'emailAddress';
+            case 'password':
+                return 'password';
+            case 'confirmPassword':
+                return 'newPassword';
+            case 'phone':
+            case 'second_phone':
+                return 'telephoneNumber';
+            case 'name':
+                return 'name';
+            case 'address':
+                return 'fullStreetAddress';
+            case 'city':
+                return 'addressCity';
+            case 'area':
+                return 'addressCity';
+            case 'country':
+                return 'countryName';
+            default:
+                return undefined;
+        }
+    };
 
     return (
         <View style={[
@@ -151,7 +177,7 @@ export default function Field({field, setSelectedValue, multiline, onFocus, isDa
                             </View>
                             
                             <TextInput
-                                ref={inputRef}
+                                ref={ref}
                                 multiline={multiline}
                                 style={[
                                     styles.input,
@@ -164,12 +190,17 @@ export default function Field({field, setSelectedValue, multiline, onFocus, isDa
                                 secureTextEntry={field.secureTextEntry}
                                 onFocus={handleFocus}
                                 onBlur={handleBlur}
+                                onSubmitEditing={field.onSubmitEditing}
                                 placeholderTextColor={themeColors.textTertiary}
                                 placeholder={field.placeholder}
                                 keyboardType={field.keyboardType || "default"}
                                 autoCapitalize={field.autoCapitalize || "sentences"}
                                 returnKeyType="next"
                                 blurOnSubmit={false}
+                                enablesReturnKeyAutomatically={true}
+                                textContentType={getTextContentType(field.name)}
+                                autoCorrect={false}
+                                spellCheck={false}
                             />
                             
                             {field.rightIcon && (
@@ -303,7 +334,7 @@ export default function Field({field, setSelectedValue, multiline, onFocus, isDa
             </View>
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     fieldContainer: {
@@ -433,3 +464,5 @@ const styles = StyleSheet.create({
         zIndex: 2,
     }
 });
+
+export default Field;
