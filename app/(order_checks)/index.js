@@ -7,6 +7,8 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { getToken } from "../../utils/secureStore";
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 const OrderChecks = () => {
   const params = useLocalSearchParams();
@@ -15,7 +17,8 @@ const OrderChecks = () => {
   const [loading, setLoading] = useState(true);
   const { language } = useLanguage();
   const rtl = useRTLStyles();
-
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   const fetchOrderData = async () => {
     try {
@@ -49,8 +52,8 @@ const OrderChecks = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity 
           style={[
             styles.backButton,
@@ -61,23 +64,23 @@ const OrderChecks = () => {
           <Feather 
             name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
             size={24} 
-            color="#1E293B" 
+            color={colors.text} 
           />
         </TouchableOpacity>
         
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: colors.text }]}>
           {translations[language]?.tabs.orders.order.orderChecks?.title || "Order Checks"}
         </Text>
         
         <View style={styles.orderIdContainer}>
-          <Text style={styles.orderId}>#{orderId}</Text>
+          <Text style={[styles.orderId, { color: colors.textSecondary }]}>#{orderId}</Text>
         </View>
       </View>
 
       {loading ? (
         <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color="#4361EE" />
-          <Text style={styles.loadingText}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
             {translations[language]?.tabs.orders.order.orderChecks?.loading || "Loading checks..."}
           </Text>
         </View>
@@ -88,48 +91,45 @@ const OrderChecks = () => {
         >
           {order.checks && order.checks.length > 0 ? (
             <>
-              <View style={styles.summaryCard}>
-                <View style={[
-                  styles.summaryRow
-                ]}>
-                  <Text style={[
-                    styles.summaryLabel
-                  ]}>
+              <View style={[styles.summaryCard, { backgroundColor: isDark ? colors.cardDark : "#EEF2FF" }]}>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.primary }]}>
                     {translations[language]?.tabs.orders.order.orderChecks?.totalChecks || "Total Checks"}:
                   </Text>
-                  <Text style={styles.summaryValue}>{order.checks.length}</Text>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>{order.checks.length}</Text>
                 </View>
                 
-                <View style={[
-                  styles.summaryRow
-                ]}>
-                  <Text style={[
-                    styles.summaryLabel
-                  ]}>
+                <View style={styles.summaryRow}>
+                  <Text style={[styles.summaryLabel, { color: colors.primary }]}>
                     {translations[language]?.tabs.orders.order.orderChecks?.totalValue || "Total Value"}:
                   </Text>
-                  <Text style={styles.summaryValue}>
+                  <Text style={[styles.summaryValue, { color: colors.text }]}>
                     {order.checks.reduce((sum, check) => sum + Number(check.value), 0)} 
                     {order.checks[0]?.currency}
                   </Text>
                 </View>
               </View>
               
-              <Text style={[styles.sectionTitle]}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
                 {translations[language]?.tabs.orders.order.orderChecks?.checkDetails || "Check Details"}
               </Text>
               
               {order.checks.map((check, index) => (
-                <View key={index} style={styles.checkItem}>
+                <View key={index} style={[styles.checkItem, { 
+                  backgroundColor: colors.card,
+                  shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#64748B" 
+                }]}>
                   <View style={[
-                    styles.checkHeader
+                    styles.checkHeader,
+                    { 
+                      borderBottomColor: colors.border,
+                      backgroundColor: isDark ? colors.cardDark : "#FAFAFA" 
+                    }
                   ]}>
                     <View style={styles.checkNumberContainer}>
                       <Text style={styles.checkNumberText}>{index + 1}</Text>
                     </View>
-                    <Text style={[
-                      styles.checkTitle
-                    ]}>
+                    <Text style={[styles.checkTitle, { color: colors.text }]}>
                       {translations[language]?.tabs.orders.order.orderChecks?.check || "Check"} #{check.number}
                     </Text>
                     <View style={styles.checkStatusContainer}>
@@ -138,42 +138,30 @@ const OrderChecks = () => {
                   </View>
                   
                   <View style={styles.checkBody}>
-                    <View style={[
-                      styles.checkRow
-                    ]}>
+                    <View style={styles.checkRow}>
                       <MaterialIcons 
                         name="attach-money" 
                         size={18} 
-                        color="#4361EE"
+                        color={colors.primary}
                       />
-                      <Text style={[
-                        styles.checkLabel
-                      ]}>
+                      <Text style={[styles.checkLabel, { color: colors.textSecondary }]}>
                         {translations[language]?.tabs.orders.order.orderChecks?.value || "Value"}:
                       </Text>
-                      <Text style={[
-                        styles.checkValue
-                      ]}>
+                      <Text style={[styles.checkValue, { color: colors.text }]}>
                         {formatCurrency(check.value, check.currency)}
                       </Text>
                     </View>
                     
-                    <View style={[
-                      styles.checkRow
-                    ]}>
+                    <View style={styles.checkRow}>
                       <MaterialIcons 
                         name="date-range" 
                         size={18} 
-                        color="#4361EE" 
+                        color={colors.primary} 
                       />
-                      <Text style={[
-                        styles.checkLabel
-                      ]}>
+                      <Text style={[styles.checkLabel, { color: colors.textSecondary }]}>
                         {translations[language]?.tabs.orders.order.orderChecks?.date || "Date"}:
                       </Text>
-                      <Text style={[
-                        styles.checkValue
-                      ]}>
+                      <Text style={[styles.checkValue, { color: colors.text }]}>
                         {check.date?.slice(0,10)}
                       </Text>
                     </View>
@@ -183,15 +171,15 @@ const OrderChecks = () => {
             </>
           ) : (
             <View style={styles.emptyContainer}>
-              <MaterialIcons name="assignment" size={60} color="#E2E8F0" />
-              <Text style={styles.emptyTitle}>
+              <MaterialIcons name="assignment" size={60} color={isDark ? "#3F3F46" : "#E2E8F0"} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
                 {translations[language]?.tabs.orders.order.orderChecks?.noChecks || "No Checks Found"}
               </Text>
-              <Text style={styles.emptyText}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                 {translations[language]?.tabs.orders.order.orderChecks?.noChecksMessage || "There are no checks associated with this order."}
               </Text>
               <TouchableOpacity 
-                style={styles.backToOrderButton}
+                style={[styles.backToOrderButton, { backgroundColor: colors.primary }]}
                 onPress={() => router.back()}
               >
                 <Text style={styles.backToOrderText}>

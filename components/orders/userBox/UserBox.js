@@ -4,18 +4,26 @@ import Contact from "./Contact";
 import { translations } from '../../../utils/languageContext';
 import { useLanguage } from '../../../utils/languageContext';
 import { RTLWrapper } from '../../../utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function BusinessBox({ box, orderId }) {
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     return (
         <RTLWrapper>
-            <View style={styles.container}>
+            <View style={[styles.container,{
+                borderBottomColor: colors.border
+            }]}>
             <View style={[styles.contentRow]}>
                 <View style={styles.userInfo}>
-                    <View style={styles.iconContainer}>
-                        <SimpleLineIcons name="user" size={20} color="#ffffff" />
+                    <View style={[styles.iconContainer,{
+                        backgroundColor: colors.primary
+                    }]}>
+                        <SimpleLineIcons name="user" size={20} color={colors.textInverse} />
                     </View>
                     <View style={[styles.textContainer,{
                          ...Platform.select({
@@ -24,8 +32,12 @@ export default function BusinessBox({ box, orderId }) {
                             }
                         }),
                     }]}>
-                        <Text style={[styles.labelText]}>{box.label}</Text>
-                        <Text style={[styles.valueText]}>{box.userName}</Text>
+                        <Text style={[styles.labelText,{
+                            color: colors.textSecondary
+                        }]}>{box.label}</Text>
+                        <Text style={[styles.valueText,{
+                            color: colors.text
+                        }]}>{box.userName}</Text>
                     </View>
                 </View>
                 <View style={[styles.contactActions]}>

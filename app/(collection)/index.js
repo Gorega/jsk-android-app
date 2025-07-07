@@ -1,28 +1,31 @@
-import { View,StyleSheet,RefreshControl} from 'react-native';
+import { View, StyleSheet, RefreshControl } from 'react-native';
 import Search from '../../components/search/Search';
 import CollectionsView from '../../components/collections/CollectionsView';
 import { useCallback, useEffect, useState } from 'react';
-import {router, useLocalSearchParams} from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
-import { getToken } from "../../utils/secureStore";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
-
-export default function HomeScreen(){
+export default function HomeScreen() {
     const socket = useSocket();
     const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
-    const [activeSearchBy,setActiveSearchBy] = useState("");
-    const [activeDate,setActiveDate] = useState("");
-    const [selectedDate,setSelectedDate] = useState("");
-    const [data,setData] = useState([]);
-    const [page,setPage] = useState(1);
-    const [loadingMore,setLoadingMore] = useState(false);
+    const [activeSearchBy, setActiveSearchBy] = useState("");
+    const [activeDate, setActiveDate] = useState("");
+    const [selectedDate, setSelectedDate] = useState("");
+    const [data, setData] = useState([]);
+    const [page, setPage] = useState(1);
+    const [loadingMore, setLoadingMore] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const params = useLocalSearchParams();
-    const { type,collectionIds } = params;
+    const { type, collectionIds, scannedReferenceId } = params;
     const [refreshing, setRefreshing] = useState(false);
     
     const onRefresh = useCallback(() => {
@@ -30,6 +33,101 @@ export default function HomeScreen(){
         setPage(1);
         fetchData(1, false).finally(() => setRefreshing(false));
     }, [language]);
+
+    // Function to handle scanned collection ID
+    const scanCollectionId = (collectionId) => {
+        console.log("scanCollectionId called with:", collectionId);
+        console.log("Current type:", type);
+        
+        // Make sure we have valid searchByGroup before proceeding
+        if (!searchByGroup || searchByGroup.length === 0) {
+            console.error("searchByGroup is not available yet");
+            return;
+        }
+        
+        // Find the collection_id search option
+        const collectionIdSearchOption = searchByGroup.find(option => option.action === "collection_id");
+        
+        if (!collectionIdSearchOption) {
+            console.error("Could not find collection_id search option");
+            return;
+        }
+        
+        console.log("Setting activeSearchBy to:", collectionIdSearchOption);
+        setActiveSearchBy(collectionIdSearchOption);
+        console.log("Setting searchValue to:", collectionId);
+        setSearchValue(collectionId);
+        
+        // We need to manually construct and execute the search since the state updates might not be reflected immediately
+        const fetchScannedData = async () => {
+            try {
+                // Ensure we have a valid type
+                const currentType = type || params.type;
+                console.log("Using type for API call:", currentType);
+                
+                if (!currentType) {
+                    console.error("Cannot fetch data: type is undefined");
+                    return;
+                }
+                
+                const queryParams = new URLSearchParams();
+                queryParams.append('collection_id', collectionId);
+                queryParams.append('page', 1);
+                queryParams.append('language_code', language);
+                
+                if (activeFilter) {
+                    queryParams.append(currentType === "sent" ? "status" : "status_key", activeFilter);
+                }
+                
+                const apiPath = currentType === "sent" ? "sent/sm" : currentType;
+                const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${apiPath}?${queryParams.toString()}`;
+                console.log("Fetching scanned data from URL:", url);
+                
+                setIsLoading(true);
+                const res = await fetch(url, {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/json",
+                        "Accept-Language": language
+                    }
+                });
+                
+                const newData = await res.json();
+                console.log("Scanned data API response:", {
+                    status: res.status,
+                    totalRecords: newData.metadata?.total_records || 0,
+                    dataLength: newData.data?.length || 0
+                });
+                
+                setData(newData);
+                setPage(1);
+            } catch (err) {
+                console.error("Error fetching scanned data:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        
+        // Execute the fetch
+        fetchScannedData();
+    };
+
+    // Handle scannedReferenceId from URL params
+    useEffect(() => {
+        if (scannedReferenceId && scannedReferenceId !== 'undefined') {
+            console.log("Received scanned reference ID from params:", scannedReferenceId);
+            
+            // Clear the param to prevent reapplying on subsequent renders
+            setTimeout(() => {
+                router.setParams({ scannedReferenceId: undefined });
+            }, 500);
+            
+            // Apply the scanned ID to search
+            scanCollectionId(scannedReferenceId);
+        }
+    }, [scannedReferenceId]);
 
     const filterByGroup = ["business_returned","driver_returned"].includes(type)
     ? [
@@ -103,16 +201,50 @@ export default function HomeScreen(){
         try {
             // const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
-            if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
+            
+            // Debug logging for search parameters
+            console.log("Search parameters:", {
+                searchValue,
+                activeSearchBy: activeSearchBy ? activeSearchBy.action : 'none',
+                activeFilter,
+                type
+            });
+            
+            if (!activeSearchBy && searchValue) {
+                queryParams.append('search', searchValue);
+                console.log("Adding general search param:", searchValue);
+            }
+            
             // if (collectionIds) queryParams.append('collection_ids', collectionIds)
-            if (activeFilter) queryParams.append(type === "sent" ? "status" : "status_key", activeFilter);
-            if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
-            if (activeDate) queryParams.append("date_range", activeDate.action)
-            if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
-            if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
+            if (activeFilter) {
+                queryParams.append(type === "sent" ? "status" : "status_key", activeFilter);
+                console.log(`Adding ${type === "sent" ? "status" : "status_key"} filter:`, activeFilter);
+            }
+            
+            if (activeSearchBy && searchValue) {
+                queryParams.append(activeSearchBy.action, searchValue);
+                console.log(`Adding ${activeSearchBy.action} search:`, searchValue);
+            }
+            
+            if (activeDate) {
+                queryParams.append("date_range", activeDate.action);
+                console.log("Adding date range:", activeDate.action);
+            }
+            
+            if (activeDate && activeDate.action === "custom") {
+                queryParams.append("start_date", selectedDate);
+                queryParams.append("end_date", selectedDate);
+                console.log("Adding custom date range:", selectedDate);
+            }
+            
             queryParams.append('page', pageNumber);
             queryParams.append('language_code', language);
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type === "sent" ? "sent/sm" : type}?${queryParams.toString()}`, {
+            
+            // Log the complete URL for debugging
+            const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type === "sent" ? "sent/sm" : type}?${queryParams.toString()}`;
+            console.log("Fetching data from URL:", url);
+            
+            const res = await fetch(url, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -122,7 +254,14 @@ export default function HomeScreen(){
                     // "Cookie": token ? `token=${token}` : ""
                 }
             });
+            
             const newData = await res.json();
+            console.log("API response:", {
+                status: res.status,
+                totalRecords: newData.metadata?.total_records || 0,
+                dataLength: newData.data?.length || 0
+            });
+            
             if (isLoadMore) {
                 setData(prevData => ({
                     ...prevData,
@@ -132,6 +271,7 @@ export default function HomeScreen(){
                 setData(newData);
             }
         } catch(err) {
+            console.error("Error fetching data:", err);
         } finally {
             setLoadingMore(false);
             setIsLoading(false);
@@ -192,50 +332,50 @@ export default function HomeScreen(){
     }, [socket, handleCollectionsUpdate]);
 
 
-    return <View style={styles.main}>
-    <Search
-        searchValue={searchValue}
-        setSearchValue={(input)=> setSearchValue(input)}
-        filterByGroup={filterByGroup}
-        searchByGroup={searchByGroup}
-        activeFilter={activeFilter}
-        setActiveFilter={setActiveFilter}
-        activeSearchBy={activeSearchBy}
-        setActiveSearchBy={setActiveSearchBy}
-        searchByDateGroup={searchByDateGroup}
-        selectedDate={selectedDate}
-        setSelectedDate={setSelectedDate}
-        activeDate={activeDate}
-        setActiveDate={setActiveDate}
-        onClearFilters={clearFilters}
-    />
-    <View style={styles.section}>
-        <CollectionsView
-            data={data.data || []}
-            type={type}
-            loadMoreData={loadMoreData}
-            loadingMore={loadingMore}
-            isLoading={isLoading}
-            refreshControl={
-            <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={["#4361EE"]} // Android
-                tintColor="#4361EE" // iOS
-            />
-            }
+    return <View style={[styles.main, { backgroundColor: colors.background }]}>
+        <Search
+            searchValue={searchValue}
+            setSearchValue={(input) => setSearchValue(input)}
+            filterByGroup={filterByGroup}
+            searchByGroup={searchByGroup}
+            activeFilter={activeFilter}
+            setActiveFilter={setActiveFilter}
+            activeSearchBy={activeSearchBy}
+            setActiveSearchBy={setActiveSearchBy}
+            searchByDateGroup={searchByDateGroup}
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            activeDate={activeDate}
+            setActiveDate={setActiveDate}
+            onClearFilters={clearFilters}
+            onScanCollection={scanCollectionId}
         />
+        <View style={styles.section}>
+            <CollectionsView
+                data={data.data || []}
+                type={type}
+                loadMoreData={loadMoreData}
+                loadingMore={loadingMore}
+                isLoading={isLoading}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[colors.primary]} // Android
+                        tintColor={colors.primary} // iOS
+                    />
+                }
+            />
+        </View>
     </View>
-</View>
 }
 
 const styles = StyleSheet.create({
-    main:{
+    main: {
         flex: 1,
     },
-    section:{
-        marginTop:15,
-        flex:1
+    section: {
+        marginTop: 15,
+        flex: 1
     }
-
 })

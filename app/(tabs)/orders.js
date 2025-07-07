@@ -2,13 +2,13 @@ import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import { useCallback, useEffect, useState } from 'react';
-import { router, useLocalSearchParams, usePathname } from "expo-router";
+import { useLocalSearchParams, usePathname } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
-import { getToken } from "../../utils/secureStore";
-import { RTLWrapper } from '@/utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function Orders() {
     const socket = useSocket();
@@ -27,6 +27,8 @@ export default function Orders() {
     const { user } = useAuth();
     const { orderIds, reset } = params;
     const [refreshing, setRefreshing] = useState(false);
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     // Reset filters when reset param changes
     useEffect(() => {
@@ -336,8 +338,8 @@ export default function Orders() {
     }, [pathname, params]);
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             
             <Search
                 searchValue={searchValue}
@@ -367,8 +369,8 @@ export default function Orders() {
                         <RefreshControl
                             refreshing={refreshing}
                             onRefresh={onRefresh}
-                            colors={["#4361EE"]}
-                            tintColor="#4361EE"
+                            colors={[colors.primary]}
+                            tintColor={colors.primary}
                         />
                     }
                 />

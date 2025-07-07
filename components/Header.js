@@ -10,6 +10,8 @@ import { useSocket } from '../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import { StatusBar } from 'expo-status-bar';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function Header({ showGreeting = true, title }) {
     const socket = useSocket();
@@ -21,6 +23,9 @@ export default function Header({ showGreeting = true, title }) {
     const balanceAnimation = useRef(new Animated.Value(0)).current;
     const headerAnimation = useRef(new Animated.Value(0)).current;
     const isRTL = language === 'ar' || language === 'he';
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+
 
     useEffect(() => {
         // Animate header appearance
@@ -172,13 +177,13 @@ export default function Header({ showGreeting = true, title }) {
 
     return (
         <RTLWrapper>
-            <StatusBar style="dark" />
+            <StatusBar style={colors.statusBarStyle} />
             <Animated.View style={{ opacity: headerAnimation, transform: [{ translateY: headerAnimation.interpolate({
                 inputRange: [0, 1],
                 outputRange: [-20, 0]
             }) }] }}>
                 <LinearGradient
-                    colors={['#ffffff', '#f8f9fa']}
+                    colors={[colors.background, isDark ? colors.card : '#f8f9fa']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={styles.container}
@@ -222,16 +227,16 @@ export default function Header({ showGreeting = true, title }) {
                                         }
                                     }),
                                 }]}>
-                                    <Text style={styles.greeting}>
-                                        {greetingMsg}
+                                    <Text style={[styles.greeting, { color: colors.text }]}>
+                                    {greetingMsg}
                                     </Text>
-                                    <Text style={styles.subGreeting}>
+                                    <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>
                                         {user.name}
                                     </Text>
                                 </View>
                             ) : (
                                 <View style={styles.titleContainer}>
-                                    <Text style={styles.titleText}>{title}</Text>
+                                    <Text style={[styles.titleText, { color: colors.text }]}>{title}</Text>
                                 </View>
                             )}
                             
@@ -243,7 +248,7 @@ export default function Header({ showGreeting = true, title }) {
                                     activeOpacity={0.7}
                                 >
                                     <LinearGradient
-                                        colors={['#4361EE', '#3A0CA3']}
+                                        colors={[colors.gradientStart, colors.gradientEnd]}
                                         style={styles.notificationGradient}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 1 }}
@@ -289,8 +294,6 @@ const styles = StyleSheet.create({
                 paddingTop: 25,
             },
         }),
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
         ...Platform.select({
             ios: {
                 shadowColor: '#000',

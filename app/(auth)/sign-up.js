@@ -16,12 +16,15 @@ import {
   Animated
 } from "react-native";
 import TayarLogo from "../../assets/images/tayar_logo.png";
+import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
 import { Feather, Ionicons } from '@expo/vector-icons';
 import Field from "../../components/sign/Field";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import { router } from "expo-router";
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 const { width, height } = Dimensions.get('window');
 
 export default function SignUp() {
@@ -35,6 +38,8 @@ export default function SignUp() {
   const rtl = useRTLStyles();
   
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   const [formErrors, setFormErrors] = useState({});
 
@@ -211,7 +216,7 @@ export default function SignUp() {
       list: filteredCities?.map(city => ({
         label: city.name,
         value: city.city_id
-      })).slice(2) || [],
+      })) || [],
       onSelect: () => setFormErrors(prev => ({...prev, city_id: ""}))
     },
     {
@@ -447,7 +452,9 @@ export default function SignUp() {
       // Render a message if no fields are available
       return (
         <View style={styles.emptyFieldsContainer}>
-          <Text style={styles.emptyFieldsText}>{translations[language].auth.noFields}</Text>
+          <Text style={[styles.emptyFieldsText, { color: colors.textSecondary }]}>
+            {translations[language].auth.noFields}
+          </Text>
         </View>
       );
     }
@@ -459,7 +466,13 @@ export default function SignUp() {
           keyExtractor={(field, i) => `field-${index}-${i}`}
           renderItem={({ item: field }) => (
             <View style={styles.fieldContainer}>
-              <Field field={field} setSelectedValue={setSelectedValue} multiline={true} />
+              <Field 
+                field={field} 
+                setSelectedValue={setSelectedValue} 
+                multiline={true}
+                isDark={isDark}
+                colors={colors}
+              />
             </View>
           )}
           keyboardShouldPersistTaps="handled"
@@ -544,15 +557,18 @@ export default function SignUp() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Fixed Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { 
+          backgroundColor: colors.headerBg,
+          borderBottomColor: colors.headerBorder
+        }]}>
           <Image 
             style={[styles.logo, keyboardVisible && styles.logoSmall]} 
-            source={TayarLogo} 
+            source={isDark ? TayarDarkLogo : TayarLogo} 
             resizeMode="contain" 
           />
           
@@ -568,17 +584,21 @@ export default function SignUp() {
                 <View key={step} style={styles.stepIndicatorWrapper}>
                   <View style={[
                     styles.stepDot,
-                    currentStep >= step ? styles.activeDot : styles.inactiveDot
+                    currentStep >= step 
+                      ? [styles.activeDot, { backgroundColor: colors.primary }] 
+                      : [styles.inactiveDot, { backgroundColor: isDark ? '#404040' : '#E5E7EB' }]
                   ]}>
                     <Text style={[
                       styles.stepNumber,
-                      currentStep >= step ? styles.activeStepText : styles.inactiveStepText
+                      currentStep >= step ? styles.activeStepText : [styles.inactiveStepText, { color: colors.textSecondary }]
                     ]}>{step}</Text>
                   </View>
                   {step < 3 && (
                     <View style={[
                       styles.connector,
-                      currentStep > step ? styles.activeConnector : styles.inactiveConnector
+                      currentStep > step 
+                        ? [styles.activeConnector, { backgroundColor: colors.primary }] 
+                        : [styles.inactiveConnector, { backgroundColor: isDark ? '#404040' : '#E5E7EB' }]
                     ]} />
                   )}
                 </View>
@@ -587,19 +607,21 @@ export default function SignUp() {
             
             {/* Step Title */}
             <View style={styles.stepTitleRow}>
-              <View style={styles.stepIconCircle}>
+              <View style={[styles.stepIconCircle, { backgroundColor: colors.primary }]}>
                 <Feather name={getStepIcon(currentStep)} size={16} color="#FFFFFF" />
               </View>
-              <Text style={styles.stepTitle}>{allStepFields[currentStep-1].title}</Text>
+              <Text style={[styles.stepTitle, { color: colors.text }]}>
+                {allStepFields[currentStep-1].title}
+              </Text>
             </View>
           </Animated.View>
         </View>
         
         {/* Error Display */}
         {error && (
-          <View style={styles.errorContainer}>
-            <Feather name="alert-circle" size={20} color="#EF4444" />
-            <Text style={styles.errorText}>{error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(254, 226, 226, 0.5)' }]}>
+            <Feather name="alert-circle" size={20} color={colors.error} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{error}</Text>
           </View>
         )}
         
@@ -614,7 +636,7 @@ export default function SignUp() {
           showsHorizontalScrollIndicator={false}
           scrollEnabled={false}
           scrollEventThrottle={16}
-          style={styles.stepsContainer}
+          style={[styles.stepsContainer, { backgroundColor: isDark ? colors.surface : '#F9FAFB' }]}
           initialNumToRender={3}
           onScrollToIndexFailed={(info) => {
             // Try again with a delay
@@ -638,28 +660,34 @@ export default function SignUp() {
         />
         
         {/* Navigation Buttons */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { 
+          backgroundColor: colors.background,
+          borderTopColor: colors.border
+        }]}>
           <View style={styles.navigationButtons}>
             {currentStep > 1 && (
               <TouchableOpacity 
-                style={styles.backButton} 
+                style={[styles.backButton, { borderColor: colors.primary }]} 
                 onPress={handlePrevStep}
                 activeOpacity={0.7}
               >
                 <Feather 
                   name={rtl.isRTL ? "arrow-right" : "arrow-left"} 
                   size={18} 
-                  color="#4361EE" 
+                  color={colors.primary} 
                 />
-                <Text style={styles.backButtonText}>{translations[language].auth.back}</Text>
+                <Text style={[styles.backButtonText, { color: colors.primary }]}>
+                  {translations[language].auth.back}
+                </Text>
               </TouchableOpacity>
             )}
             
             <TouchableOpacity 
               style={[
                 styles.nextButton,
+                { backgroundColor: colors.primary },
                 currentStep === 1 && !currentStep > 1 && styles.fullWidthButton,
-                loading && styles.loadingButton
+                loading && [styles.loadingButton, { backgroundColor: isDark ? '#5A71C9' : '#6B7BD1' }]
               ]} 
               onPress={() => {
                 // Dismiss keyboard but use a small delay to prevent any race conditions
@@ -693,7 +721,7 @@ export default function SignUp() {
           
           {/* Step Indicator Text */}
           <Animated.View style={{opacity: fadeAnim}}>
-            <Text style={styles.stepIndicatorText}>
+            <Text style={[styles.stepIndicatorText, { color: colors.textSecondary }]}>
               {translations[language].auth.step} {currentStep} {translations[language].auth.of} 3
             </Text>
           </Animated.View>
@@ -706,19 +734,15 @@ export default function SignUp() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   header: {
-    backgroundColor: '#FFFFFF',
     paddingTop: 20,
     paddingBottom: 10,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
     zIndex: 10,
   },
   logo: {
@@ -801,7 +825,6 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(254, 226, 226, 0.5)',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 20,
@@ -811,14 +834,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     marginLeft: 10,
-    color: '#B91C1C',
     fontSize: 14,
     flex: 1,
   },
   stepsContainer: {
     flex: 1,
     width: width,
-    backgroundColor: '#F9FAFB',
   },
   stepContainer: {
     width: width,
@@ -836,11 +857,9 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   footer: {
-    backgroundColor: '#FFFFFF',
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -866,14 +885,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderWidth: 1,
-    borderColor: '#4361EE',
     borderRadius: 12,
     backgroundColor: 'transparent',
     minWidth: 100,
     gap: 10
   },
   backButtonText: {
-    color: '#4361EE',
     fontSize: 16,
     fontWeight: '500'
   },
@@ -883,20 +900,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 14,
     paddingHorizontal: 20,
-    backgroundColor: '#4361EE',
     borderRadius: 12,
     flex: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#4361EE',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   fullWidthButton: {
     marginLeft: 0,

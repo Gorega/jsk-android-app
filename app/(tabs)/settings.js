@@ -29,6 +29,8 @@ import { useAuth } from "../../RootLayout";
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 import Field from "../../components/sign/Field";
 import { Feather } from '@expo/vector-icons';
+import { useTheme, ThemeModes } from '../../utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function Settings() {
     const { language, setLanguage } = useLanguage();
@@ -52,6 +54,10 @@ export default function Settings() {
         phone: "",
         password: ""
     });
+
+    const { theme, setTheme, isDark, colorScheme } = useTheme();
+    const [showThemeModal, setShowThemeModal] = useState(false);
+    const colors = Colors[colorScheme];
 
     // Load saved accounts whenever the accounts modal is opened
     useEffect(() => {
@@ -155,6 +161,20 @@ export default function Settings() {
             value: language.toUpperCase()
         },
         {
+            label: translations[language].tabs.settings.options.theme?.title || 'Theme',
+            onPress: () => setShowThemeModal(true),
+            icon: <MaterialCommunityIcons 
+                    name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
+                    size={22} 
+                    color="#4361EE" 
+                  />,
+            value: theme === 'system' 
+                ? (translations[language].tabs.settings.options.theme?.options?.system || 'System') 
+                : (theme === 'dark' 
+                    ? (translations[language].tabs.settings.options.theme?.options?.dark || 'Dark') 
+                    : (translations[language].tabs.settings.options.theme?.options?.light || 'Light'))
+        },
+        {
             label: translations[language].tabs.settings.options.changePassword,
             onPress: () => router.push("(change_password)"),
             icon: <AntDesign name="lock" size={22} color="#4361EE" />
@@ -191,8 +211,10 @@ export default function Settings() {
     
     // Language Change Handler
     const handleLanguageChange = async (newLang) => {
-        await setLanguage(newLang);
+        // Close modal first to avoid visual glitches during restart
         setShowLanguageModal(false);
+        // Change language (this will trigger restart if RTL changes)
+        await setLanguage(newLang);
     };
     
     // Logout Handler
@@ -511,12 +533,12 @@ export default function Settings() {
         try {
             // Confirm before removing
             Alert.alert(
-                "Remove Account",
-                "Are you sure you want to remove this account? You can add it again later.",
+                translations[language].tabs.settings.options.removeAccount,
+                translations[language].tabs.settings.options.removeAccountMessage,
                 [
-                    { text: "Cancel", style: "cancel" },
+                    { text: translations[language].common.cancel, style: "cancel" },
                     {
-                        text: "Remove",
+                        text: translations[language].common.delete,
                         style: "destructive",
                         onPress: async () => {
                             try {
@@ -545,96 +567,102 @@ export default function Settings() {
         }
     };
 
+    const handleThemeChange = async (newTheme) => {
+        await setTheme(newTheme);
+        setShowThemeModal(false);
+    };
+
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* User Info Card */}
-            <View style={[styles.userCard]}>
-                <View style={styles.avatarContainer}>
+            <View style={[styles.userCard, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                <View style={[styles.avatarContainer, { backgroundColor: colors.primary }]}>
                     <Text style={styles.avatarText}>
                         {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                     </Text>
                 </View>
                 <View>
-                    <Text style={[styles.userName,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:rtl.isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>{user?.name}</Text>
-                    <Text style={[styles.userRole,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:rtl.isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>{translations[language].roles[user?.role]}</Text>
+                    <Text style={[styles.userName, { color: colors.text }]}>{user?.name}</Text>
+                    <Text style={[styles.userRole, { color: colors.textSecondary }]}>
+                        {translations[language].roles[user?.role]}
+                    </Text>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {/* Settings Categories */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>{translations[language].tabs.settings?.preferences}</Text>
+                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                        {translations[language].tabs.settings?.preferences}
+                    </Text>
                 </View>
 
                 {settings.slice(0, 3).map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         style={[
-                            styles.item
+                            styles.item,
+                            { backgroundColor: colors.card, borderBottomColor: colors.border }
                         ]}
                         onPress={item?.onPress}
                         activeOpacity={0.7}
                     >
                         <View style={[
-                            styles.iconContainer
+                            styles.iconContainer,
+                            { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
                         ]}>
                             {item?.icon}
                         </View>
                         <View style={styles.itemTextContainer}>
                             <Text style={[
-                                styles.itemLabel
+                                styles.itemLabel,
+                                { color: colors.text }
                             ]}>
                                 {item?.label}
                             </Text>
                         </View>
                         {item.value && (
                             <View style={[
-                                styles.valueContainer
+                                styles.valueContainer,
+                                { backgroundColor: isDark ? colors.cardDark : '#E2E8F0' }
                             ]}>
-                                <Text style={styles.valueText}>{item.value}</Text>
+                                <Text style={[styles.valueText, { color: colors.textSecondary }]}>{item.value}</Text>
                             </View>
                         )}
                         <MaterialIcons 
                             name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                             size={24} 
-                            color="#94A3B8" 
+                            color={colors.textSecondary} 
                         />
                     </TouchableOpacity>
                 ))}
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>{translations[language].tabs.settings.support}</Text>
+                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                        {translations[language].tabs.settings.support}
+                    </Text>
                 </View>
 
                 {settings.slice(3, 6).map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         style={[
-                            styles.item
+                            styles.item,
+                            { backgroundColor: colors.card, borderBottomColor: colors.border }
                         ]}
                         onPress={item?.onPress}
                         activeOpacity={0.7}
                     >
                         <View style={[
-                            styles.iconContainer
+                            styles.iconContainer,
+                            { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
                         ]}>
                             {item?.icon}
                         </View>
                         <View style={styles.itemTextContainer}>
                             <Text style={[
-                                styles.itemLabel
+                                styles.itemLabel,
+                                { color: colors.text }
                             ]}>
                                 {item?.label}
                             </Text>
@@ -642,33 +670,44 @@ export default function Settings() {
                         <MaterialIcons 
                             name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                             size={24} 
-                            color="#94A3B8" 
+                            color={colors.textSecondary} 
                         />
                     </TouchableOpacity>
                 ))}
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>{translations[language].tabs.settings.account}</Text>
+                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                        {translations[language].tabs.settings.account}
+                    </Text>
                 </View>
                 
                 {/* Switch Account Option */}
                 <TouchableOpacity
-                    style={[styles.item]}
-                    onPress={settings[6]?.onPress}
+                    style={[
+                        styles.item,
+                        { backgroundColor: colors.card, borderBottomColor: colors.border }
+                    ]}
+                    onPress={settings[settings.length - 3]?.onPress}
                     activeOpacity={0.7}
                 >
-                    <View style={[styles.iconContainer]}>
-                        {settings[6]?.icon}
+                    <View style={[
+                        styles.iconContainer,
+                        { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
+                    ]}>
+                        {settings[settings.length - 3]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
-                        <Text style={[styles.itemLabel]}>
-                            {settings[6]?.label}
+                        <Text style={[
+                            styles.itemLabel,
+                            { color: colors.text }
+                        ]}>
+                            {settings[settings.length - 3]?.label}
                         </Text>
                     </View>
                     <MaterialIcons 
                         name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                         size={24} 
-                        color="#94A3B8" 
+                        color={colors.textSecondary} 
                     />
                 </TouchableOpacity>
                 
@@ -676,23 +715,23 @@ export default function Settings() {
                 <TouchableOpacity
                     style={[
                         styles.item,
-                        styles.dangerItem
+                        { backgroundColor: colors.card, borderBottomColor: colors.border }
                     ]}
-                    onPress={settings[7]?.onPress}
+                    onPress={settings[settings.length - 2]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
                         styles.dangerIconContainer
                     ]}>
-                        {settings[7]?.icon}
+                        {settings[settings.length - 2]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
                             styles.dangerLabel
                         ]}>
-                            {settings[7]?.label}
+                            {settings[settings.length - 2]?.label}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -701,23 +740,24 @@ export default function Settings() {
                 <TouchableOpacity
                     style={[
                         styles.item,
-                        styles.dangerItem
+                        styles.dangerItem,
+                        { backgroundColor: colors.card, borderBottomColor: colors.border }
                     ]}
-                    onPress={settings[8]?.onPress}
+                    onPress={settings[settings.length - 1]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
                         styles.dangerIconContainer
                     ]}>
-                        {settings[8]?.icon}
+                        {settings[settings.length - 1]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
                             styles.dangerLabel
                         ]}>
-                            {settings[8]?.label}
+                            {settings[settings.length - 1]?.label}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -730,8 +770,11 @@ export default function Settings() {
                     setShowModal={setShowLanguageModal}
                     onDismiss={() => setShowLanguageModal(false)}
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>
+                    <View style={[styles.modalHeader, { 
+                        borderBottomColor: colors.border,
+                        backgroundColor: colors.card 
+                    }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
                             {translations[language].tabs.settings.options.language.title}
                         </Text>
                     </View>
@@ -739,55 +782,87 @@ export default function Settings() {
                     <TouchableOpacity 
                         style={[
                             styles.languageOption,
-                            language === 'ar' && styles.activeLanguage
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomColor: colors.border
+                            },
+                            language === 'ar' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
                         ]}
                         onPress={() => handleLanguageChange('ar')}
                     >
                         <Text style={[
                             styles.languageText, 
-                            language === 'ar' && styles.activeLanguageText
+                            { color: colors.text },
+                            language === 'ar' && [
+                                styles.activeLanguageText,
+                                { color: colors.primary }
+                            ]
                         ]}>
                             {translations[language].tabs.settings.options.language.options.ar}
                         </Text>
                         {language === 'ar' && (
-                            <Ionicons name="checkmark-circle" size={20} color="#4361EE" />
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                         )}
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
                         style={[
                             styles.languageOption,
-                            language === 'en' && styles.activeLanguage
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomColor: colors.border
+                            },
+                            language === 'en' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
                         ]}
                         onPress={() => handleLanguageChange('en')}
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'en' && styles.activeLanguageText
+                            { color: colors.text },
+                            language === 'en' && [
+                                styles.activeLanguageText,
+                                { color: colors.primary }
+                            ]
                         ]}>
                             {translations[language].tabs.settings.options.language.options.en}
                         </Text>
                         {language === 'en' && (
-                            <Ionicons name="checkmark-circle" size={20} color="#4361EE" />
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                         )}
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
                         style={[
                             styles.languageOption,
-                            language === 'he' && styles.activeLanguage,
-                            { borderBottomWidth: 0 }
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomWidth: 0 
+                            },
+                            language === 'he' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
                         ]}
                         onPress={() => handleLanguageChange('he')}
                     >
                         <Text style={[
                             styles.languageText,
-                            language === 'he' && styles.activeLanguageText
+                            { color: colors.text },
+                            language === 'he' && [
+                                styles.activeLanguageText,
+                                { color: colors.primary }
+                            ]
                         ]}>
                             {translations[language].tabs.settings.options.language.options.he}
                         </Text>
                         {language === 'he' && (
-                            <Ionicons name="checkmark-circle" size={20} color="#4361EE" />
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
                         )}
                     </TouchableOpacity>
                 </ModalPresentation>
@@ -800,27 +875,37 @@ export default function Settings() {
                     setShowModal={setShowAccountsModal}
                     onDismiss={() => setShowAccountsModal(false)}
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>
+                    <View style={[styles.modalHeader, { 
+                        backgroundColor: colors.card,
+                        borderBottomColor: colors.border 
+                    }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
                             {translations[language].tabs.settings.options.switchAccount}
                         </Text>
                     </View>
                     
                     {/* Current Account */}
-                    <View style={styles.accountsSection}>
-                        <Text style={styles.accountsSectionTitle}>
+                    <View style={[styles.accountsSection, { backgroundColor: colors.background }]}>
+                        <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary }]}>
                             {translations[language].tabs.settings.options.currentAccount}
                         </Text>
                         
-                        <View style={[styles.accountItem, styles.currentAccountItem]}>
+                        <View style={[
+                            styles.accountItem, 
+                            styles.currentAccountItem,
+                            { 
+                                backgroundColor: isDark ? colors.cardActive : '#F0F9FF',
+                                borderBottomColor: colors.border 
+                            }
+                        ]}>
                             <View style={styles.accountAvatarContainer}>
                                 <Text style={styles.accountAvatarText}>
                                     {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                                 </Text>
                             </View>
                             <View style={styles.accountInfo}>
-                                <Text style={styles.accountName}>{user?.name}</Text>
-                                <Text style={styles.accountRole}>
+                                <Text style={[styles.accountName, { color: colors.text }]}>{user?.name}</Text>
+                                <Text style={[styles.accountRole, { color: colors.textSecondary }]}>
                                     {translations[language].roles[user?.role]}
                                 </Text>
                             </View>
@@ -834,13 +919,19 @@ export default function Settings() {
                     
                     {/* Other Accounts */}
                     {savedAccounts.length > 0 && (
-                        <View style={styles.accountsSection}>
-                            <Text style={styles.accountsSectionTitle}>
+                        <View style={[styles.accountsSection, { backgroundColor: colors.background }]}>
+                            <Text style={[styles.accountsSectionTitle, { color: colors.textSecondary }]}>
                                 {translations[language].tabs.settings.options.otherAccounts}
                             </Text>
                             
                             {savedAccounts.map((account, index) => (
-                                <View key={index} style={styles.accountItem}>
+                                <View key={index} style={[
+                                    styles.accountItem,
+                                    { 
+                                        backgroundColor: colors.card,
+                                        borderBottomColor: colors.border 
+                                    }
+                                ]}>
                                     <TouchableOpacity 
                                         style={styles.accountContent}
                                         onPress={() => handleSwitchAccount(account)}
@@ -851,15 +942,19 @@ export default function Settings() {
                                             </Text>
                                         </View>
                                         <View style={styles.accountInfo}>
-                                            <Text style={styles.accountName}>{account.phone}</Text>
-                                           
+                                            <Text style={[styles.accountName, { color: colors.text }]}>
+                                                {account.phone}
+                                            </Text>
                                         </View>
                                     </TouchableOpacity>
                                     <TouchableOpacity 
-                                        style={styles.removeAccountButton}
+                                        style={[
+                                            styles.removeAccountButton,
+                                            { backgroundColor: isDark ? colors.cardDark : '#F1F5F9' }
+                                        ]}
                                         onPress={() => handleRemoveAccount(account)}
                                     >
-                                        <MaterialIcons name="close" size={20} color="#64748B" />
+                                        <MaterialIcons name="close" size={20} color={colors.textSecondary} />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -868,7 +963,7 @@ export default function Settings() {
                     
                     {/* Add New Account Button */}
                     <TouchableOpacity 
-                        style={styles.addAccountButton}
+                        style={[styles.addAccountButton, { backgroundColor: colors.primary }]}
                         onPress={handleAddNewAccount}
                     >
                         <AntDesign name="plus" size={20} color="#FFFFFF" />
@@ -886,13 +981,19 @@ export default function Settings() {
                     setShowModal={setShowAddAccountModal}
                     onDismiss={() => setShowAddAccountModal(false)}
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>
+                    <View style={[
+                        styles.modalHeader, 
+                        { 
+                            backgroundColor: colors.card,
+                            borderBottomColor: colors.border 
+                        }
+                    ]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
                             {translations[language].tabs.settings.options.addAccount}
                         </Text>
                     </View>
                     
-                    <View style={styles.loginFormContainer}>
+                    <View style={[styles.loginFormContainer, { backgroundColor: colors.background }]}>
                         {/* Error display */}
                         {(formErrors.general) && (
                             <View style={styles.errorAlert}>
@@ -916,7 +1017,14 @@ export default function Settings() {
                         
                         {/* Login button */}
                         <TouchableOpacity
-                            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                            style={[
+                                styles.loginButton, 
+                                { backgroundColor: colors.primary },
+                                loading && [
+                                    styles.loginButtonDisabled,
+                                    { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
+                                ]
+                            ]}
                             onPress={handleAddAccountLogin}
                             disabled={loading}
                             activeOpacity={0.8}
@@ -930,6 +1038,135 @@ export default function Settings() {
                             )}
                         </TouchableOpacity>
                     </View>
+                </ModalPresentation>
+            )}
+
+            {/* Theme Modal */}
+            {showThemeModal && (
+                <ModalPresentation 
+                    showModal={showThemeModal} 
+                    setShowModal={setShowThemeModal}
+                    onDismiss={() => setShowThemeModal(false)}
+                >
+                    <View style={[
+                        styles.modalHeader, 
+                        { 
+                            backgroundColor: colors.card,
+                            borderBottomColor: colors.border 
+                        }
+                    ]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
+                            {translations[language].tabs.settings.options.theme?.title || 'Choose Theme'}
+                        </Text>
+                    </View>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.languageOption,
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomColor: colors.border 
+                            },
+                            theme === 'light' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
+                        ]}
+                        onPress={() => handleThemeChange('light')}
+                    >
+                        <View style={styles.themeOptionContent}>
+                            <MaterialCommunityIcons 
+                                name="white-balance-sunny" 
+                                size={22} 
+                                color={theme === 'light' ? colors.primary : colors.textSecondary} 
+                            />
+                            <Text style={[
+                                styles.languageText, 
+                                { color: colors.text },
+                                theme === 'light' && [
+                                    styles.activeLanguageText,
+                                    { color: colors.primary }
+                                ]
+                            ]}>
+                                {translations[language].tabs.settings.options.theme?.options?.light || 'Light'}
+                            </Text>
+                        </View>
+                        {theme === 'light' && (
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                        )}
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.languageOption,
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomColor: colors.border 
+                            },
+                            theme === 'dark' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
+                        ]}
+                        onPress={() => handleThemeChange('dark')}
+                    >
+                        <View style={styles.themeOptionContent}>
+                            <MaterialCommunityIcons 
+                                name="moon-waning-crescent" 
+                                size={22} 
+                                color={theme === 'dark' ? colors.primary : colors.textSecondary} 
+                            />
+                            <Text style={[
+                                styles.languageText,
+                                { color: colors.text },
+                                theme === 'dark' && [
+                                    styles.activeLanguageText,
+                                    { color: colors.primary }
+                                ]
+                            ]}>
+                                {translations[language].tabs.settings.options.theme?.options?.dark || 'Dark'}
+                            </Text>
+                        </View>
+                        {theme === 'dark' && (
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                        )}
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.languageOption,
+                            { 
+                                backgroundColor: colors.card,
+                                borderBottomWidth: 0 
+                            },
+                            theme === 'system' && [
+                                styles.activeLanguage,
+                                { backgroundColor: isDark ? colors.cardActive : '#F0F9FF' }
+                            ]
+                        ]}
+                        onPress={() => handleThemeChange('system')}
+                    >
+                        <View style={styles.themeOptionContent}>
+                            <MaterialCommunityIcons 
+                                name="theme-light-dark" 
+                                size={22} 
+                                color={theme === 'system' ? colors.primary : colors.textSecondary} 
+                            />
+                            <Text style={[
+                                styles.languageText,
+                                { color: colors.text },
+                                theme === 'system' && [
+                                    styles.activeLanguageText,
+                                    { color: colors.primary }
+                                ]
+                            ]}>
+                                {translations[language].tabs.settings.options.theme?.options?.system || 'System'}
+                            </Text>
+                        </View>
+                        {theme === 'system' && (
+                            <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
+                        )}
+                    </TouchableOpacity>
                 </ModalPresentation>
             )}
         </View>
@@ -1243,5 +1480,10 @@ const styles = StyleSheet.create({
         fontSize: 12,
         fontWeight: '600',
         color: '#22C55E',
+    },
+    themeOptionContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12
     },
 });

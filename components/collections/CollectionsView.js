@@ -1,20 +1,29 @@
-import { View,Text,StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Collection from './Collection';
 import FlatListData from '../FlatListData';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
-export default function OrdersView({data,type,loadMoreData,loadingMore,refreshControl, isLoading}){
+export default function CollectionsView({data, type, loadMoreData, loadingMore, refreshControl, isLoading}){
     const { language } = useLanguage();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const isRTL = ["he", "ar"].includes(language);
-
 
     if (isLoading) {
         return (
-            <View style={styles.overlay}>
-                <View style={styles.spinnerContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
+            <View style={[
+                styles.overlay,
+                { backgroundColor: isDark ? 'rgba(26, 26, 26, 0.8)' : 'rgba(255, 255, 255, 0.8)' }
+            ]}>
+                <View style={[
+                    styles.spinnerContainer,
+                    { backgroundColor: colors.card }
+                ]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             </View>
         );
@@ -34,16 +43,19 @@ export default function OrdersView({data,type,loadMoreData,loadingMore,refreshCo
         refreshControl={refreshControl}
     />
     :
-    <View style={styles.empty}>
+    <View style={[styles.empty, { backgroundColor: colors.background }]}>
         <View style={styles.emptyIconContainer}>
-            <MaterialCommunityIcons name="package-variant" size={40} color="#4361EE" />
+            <MaterialCommunityIcons name="package-variant" size={40} color={colors.primary} />
         </View>
-        <Text style={[styles.emptyText, isRTL && styles.textRTL]}>
-                {translations[language].collections.emptyArray}
+        <Text style={[
+            styles.emptyText, 
+            isRTL && styles.textRTL,
+            { color: colors.text }
+        ]}>
+            {translations[language].collections.emptyArray}
         </Text>
     </View>
 }
-
 
 const styles = StyleSheet.create({
     empty:{
@@ -53,6 +65,11 @@ const styles = StyleSheet.create({
       marginTop:50,
       justifyContent:"center",
       alignItems:"center"
+    },
+    emptyText: {
+      fontSize: 16,
+      marginTop: 12,
+      fontWeight: "500",
     },
     scrollView:{
         flex:1,
@@ -69,13 +86,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
     },
     spinnerContainer: {
-        backgroundColor: 'white',
         padding: 24,
         borderRadius: 16,
         shadowColor: '#000',

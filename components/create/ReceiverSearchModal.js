@@ -6,6 +6,8 @@ import { useLanguage } from '../../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Feather from '@expo/vector-icons/Feather';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function ReceiverSearchModal({ 
     showModal, 
@@ -20,6 +22,8 @@ export default function ReceiverSearchModal({
     const [error, setError] = useState(null);
     const [debounceTimeout, setDebounceTimeout] = useState(null);
     const isRTL = language === 'ar' || language === 'he';
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     const searchReceivers = async (query) => {
         if (!query.trim()) {
@@ -115,18 +119,20 @@ export default function ReceiverSearchModal({
     return (
         <ModalPresentation
             showModal={showModal}
-            setShowModal={() => {
-                setShowModal(false);
-                setSearchQuery("");
-                setError(null);
-                Keyboard.dismiss();
+            setShowModal={(value) => {
+                setShowModal(value);
+                if (value === false) {
+                    setSearchQuery("");
+                    setError(null);
+                    Keyboard.dismiss();
+                }
             }}
             position="bottom"
         >
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.card }]}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>
+                    <Text style={[styles.headerTitle, { color: colors.text }]}>
                         {translations[language].tabs.orders.create.sections.client.fields.search_receiver || "Search Receiver"}
                     </Text>
                     <TouchableOpacity
@@ -137,7 +143,7 @@ export default function ReceiverSearchModal({
                             setError(null);
                         }}
                     >
-                        <Ionicons name="close" size={24} color="#64748B" />
+                        <Ionicons name="close" size={24} color={isDark ? colors.textSecondary : "#64748B"} />
                     </TouchableOpacity>
                 </View>
 
@@ -145,9 +151,10 @@ export default function ReceiverSearchModal({
                 <View style={styles.searchContainer}>
                     <View style={[
                         styles.searchInputContainer,
-                        error && styles.searchInputError
+                        error && styles.searchInputError,
+                        { backgroundColor: isDark ? colors.surface : '#F8FAFC', borderColor: error ? '#EF4444' : isDark ? colors.border : '#E2E8F0' }
                     ]}>
-                        <Feather name="search" size={20} color="#64748B" style={styles.searchIcon} />
+                        <Feather name="search" size={20} color={isDark ? colors.textSecondary : "#64748B"} style={styles.searchIcon} />
                         <TextInput
                             style={[styles.searchInput,{
                                 ...Platform.select({
@@ -155,6 +162,7 @@ export default function ReceiverSearchModal({
                                         textAlign:isRTL ? "right" : ""
                                     }
                                 }),
+                                color: colors.text
                             }]}
                             placeholder={translations[language].tabs.orders.create.sections.client.fields.search_placeholder || "Enter phone number..."}
                             value={searchQuery}
@@ -162,7 +170,7 @@ export default function ReceiverSearchModal({
                             keyboardType="phone-pad"
                             maxLength={10}
                             autoFocus
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={isDark ? colors.textSecondary : "#94A3B8"}
                         />
                         {searchQuery.length > 0 && (
                             <TouchableOpacity
@@ -172,7 +180,7 @@ export default function ReceiverSearchModal({
                                     setError(null);
                                 }}
                             >
-                                <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                                <Ionicons name="close-circle" size={20} color={isDark ? colors.textSecondary : "#94A3B8"} />
                             </TouchableOpacity>
                         )}
                     </View>
@@ -185,11 +193,12 @@ export default function ReceiverSearchModal({
                 <View style={styles.contentContainer}>
                     {/* Fixed Add New Button */}
                     {searchQuery.length >= 3 && (
-                        <View style={styles.bottomButtonContainer}>
+                        <View style={[styles.bottomButtonContainer, { borderTopColor: isDark ? colors.border : '#E2E8F0' }]}>
                             <TouchableOpacity
                                 style={[
                                     styles.addNewButton,
-                                    !isValidPhoneNumber(searchQuery) && styles.addNewButtonDisabled
+                                    !isValidPhoneNumber(searchQuery) && styles.addNewButtonDisabled,
+                                    { backgroundColor: isDark ? (isValidPhoneNumber(searchQuery) ? 'rgba(67, 97, 238, 0.2)' : colors.surface) : (isValidPhoneNumber(searchQuery) ? '#EEF2FF' : '#F1F5F9') }
                                 ]}
                                 onPress={handleAddNew}
                                 disabled={!isValidPhoneNumber(searchQuery)}
@@ -197,11 +206,12 @@ export default function ReceiverSearchModal({
                                 <MaterialIcons 
                                     name="add-circle-outline" 
                                     size={24} 
-                                    color={isValidPhoneNumber(searchQuery) ? "#4361EE" : "#94A3B8"} 
+                                    color={isValidPhoneNumber(searchQuery) ? "#4361EE" : (isDark ? colors.textSecondary : "#94A3B8")} 
                                 />
                                 <Text style={[
                                     styles.addNewText,
-                                    !isValidPhoneNumber(searchQuery) && styles.addNewTextDisabled
+                                    !isValidPhoneNumber(searchQuery) && styles.addNewTextDisabled,
+                                    { color: isValidPhoneNumber(searchQuery) ? "#4361EE" : (isDark ? colors.textSecondary : "#94A3B8") }
                                 ]}>
                                     {isValidPhoneNumber(searchQuery) 
                                         ? (translations[language].tabs.orders.create.sections.client.fields.add_new_receiver)
@@ -219,10 +229,10 @@ export default function ReceiverSearchModal({
                             searchResults.map((receiver, index) => (
                                 <TouchableOpacity
                                     key={index}
-                                    style={styles.receiverItem}
+                                    style={[styles.receiverItem, { borderBottomColor: isDark ? colors.border : '#E2E8F0' }]}
                                     onPress={() => handleReceiverSelect(receiver)}
                                 >
-                                    <View style={styles.receiverIcon}>
+                                    <View style={[styles.receiverIcon, { backgroundColor: isDark ? 'rgba(67, 97, 238, 0.2)' : '#EEF2FF' }]}>
                                         <MaterialIcons name="person" size={24} color="#4361EE" />
                                     </View>
                                     <View style={styles.receiverInfo}>
@@ -233,14 +243,16 @@ export default function ReceiverSearchModal({
                                                         textAlign:isRTL ? "left" : ""
                                                     }
                                                 }),
+                                                color: colors.text
                                             }
                                         ]}>{receiver.name || translations[language].tabs.orders.create.sections.client.fields.unnamed}</Text>
                                         <Text style={[styles.receiverPhone,{
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "left" : ""
-                                                    }
+                                                    },
                                                 }),
+                                                color: colors.success
                                             }]}>{receiver.phone || receiver.mobile}</Text>
                                         <Text style={[styles.receiverAddress,{
                                                 ...Platform.select({
@@ -248,8 +260,9 @@ export default function ReceiverSearchModal({
                                                         textAlign:isRTL ? "left" : ""
                                                     }
                                                 }),
+                                                color: isDark ? colors.text : '#64748B'
                                             }]}>
-                                            <MaterialIcons name="location-on" size={14} color="#64748B" />
+                                            <MaterialIcons name="location-on" size={14} color={isDark ? colors.textSecondary : "#64748B"} />
                                              {receiver.city} {receiver.address && " , " + receiver.address}
                                         </Text>
                                     </View>
@@ -257,13 +270,13 @@ export default function ReceiverSearchModal({
                             ))
                         ) : searchQuery.length >= 3 ? (
                             <View style={styles.noResultsContainer}>
-                                <Text style={styles.noResultsText}>
+                                <Text style={[styles.noResultsText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
                                     {translations[language].tabs.orders.create.sections.client.fields.no_results}
                                 </Text>
                             </View>
                         ) : searchQuery.length > 0 ? (
                             <View style={styles.centerContainer}>
-                                <Text style={styles.hintText}>
+                                <Text style={[styles.hintText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
                                     {translations[language].tabs.orders.create.sections.client.fields.enter_more}
                                 </Text>
                             </View>
@@ -278,7 +291,6 @@ export default function ReceiverSearchModal({
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: 'white',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         minHeight: '100%',
@@ -295,7 +307,6 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1F2937',
     },
     closeButton: {
         padding: 4,
@@ -306,9 +317,7 @@ const styles = StyleSheet.create({
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F8FAFC',
         borderWidth: 1,
-        borderColor: '#E2E8F0',
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 4,
@@ -317,7 +326,6 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 16,
-        color: '#1F2937',
         paddingVertical: 8,
     },
     clearButton: {
@@ -342,7 +350,6 @@ const styles = StyleSheet.create({
         marginLeft: 4,
     },
     hintText: {
-        color: '#64748B',
         fontSize: 16,
         textAlign: 'center',
     },
@@ -352,7 +359,6 @@ const styles = StyleSheet.create({
     },
     noResultsText: {
         fontSize: 16,
-        color: '#64748B',
         marginBottom: 16,
         textAlign: 'center',
     },
@@ -360,50 +366,41 @@ const styles = StyleSheet.create({
         paddingTop: 12,
         paddingBottom: 4,
         borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-        backgroundColor: 'white',
     },
     addNewButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#EEF2FF',
         paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 12,
     },
     addNewButtonDisabled: {
-        backgroundColor: '#F1F5F9',
     },
     addNewText: {
         marginLeft: 8,
         fontSize: 16,
         fontWeight: '500',
-        color: '#4361EE',
     },
     addNewTextDisabled: {
-        color: '#94A3B8',
     },
     receiverItem: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#E2E8F0',
         gap: 10
     },
     receiverIcon: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#EEF2FF',
         justifyContent: 'center',
         alignItems: 'center'
     },
     receiverName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
         marginBottom: 4,
     },
     receiverPhone: {
@@ -413,7 +410,6 @@ const styles = StyleSheet.create({
     },
     receiverAddress: {
         fontSize: 14,
-        color: '#64748B',
         flexDirection: 'row',
         alignItems: 'center',
     },

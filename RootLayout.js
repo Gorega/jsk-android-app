@@ -12,27 +12,51 @@ import { SocketProvider } from '@/utils/socketContext';
 import { RTLWrapper } from './utils/RTLWrapper';
 import { LanguageProvider } from './utils/languageContext';
 import { initializeNotifications } from './utils/notificationHelper';
+import { ThemeProvider, useTheme } from './utils/themeContext';
+import { Colors } from './constants/Colors';
+
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
 
-// Simple RTL configuration function
-const setupRTL = async () => {
-  try {
-    const savedLanguage = await getToken('language') || 'ar';
-    const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
-    
-    // Force RTL direction based on language
-    I18nManager.allowRTL(shouldBeRTL);
-    I18nManager.forceRTL(shouldBeRTL);
-    
-    return true;
-  } catch (error) {
-    return false;
-  }
-};
+
+// Component to handle theme-aware navigation
+function NavigationContainer({ children, isAuthenticated }) {
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+  
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+        // Set the background color for the stack based on theme
+        contentStyle: { backgroundColor: colors.background },
+        // Add animation configuration to prevent white flash
+        animation: 'fade',
+        // Ensure transitions maintain the background color
+        presentation: 'card',
+      }}
+    >
+      <Stack.Screen
+        name={isAuthenticated ? "(tabs)" : "(auth)"}
+        options={{ 
+          gestureEnabled: false,
+          contentStyle: { backgroundColor: colors.background }
+        }}
+      />
+      <Stack.Screen 
+        name="+not-found" 
+        options={{ 
+          presentation: 'modal',
+          contentStyle: { backgroundColor: colors.background } 
+        }} 
+      />
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -49,9 +73,9 @@ export default function RootLayout() {
   // Add state for RTL initialization
   const [rtlInitialized, setRtlInitialized] = useState(false);
   
-  // Initialize RTL on component mount
+  // Initialize RTL on component mount - using the simplified flag
   useEffect(() => {
-    setupRTL().then(() => setRtlInitialized(true));
+    setRtlInitialized(true);
   }, []);
 
   useEffect(() => {
@@ -185,28 +209,35 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <RTLWrapper style={styles.container}>
-        <AuthContext.Provider
-          value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}
-        >
-          <SocketProvider isAuthenticated={isAuthenticated}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                gestureEnabled: false,
-              }}
-            >
-              <Stack.Screen
-                name={isAuthenticated ? "(tabs)" : "(auth)"}
-                options={{ gestureEnabled: false }}
-              />
-              <Stack.Screen name="+not-found" options={{ presentation: 'modal' }} />
-            </Stack>
-          </SocketProvider>
-          <StatusBar backgroundColor="black" style="auto" />
-        </AuthContext.Provider>
-      </RTLWrapper>
+      <ThemeProvider>
+        <ThemedApp 
+          isAuthenticated={isAuthenticated} 
+          setIsAuthenticated={setIsAuthenticated} 
+          user={user} 
+          userId={userId} 
+          setUserId={setUserId} 
+        />
+      </ThemeProvider>
     </LanguageProvider>
+  );
+}
+
+// Separate component to access theme context
+function ThemedApp({ isAuthenticated, setIsAuthenticated, user, userId, setUserId }) {
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+  
+  return (
+    <RTLWrapper style={[styles.container, { backgroundColor: colors.background }]}>
+      <AuthContext.Provider
+        value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}
+      >
+        <SocketProvider isAuthenticated={isAuthenticated}>
+          <NavigationContainer isAuthenticated={isAuthenticated} />
+          <StatusBar style={isDark ? "light" : "dark"} />
+        </SocketProvider>
+      </AuthContext.Provider>
+    </RTLWrapper>
   );
 }
 

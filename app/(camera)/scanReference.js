@@ -8,14 +8,18 @@ import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function ScanReference() {
   const { language } = useLanguage();
+  const { isRTL } = useRTLStyles();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const rtl = useRTLStyles();
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -30,13 +34,13 @@ export default function ScanReference() {
     }
   }, [requestPermission, permission]);
 
-  const handleBarCodeScanned = ({ type, data }) => {
+  const handleBarCodeScanned = ({ type: barcodeType, data }) => {
     try {
       setLoading(true);
       let referenceId;
       
       // Handle different barcode types correctly
-      if (type === 'qr') {
+      if (barcodeType === 'qr') {
         try {
           // Try to parse as JSON first
           const parsedData = JSON.parse(data);
@@ -52,14 +56,18 @@ export default function ScanReference() {
       
       setScanned(true);
       
-      // Store the scanned data in a global variable to access it after navigation
-      if (!global) global = {};
-      global.scannedReferenceId = referenceId;
-      
-      // Navigate back to the previous screen
+      // Instead of using global variable, pass the data directly via router      
+      // Use a simpler approach - just pass the scanned ID and go back
       setTimeout(() => {
+        // Store the scanned ID in a global variable as a fallback
+        if (typeof global === 'undefined') {
+          global = {};
+        }
+        global.scannedReferenceId = referenceId;
+        
+        // Navigate back to the previous screen
         router.back();
-      }, 500); // Short delay to ensure the view updates before navigating
+      }, 300);
       
     } catch (err) {
       console.error('Error processing scan:', err);
@@ -133,13 +141,13 @@ export default function ScanReference() {
           <TouchableOpacity 
             style={[
               styles.backButtonContainer,
-              rtl.isRTL ? { right: 20 } : { left: 20 }
+              isRTL ? { right: 20 } : { left: 20 }
             ]}
             onPress={() => router.back()}
           >
             <View style={styles.backButtonCircle}>
               <Feather 
-                name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
+                name={isRTL ? "chevron-right" : "chevron-left"} 
                 size={24} 
                 color="#FFFFFF" 
               />
@@ -148,11 +156,11 @@ export default function ScanReference() {
           
           {/* Scanner frame with animated border */}
           <View style={styles.frameBorder}>
-            <View style={styles.cornerTL} />
-            <View style={styles.cornerTR} />
-            <View style={styles.cornerBL} />
-            <View style={styles.cornerBR} />
-          </View>
+          <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+        </View>
           
           {/* Instructions text */}
           <View style={styles.instructionsContainer}>
@@ -210,52 +218,42 @@ const styles = StyleSheet.create({
   frameBorder: {
     width: 250,
     height: 250,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  cornerTL: {
+  corner: {
     position: 'absolute',
-    top: 0,
-    left: 0,
     width: 40,
     height: 40,
+  },
+  topLeft: {
+    top: 0,
+    left: 0,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderTopLeftRadius: 12,
   },
-  cornerTR: {
-    position: 'absolute',
+  topRight: {
     top: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderTopRightRadius: 12,
   },
-  cornerBL: {
-    position: 'absolute',
+  bottomLeft: {
     bottom: 0,
     left: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderBottomLeftRadius: 12,
   },
-  cornerBR: {
-    position: 'absolute',
+  bottomRight: {
     bottom: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderBottomRightRadius: 12,
   },
   instructionsContainer: {

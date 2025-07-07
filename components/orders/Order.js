@@ -13,30 +13,13 @@ import { useAuth } from "../../RootLayout";
 import UserBox from "./userBox/UserBox";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
-import { getToken, saveUserData, getUserData } from "../../utils/secureStore";
+import { getToken } from "../../utils/secureStore";
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import Contact from "./userBox/Contact";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-
-// Helper function to format currency values
-const formatCurrencyValue = (value, currency) => {
-    // Check if value contains multiple currencies
-    if (typeof value === 'string' && (value.includes('ILS:') || value.includes('JOD:') || value.includes('USD:'))) {
-        // Split the string by '|' and create a wrapped display
-        const currencies = value.split('|').map(item => item.trim());
-        return (
-            <View style={[styles.currencyContainer]}>
-                {currencies.map((curr, idx) => (
-                    <Text key={idx} style={[styles.currencyText]}>{curr}</Text>
-                ))}
-            </View>
-        );
-    }
-    
-    // Regular display for simple values
-    return <Text style={[styles.costText]}>{value} {currency}</Text>;
-};
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true }) {
     const { language } = useLanguage();
@@ -54,11 +37,32 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
     const isRTL = language === 'ar' || language === 'he';
     const [isConnected, setIsConnected] = useState(!globalOfflineMode);
     const [pendingStatusUpdates, setPendingStatusUpdates] = useState([]);
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     
     // Animation value for smooth transition
     const heightAnim = useRef(new Animated.Value(1)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
+
+    // Helper function to format currency values
+    const formatCurrencyValue = (value, currency) => {
+        // Check if value contains multiple currencies
+        if (typeof value === 'string' && (value.includes('ILS:') || value.includes('JOD:') || value.includes('USD:'))) {
+            // Split the string by '|' and create a wrapped display
+            const currencies = value.split('|').map(item => item.trim());
+            return (
+                <View style={[styles.currencyContainer]}>
+                    {currencies.map((curr, idx) => (
+                        <Text key={idx} style={[styles.currencyText,{color:colors.text}]}>{curr}</Text>
+                    ))}
+                </View>
+            );
+        }
+        
+        // Regular display for simple values
+        return <Text style={[styles.costText,{color:colors.text}]}>{value} {currency}</Text>;
+    };
 
     // Toggle minimize/expand state with animation
     const toggleMinimize = () => {
@@ -808,64 +812,6 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
         }
     }, [pendingStatusUpdates.length]);
 
-    // Add this function to clean up stale pending updates
-    const cleanupStaleUpdates = async () => {
-        if (pendingStatusUpdates.length === 0) return;
-        
-        try {
-            // Get the current status of all orders with pending updates
-            const orderIds = [...new Set(pendingStatusUpdates.map(update => update.order_id))];
-            const stalePendingUpdates = [];
-            
-            // For each order with pending updates
-            for (const orderId of orderIds) {
-                try {
-                    // Get the current status from the server
-                    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}`, {
-                        method: "GET",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'Accept-Language': language,
-                        },
-                        credentials: "include"
-                    });
-                    
-                    const data = await res.json();
-                    
-                    if (data && data.status_key) {
-                        // Find any pending updates for this order
-                        const updatesForOrder = pendingStatusUpdates.filter(update => 
-                            update.order_id === orderId
-                        );
-                        
-                        // Check if any of the pending updates match the current status
-                        for (const update of updatesForOrder) {
-                            if (update.status === data.status_key) {
-                                stalePendingUpdates.push(update);
-                            }
-                        }
-                    }
-                } catch (error) {
-                }
-            }
-            
-            // Remove stale updates
-            if (stalePendingUpdates.length > 0) {
-                const newPendingUpdates = pendingStatusUpdates.filter(update => 
-                    !stalePendingUpdates.some(staleUpdate => 
-                        staleUpdate.order_id === update.order_id && 
-                        staleUpdate.status === update.status
-                    )
-                );
-                
-                setPendingStatusUpdates(newPendingUpdates);
-                await savePendingStatusUpdates(newPendingUpdates);
-                
-            }
-        } catch (error) {
-        }
-    };
 
     // Update pendingStatusUpdates to use global pendingUpdates if provided
     useEffect(() => {
@@ -892,9 +838,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                     pressed && styles.pressablePressed
                 ]}
             >
-                <View style={styles.orderCard}>
+                <View style={[styles.orderCard,{
+                    backgroundColor: colors.card
+                }]}>
                     {/* Header section with order ID and status */}
-                    <View style={[styles.header]}>
+                    <View style={[styles.header, {
+                        backgroundColor: isDark ? colors.card : 'rgba(67, 97, 238, 0.05)',
+                        borderBottomColor: colors.border,
+                    }]}>
                         {/* Minimize/Expand toggle button */}
                         <TouchableOpacity 
                             onPress={toggleMinimize}
@@ -913,7 +864,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                         </TouchableOpacity>
                         <View style={[styles.orderIdSection]}>
                             <View style={[styles.orderIdContainer]}>
-                                <Text style={styles.orderIdText}>#{order.order_id}</Text>
+                             <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
                                 {!isConnected && pendingStatusUpdates.some(update => update.order_id === order.order_id) && (
                                     <View style={styles.pendingIndicator}>
                                         <MaterialIcons name="sync" size={14} color="#F59E0B" />
@@ -921,7 +872,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 )}
                             </View>
                             {order.reference_id && !isMinimized && (
-                                <Text style={[styles.referenceId]}>
+                               <Text style={[styles.referenceId, { color: colors.textSecondary }]}>
                                     Ref: {order.reference_id}
                                 </Text>
                             )}
@@ -954,7 +905,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
 
                     {/* Compact View for minimized state - only shows essential details */}
                     {isMinimized ? (
-                        <View style={styles.minimizedContainer}>
+                         <View style={[styles.minimizedContainer, { 
+                            backgroundColor: isDark ? colors.card : 'rgba(249, 250, 251, 0.8)',
+                        }]}>
                             <View style={[styles.minimizedRow]}>
                                 <View style={[
                                     styles.minimizedSection,
@@ -966,10 +919,10 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                         })
                                     }
                                 ]}>
-                                    <Text style={[styles.minimizedLabel]}>
+                                     <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                         {translations[language].tabs.orders.order.userClientBoxLabel || 'Client'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue]}>
+                                    <Text style={[styles.minimizedValue, { color: colors.text }]}>
                                         {order.receiver_name}
                                     </Text>
                                 </View>
@@ -985,10 +938,10 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                         })
                                     }
                                 ]}>
-                                    <Text style={[styles.minimizedLabel]}>
+                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue]}>
+                                    <Text style={[styles.minimizedValue,{color:colors.text}]} >
                                         {["business"].includes(authUser.role) ? order.total_net_value : order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
@@ -1003,7 +956,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                         }
                                     })
                                 }]]}>
-                                    <Text style={styles.phoneText}>{order.receiver_mobile}</Text>
+                                    <Text style={[styles.phoneText,{color:colors.success}]}>{order.receiver_mobile}</Text>
                                     <View style={styles.phoneActions}>
                                         <Contact
                                             contact={{
@@ -1038,10 +991,10 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                             }
                                         }),
                                     }]}>
-                                    <Text style={[styles.minimizedLabel]}>
+                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, styles.highlightOrderType]}>
+                                    <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:colors.text}]}>
                                         {order.order_type}
                                         {order.received_items ? ` (${order.received_items})` : ''}
                                         {order.received_quantity ? ` - ${order.received_quantity}` : ''}
@@ -1061,10 +1014,10 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                         }),
                                     }
                                 ]}>
-                                    <Text style={[styles.minimizedLabel]}>
+                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                         {translations[language].tabs.orders.order.location || 'Location'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue]}>
+                                    <Text style={[styles.minimizedValue,{color:colors.text}]} >
                                         {order.receiver_city} {order.receiver_address ? `, ${order.receiver_address}` : ''}
                                     </Text>
                                 </View>
@@ -1080,10 +1033,10 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                        <Text style={[styles.minimizedLabel]}>
+                                        <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                             {translations[language].tabs.orders.order.note || 'Note'}
                                         </Text>
-                                        <Text style={[styles.minimizedValue, styles.noteText]}>
+                                        <Text style={[styles.minimizedValue, styles.noteText,{color:colors.text}]} >
                                             {order.note}
                                         </Text>
                                     </View>
@@ -1107,12 +1060,12 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                 }),
                                             }]}>
                                         <View style={styles.checksMinimizedHeader}>
-                                            <Text style={[styles.minimizedLabel]}>
+                                            <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
                                             <MaterialIcons name="chevron-right" size={18} color="#EF4444" />
                                         </View>
-                                        <Text style={[styles.minimizedValue, styles.checksValueText]}>
+                                        <Text style={[styles.minimizedValue, styles.checksValueText,{color:colors.text}]} >
                                             {order.checks_value} {order.currency}
                                         </Text>
                                     </View>
@@ -1132,12 +1085,12 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                             }),
                                         }
                                     ]}>
-                                        <Text style={[styles.minimizedLabel]}>
+                                        <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                             {order.to_branch ? 
                                                 (translations[language].tabs.orders.order.to_branch || 'To Branch') : 
                                                 (translations[language].tabs.orders.order.to_driver || 'To Driver')}
                                         </Text>
-                                        <Text style={[styles.minimizedValue]}>
+                                        <Text style={[styles.minimizedValue,{color:colors.text}]} >
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
@@ -1147,7 +1100,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             {/* Order date/time info if available */}
                             {order.created_at && (
                                 <View style={styles.minimizedDateContainer}>
-                                    <Text style={styles.dateTimeText}>
+                                    <Text style={[styles.dateTimeText,{color:colors.textSecondary}]}>
                                         {new Date(order.created_at).toLocaleString('en-US')}
                                     </Text>
                                 </View>
@@ -1162,7 +1115,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             ]}
                         >
                             {/* User information sections */}
-                            <View style={styles.userInfoSection}>
+                            <View style={[styles.userInfoSection]}>
                                 {authUser.role !== "business" && (
                                     <UserBox 
                                         box={{
@@ -1196,9 +1149,11 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             </View>
                             
                             {/* Location section */}
-                            <View style={styles.locationSection}>
+                            <View style={[styles.locationSection,{
+                                backgroundColor: colors.surface
+                            }]}>
                                 <View style={[styles.sectionRow]}>
-                                    <View style={[
+                                <View style={[
                                         styles.iconWrapper, 
                                         { backgroundColor: '#4CC9F0' }
                                     ]}>
@@ -1211,13 +1166,19 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                             }
                                         }),
                                     }]}>
-                                        <Text style={[styles.sectionTitle]}>
+                                         <Text style={[styles.sectionTitle,{
+                                            color: colors.textSecondary
+                                        }]}>
                                             {translations[language].tabs.orders.order.location || 'Delivery Location'}
                                         </Text>
-                                        <Text style={[styles.locationCity]}>
+                                        <Text style={[styles.locationCity,{
+                                            color: colors.text
+                                        }]}>
                                             {order.receiver_city}
                                         </Text>
-                                        <Text style={[styles.locationAddress]}>
+                                        <Text style={[styles.locationAddress,{
+                                            color: colors.text
+                                        }]}>
                                             {order.receiver_address ? `, ${order.receiver_address}` : ''}
                                         </Text>
                                     </View>
@@ -1229,7 +1190,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 <View style={[styles.sectionRow]}>
                                     <View style={[
                                         styles.iconWrapper, 
-                                        { backgroundColor: '#7209B7' }
+                                        {backgroundColor: colors.surface }
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
@@ -1240,10 +1201,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                             }
                                         }),
                                     }]}>
-                                        <Text style={[styles.sectionTitle]}>
+                                         <Text style={[styles.sectionTitle,{
+                                            color: colors.textSecondary
+                                        }]}>
                                             {order.to_branch ? translations[language].tabs.orders.order.to_branch : translations[language].tabs.orders.order.to_driver}
                                         </Text>
-                                        <Text style={[styles.orderTypeText]}>
+                                        <Text style={[styles.orderTypeText,{
+                                            color: colors.text
+                                        }]}>
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
@@ -1251,8 +1216,12 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             </View>}
                             
                             {/* Order type section */}
-                            <View style={styles.orderTypeSection}>
-                                <View style={[styles.sectionRow]}>
+                            <View style={[styles.orderTypeSection,{
+                                backgroundColor: colors.surface
+                            }]}>
+                                <View style={[styles.sectionRow,{
+                                    backgroundColor: colors.surface
+                                }]}>
                                     <View style={[
                                         styles.iconWrapper, 
                                         { backgroundColor: '#7209B7' }
@@ -1266,21 +1235,29 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                             }
                                         }),
                                     }]}>
-                                        <Text style={[styles.sectionTitle]}>
+                                        <Text style={[styles.sectionTitle,{
+                                            color: colors.textSecondary
+                                        }]}>
                                             {translations[language].tabs.orders.order.orderType}
                                         </Text>
-                                        <Text style={[styles.orderTypeText]}>
+                                        <Text style={[styles.orderTypeText,{
+                                            color: colors.text
+                                        }]}>
                                             {order.order_type}
                                         </Text>
                                         {(order.received_items || order.received_quantity) ? (
                                             <View style={styles.receivedDetailsContainer}>
                                                 {order.received_items && (
-                                                    <Text style={styles.receivedDetailsText}>
+                                                     <Text style={[styles.receivedDetailsText,{
+                                                        color: colors.text
+                                                    }]}>
                                                         {translations[language].tabs.orders.order.receivedItems || 'Received Items'}: {order.received_items}
                                                     </Text>
                                                 )}
                                                 {order.received_quantity && (
-                                                    <Text style={styles.receivedDetailsText}>
+                                                     <Text style={[styles.receivedDetailsText,{
+                                                        color: colors.text
+                                                    }]}>
                                                         {translations[language].tabs.orders.order.receivedQuantity || 'Quantity'}: {order.received_quantity}
                                                     </Text>
                                                 )}
@@ -1295,6 +1272,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             {/* Cost information section */}
                             <View style={[styles.costSectionWrapper]}>
                                 <Text style={[styles.costSectionTitle,{
+                                    color: colors.text,
                                     ...Platform.select({
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
@@ -1306,7 +1284,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 
                                 <View style={[styles.costSection]}>
                                     {!["business"].includes(authUser.role) && (<View style={[
-                                        styles.costCard
+                                        styles.costCard,{
+                                            backgroundColor: colors.surface
+                                        }
                                     ]}>
                                         <View style={[
                                             styles.costIconContainer, 
@@ -1321,7 +1301,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                            <Text style={[styles.costLabel]}>
+                                             <Text style={[styles.costLabel,{
+                                                color: colors.textSecondary
+                                            }]}>
                                                 {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                             </Text>
                                             {formatCurrencyValue(order.total_cod_value, order.currency)}
@@ -1331,7 +1313,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     {/* Only show delivery fee for non-driver/delivery_company roles */}
                                     {!["driver", "delivery_company","business"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costCard
+                                            styles.costCard,{
+                                                backgroundColor: colors.surface
+                                            }
                                         ]}>
                                             <View style={[
                                                 styles.costIconContainer, 
@@ -1346,10 +1330,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                                <Text style={[styles.costLabel]}>
+                                                 <Text style={[styles.costLabel,{
+                                                    color: colors.textSecondary
+                                                }]}>
                                                     {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
                                                 </Text>
-                                                <Text style={[styles.costText]}>
+                                                <Text style={[styles.costText,{
+                                                    color: colors.text
+                                                }]}>
                                                     {order.delivery_fee} {order.currency}
                                                 </Text>
                                             </View>
@@ -1359,7 +1347,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     {/* Only show net value for non-driver/delivery_company roles */}
                                     {!["driver", "delivery_company"].includes(authUser.role) && (
                                         <View style={[
-                                            styles.costCard
+                                            styles.costCard,{
+                                                backgroundColor: colors.surface
+                                            }
                                         ]}>
                                             <View style={[
                                                 styles.costIconContainer, 
@@ -1374,7 +1364,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                                <Text style={[styles.costLabel]}>
+                                               <Text style={[styles.costLabel,{
+                                                    color: colors.textSecondary
+                                                }]}>
                                                     {translations[language].tabs.orders.order.netValue || 'Net Value'}
                                                 </Text>
                                                 {formatCurrencyValue(order.total_net_value, order.currency)}
@@ -1411,10 +1403,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                            <Text style={[styles.checksTitle]}>
+                                            <Text style={[styles.checksTitle,{
+                                                color: colors.textSecondary
+                                            }]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
-                                            <Text style={[styles.checksText]}>
+                                            <Text style={[styles.checksText,{
+                                                color: colors.text
+                                            }]}>
                                                 {translations[language].tabs.orders.order.checksValue}: {order.checks_value} {order.currency}
                                             </Text>
                                         </View>
@@ -1444,10 +1440,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                                     }
                                                 }),
                                             }]}>
-                                        <Text style={[styles.noteTitle]}>
+                                        <Text style={[styles.noteTitle,{
+                                            color: colors.textSecondary
+                                        }]}>
                                             {translations[language].tabs.orders.order.note || 'Notes'}
                                         </Text>
-                                        <Text style={[styles.noteText]}>
+                                        <Text style={[styles.noteText,{
+                                            color: colors.text
+                                        }]}>
                                             {order.note}
                                         </Text>
                                     </View>
@@ -1459,7 +1459,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 <View style={[
                                     styles.dateTimeContainer
                                 ]}>
-                                    <Text style={[styles.dateTimeText]}>
+                                    <Text style={[styles.dateTimeText,{
+                                        color: colors.textSecondary
+                                    }]}>
                                         {new Date(order.created_at).toLocaleString('en-US')}
                                     </Text>
                                 </View>
@@ -1478,6 +1480,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                 > 
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalHeaderText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1520,6 +1523,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     <Feather name="edit" size={18} color="#ffffff" />
                                 </View>
                                 <Text style={[styles.controlText,{
+                                    color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1561,6 +1565,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     <Feather name="phone" size={18} color="#ffffff" />
                                 </View>
                                 <Text style={[styles.controlText,{
+                                    color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1590,6 +1595,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     <MaterialIcons name="published-with-changes" size={18} color="#ffffff" />
                                 </View>
                                 <Text style={[styles.controlText,{
+                                    color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1621,6 +1627,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 <MaterialIcons name="track-changes" size={18} color="#ffffff" />
                             </View>
                             <Text style={[styles.controlText,{
+                                color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1651,6 +1658,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 <MaterialIcons name="report-problem" size={18} color="#ffffff" />
                             </View>
                             <Text style={[styles.controlText,{
+                                color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1676,7 +1684,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 ]}>
                                     <MaterialIcons name="sync" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText]}>
+                                <Text style={[styles.controlText,{
+                                    color: colors.text,
+                                }]}>
                                     {isConnected 
                                         ? (translations[language]?.common?.retryPendingUpdates || `Retry Pending Updates (${pendingStatusUpdates.length})`)
                                         : (translations[language]?.common?.pendingUpdatesOffline || `Pending Updates (${pendingStatusUpdates.length}) - Offline`)}
@@ -1694,7 +1704,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                     list={statusOptions}
                     setSelectedValue={handleStatusUpdate}
                     showPickerModal={showStatusUpdateModal}
-                    setShowPickerModal={setShowStatusUpdateModal}
+                    setShowModal={setShowStatusUpdateModal}
                     field={{
                         name: 'status',
                         label: translations[language].tabs.orders.order.status,
@@ -1712,6 +1722,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                 >
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalHeaderText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1731,6 +1742,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 onPress={() => handleReasonSelect(reason)}
                             >
                                 <Text style={[styles.reasonText,{
+                                    color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1753,6 +1765,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                 >
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalHeaderText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1772,6 +1785,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 onPress={() => handleBranchSelect(branch)}
                             >
                                 <Text style={[styles.branchText,{
+                                    color: colors.text,
                                         ...Platform.select({
                                             ios: {
                                                 textAlign:isRTL ? "left" : ""
@@ -1795,6 +1809,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                 >
                     <View style={styles.confirmModalContent}>
                         <Text style={[styles.confirmModalTitle,{
+                                    color: colors.text,
                                     ...Platform.select({
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
@@ -1808,6 +1823,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                         {selectedBranch && (
                             <View style={[styles.selectedDetailContainer]}>
                                 <Text style={[styles.selectedDetailLabel,{
+                                    color: colors.text,
                                     ...Platform.select({
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
@@ -1823,6 +1839,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                         {selectedReason && (
                             <View style={[styles.selectedDetailContainer]}>
                                 <Text style={[styles.selectedDetailLabel,{
+                                    color: colors.text,
                                     ...Platform.select({
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
@@ -1832,6 +1849,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     {translations[language].tabs.orders.order.reason || "Reason"}:
                                 </Text>
                                 <Text style={[styles.selectedDetailValue,{
+                                    color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1857,7 +1875,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                             onChangeText={(input) => setUpdatedStatusNote(input)}
                             multiline={true}
                             numberOfLines={3}
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textSecondary}
                         />
                         
                         <View style={[
@@ -1874,7 +1892,9 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                 {isUpdating ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text style={styles.confirmButtonText}>
+                                    <Text style={[styles.confirmButtonText,{
+                                        color: colors.text
+                                    }]}>
                                         {translations[language].tabs.orders.order.changeStatusAlertConfirm}
                                     </Text>
                                 )}
@@ -1888,7 +1908,7 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                                     setSelectedBranch(null);
                                 }}
                             >
-                                <Text style={styles.cancelButtonText}>
+                                <Text style={[styles.cancelButtonText]}>
                                     {translations[language].tabs.orders.order.changeStatusAlertCancel}
                                 </Text>
                                 </TouchableOpacity>
@@ -1908,10 +1928,14 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                         <View style={styles.successIconContainer}>
                             <FontAwesome5 name="check-circle" size={32} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.successModalTitle}>
+                        <Text style={[styles.successModalTitle,{
+                            color: colors.text
+                        }]}>
                             {translations[language].tabs.orders.order.success}
                         </Text>
-                        <Text style={styles.successModalMessage}>
+                        <Text style={[styles.successModalMessage,{
+                            color: colors.text
+                        }]}>
                             {successMessage}
                         </Text>
                     </View>
@@ -1929,17 +1953,23 @@ export default function Order({ user, order, globalOfflineMode, pendingUpdates, 
                         <View style={styles.errorIconContainer}>
                             <FontAwesome5 name="exclamation-circle" size={32} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.errorModalTitle}>
+                        <Text style={[styles.errorModalTitle,{
+                            color: colors.text
+                        }]}>
                             {translations[language].tabs.orders.order.error}
                         </Text>
-                        <Text style={styles.errorModalMessage}>
+                        <Text style={[styles.errorModalMessage,{
+                            color: colors.text
+                        }]}>
                             {errorMessage}
                         </Text>
                         <TouchableOpacity
                             style={styles.errorModalButton}
                             onPress={() => setShowErrorModal(false)}
                         >
-                            <Text style={styles.errorModalButtonText}>
+                            <Text style={[styles.errorModalButtonText,{
+                                color: colors.text
+                            }]}>
                                 {translations[language].tabs.orders.order.ok || "OK"}
                             </Text>
                         </TouchableOpacity>

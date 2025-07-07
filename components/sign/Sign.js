@@ -13,9 +13,12 @@ import {
   Dimensions
 } from "react-native";
 import TayarLogo from "../../assets/images/tayar_logo.png";
+import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
 import { Feather, FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
 import Field from "./Field";
 import { useLanguage } from '../../utils/languageContext';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +30,8 @@ export default function SignUp({setSelectedValue, error}) {
   const scrollViewRef = useRef(null);
   
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   // Translate according to current step
   const handleNextStep = () => {
@@ -281,12 +286,16 @@ export default function SignUp({setSelectedValue, error}) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
       {/* Logo & Header */}
-      <View style={styles.headerContainer}>
-        <Image style={styles.logo} source={TayarLogo} resizeMode="contain" />
+      <View style={[styles.headerContainer, { backgroundColor: colors.background }]}>
+        <Image 
+          style={styles.logo} 
+          source={isDark ? TayarDarkLogo : TayarLogo} 
+          resizeMode="contain" 
+        />
         
         {/* Step Indicators */}
         <View style={styles.stepsContainer}>
@@ -294,17 +303,23 @@ export default function SignUp({setSelectedValue, error}) {
             <View key={step} style={styles.stepIndicatorWrapper}>
               <View style={[
                 styles.stepIndicator,
-                currentStep >= step ? styles.activeStep : styles.inactiveStep
+                currentStep >= step 
+                  ? [styles.activeStep, { backgroundColor: colors.primary }] 
+                  : [styles.inactiveStep, { backgroundColor: isDark ? '#404040' : '#E5E7EB' }]
               ]}>
                 <Text style={[
                   styles.stepNumber,
-                  currentStep >= step ? styles.activeStepText : styles.inactiveStepText
+                  currentStep >= step 
+                    ? styles.activeStepText 
+                    : [styles.inactiveStepText, { color: colors.textSecondary }]
                 ]}>{step}</Text>
               </View>
               {step < 3 && (
                 <View style={[
                   styles.connector,
-                  currentStep > step ? styles.activeConnector : styles.inactiveConnector
+                  currentStep > step 
+                    ? [styles.activeConnector, { backgroundColor: colors.primary }] 
+                    : [styles.inactiveConnector, { backgroundColor: isDark ? '#404040' : '#E5E7EB' }]
                 ]} />
               )}
             </View>
@@ -313,22 +328,33 @@ export default function SignUp({setSelectedValue, error}) {
       </View>
       
       {/* Step Title */}
-      <View style={styles.stepTitleContainer}>
-        <View style={styles.stepIconContainer}>
+      <View style={[
+        styles.stepTitleContainer, 
+        { 
+          backgroundColor: colors.background,
+          borderBottomColor: colors.border 
+        }
+      ]}>
+        <View style={[styles.stepIconContainer, { backgroundColor: colors.primary }]}>
           {getStepIcon(currentStep)}
         </View>
-        <Text style={styles.stepTitle}>{getStepTitle(currentStep)}</Text>
+        <Text style={[styles.stepTitle, { color: colors.text }]}>
+          {getStepTitle(currentStep)}
+        </Text>
       </View>
       
       {/* Main Content */}
-      <View style={styles.contentContainer}>
+      <View style={[styles.contentContainer, { backgroundColor: colors.background }]}>
         {/* Error Message */}
-                    {error && (
-          <View style={styles.errorContainer}>
-            <View style={styles.errorIconContainer}>
+        {error && (
+          <View style={[
+            styles.errorContainer, 
+            { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.08)' }
+          ]}>
+            <View style={[styles.errorIconContainer, { backgroundColor: colors.error }]}>
               <Feather name="alert-circle" size={20} color="#FFF" />
             </View>
-                        <Text style={styles.errorMessage}>{error}</Text>
+            <Text style={[styles.errorMessage, { color: colors.error }]}>{error}</Text>
           </View>
         )}
         
@@ -343,7 +369,7 @@ export default function SignUp({setSelectedValue, error}) {
             [{ nativeEvent: { contentOffset: { x: scrollX } } }],
             { useNativeDriver: false }
           )}
-          style={styles.horizontalScroll}
+          style={[styles.horizontalScroll, { backgroundColor: colors.background }]}
         >
           {/* Step 1 */}
           <View style={[styles.formPage, { width: width }]}>
@@ -355,7 +381,13 @@ export default function SignUp({setSelectedValue, error}) {
               }}
             >
               {step1Fields.map((field, index) => (
-                <Field key={index} field={field} setSelectedValue={setSelectedValue} />
+                <Field 
+                  key={index} 
+                  field={field} 
+                  setSelectedValue={setSelectedValue}
+                  isDark={isDark}
+                  colors={colors}
+                />
               ))}
             </ScrollView>
           </View>
@@ -370,7 +402,13 @@ export default function SignUp({setSelectedValue, error}) {
               }}
             >
               {step2Fields.map((field, index) => (
-                <Field key={index} field={field} setSelectedValue={setSelectedValue} />
+                <Field 
+                  key={index} 
+                  field={field} 
+                  setSelectedValue={setSelectedValue}
+                  isDark={isDark}
+                  colors={colors}
+                />
               ))}
             </ScrollView>
           </View>
@@ -385,29 +423,42 @@ export default function SignUp({setSelectedValue, error}) {
               }}
             >
               {step3Fields.map((field, index) => (
-                <Field key={index} field={field} setSelectedValue={setSelectedValue} />
+                <Field 
+                  key={index} 
+                  field={field} 
+                  setSelectedValue={setSelectedValue}
+                  isDark={isDark}
+                  colors={colors}
+                />
               ))}
-                </ScrollView>
-            </View>
+            </ScrollView>
+          </View>
         </Animated.ScrollView>
       </View>
       
       {/* Navigation Buttons */}
-      <View style={styles.buttonContainer}>
+      <View style={[
+        styles.buttonContainer, 
+        { 
+          backgroundColor: colors.background,
+          borderTopColor: colors.border
+        }
+      ]}>
         <View style={styles.buttonRow}>
           {currentStep > 1 && (
             <TouchableOpacity 
-              style={styles.backButton} 
+              style={[styles.backButton, { borderColor: colors.primary }]} 
               onPress={handlePrevStep}
               activeOpacity={0.8}
             >
               <View style={styles.buttonContent}>
                 <Feather 
+                  name="arrow-left"
                   size={18} 
-                  color="#4361EE" 
+                  color={colors.primary} 
                   style={{marginRight: 8}}
                 />
-                <Text style={styles.backButtonText}>Back</Text>
+                <Text style={[styles.backButtonText, { color: colors.primary }]}>Back</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -415,6 +466,7 @@ export default function SignUp({setSelectedValue, error}) {
           <TouchableOpacity 
             style={[
               styles.nextButton,
+              { backgroundColor: colors.primary },
               currentStep === 1 && styles.fullWidthButton
             ]} 
             onPress={handleNextStep}
@@ -426,18 +478,19 @@ export default function SignUp({setSelectedValue, error}) {
               </Text>
               {currentStep < 3 && (
                 <Feather 
+                  name="arrow-right"
                   size={18} 
                   color="#FFF" 
                   style={{marginLeft: 8}}
                 />
               )}
             </View>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
 
         {/* Bottom Note */}
         <View style={styles.bottomNote}>
-          <Text style={styles.bottomNoteText}>
+          <Text style={[styles.bottomNoteText, { color: colors.textSecondary }]}>
             {currentStep === 3 ? 
               "By signing up, you agree to our Terms & Conditions and Privacy Policy" :
               `Step ${currentStep} of 3 - ${
@@ -455,7 +508,6 @@ export default function SignUp({setSelectedValue, error}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   headerContainer: {
     alignItems: "center",

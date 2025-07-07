@@ -16,11 +16,15 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Modal from 'react-native-modal';
 import { useSocket } from '../../utils/socketContext';
 import FixedHeader from "../../components/FixedHeader";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function RouteDetail() {
     const socket = useSocket();
     const { language } = useLanguage();
     const { user } = useAuth();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const params = useLocalSearchParams();
     const { routeId } = params;
     const mapRef = useRef(null);
@@ -484,17 +488,18 @@ export default function RouteDetail() {
                 onLongPress={!isCompleted ? drag : null}
                 style={[
                     styles.orderItem,
-                    isActive && styles.orderItemActive
+                    { backgroundColor: colors.card },
+                    isActive && [styles.orderItemActive, { shadowColor: colors.cardShadow }]
                 ]}
             >
                 <View style={styles.orderDragHandle}>
-                    {!isCompleted && <MaterialIcons name="drag-handle" size={24} color="#94A3B8" />}
+                    {!isCompleted && <MaterialIcons name="drag-handle" size={24} color={colors.textTertiary} />}
                 </View>
                 
                 <View style={styles.orderContent}>
                     <View style={[styles.orderHeader]}>
                         <View style={styles.orderIdContainer}>
-                            <Text style={[styles.orderId]}>
+                            <Text style={[styles.orderId, { color: colors.primary }]}>
                                 {item.order_id}
                             </Text>
                             {item.status && (
@@ -509,56 +514,56 @@ export default function RouteDetail() {
                         
                         {!isCompleted && (
                             <TouchableOpacity 
-                                style={styles.orderRemoveButton}
+                                style={[styles.orderRemoveButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
                                 onPress={() => removeOrderFromRoute(item.id)}
                                 disabled={removingOrder}
                             >
-                                <Feather name="x" size={18} color="#EF4444" />
+                                <Feather name="x" size={18} color={colors.error} />
                             </TouchableOpacity>
                         )}
                     </View>
                     
-                    <Text style={[styles.orderName]}>
+                    <Text style={[styles.orderName, { color: colors.text }]}>
                         {item.receiver_name} | {item.receiver_mobile}
                     </Text>
                     
                     <View style={[styles.addressContainer]}>
-                        <Ionicons name="location-outline" size={16} color="#64748B" />
-                        <Text style={[styles.orderAddress]}>
+                        <Ionicons name="location-outline" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.orderAddress, { color: colors.textSecondary }]}>
                             {item.receiver_address}
                         </Text>
                     </View>
 
                     {(item.delivery_info.to_branch || item.delivery_info.to_driver) && <View style={[styles.availableAddressContainer]}>
-                        <Ionicons name="location-outline" size={14} color="#64748B" />
-                        <Text style={[styles.availableOrderAddress]}>
+                        <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+                        <Text style={[styles.availableOrderAddress, { color: colors.textSecondary }]}>
                             {translations[language]?.routes?.dispatchTo} {`${item.delivery_info.to_branch || item.delivery_info.to_driver || ''}`}
                         </Text>
                     </View>}
                 </View>
             </TouchableOpacity>
         );
-    }, [isCompleted, language, removingOrder]);
+    }, [isCompleted, language, removingOrder, colors, isDark]);
     
     // Helper functions
     const getStatusColor = (status) => {
         switch (status) {
             case 'delivered':
-                return '#10B981'; // Green
+                return colors.success; // Green
             case 'on_the_way':
-                return '#4361EE'; // Blue
+                return colors.primary; // Blue
             case 'driver_responsibility':
-                return '#4361EE'; // Blue
+                return colors.primary; // Blue
             case 'pending':
-                return '#F59E0B'; // Yellow
+                return colors.warning; // Yellow
             case 'reschedule':
-                return '#F59E0B'; // Yellow
+                return colors.warning; // Yellow
             case 'return_before_delivered_initiated':
             case 'return_after_delivered_initiated':
             case 'cancelled':
-                return '#EF4444'; // Red
+                return colors.error; // Red
             default:
-                return '#64748B'; // Gray
+                return colors.textSecondary; // Gray
         }
     };
     
@@ -643,17 +648,17 @@ export default function RouteDetail() {
     
     if (loading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Stack.Screen options={{ headerShown: false }} />
-                <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+                <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
                 <FixedHeader 
                     title={translations[language]?.routes?.routeDetails || "Route Details"} 
                     showBackButton={true} 
                 />
                 
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
-                    <Text style={styles.loadingText}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                         {translations[language]?.common?.loading || "Loading..."}
                     </Text>
                 </View>
@@ -663,50 +668,55 @@ export default function RouteDetail() {
     
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Stack.Screen options={{ headerShown: false }} />
-                <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+                <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
                 <FixedHeader 
                     title={routeName || translations[language]?.routes?.routeDetails || "Route Details"} 
                     showBackButton={true} 
                 />
                 
                 <View style={styles.content}>
-                    <View style={styles.routeInfoCard}>
-                        <Text style={styles.routeInfoLabel}>
+                    <View style={[styles.routeInfoCard, { backgroundColor: colors.card }]}>
+                        <Text style={[styles.routeInfoLabel, { color: colors.textSecondary }]}>
                             {translations[language]?.routes?.routeName || "Route Name"}
                         </Text>
                         <TextInput 
                             style={[
                                 styles.routeNameInput, 
-                                isCompleted && styles.disabledInput
+                                { 
+                                    borderColor: colors.inputBorder,
+                                    backgroundColor: colors.inputBg,
+                                    color: colors.inputText
+                                },
+                                isCompleted && [styles.disabledInput, { backgroundColor: isDark ? '#333333' : '#F1F5F9', color: colors.textSecondary }]
                             ]}
                             value={routeName}
                             onChangeText={setRouteName}
                             placeholder={translations[language]?.routes?.enterRouteName || "Enter route name"}
-                            placeholderTextColor="#94A3B8"
+                            placeholderTextColor={colors.textTertiary}
                             editable={!isCompleted && canEdit}
                         />
                         
-                        <View style={styles.routeStats}>
+                        <View style={[styles.routeStats, { borderTopColor: colors.divider }]}>
                             <View style={[styles.statItem]}>
-                                <Feather name="package" size={16} color="#64748B" />
-                                <Text style={[styles.statText]}>
+                                <Feather name="package" size={16} color={colors.textSecondary} />
+                                <Text style={[styles.statText, { color: colors.textSecondary }]}>
                                     {orders.length} {translations[language]?.routes?.orders || "Orders"}
                                 </Text>
                             </View>
                             
                             {isCompleted ? (
                                 <View style={[styles.statItem]}>
-                                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                                    <Text style={[styles.statText]}>
+                                    <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+                                    <Text style={[styles.statText, { color: colors.textSecondary }]}>
                                         {translations[language]?.routes?.completed || "Completed"}
                                     </Text>
                                 </View>
                             ) : route?.optimized ? (
                                 <View style={[styles.statItem]}>
-                                    <MaterialIcons name="route" size={16} color="#4361EE" />
-                                    <Text style={[styles.statText, { color: "#4361EE" }]}>
+                                    <MaterialIcons name="route" size={16} color={colors.primary} />
+                                    <Text style={[styles.statText, { color: colors.primary }]}>
                                         {translations[language]?.routes?.optimized || "Optimized"}
                                     </Text>
                                 </View>
@@ -716,57 +726,49 @@ export default function RouteDetail() {
                         {!isCompleted && canEdit && (
                             <View style={styles.routeActionButtons}>
                                 <TouchableOpacity 
-                                    style={[styles.actionButton, styles.addOrdersButton]} 
+                                    style={[
+                                        styles.actionButton, 
+                                        styles.addOrdersButton, 
+                                        { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                                    ]} 
                                     onPress={handleAddOrders}
                                     disabled={isCompleted}
                                 >
-                                    <Feather name="plus" size={16} color="#4361EE" />
-                                    <Text style={styles.addOrdersText}>
+                                    <Feather name="plus" size={16} color={colors.primary} />
+                                    <Text style={[styles.addOrdersText, { color: colors.primary }]}>
                                         {translations[language]?.routes?.addOrders || "Add Orders"}
                                     </Text>
                                 </TouchableOpacity>
                                 
                                 <TouchableOpacity 
-                                    style={[styles.actionButton, styles.optimizeButton]} 
+                                    style={[styles.actionButton, styles.optimizeButton, { backgroundColor: colors.primary }]} 
                                     onPress={() => {}}
                                     disabled={optimizing || isCompleted || orders.length < 2}
                                 >
                                     {optimizing ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <ActivityIndicator size="small" color={colors.buttonText} />
                                     ) : (
                                         <>
-                                            <MaterialIcons name="route" size={16} color="#FFFFFF" />
-                                            <Text style={styles.optimizeText}>
+                                            <MaterialIcons name="route" size={16} color={colors.buttonText} />
+                                            <Text style={[styles.optimizeText, { color: colors.buttonText }]}>
                                                 {translations[language]?.routes?.optimize || "Optimize"}
                                             </Text>
                                         </>
                                     )}
                                 </TouchableOpacity>
-                                
-                                {/* <TouchableOpacity 
-                                    style={[styles.actionButton, styles.mapButton]} 
-                                    onPress={() => setShowMap(!showMap)}
-                                >
-                                    <Ionicons name={showMap ? "list" : "map"} size={16} color="#4361EE" />
-                                    <Text style={styles.mapButtonText}>
-                                        {showMap 
-                                            ? translations[language]?.routes?.listView || "List View" 
-                                            : translations[language]?.routes?.mapView || "Map View"}
-                                    </Text>
-                                </TouchableOpacity> */}
                             </View>
                         )}
                     </View>
                     
                     {orders.length === 0 ? (
                         <View style={styles.emptyContainer}>
-                            <View style={styles.emptyIconContainer}>
-                                <MaterialCommunityIcons name="routes" size={40} color="#4361EE" />
+                            <View style={[styles.emptyIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }]}>
+                                <MaterialCommunityIcons name="routes" size={40} color={colors.primary} />
                             </View>
-                            <Text style={styles.emptyText}>
+                            <Text style={[styles.emptyText, { color: colors.text }]}>
                                 {translations[language]?.routes?.noOrders || "No orders in this route"}
                             </Text>
-                            <Text style={styles.emptySubtext}>
+                            <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                                 {translations[language]?.routes?.addOrdersPrompt || "Add orders to create your delivery route"}
                             </Text>
                             
@@ -776,84 +778,23 @@ export default function RouteDetail() {
                                     onPress={handleAddOrders}
                                 >
                                     <LinearGradient
-                                        colors={['#4361EE', '#3A0CA3']}
+                                        colors={[colors.gradientStart, colors.gradientEnd]}
                                         style={styles.emptyAddButtonGradient}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                     >
-                                        <Feather name="plus" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                        <Text style={styles.emptyAddButtonText}>
+                                        <Feather name="plus" size={18} color={colors.buttonText} style={{ marginRight: 8 }} />
+                                        <Text style={[styles.emptyAddButtonText, { color: colors.buttonText }]}>
                                             {translations[language]?.routes?.addOrders || "Add Orders"}
                                         </Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
                             )}
                         </View>
-                    ) : showMap ? (
-                        // <View style={styles.mapContainer}>
-                        //     <MapView
-                        //         ref={mapRef}
-                        //         style={styles.map}
-                        //         provider={PROVIDER_GOOGLE}
-                        //         initialRegion={{
-                        //             latitude: orders[0]?.latitude || 32.0853,
-                        //             longitude: orders[0]?.longitude || 34.7818,
-                        //             latitudeDelta: 0.05,
-                        //             longitudeDelta: 0.05,
-                        //         }}
-                        //     >
-                        //         {userLocation && (
-                        //             <Marker
-                        //                 coordinate={{
-                        //                     latitude: userLocation.coords.latitude,
-                        //                     longitude: userLocation.coords.longitude,
-                        //                 }}
-                        //                 title={translations[language]?.routes?.yourLocation || "Your Location"}
-                        //                 pinColor="#4361EE"
-                        //             >
-                        //                 <View style={styles.userLocationMarker}>
-                        //                     <Ionicons name="person" size={16} color="#FFFFFF" />
-                        //                 </View>
-                        //             </Marker>
-                        //         )}
-                                
-                        //         {orders.map((order, index) => (
-                        //             <Marker
-                        //                 key={order.id}
-                        //                 coordinate={{
-                        //                     latitude: order.latitude || 0,
-                        //                     longitude: order.longitude || 0,
-                        //                 }}
-                        //                 title={`${index + 1}. ${order.receiver_name}`}
-                        //                 description={order.receiver_address}
-                        //             >
-                        //                 <View style={[
-                        //                     styles.customMarker,
-                        //                     order.status === 'delivered' && styles.deliveredMarker
-                        //                 ]}>
-                        //                     <Text style={styles.markerNumber}>{index + 1}</Text>
-                        //                 </View>
-                        //             </Marker>
-                        //         ))}
-                                
-                        //         {orders.length > 1 && route?.optimized && (
-                        //             <Polyline
-                        //                 coordinates={orders.map(order => ({
-                        //                     latitude: order.latitude || 0,
-                        //                     longitude: order.longitude || 0,
-                        //                 }))}
-                        //                 strokeColor="#4361EE"
-                        //                 strokeWidth={3}
-                        //                 lineDashPattern={[1]}
-                        //             />
-                        //         )}
-                        //     </MapView>
-                        // </View>
-                        <></>
                     ) : (
                         <View style={styles.ordersList}>
                             {!isCompleted && canEdit && (
-                                <Text style={styles.dragInstructions}>
+                                <Text style={[styles.dragInstructions, { color: colors.textSecondary }]}>
                                     {translations[language]?.routes?.dragInstructions || "Long press and drag to reorder"}
                                 </Text>
                             )}
@@ -865,12 +806,12 @@ export default function RouteDetail() {
                     {!isCompleted && canEdit ? (
                         <View style={styles.bottomButtonsContainer}>
                             <TouchableOpacity 
-                                style={styles.completeButton}
+                                style={[styles.completeButton, { backgroundColor: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.1)' }]}
                                 onPress={completeRoute}
                                 disabled={orders.length === 0 || loading}
                             >
-                                <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginRight: 8 }} />
-                                <Text style={styles.completeButtonText}>
+                                <Ionicons name="checkmark-circle" size={18} color={colors.success} style={{ marginRight: 8 }} />
+                                <Text style={[styles.completeButtonText, { color: colors.success }]}>
                                     {translations[language]?.routes?.markAsCompleted || "Mark as Completed"}
                                 </Text>
                             </TouchableOpacity>
@@ -881,17 +822,17 @@ export default function RouteDetail() {
                                 disabled={savingRoute}
                             >
                                 <LinearGradient
-                                    colors={['#4361EE', '#3A0CA3']}
+                                    colors={[colors.gradientStart, colors.gradientEnd]}
                                     style={styles.saveButtonGradient}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                 >
                                     {savingRoute ? (
-                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <ActivityIndicator size="small" color={colors.buttonText} />
                                     ) : (
                                         <>
-                                            <Feather name="save" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                                            <Text style={styles.saveButtonText}>
+                                            <Feather name="save" size={18} color={colors.buttonText} style={{ marginRight: 8 }} />
+                                            <Text style={[styles.saveButtonText, { color: colors.buttonText }]}>
                                                 {translations[language]?.routes?.saveRoute || "Save Route"}
                                             </Text>
                                         </>
@@ -909,6 +850,8 @@ export default function RouteDetail() {
                         language={language}
                         onClose={() => setOrderSelectionVisible(false)}
                         onOrdersAdded={handleOrdersAdded}
+                        colors={colors}
+                        isDark={isDark}
                     />
                 )}
             </View>
@@ -916,8 +859,8 @@ export default function RouteDetail() {
     );
 }
 
-// Separate component for order selection to improve performance
-function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
+// Separate component for order selection with theme support
+function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded, colors, isDark }) {
     const [loading, setLoading] = useState(true);
     const [availableOrders, setAvailableOrders] = useState([]);
     const [selectedOrders, setSelectedOrders] = useState([]);
@@ -1110,13 +1053,13 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
         
         return (
             <TouchableOpacity
-                style={[styles.availableOrderItem, isSelected && styles.selectedOrderItem]}
+                style={[styles.availableOrderItem, isSelected && styles.selectedOrderItem, { backgroundColor: colors.surface,borderColor: colors.border }]}
                 onPress={() => toggleOrderSelection(item)}
                 activeOpacity={0.7}
             >
                 <View style={[styles.availableOrderContent]}>
                     <View style={styles.checkboxContainer}>
-                        <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                        <View style={[styles.checkbox, isSelected && styles.checkboxSelected,{backgroundColor: colors.surface}]}>
                             {isSelected && <Feather name="check" size={16} color="#FFFFFF" />}
                         </View>
                     </View>
@@ -1126,13 +1069,13 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                             {item.order_id || item.reference_id}
                         </Text>
                         
-                        <Text style={[styles.availableOrderName]}>
+                        <Text style={[styles.availableOrderName,{color: colors.text}]}>
                             {item.receiver_name} | {item.receiver_mobile}
                         </Text>
                         
                         <View style={[styles.availableAddressContainer]}>
-                            <Ionicons name="location-outline" size={14} color="#64748B" />
-                            <Text style={[styles.availableOrderAddress]}>
+                            <Ionicons name="location-outline" size={14} color={colors.textSecondary} />
+                            <Text style={[styles.availableOrderAddress,{color: colors.text}]}>
                                 {`${item.receiver_city || ''} ${item.receiver_address ? `, ${item.receiver_address}` : ''}`}
                             </Text>
                         </View>
@@ -1168,7 +1111,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
             backdropTransitionOutTiming={0}
         >
             <View style={{
-                backgroundColor: 'white',
+                backgroundColor: colors.modalBg,
                 borderTopLeftRadius: 20,
                 borderTopRightRadius: 20,
                 minHeight: '70%',
@@ -1176,20 +1119,21 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                 paddingTop: 24,
             }}>
                 <View style={styles.modalHeader}>
-                    <Text style={styles.modalTitle}>
+                    <Text style={[styles.modalTitle, { color: colors.text }]}>
                         {translations[language]?.routes?.addOrders || "Add Orders"}
                     </Text>
                     <TouchableOpacity onPress={onClose}>
-                        <Feather name="x" size={24} color="#64748B" />
+                        <Feather name="x" size={24} color={colors.textSecondary} />
                     </TouchableOpacity>
                 </View>
                 
                 <View style={styles.searchContainer}>
-                    <View style={styles.searchInputContainer}>
+                    <View style={[styles.searchInputContainer,{backgroundColor: colors.surface}]}>
                         <Feather name="search" size={18} color="#64748B" style={styles.searchIcon} />
                         <TextInput
-                            style={styles.searchInput}
+                            style={[styles.searchInput,{color: colors.text}]}
                             placeholder={translations[language]?.common?.search || "Search orders..."}
+                            placeholderTextColor={colors.textSecondary}
                             value={searchText}
                             onChangeText={handleSearch}
                             returnKeyType="search"
@@ -1206,7 +1150,7 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                 {loading && availableOrders.length === 0 ? (
                     <View style={styles.loadingOrdersContainer}>
                         <ActivityIndicator size="large" color="#4361EE" />
-                        <Text style={styles.loadingText}>
+                        <Text style={[styles.loadingText,{color: colors.text}]}>
                             {translations[language]?.common?.loadingOrders || "Loading available orders..."}
                         </Text>
                     </View>
@@ -1242,11 +1186,11 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                         
                         <View style={styles.modalFooter}>
                             <TouchableOpacity 
-                                style={[styles.modalButton, styles.cancelButton]}
+                                style={[styles.modalButton, styles.cancelButton,{borderColor: colors.border}]}
                                 onPress={onClose}
                                 disabled={addingOrders}
                             >
-                                <Text style={styles.cancelButtonText}>
+                                <Text style={[styles.cancelButtonText,{color: colors.text}]}>
                                     {translations[language]?.common?.cancel || "Cancel"}
                                 </Text>
                             </TouchableOpacity>
@@ -1273,10 +1217,10 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded }) {
                 ) : (
                     <View style={styles.noOrdersContainer}>
                         <MaterialCommunityIcons name="package-variant" size={48} color="#94A3B8" />
-                        <Text style={styles.noOrdersText}>
+                        <Text style={[styles.noOrdersText,{color: colors.text}]}>
                             {translations[language]?.routes?.noAvailableOrders || "No available orders"}
                         </Text>
-                        <Text style={styles.noOrdersSubtext}>
+                        <Text style={[styles.noOrdersSubtext,{color: colors.text}]}>
                             {translations[language]?.routes?.checkOrders || "Check your orders page for available deliveries"}
                         </Text>
                         <TouchableOpacity 

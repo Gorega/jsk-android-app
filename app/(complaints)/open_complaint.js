@@ -7,9 +7,13 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { getToken } from '../../utils/secureStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 const SubmitComplaint = () => {
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const params = useLocalSearchParams();
   const { orderId } = params;
   const [subject, setSubject] = useState('');
@@ -73,12 +77,12 @@ const SubmitComplaint = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Order ID Card */}
         <LinearGradient
-          colors={['#4361EE', '#3A0CA3']}
+          colors={[colors.primary, colors.secondary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.orderCard}
@@ -96,21 +100,27 @@ const SubmitComplaint = () => {
           </View>
         </LinearGradient>
 
-        <Text style={[styles.title]}>
+        <Text style={[styles.title, { color: colors.text }]}>
           {translations[language].complaints.openComplaint}
         </Text>
 
-        <View style={styles.formContainer}>
+        <View style={[
+          styles.formContainer, 
+          { 
+            backgroundColor: colors.card, 
+            shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)' 
+          }
+        ]}>
           {/* Subject Input */}
           <View style={styles.inputWrapper}>
             <View style={[styles.inputLabelContainer]}>
-              <MaterialIcons name="subject" size={18} color="#4361EE" />
-              <Text style={[styles.inputLabel]}>
+              <MaterialIcons name="subject" size={18} color={colors.primary} />
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
                 {translations[language].complaints.subject}
               </Text>
             </View>
             <TextInput
-              style={[styles.input]}
+              style={[styles.input, { color: colors.textSecondary }]}
               placeholder={translations[language].complaints.subjectPlaceholder || 'Enter subject'}
               placeholderTextColor="#94A3B8"
               value={subject}
@@ -122,12 +132,12 @@ const SubmitComplaint = () => {
           <View style={styles.inputWrapper}>
             <View style={[styles.inputLabelContainer]}>
               <MaterialIcons name="description" size={18} color="#4361EE" />
-              <Text style={[styles.inputLabel]}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
                 {translations[language].complaints.describe}
               </Text>
             </View>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[styles.input, styles.textArea, { color: colors.textSecondary }]}
               placeholder={translations[language].complaints.describePlaceholder || 'Describe your issue'}
               placeholderTextColor="#94A3B8"
               multiline
@@ -170,7 +180,6 @@ const SubmitComplaint = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   scrollContainer: {
     padding: 20,
@@ -188,7 +197,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 16,
-    gap:10
+    gap: 10
   },
   orderIconContainer: {
     width: 44,
@@ -212,13 +221,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     marginBottom: 24,
-    color: "#1F2937",
   },
   formContainer: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -236,17 +242,13 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937'
   },
   input: {
-    backgroundColor: "#F9FAFB",
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     fontSize: 16,
-    color: "#1F2937",
   },
   textArea: {
     minHeight: 120,
@@ -257,7 +259,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 12,
     overflow: 'hidden',
-    shadowColor: "#4361EE",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,

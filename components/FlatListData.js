@@ -1,43 +1,64 @@
-import { useCallback, useState } from "react";
-import { ActivityIndicator, FlatList } from "react-native"
+import { FlatList, ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import React from 'react';
 
-const debounce = (func, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func(...args);
-        }, delay);
+function FlatListDataComponent({ 
+    list, 
+    loadMoreData, 
+    loadingMore, 
+    children, 
+    refreshControl,
+    renderItem,
+    keyExtractor,
+    ...props 
+}) {
+    // Handle both function children and renderItem prop for backwards compatibility
+    const renderItemFunction = renderItem || (({ item }) => children(item));
+    const extractKey = keyExtractor || (item => String(item.id || Math.random()));
+
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={styles.loadingMore}>
+                <ActivityIndicator size="small" color="#4361EE" />
+                <Text style={styles.loadingText}>Loading more...</Text>
+            </View>
+        );
     };
-};
 
-export default function FlatListData({list,loadMoreData,loadingMore,children,refreshControl}){
-    const [isFetching, setIsFetching] = useState(false);
-
-    const handleLoadMore = useCallback(
-        debounce(() => {
-            if (!isFetching) {
-                setIsFetching(true);
-                loadMoreData().finally(() => {
-                    setIsFetching(false);
-                });
-            }
-        }, 300),
-        [isFetching, loadMoreData]
-    );
-
-    return <FlatList
-            data={list || []} 
-            keyExtractor={(item,index) => index.toString()}
-            onEndReached={loadMoreData ? handleLoadMore : ()=>{}}
+    return (
+        <FlatList
+            data={list}
+            renderItem={renderItemFunction}
+            keyExtractor={extractKey}
+            onEndReached={loadMoreData}
             onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+            refreshControl={refreshControl}
             initialNumToRender={10}
             maxToRenderPerBatch={10}
             windowSize={10}
-            renderItem={({ item }) => children(item)}
-            ListFooterComponent={
-                loadingMore ? <ActivityIndicator size="small" color="#F8C332" /> : null
-             }
-            refreshControl={refreshControl}
-    />
+            removeClippedSubviews={true}
+            showsVerticalScrollIndicator={false}
+            {...props}
+        />
+    );
 }
+
+const FlatListData = React.memo(FlatListDataComponent);
+
+const styles = StyleSheet.create({
+    loadingMore: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 16,
+        backgroundColor: 'transparent',
+    },
+    loadingText: {
+        marginLeft: 8,
+        fontSize: 14,
+        color: '#4361EE',
+    },
+});
+
+export default FlatListData;

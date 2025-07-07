@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable, StatusBar, Image,Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Pressable, StatusBar, Image, Platform } from "react-native";
 import ModalPresentation from "../../components/ModalPresentation";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -13,12 +13,15 @@ import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
 import { LinearGradient } from 'expo-linear-gradient';
-import {useRTLStyles } from '../../utils/RTLWrapper';
-
+import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function ComplaintsScreen() {
   const socket = useSocket();
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const { user } = useAuth();
   const [complaints, setComplaints] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,6 @@ export default function ComplaintsScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
   const rtl = useRTLStyles();
   
-
   const filterByGroup = [
     { name: translations[language].complaints.status.all, action: "all" },
     { name: translations[language].complaints.status.open, action: "open" },
@@ -50,24 +52,24 @@ export default function ComplaintsScreen() {
   ];
 
   const searchByDateGroup = [{
-          name: translations[language].complaints.today,
-          action: "today"
-      },{
-          name: translations[language].complaints.yesterday,
-          action: "yesterday"
-      },{
-          name: translations[language].complaints.thisWeek,
-          action: "this_week"
-      },{
-          name: translations[language].complaints.thisMonth,
-          action: "this_month"
-      },{
-          name: translations[language].complaints.thisYear,
-          action: "this_year"
-      },{
-          name: translations[language].complaints.selectDate,
-          action: "custom"
-      }];
+    name: translations[language].complaints.today,
+    action: "today"
+  },{
+    name: translations[language].complaints.yesterday,
+    action: "yesterday"
+  },{
+    name: translations[language].complaints.thisWeek,
+    action: "this_week"
+  },{
+    name: translations[language].complaints.thisMonth,
+    action: "this_month"
+  },{
+    name: translations[language].complaints.thisYear,
+    action: "this_year"
+  },{
+    name: translations[language].complaints.selectDate,
+    action: "custom"
+  }];
 
   const clearFilters = () => {
     router.setParams("");
@@ -231,11 +233,11 @@ export default function ComplaintsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.overlay}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <View style={styles.spinnerContainer}>
-          <ActivityIndicator size="large" color="#4361EE" />
-          <Text style={styles.loadingText}>
+      <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(26, 26, 26, 0.9)' : 'rgba(255, 255, 255, 0.9)' }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
+        <View style={[styles.spinnerContainer, { backgroundColor: colors.card }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
             {translations[language]?.complaints.loading || 'Loading...'}
           </Text>
         </View>
@@ -255,11 +257,14 @@ export default function ComplaintsScreen() {
               setShowControl(true);
             }
           }}
-          style={({ pressed }) => [styles.cardPressable, pressed && styles.cardPressed]}
+          style={({ pressed }) => [
+            styles.cardPressable, 
+            pressed && styles.cardPressed
+          ]}
           android_ripple={{ color: 'rgba(0, 0, 0, 0.05)' }}
         >
           <TouchableOpacity
-            style={styles.card}
+            style={[styles.card, { backgroundColor: colors.card }]}
             activeOpacity={0.9}
             onPress={() =>
               router.push({
@@ -269,29 +274,32 @@ export default function ComplaintsScreen() {
             }
           >
             <View style={[styles.cardHeader]}>
-              <View style={[styles.complaintInfo,{
+              <View style={[
+                styles.complaintInfo,
+                {
                   ...Platform.select({
-                      ios: {
-                          flexDirection:"column",
-                          alignItems:rtl.isRTL ? "flex-start" : ""
-                      }
+                    ios: {
+                      flexDirection: "column",
+                      alignItems: rtl.isRTL ? "flex-start" : ""
+                    }
                   }),
-              }]}>
-                <Text style={[styles.subject]} numberOfLines={1}>
+                }
+              ]}>
+                <Text style={[styles.subject, { color: colors.text }]} numberOfLines={1}>
                   {item.subject}
                 </Text>
                 <View style={[styles.complaintMeta]}>
                   <View style={[styles.metaItem]}>
-                    <Feather name="hash" size={14} color="#64748B" />
-                    <Text style={styles.metaText}>{item.complaint_id}</Text>
+                    <Feather name="hash" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>{item.complaint_id}</Text>
                   </View>
                   <View style={[styles.metaItem]}>
-                    <Feather name="package" size={14} color="#64748B" />
-                    <Text style={styles.metaText}>#{item.order_case_id}</Text>
+                    <Feather name="package" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>#{item.order_case_id}</Text>
                   </View>
                   <View style={[styles.metaItem]}>
-                    <Feather name="calendar" size={14} color="#64748B" />
-                    <Text style={styles.metaText}>{formatDate(item.created_at)}</Text>
+                    <Feather name="calendar" size={14} color={colors.textSecondary} />
+                    <Text style={[styles.metaText, { color: colors.textSecondary }]}>{formatDate(item.created_at)}</Text>
                   </View>
                 </View>
               </View>
@@ -306,34 +314,38 @@ export default function ComplaintsScreen() {
               </LinearGradient>
             </View>
             
-            <Text style={[styles.description,{
-                  ...Platform.select({
-                      ios: {
-                          flexDirection:"column",
-                          textAlign:rtl.isRTL ? "left" : ""
-                      }
-                  }),
-              }]} numberOfLines={2}>
+            <Text style={[
+              styles.description,
+              { color: colors.textSecondary },
+              {
+                ...Platform.select({
+                  ios: {
+                    flexDirection: "column",
+                    textAlign: rtl.isRTL ? "left" : ""
+                  }
+                }),
+              }
+            ]} numberOfLines={2}>
               {item.description}
             </Text>
             
-            <View style={[styles.footer]}>
+            <View style={[styles.footer, { borderTopColor: colors.border }]}>
               {item.created_by && (
                 <View style={[styles.userInfo]}>
-                  <View style={styles.userIconContainer}>
-                    <Feather name="user" size={14} color="#4361EE" />
+                  <View style={[styles.userIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }]}>
+                    <Feather name="user" size={14} color={colors.primary} />
                   </View>
-                  <Text style={styles.userName}>{item.created_by}</Text>
+                  <Text style={[styles.userName, { color: colors.textSecondary }]}>{item.created_by}</Text>
                 </View>
               )}
               <View style={[styles.viewDetailsContainer]}>
-                <Text style={styles.viewDetails}>
+                <Text style={[styles.viewDetails, { color: colors.primary }]}>
                   {translations[language]?.complaints?.viewDetails || 'View Details'}
                 </Text>
                 <MaterialIcons 
                   name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
                   size={20} 
-                  color="#4361EE" 
+                  color={colors.primary} 
                 />
               </View>
             </View>
@@ -350,18 +362,18 @@ export default function ComplaintsScreen() {
         style={styles.emptyImage}
         resizeMode="contain"
       />
-      <Text style={styles.emptyTitle}>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
         {translations[language]?.complaints?.noComplaints || 'No Complaints Found'}
       </Text>
-      <Text style={styles.emptyText}>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         {translations[language]?.complaints?.noComplaintsDesc || 'There are no complaints matching your filters.'}
       </Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       <Search
         searchValue={searchValue}
         setSearchValue={setSearchValue}
@@ -402,16 +414,16 @@ export default function ComplaintsScreen() {
           setShowModal={setShowControl}
           customStyles={{ bottom: 15 }}
         >
-          <View style={styles.controlModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.controlModal, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {translations[language]?.complaints?.actions || 'Actions'}
               </Text>
               <TouchableOpacity 
                 onPress={() => setShowControl(false)}
                 hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}
               >
-                <Feather name="x" size={22} color="#64748B" />
+                <Feather name="x" size={22} color={colors.iconDefault} />
               </TouchableOpacity>
             </View>
             
@@ -419,10 +431,10 @@ export default function ComplaintsScreen() {
               style={[styles.actionButton]}
               onPress={() => handleChangeStatus(selectedComplaint)}
             >
-              <View style={styles.actionIconContainer}>
-                <Ionicons name="checkmark-done-circle-outline" size={22} color="#4361EE" />
+              <View style={[styles.actionIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }]}>
+                <Ionicons name="checkmark-done-circle-outline" size={22} color={colors.primary} />
               </View>
-              <Text style={styles.actionText}>
+              <Text style={[styles.actionText, { color: colors.text }]}>
                 {translations[language]?.complaints?.markAsResolved || 'Mark as Resolved'}
               </Text>
             </TouchableOpacity>
@@ -437,10 +449,10 @@ export default function ComplaintsScreen() {
                 });
               }}
             >
-              <View style={styles.actionIconContainer}>
-                <Feather name="message-square" size={22} color="#4361EE" />
+              <View style={[styles.actionIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }]}>
+                <Feather name="message-square" size={22} color={colors.primary} />
               </View>
-              <Text style={styles.actionText}>
+              <Text style={[styles.actionText, { color: colors.text }]}>
                 {translations[language]?.complaints?.respond || 'Respond to Complaint'}
               </Text>
             </TouchableOpacity>
@@ -454,7 +466,6 @@ export default function ComplaintsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   listContainer: {
     flex: 1,
@@ -481,7 +492,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   card: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 16,
   },
@@ -490,7 +500,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 12,
-    gap:10
+    gap: 10
   },
   complaintInfo: {
     flex: 1
@@ -498,23 +508,21 @@ const styles = StyleSheet.create({
   subject: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#1F2937",
     marginBottom: 8,
   },
   complaintMeta: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap:12
+    gap: 12
   },
   metaItem: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 4,
-    gap:4
+    gap: 4
   },
   metaText: {
     fontSize: 12,
-    color: "#64748B",
   },
   statusBadge: {
     flexDirection: "row",
@@ -522,7 +530,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
-    gap:4
+    gap: 4
   },
   statusText: {
     color: "white",
@@ -531,7 +539,6 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: "#4B5563",
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -540,7 +547,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
     paddingTop: 12,
   },
   userInfo: {
@@ -551,14 +557,12 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "rgba(67, 97, 238, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 8,
   },
   userName: {
     fontSize: 13,
-    color: "#64748B",
     fontWeight: "500",
   },
   viewDetailsContainer: {
@@ -568,7 +572,6 @@ const styles = StyleSheet.create({
   viewDetails: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#4361EE",
     marginRight: 4,
   },
   fab: {
@@ -596,13 +599,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
   },
   spinnerContainer: {
-    backgroundColor: 'white',
     padding: 24,
     borderRadius: 16,
     shadowColor: '#000',
@@ -618,7 +619,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#4B5563",
   },
   emptyContainer: {
     flex: 1,
@@ -635,13 +635,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1F2937",
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
     textAlign: "center",
-    color: "#64748B",
     marginBottom: 24,
   },
   newComplaintButton: {
@@ -666,7 +664,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   controlModal: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     width: '90%',
@@ -679,13 +676,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
     marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
   },
   actionButton: {
     flexDirection: "row",
@@ -698,7 +693,6 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: "rgba(67, 97, 238, 0.1)",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -706,6 +700,5 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: 16,
     fontWeight: "500",
-    color: "#1F2937",
   },
 });

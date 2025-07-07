@@ -1,9 +1,39 @@
-import { createContext, useContext, useState,useEffect } from 'react';
-import {ActivityIndicator} from "react-native";
+import { createContext, useContext, useState, useEffect } from 'react';
+import { ActivityIndicator, I18nManager, Alert } from "react-native";
 import { getToken, saveToken } from './secureStore';
 
-const LanguageContext = createContext();
+// Import DevSettings for development environment restarts
+import { DevSettings } from 'react-native';
 
+// Import RN module conditionally
+let RNRestart;
+try {
+  // This will only work in production when the module is available
+  RNRestart = require('react-native-restart').default;
+} catch (error) {
+  // Module not available, will use fallback
+  RNRestart = null;
+}
+
+// IMPORTANT: This is the centralized RTL configuration
+// It runs at module initialization time to ensure RTL is set before any UI renders
+(async () => {
+  try {
+    const savedLanguage = await getToken('language') || 'ar';
+    const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
+    
+    // This is critical for first app load in production
+    if (I18nManager.isRTL !== shouldBeRTL) {
+      I18nManager.allowRTL(shouldBeRTL);
+      I18nManager.forceRTL(shouldBeRTL);
+    }
+  } catch (error) {
+    console.error("Failed to set initial RTL:", error);
+    // If we can't determine the language, default to system settings
+  }
+})();
+
+const LanguageContext = createContext();
 
 export const translations = {
   en: {
@@ -598,6 +628,14 @@ export const translations = {
               ar:"Arabic",
               en:"English",
               he:"Hebrew"
+            }
+          },
+          theme:{
+            title:"Theme",
+            options:{
+              light:"Light",
+              dark:"Dark",
+              system:"System"
             }
           },
           complaints:"Complaints",
@@ -1772,6 +1810,14 @@ export const translations = {
               he: "العبرية"
             }
           },
+          theme:{
+            title:"المظهر",
+            options:{
+              light:"فاتح",
+              dark:"داكن",
+              system:"تلقائي"
+            }
+          },
           complaints: "الشكاوى",
           changePassword: "تغيير كلمة المرور",
           changePasswordFields: {
@@ -2623,10 +2669,64 @@ export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState("ar");
   const [loading, setLoading] = useState(true);
 
-  // Simple language setter without I18nManager
+  // Function to safely restart the app
+  const restartApp = () => {
+    try {
+      // For development environment
+      if (__DEV__ && DevSettings) {
+        DevSettings.reload();
+        return;
+      }
+      
+      // For production with RNRestart available
+      if (RNRestart) {
+        RNRestart.Restart();
+        return;
+      }
+      
+      // Fallback for when both methods above fail
+      Alert.alert(
+        "Restart Required",
+        "Please close and reopen the app for the language change to take full effect.",
+        [{ text: "OK" }]
+      );
+    } catch (error) {
+      console.error('Failed to restart the app:', error);
+      Alert.alert(
+        "Restart Required",
+        "Please close and reopen the app for the language change to take full effect.",
+        [{ text: "OK" }]
+      );
+    }
+  };
+
+  // Enhanced language setter with app restart
   const setLanguage = async (newLanguage) => {
-    await saveToken('language', newLanguage);
-    setLanguageState(newLanguage);
+    try {
+      if (newLanguage === language) {
+        return; // No change, no need to restart
+      }
+      
+      // Save the new language preference
+      await saveToken('language', newLanguage);
+      
+      // Configure RTL if needed
+      const isNewLangRTL = newLanguage === 'ar' || newLanguage === 'he';
+      if (isNewLangRTL !== I18nManager.isRTL) {
+        I18nManager.allowRTL(isNewLangRTL);
+        I18nManager.forceRTL(isNewLangRTL);
+      }
+      
+      // Update state
+      setLanguageState(newLanguage);
+      
+      // Always restart after language change
+      setTimeout(() => {
+        restartApp();
+      }, 100);
+    } catch (error) {
+      console.error("Error changing language:", error);
+    }
   };
 
   // Initialize on component mount
@@ -2635,8 +2735,19 @@ export function LanguageProvider({ children }) {
       try {
         // Get saved language
         const savedLanguage = await getToken('language') || 'ar';
+        
+        // Configure RTL based on language
+        const shouldBeRTL = savedLanguage === 'ar' || savedLanguage === 'he';
+        
+        // Only change RTL if it doesn't match what it should be
+        if (I18nManager.isRTL !== shouldBeRTL) {
+          I18nManager.allowRTL(shouldBeRTL);
+          I18nManager.forceRTL(shouldBeRTL);
+        }
+        
         setLanguageState(savedLanguage);
       } catch (error) {
+        // Don't force RTL as fallback - respect system settings
       } finally {
         setLoading(false);
       }

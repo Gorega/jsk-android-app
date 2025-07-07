@@ -10,10 +10,14 @@ import { useLocalSearchParams, router } from "expo-router";
 import { LinearGradient } from 'expo-linear-gradient';
 import { getToken } from "../../utils/secureStore";
 import { useAuth } from "../../RootLayout";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function HomeScreen() {
     const { userId } = useLocalSearchParams();
     const { language } = useLanguage();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const [cities, setCities] = useState([]);
@@ -323,7 +327,8 @@ export default function HomeScreen() {
         return (
             <View style={styles.alertOverlay}>
                 <View style={[
-                    styles.alertContainer
+                    styles.alertContainer,
+                    { backgroundColor: colors.card }
                 ]}>
                     <View style={[
                         styles.alertColorBar,
@@ -336,16 +341,18 @@ export default function HomeScreen() {
                             styles.alertHeader
                         ]}>
                             <Text style={[
-                                styles.alertTitle
+                                styles.alertTitle,
+                                { color: colors.text }
                             ]}>
                                 {title}
                             </Text>
                             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                                <Feather name="x" size={24} color="#64748B" />
+                                <Feather name="x" size={24} color={isDark ? colors.textSecondary : "#64748B"} />
                             </TouchableOpacity>
                         </View>
                         <Text style={[
-                            styles.alertMessage
+                            styles.alertMessage,
+                            { color: isDark ? colors.textSecondary : "#64748B" }
                         ]}>
                             {message}
                         </Text>
@@ -369,12 +376,13 @@ export default function HomeScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.scrollView}
                 contentContainerStyle={[
-                    styles.contentContainer
+                    styles.contentContainer,
+                    { backgroundColor: colors.background }
                 ]}
                 keyboardShouldPersistTaps="handled"
             >
@@ -421,8 +429,8 @@ export default function HomeScreen() {
 
             {/* Loading Spinner */}
             {formSpinner.status && (
-                <View style={styles.overlay}>
-                    <View style={styles.spinnerContainer}>
+                <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.8)' }]}>
+                    <View style={[styles.spinnerContainer, { backgroundColor: colors.card }]}>
                         <ActivityIndicator size="large" color="#4361EE" />
                     </View>
                 </View>
@@ -430,15 +438,15 @@ export default function HomeScreen() {
 
             {/* Success Message */}
             {success && (
-                <View style={styles.successOverlay}>
-                    <View style={styles.successContainer}>
+                <View style={[styles.successOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)' }]}>
+                    <View style={[styles.successContainer, { backgroundColor: colors.card }]}>
                         <View style={styles.successIconContainer}>
                             <Feather name="check-circle" size={50} color="#FFFFFF" />
                         </View>
-                        <Text style={styles.successTitle}>
+                        <Text style={[styles.successTitle, { color: colors.text }]}>
                             {translations[language].users.create.success}
                         </Text>
-                        <Text style={styles.successText}>
+                        <Text style={[styles.successText, { color: isDark ? colors.textSecondary : '#64748B' }]}>
                             {translations[language].users.create.successMsg}
                         </Text>
                         <TouchableOpacity 
@@ -472,7 +480,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
     },
     scrollView: {
         flex: 1,
@@ -507,13 +514,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
     },
     spinnerContainer: {
-        backgroundColor: 'white',
         padding: 24,
         borderRadius: 12,
         shadowColor: '#000',
@@ -528,13 +533,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1500,
     },
     successContainer: {
-        backgroundColor: 'white',
         padding: 24,
         borderRadius: 12,
         width: '90%',
@@ -558,12 +561,10 @@ const styles = StyleSheet.create({
     successTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#1E293B',
         marginBottom: 8,
     },
     successText: {
         fontSize: 16,
-        color: '#64748B',
         textAlign: 'center',
         marginBottom: 24,
         lineHeight: 22,
@@ -592,7 +593,6 @@ const styles = StyleSheet.create({
     },
     alertContainer: {
         width: '90%',
-        backgroundColor: 'white',
         borderRadius: 12,
         overflow: 'hidden',
         flexDirection: 'row',
@@ -627,14 +627,12 @@ const styles = StyleSheet.create({
     alertTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#1E293B',
     },
     closeButton: {
         padding: 4,
     },
     alertMessage: {
         fontSize: 15,
-        color: '#64748B',
         marginBottom: 20,
         lineHeight: 22,
     },

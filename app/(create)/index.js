@@ -14,6 +14,8 @@ import ModalPresentation from "../../components/ModalPresentation";
 import { useFocusEffect } from '@react-navigation/native';
 import Field from "../../components/create/Field";
 import ReceiverSearchModal from "../../components/create/ReceiverSearchModal";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function HomeScreen() {
     const { language } = useLanguage();
@@ -27,6 +29,8 @@ export default function HomeScreen() {
     const [loadingMore, setLoadingMore] = useState(false);
     const { user } = useAuth()
     const [cities, setCities] = useState([]);
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const [orderTypes, setOrderTypes] = useState([{
         name: translations[language].tabs.orders.create.sections.orderTypes?.delivery,
         value: "delivery"
@@ -998,15 +1002,25 @@ export default function HomeScreen() {
     
     useEffect(() => {
         fetchCities();
-        setPage(1);
         fetchSenders(1, false);
-    }, [prickerSearchValue])
+    }, [])
     
     useEffect(() => {
         if(selectedValue?.city){
             fetchDeliveryFee();
         }
     }, [selectedValue]);
+
+    useEffect(() => {
+    // Add a small delay to prevent too many API calls while typing
+    const delayDebounceFn = setTimeout(() => {
+        // Reset to page 1 and fetch with the new search value
+        setPage(1);
+        fetchSenders(1, false);
+    }, 300);
+    
+    return () => clearTimeout(delayDebounceFn);
+}, [prickerSearchValue]);
     
     useEffect(() => {
         // Check if we have a scanned reference ID from the camera
@@ -1055,18 +1069,19 @@ export default function HomeScreen() {
         return (
             <View style={styles.alertOverlay}>
                 <View style={[
-                    styles.alertContainer, 
+                    styles.alertContainer,
+                    { backgroundColor: colors.card },
                     type === 'error' ? styles.errorAlert : 
                     type === 'success' ? styles.successAlert : 
                     styles.warningAlert,
                 ]}>
                     <View style={[styles.alertHeader]}>
-                        <Text style={styles.alertTitle}>{title}</Text>
+                        <Text style={[styles.alertTitle, { color: colors.text }]}>{title}</Text>
                         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                            <Feather name="x" size={22} color="#64748B" />
+                            <Feather name="x" size={22} color={colors.textSecondary} />
                         </TouchableOpacity>
                     </View>
-                    <Text style={styles.alertMessage}>{message}</Text>
+                    <Text style={[styles.alertMessage, { color: colors.textSecondary }]}>{message}</Text>
                     {type !== 'loading' ? (
                         <TouchableOpacity 
                             style={[
@@ -1077,12 +1092,12 @@ export default function HomeScreen() {
                             ]}
                             onPress={onClose}
                         >
-                            <Text style={styles.alertButtonText}>
+                            <Text style={[styles.alertButtonText, { color: colors.text }]}>
                                 {translations[language]?.ok || 'OK'}
                             </Text>
                         </TouchableOpacity>
                     ) : (
-                        <ActivityIndicator size="large" color="#4361EE" style={styles.alertLoader} />
+                        <ActivityIndicator size="large" color={colors.primary} />
                     )}
                 </View>
             </View>
@@ -1104,10 +1119,10 @@ export default function HomeScreen() {
     }, [selectedValue.orderType, form.withMoneyReceive]);
 
     return (
-        <View style={styles.pageContainer}>
-            <View style={styles.headerContainer}>
-                <Text style={styles.orderTypeHeaderText}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
-                <View style={styles.orderTypeButtonsContainer}>
+        <View style={[styles.pageContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
+                <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
+                <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
                     {orderTypes.map((type, index) => (
                         <Field
                             key={index}
@@ -1115,10 +1130,10 @@ export default function HomeScreen() {
                                 type: "orderTypeButton",
                                 label: type.name,
                                 isSelected: selectedValue.orderType?.value === type.value,
-                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} /> :
-                                      type.value === "receive" ? <MaterialIcons name="store" size={18} /> :
-                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} /> :
-                                      <MaterialIcons name="payments" size={18} />,
+                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={colors.text} /> :
+                                      type.value === "receive" ? <MaterialIcons name="store" size={18} color={colors.text} /> :
+                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={colors.text} /> :
+                                      <MaterialIcons name="payments" size={18} color={colors.text} />,
                                 onPress: () => {
                                     // Reset toggle states when switching order types
                                     setFromBusinessBalance(false);
@@ -1228,7 +1243,7 @@ export default function HomeScreen() {
                 {formSpinner.status ? (
                     <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
-                    <Text style={styles.submitButtonText}>
+                    <Text style={[styles.submitButtonText, { color: colors.text }]}>
                         {translations[language].tabs.orders.create.submit}
                     </Text>
                 )}
@@ -1238,8 +1253,8 @@ export default function HomeScreen() {
             {formSpinner.status && (
                 <View style={styles.overlay}>
                     <View style={styles.spinnerContainer}>
-                        <ActivityIndicator size="large" color="#4361EE" />
-                        <Text style={styles.spinnerText}>
+                        <ActivityIndicator size="large" color={colors.primary} />
+                        <Text style={[styles.spinnerText, { color: colors.text }]}>
                             {translations[language].tabs.orders.create.loading}
                         </Text>
                     </View>
@@ -1250,8 +1265,8 @@ export default function HomeScreen() {
             {success && (
                 <View style={styles.successOverlay}>
                     <View style={styles.successContainer}>
-                        <Ionicons name="checkmark-circle" size={60} color="#10B981" />
-                        <Text style={styles.successText}>
+                        <Ionicons name="checkmark-circle" size={60} color={colors.primary} />
+                        <Text style={[styles.successText, { color: colors.text }]}>
                             {translations[language].tabs.orders.create.successMsg}
                         </Text>
                     </View>
@@ -1278,7 +1293,7 @@ export default function HomeScreen() {
                     setShowModal={() => setActiveCurrencyPicker(null)}
                 >
                     <View style={styles.currencyPickerContainer}>
-                        <Text style={styles.currencyPickerTitle}>
+                        <Text style={[styles.currencyPickerTitle, { color: colors.text }]}>
                             {translations[language].tabs.orders.create.sections.currencyList.title}
                         </Text>
                         <View style={styles.currencyList}>
@@ -1319,7 +1334,7 @@ export default function HomeScreen() {
                             style={styles.cancelCurrencyButton}
                             onPress={() => setActiveCurrencyPicker(null)}
                         >
-                            <Text style={styles.cancelCurrencyText}>
+                            <Text style={[styles.cancelCurrencyText, { color: colors.text }]}>
                                 {translations[language]?.cancel || 'Cancel'}
                             </Text>
                         </TouchableOpacity>

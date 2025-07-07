@@ -2,6 +2,8 @@ import React, { useRef, useEffect } from "react";
 import { StyleSheet, Modal, View, Pressable, Animated, Dimensions, Platform } from "react-native";
 import { useLanguage } from '../utils/languageContext';
 import { RTLWrapper } from '../utils/RTLWrapper';
+import { useTheme } from '../utils/themeContext';
+import { Colors } from '../constants/Colors';
 
 export default function ModalPresentation({ 
   children, 
@@ -14,6 +16,8 @@ export default function ModalPresentation({
   position = "center"
 }) {
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
@@ -127,6 +131,7 @@ export default function ModalPresentation({
             customStyles,
             position === 'bottom' && styles.bottomModal,
             position === 'top' && styles.topModal,
+            { backgroundColor: colors.modalBg }
           ]}
         >
           {children}
@@ -144,7 +149,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   main: {
-    backgroundColor: "white",
     width: "90%",
     maxHeight: "90%",
     borderRadius: 16,

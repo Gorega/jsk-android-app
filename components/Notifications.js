@@ -10,11 +10,15 @@ import FlatListData from './FlatListData';
 import { LinearGradient } from 'expo-linear-gradient';
 import ModalPresentation from './ModalPresentation';
 import { registerForPushNotificationsAsync } from '../utils/notificationHelper';
+import { useTheme } from '../utils/themeContext';
+import { Colors } from '../constants/Colors';
 
 export default function NotificationsComponent() {
   const { language } = useLanguage();
   const { user } = useAuth();
   const { refreshKey } = useLocalSearchParams();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [notificationsData, setNotificationsData] = useState([]);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -311,13 +315,18 @@ export default function NotificationsComponent() {
       key={notification.notification_id} 
       style={[
         styles.notificationItem, 
-        !notification.is_read && styles.unread
+        { 
+          backgroundColor: colors.card,
+          shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000"
+        },
+        !notification.is_read && [
+          styles.unread,
+          { borderLeftColor: colors.primary }
+        ]
       ]}
     >
       <TouchableOpacity 
-        style={[
-          styles.notificationContent
-        ]}
+        style={styles.notificationContent}
         onPress={() => handleNotificationItemClick(notification.notification_id, notification.type, notification.order_id)}
         activeOpacity={0.7}
       >
@@ -326,13 +335,9 @@ export default function NotificationsComponent() {
           {!notification.is_read && <View style={styles.unreadIndicator} />}
         </View>
         
-        <View style={[
-          styles.contentContainer
-        ]}>
-          <View style={[
-            styles.notificationHeader
-          ]}>
-            <Text style={styles.time}>
+        <View style={styles.contentContainer}>
+          <View style={styles.notificationHeader}>
+            <Text style={[styles.time, { color: colors.textSecondary }]}>
               {formatDate(notification.created_at)}
             </Text>
           </View>
@@ -340,14 +345,18 @@ export default function NotificationsComponent() {
           <Text 
             style={[
               styles.message,
-              !notification.is_read && styles.unreadText,
+              { color: colors.textSecondary },
+              !notification.is_read && [
+                styles.unreadText,
+                { color: colors.text }
+              ],
               {
                 ...Platform.select({
-                    ios: {
-                        textAlign: isRTL ? "left" : ""
-                    }
+                  ios: {
+                    textAlign: isRTL ? "left" : ""
+                  }
                 }),
-            }
+              }
             ]} 
           >
             {notification.translated_message}
@@ -357,7 +366,10 @@ export default function NotificationsComponent() {
       
       <TouchableOpacity 
         onPress={() => deleteNotification(notification.notification_id)}
-        style={styles.deleteButton}
+        style={[
+          styles.deleteButton,
+          { backgroundColor: isDark ? 'rgba(255, 107, 107, 0.2)' : 'rgba(255, 107, 107, 0.1)' }
+        ]}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
@@ -366,32 +378,32 @@ export default function NotificationsComponent() {
   );
 
   const renderEmptyState = () => (
-    <View style={styles.emptyContainer}>
+    <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
       <Image 
         source={""} 
         style={styles.emptyImage}
         resizeMode="contain"
       />
-      <Text style={styles.emptyTitle}>
+      <Text style={[styles.emptyTitle, { color: colors.text }]}>
         {translations[language]?.notifications?.noNotificationsTitle || 'No Notifications'}
       </Text>
-      <Text style={styles.emptyText}>
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         {translations[language]?.notifications?.noNotifications || "You don't have any notifications yet."}
       </Text>
     </View>
   );
 
   const renderLoading = () => (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#4361EE" />
-      <Text style={styles.loadingText}>
+    <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.primary} />
+      <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
         {translations[language]?.notifications?.loading || 'Loading notifications...'}
       </Text>
     </View>
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isLoading ? (
         renderLoading()
       ) : notificationsData.length === 0 ? (
@@ -422,14 +434,14 @@ export default function NotificationsComponent() {
         }}
         position="center"
       >
-        <View style={styles.confirmationContainer}>
+        <View style={[styles.confirmationContainer, { backgroundColor: colors.card }]}>
           {confirmationModal.loading ? (
             <>
-              <ActivityIndicator size="large" color="#4361EE" style={styles.confirmationLoader} />
-              <Text style={styles.confirmationTitle}>
+              <ActivityIndicator size="large" color={colors.primary} style={styles.confirmationLoader} />
+              <Text style={[styles.confirmationTitle, { color: colors.text }]}>
                 {translations[language]?.notifications?.confirmation?.processing || "Processing"}
               </Text>
-              <Text style={styles.confirmationMessage}>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
                 {translations[language]?.notifications?.confirmation?.pleaseWait || "Please wait..."}
               </Text>
             </>
@@ -438,10 +450,10 @@ export default function NotificationsComponent() {
               <View style={styles.confirmationIconError}>
                 <Ionicons name="alert-circle" size={40} color="white" />
               </View>
-              <Text style={styles.confirmationTitle}>
+              <Text style={[styles.confirmationTitle, { color: colors.text }]}>
                 {translations[language]?.notifications?.confirmation?.error || "Error"}
               </Text>
-              <Text style={styles.confirmationMessage}>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
                 {confirmationModal.error}
               </Text>
               <TouchableOpacity
@@ -469,18 +481,18 @@ export default function NotificationsComponent() {
                   color="white" 
                 />
               </View>
-              <Text style={styles.confirmationTitle}>
+              <Text style={[styles.confirmationTitle, { color: colors.text }]}>
                 {confirmationModal.confirmed 
                   ? (translations[language]?.notifications?.confirmation?.success || "Success") 
                   : (translations[language]?.notifications?.confirmation?.cancelled || "Cancelled")}
               </Text>
-              <Text style={styles.confirmationMessage}>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
                 {confirmationModal.confirmed 
                   ? (translations[language]?.notifications?.confirmation?.successMessage || "Your confirmation has been processed successfully.")
                   : (translations[language]?.notifications?.confirmation?.cancelledMessage || "The request has been cancelled.")}
               </Text>
               {confirmationModal.confirmed && confirmationModal.transactionId && (
-                <Text style={styles.transactionId}>
+                <Text style={[styles.transactionId, { color: colors.textSecondary }]}>
                   {translations[language]?.notifications?.confirmation?.transactionId || "Transaction ID"}: {confirmationModal.transactionId}
                 </Text>
               )}
@@ -505,10 +517,10 @@ export default function NotificationsComponent() {
               <View style={styles.confirmationIconQuestion}>
                 <Ionicons name="help-circle" size={40} color="white" />
               </View>
-              <Text style={styles.confirmationTitle}>
+              <Text style={[styles.confirmationTitle, { color: colors.text }]}>
                 {translations[language]?.notifications?.confirmation?.title || "Confirmation Required"}
               </Text>
-              <Text style={styles.confirmationMessage}>
+              <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
                 {translations[language]?.notifications?.confirmation?.message || "Do you want to confirm this request?"}
               </Text>
               <View style={styles.confirmationButtonsRow}>
@@ -540,7 +552,6 @@ export default function NotificationsComponent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   headerGradient: {
     borderBottomLeftRadius: 20,

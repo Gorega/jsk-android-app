@@ -1,16 +1,18 @@
 import { TouchableOpacity,Text, View } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useLanguage } from '../utils/languageContext';
 import { router } from "expo-router";
 import { useRTLStyles } from "../utils/RTLWrapper";
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function FixedHeader({children,title,showBackButton=true}){
-    const { language } = useLanguage();
     const rtl = useRTLStyles();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     return <View style={{
         height:100,
-        backgroundColor:"white",
+        backgroundColor: colors.card,
         boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
         flexDirection:"row",
         alignItems:"flex-end",
@@ -19,9 +21,9 @@ export default function FixedHeader({children,title,showBackButton=true}){
       }}>
     <View style={{flexDirection:"row",alignItems:"center",gap:15}}>
       {showBackButton && <TouchableOpacity onPressIn={()=> router.back()}>
-        <MaterialIcons name={rtl.isRTL ? "arrow-forward" : "arrow-back"} size={24} color="black" />
+        <MaterialIcons name={rtl.isRTL ? "arrow-forward" : "arrow-back"} size={24} color={colors.iconDefault} />
       </TouchableOpacity>}
-      <Text style={{fontSize:18,fontWeight:"500"}}>{title}</Text>
+      <Text style={{fontSize:18,fontWeight:"500",color:colors.text}}>{title}</Text>
     </View>
       {children}
   </View>

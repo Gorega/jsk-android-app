@@ -12,12 +12,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 // import * as Location from 'expo-location';
 import { useSocket } from '../../utils/socketContext';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function Routes() {
     const socket = useSocket();
     const { language } = useLanguage();
     const isRTL = ["he", "ar"].includes(language);
     const { user } = useAuth();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    
     const [loading, setLoading] = useState(true);
     const [routes, setRoutes] = useState([]);
     const [activeTab, setActiveTab] = useState('active');
@@ -27,7 +32,6 @@ export default function Routes() {
     const [routeName, setRouteName] = useState('');
     const [location, setLocation] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    
     
     // Check if user has appropriate role
     const isAllowed = ["driver", "delivery_company"].includes(user?.role);
@@ -254,10 +258,10 @@ export default function Routes() {
                     </View>
                     
                     <View style={styles.routeTitleContainer}>
-                        <Text style={[styles.routeName]}>
+                        <Text style={[styles.routeName, { color: colors.text }]}>
                             {item.name}
                         </Text>
-                        <Text style={[styles.routeDate]}>
+                        <Text style={[styles.routeDate, { color: colors.textSecondary }]}>
                             {new Date(item.created_at).toLocaleDateString(
                                 'en-US',
                                 { year: 'numeric', month: 'short', day: 'numeric' }
@@ -267,33 +271,33 @@ export default function Routes() {
                     
                     <View style={styles.routeActions}>
                         <TouchableOpacity 
-                            style={styles.actionButton}
+                            style={[styles.actionButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
                             onPress={() => handleDeleteRoute(item)}
                         >
-                            <Feather name="trash-2" size={18} color="#EF4444" />
+                            <Feather name="trash-2" size={18} color={colors.error} />
                         </TouchableOpacity>
                     </View>
                 </View>
                 
-                <View style={styles.routeStats}>
+                <View style={[styles.routeStats, { borderTopColor: colors.divider }]}>
                     <View style={[styles.statItem]}>
-                        <Feather name="package" size={16} color="#64748B" />
-                        <Text style={[styles.statText]}>
+                        <Feather name="package" size={16} color={colors.textSecondary} />
+                        <Text style={[styles.statText, { color: colors.textSecondary }]}>
                             {orderCount} {translations[language]?.routes?.orders || "Orders"}
                         </Text>
                     </View>
                     
                     {isCompletedRoute ? (
                         <View style={[styles.statItem]}>
-                            <Feather name="check-circle" size={16} color="#10B981" />
-                            <Text style={[styles.statText]}>
+                            <Feather name="check-circle" size={16} color={colors.success} />
+                            <Text style={[styles.statText, { color: colors.textSecondary }]}>
                                 {translations[language]?.routes?.completed || "Completed"}
                             </Text>
                         </View>
                     ) : (
                         <View style={[styles.statItem]}>
-                            <Feather name="check-circle" size={16} color="#10B981" />
-                            <Text style={[styles.statText]}>
+                            <Feather name="check-circle" size={16} color={colors.success} />
+                            <Text style={[styles.statText, { color: colors.textSecondary }]}>
                                 {deliveredCount}/{orderCount} {translations[language]?.routes?.delivered || "Delivered"}
                             </Text>
                         </View>
@@ -301,8 +305,8 @@ export default function Routes() {
                     
                     {item.optimized ? (
                         <View style={[styles.statItem]}>
-                            <MaterialIcons name="route" size={16} color="#4361EE" />
-                            <Text style={[styles.statText]}>
+                            <MaterialIcons name="route" size={16} color={colors.primary} />
+                            <Text style={[styles.statText, { color: colors.textSecondary }]}>
                                 {translations[language]?.routes?.optimized || "Optimized"}
                             </Text>
                         </View>
@@ -311,22 +315,26 @@ export default function Routes() {
                 
                 <View style={styles.routeButtons}>
                     <TouchableOpacity 
-                        style={[styles.routeButton, styles.editButton]} 
+                        style={[
+                            styles.routeButton, 
+                            styles.editButton,
+                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]} 
                         onPress={() => handleEditRoute(item)}
                         disabled={isCompletedRoute}
                     >
-                        <Feather name="edit" size={16} color="#4361EE" />
-                        <Text style={styles.buttonText}>
+                        <Feather name="edit" size={16} color={colors.primary} />
+                        <Text style={[styles.buttonText, { color: colors.primary }]}>
                             {translations[language]?.routes?.edit || "Edit"}
                         </Text>
                     </TouchableOpacity>
                     
                     <TouchableOpacity 
-                        style={[styles.routeButton, styles.navigateButton]} 
+                        style={[styles.routeButton, styles.navigateButton, { backgroundColor: colors.primary }]} 
                         onPress={() => handleViewRoute(item)}
                     >
-                        <Feather name="navigation" size={16} color="#FFFFFF" />
-                        <Text style={styles.navigateButtonText}>
+                        <Feather name="navigation" size={16} color={colors.buttonText} />
+                        <Text style={[styles.navigateButtonText, { color: colors.buttonText }]}>
                             {translations[language]?.routes?.navigate || "Navigate"}
                         </Text>
                     </TouchableOpacity>
@@ -340,21 +348,29 @@ export default function Routes() {
     }
     
     return (
-        <View style={styles.container}>
-            <View style={styles.tabBar}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.tabBar, { backgroundColor: colors.card }]}>
                 <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'active' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'active' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EBF5FF' }]]}
                     onPress={() => setActiveTab('active')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'active' && styles.activeTabText]}>
+                    <Text style={[
+                        styles.tabText, 
+                        { color: colors.textSecondary },
+                        activeTab === 'active' && [styles.activeTabText, { color: colors.primary }]
+                    ]}>
                         {translations[language]?.routes?.activeTabs || "Active Routes"}
                     </Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
-                    style={[styles.tab, activeTab === 'completed' && styles.activeTab]}
+                    style={[styles.tab, activeTab === 'completed' && [styles.activeTab, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EBF5FF' }]]}
                     onPress={() => setActiveTab('completed')}
                 >
-                    <Text style={[styles.tabText, activeTab === 'completed' && styles.activeTabText]}>
+                    <Text style={[
+                        styles.tabText, 
+                        { color: colors.textSecondary },
+                        activeTab === 'completed' && [styles.activeTabText, { color: colors.primary }]
+                    ]}>
                         {translations[language]?.routes?.completedTabs || "Completed"}
                     </Text>
                 </TouchableOpacity>
@@ -362,8 +378,8 @@ export default function Routes() {
             
             {loading ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
-                    <Text style={styles.loadingText}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                         {translations[language]?.common?.loading || "Loading..."}
                     </Text>
                 </View>
@@ -379,15 +395,15 @@ export default function Routes() {
                 />
             ) : (
                 <View style={styles.emptyContainer}>
-                    <View style={styles.emptyIconContainer}>
-                        <MaterialCommunityIcons name="routes" size={40} color="#4361EE" />
+                    <View style={[styles.emptyIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }]}>
+                        <MaterialCommunityIcons name="routes" size={40} color={colors.primary} />
                     </View>
-                    <Text style={styles.emptyText}>
+                    <Text style={[styles.emptyText, { color: colors.text }]}>
                         {activeTab === 'active' 
                             ? translations[language]?.routes?.noActiveRoutes || "No active routes" 
                             : translations[language]?.routes?.noCompletedRoutes || "No completed routes"}
                     </Text>
-                    <Text style={styles.emptySubtext}>
+                    <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>
                         {translations[language]?.routes?.createRoutePrompt || "Create a new route to organize your deliveries"}
                     </Text>
                 </View>
@@ -398,12 +414,12 @@ export default function Routes() {
                 onPress={handleCreateRoute}
             >
                 <LinearGradient
-                    colors={['#4361EE', '#3A0CA3']}
+                    colors={[colors.gradientStart, colors.gradientEnd]}
                     style={styles.fabGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
                 >
-                    <Feather name="plus" size={24} color="#FFFFFF" />
+                    <Feather name="plus" size={24} color={colors.buttonText} />
                 </LinearGradient>
             </TouchableOpacity>
             
@@ -415,28 +431,34 @@ export default function Routes() {
                 onRequestClose={() => setShowCreateModal(false)}
             >
                 <BlurView intensity={80} style={styles.modalOverlay}>
-                    <View style={styles.modalContainer}>
+                    <View style={[styles.modalContainer, { backgroundColor: colors.modalBg }]}>
                         <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>
                                 {translations[language]?.routes?.createRoute || "Create New Route"}
                             </Text>
                             <TouchableOpacity onPress={() => setShowCreateModal(false)}>
-                                <Feather name="x" size={24} color="#64748B" />
+                                <Feather name="x" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
                         
                         <View style={styles.inputContainer}>
-                            <Text style={styles.inputLabel}>
+                            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
                                 {translations[language]?.routes?.routeName || "Route Name"}
                             </Text>
-                            <View style={styles.inputWrapper}>
-                                <Feather name="tag" size={20} color="#64748B" style={styles.inputIcon} />
+                            <View style={[
+                                styles.inputWrapper, 
+                                { 
+                                    borderColor: colors.inputBorder,
+                                    backgroundColor: colors.inputBg 
+                                }
+                            ]}>
+                                <Feather name="tag" size={20} color={colors.textSecondary} style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input]}
+                                    style={[styles.input, { color: colors.inputText }]}
                                     placeholder={translations[language]?.routes?.enterRouteName || "Enter route name"}
                                     value={routeName}
                                     onChangeText={setRouteName}
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor={colors.textTertiary}
                                 />
                             </View>
                         </View>
@@ -447,15 +469,15 @@ export default function Routes() {
                             disabled={isSubmitting}
                         >
                             <LinearGradient
-                                colors={['#4361EE', '#3A0CA3']}
+                                colors={[colors.gradientStart, colors.gradientEnd]}
                                 style={styles.createButtonGradient}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                             >
                                 {isSubmitting ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                    <ActivityIndicator size="small" color={colors.buttonText} />
                                 ) : (
-                                    <Text style={styles.createButtonText}>
+                                    <Text style={[styles.createButtonText, { color: colors.buttonText }]}>
                                         {translations[language]?.routes?.create || "Create Route"}
                                     </Text>
                                 )}
@@ -473,39 +495,39 @@ export default function Routes() {
                 onRequestClose={() => setShowDeleteModal(false)}
             >
                 <BlurView intensity={80} style={styles.modalOverlay}>
-                    <View style={styles.confirmModalContainer}>
-                        <View style={styles.confirmIconContainer}>
-                            <Feather name="alert-triangle" size={32} color="#EF4444" />
+                    <View style={[styles.confirmModalContainer, { backgroundColor: colors.modalBg }]}>
+                        <View style={[styles.confirmIconContainer, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}>
+                            <Feather name="alert-triangle" size={32} color={colors.error} />
                         </View>
                         
-                        <Text style={styles.confirmTitle}>
+                        <Text style={[styles.confirmTitle, { color: colors.text }]}>
                             {translations[language]?.routes?.deleteRouteTitle || "Delete Route"}
                         </Text>
                         
-                        <Text style={styles.confirmText}>
+                        <Text style={[styles.confirmText, { color: colors.textSecondary }]}>
                             {translations[language]?.routes?.deleteRouteConfirm || "Are you sure you want to delete this route? This action cannot be undone."}
                         </Text>
                         
                         <View style={styles.confirmButtons}>
                             <TouchableOpacity 
-                                style={styles.cancelButton}
+                                style={[styles.cancelButton, { borderColor: colors.border }]}
                                 onPress={() => setShowDeleteModal(false)}
                                 disabled={isSubmitting}
                             >
-                                <Text style={styles.cancelButtonText}>
+                                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
                                     {translations[language]?.common?.cancel || "Cancel"}
                                 </Text>
                             </TouchableOpacity>
                             
                             <TouchableOpacity 
-                                style={styles.deleteButton}
+                                style={[styles.deleteButton, { backgroundColor: colors.error }]}
                                 onPress={confirmDeleteRoute}
                                 disabled={isSubmitting}
                             >
                                 {isSubmitting ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                    <ActivityIndicator size="small" color={colors.buttonText} />
                                 ) : (
-                                    <Text style={styles.deleteButtonText}>
+                                    <Text style={[styles.deleteButtonText, { color: colors.buttonText }]}>
                                         {translations[language]?.common?.delete || "Delete"}
                                     </Text>
                                 )}
@@ -521,11 +543,9 @@ export default function Routes() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
     },
     tabBar: {
         flexDirection: 'row',
-        backgroundColor: '#ffffff',
         borderRadius: 8,
         margin: 16,
         padding: 4,
@@ -547,10 +567,8 @@ const styles = StyleSheet.create({
     tabText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#64748B',
     },
     activeTabText: {
-        color: '#4361EE',
         fontWeight: '600',
     },
     routesList: {
@@ -558,7 +576,6 @@ const styles = StyleSheet.create({
         paddingBottom: 80, // Extra space for FAB
     },
     routeCard: {
-        backgroundColor: '#ffffff',
         borderRadius: 12,
         marginBottom: 16,
         padding: 16,

@@ -12,10 +12,14 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import ModalPresentation from "../ModalPresentation";
 import { useState } from 'react';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function Collection({ type, collection }) {
     const { language } = useLanguage();
     const { user } = useAuth();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const [showModal, setShowModal] = useState(false);
     const [showSendersModal, setShowSendersModal] = useState(false);
     const [showPhoneOptions, setShowPhoneOptions] = useState(false);
@@ -73,7 +77,6 @@ export default function Collection({ type, collection }) {
         }
     };
 
-
     const renderCollectionUser = () => {
         if ((type === "business_money" || type === "business_returned") && user.role !== "business") {
             return <UserBox
@@ -98,29 +101,44 @@ export default function Collection({ type, collection }) {
     // Get status color
     const getStatusColor = (statusKey) => {
         const statusColors = {
-            "returned_in_branch": "#6366F1",
-            "money_in_branch": "#6366F1",
-            "deleted": "#EF4444",
-            "returned_out": "#3B82F6",
-            "money_out": "#3B82F6",
-            "returned_delivered": "#3B82F6",
-            "paid": "#3B82F6",
-            "completed": "#10B981",
+            "returned_in_branch": colors.primary,
+            "money_in_branch": colors.primary,
+            "deleted": colors.error,
+            "returned_out": colors.info,
+            "money_out": colors.info,
+            "returned_delivered": colors.info,
+            "paid": colors.info,
+            "completed": colors.success,
             "pending": "#8B5CF6",
             "in_dispatched_to_branch": "#8B5CF6",
             "partial": "#8B5CF6"
         };
         
-        return statusColors[statusKey] || "#64748B";
+        return statusColors[statusKey] || colors.textSecondary;
     };
 
     return (
-        <View style={styles.collectionCard}>
+        <View style={[
+            styles.collectionCard,
+            { 
+                backgroundColor: colors.card,
+                shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)'
+            }
+        ]}>
             {/* Header section with ID and status */}
-            <View style={[styles.header]}>
+            <View style={[
+                styles.header,
+                { 
+                    borderBottomColor: colors.border,
+                    backgroundColor: isDark ? colors.surface : 'rgba(67, 97, 238, 0.05)'
+                }
+            ]}>
                 <View style={styles.idSection}>
                     <View style={[styles.idContainer]}>
-                        <Text style={styles.idText}>#{collection.collection_id}</Text>
+                        <Text style={[
+                            styles.idText,
+                            { color: colors.primary }
+                        ]}>#{collection.collection_id}</Text>
                     </View>
                 </View>
                 
@@ -141,27 +159,39 @@ export default function Collection({ type, collection }) {
                 </View>
                 
                 {/* Order count section */}
-                <View style={styles.infoSection}>
+                <View style={[
+                    styles.infoSection,
+                    { backgroundColor: colors.surface }
+                ]}>
                     <View style={[styles.sectionRow]}>
                         <View style={[
                             styles.iconWrapper, 
-                            { backgroundColor: '#4361EE' }
+                            { backgroundColor: colors.primary }
                         ]}>
                             <Feather name="package" size={20} color="#ffffff" />
                         </View>
-                        <View style={[styles.sectionContent,{
-                         ...Platform.select({
-                            ios: {
-                                alignItems:isRTL ? "flex-start" : ""
+                        <View style={[
+                            styles.sectionContent,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : ""
+                                    }
+                                }),
                             }
-                        }),
-                    }]}>
-                            <Text style={[styles.sectionTitle]}>
+                        ]}>
+                            <Text style={[
+                                styles.sectionTitle,
+                                { color: colors.textSecondary }
+                            ]}>
                                 {type === "sent" 
                                     ? translations[language].collections.collection.numberOfCollections 
                                     : translations[language].collections.collection.numberOfOrders}
                             </Text>
-                            <Text style={[styles.sectionValue]}>
+                            <Text style={[
+                                styles.sectionValue,
+                                { color: colors.text }
+                            ]}>
                                 {type === "sent" ? collection.sub_collections?.length : collection.number_of_orders}
                             </Text>
                         </View>
@@ -170,35 +200,50 @@ export default function Collection({ type, collection }) {
                 
                 {/* Delivery Type section */}
                 {type === "sent" && (
-                 <View style={styles.infoSection}>
-                 <View style={[styles.sectionRow]}>
-                     <View style={[
-                         styles.iconWrapper, 
-                         { backgroundColor: '#8B5CF6' }
-                     ]}>
-                         <MaterialCommunityIcons name="truck-delivery" size={20} color="#ffffff" />
-                     </View>
-                     <View style={[styles.sectionContent,{
-                      ...Platform.select({
-                         ios: {
-                             alignItems:isRTL ? "flex-start" : ""
-                         }
-                     }),
-                 }]}>
-                         <Text style={[styles.sectionTitle]}>
-                             {translations[language]?.collections?.collection?.deliveryType || "Delivery Type"}
-                         </Text>
-                         <Text style={[styles.sectionValue]}>
-                             {collection.delivery_type_label}
-                         </Text>
-                     </View>
-                 </View>
-             </View>   
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper, 
+                                { backgroundColor: '#8B5CF6' }
+                            ]}>
+                                <MaterialCommunityIcons name="truck-delivery" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {translations[language]?.collections?.collection?.deliveryType || "Delivery Type"}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
+                                    {collection.delivery_type_label}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>   
                 )}
                 
                 {/* Money section */}
                 {type !== "returned" && (
-                    <View style={styles.infoSection}>
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
                         <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
@@ -206,19 +251,28 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
-                            <View style={[styles.sectionContent,{
-                         ...Platform.select({
-                            ios: {
-                                alignItems:isRTL ? "flex-start" : ""
-                            }
-                        }),
-                    }]}>
-                                <Text style={[styles.sectionTitle]}>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
                                     {type === "sent" 
                                         ? translations[language].collections.collection.moneyToDeliver 
                                         : translations[language].collections.collection.moneyToCollect}
                                 </Text>
-                                <Text style={[styles.sectionValue]}>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
                                     {user.role === "business" ? collection.total_net_value : collection.total_cod_value}
                                     {type === "sent" && collection.total_net_value}
                                 </Text>
@@ -229,7 +283,10 @@ export default function Collection({ type, collection }) {
                 
                 {/* Checks section for driver */}
                 {(type === "sent" && collection.total_checks > 0) && (
-                    <View style={styles.infoSection}>
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
                         <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
@@ -237,17 +294,26 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <MaterialIcons name="attach-money" size={20} color="#ffffff" />
                             </View>
-                            <View style={[styles.sectionContent,{
-                         ...Platform.select({
-                            ios: {
-                                alignItems:isRTL ? "flex-start" : ""
-                            }
-                        }),
-                    }]}>
-                                <Text style={[styles.sectionTitle]}>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
                                     {translations[language].collections.collection.checksToDeliver}
                                 </Text>
-                                <Text style={[styles.sectionValue]}>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
                                     {collection.total_checks}
                                 </Text>
                             </View>
@@ -257,7 +323,10 @@ export default function Collection({ type, collection }) {
                 
                 {/* Branch section */}
                 {(type === "returned" || type === "dispatched") && (
-                    <View style={styles.infoSection}>
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
                         <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
@@ -265,17 +334,26 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
-                            <View style={[styles.sectionContent,{
-                         ...Platform.select({
-                            ios: {
-                                alignItems:isRTL ? "flex-start" : ""
-                            }
-                        }),
-                    }]}>
-                                <Text style={[styles.sectionTitle]}>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
                                     {translations[language].collections.collection.currentBranch}
                                 </Text>
-                                <Text style={[styles.sectionValue]}>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
                                     {collection.current_branch_name}
                                 </Text>
                             </View>
@@ -285,7 +363,10 @@ export default function Collection({ type, collection }) {
                 
                 {/* To branch section */}
                 {type === "dispatched" && (
-                    <View style={styles.infoSection}>
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
                         <View style={[styles.sectionRow]}>
                             <View style={[
                                 styles.iconWrapper, 
@@ -293,17 +374,26 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
                             </View>
-                            <View style={[styles.sectionContent,{
-                         ...Platform.select({
-                            ios: {
-                                alignItems:isRTL ? "flex-start" : ""
-                            }
-                        }),
-                    }]}>
-                                <Text style={[styles.sectionTitle]}>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
                                     {translations[language].collections.collection.toBranch}
                                 </Text>
-                                <Text style={[styles.sectionValue]}>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
                                     {collection.to_branch_name}
                                 </Text>
                             </View>
@@ -316,23 +406,32 @@ export default function Collection({ type, collection }) {
             <View style={styles.actionsContainer}>
                 {type === "sent" ? (
                     <TouchableOpacity 
-                        style={[styles.actionButton]}
+                        style={[
+                            styles.actionButton,
+                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}
                         onPress={() => setShowSendersModal(true)}
                         activeOpacity={0.7}
                     >
                         <View style={[
                             styles.actionIconContainer,
-                            { backgroundColor: '#4361EE' }
+                            { backgroundColor: colors.primary }
                         ]}>
                             <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
                         </View>
-                        <Text style={styles.actionText}>
+                        <Text style={[
+                            styles.actionText,
+                            { color: colors.primary }
+                        ]}>
                             {translations[language].collections.collection.collections}
                         </Text>
                     </TouchableOpacity>
                 ) : (
                     <TouchableOpacity 
-                        style={[styles.actionButton]}
+                        style={[
+                            styles.actionButton,
+                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}
                         onPress={() => router.push({
                             pathname: "/(tabs)/orders",
                             params: { orderIds: collection.order_ids }
@@ -341,11 +440,14 @@ export default function Collection({ type, collection }) {
                     >
                         <View style={[
                             styles.actionIconContainer,
-                            { backgroundColor: '#4361EE' }
+                            { backgroundColor: colors.primary }
                         ]}>
                             <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
                         </View>
-                        <Text style={styles.actionText}>
+                        <Text style={[
+                            styles.actionText,
+                            { color: colors.primary }
+                        ]}>
                             {translations[language].collections.collection.orders}
                         </Text>
                     </TouchableOpacity>
@@ -359,17 +461,29 @@ export default function Collection({ type, collection }) {
                         showModal={showSendersModal} 
                         setShowModal={setShowSendersModal}
                     >
-                        <View style={styles.modalHeader}>
-                            <Text style={[styles.modalHeaderText]}>
+                        <View style={[
+                            styles.modalHeader,
+                            { borderBottomColor: colors.border, backgroundColor: colors.card }
+                        ]}>
+                            <Text style={[
+                                styles.modalHeaderText,
+                                { color: colors.text }
+                            ]}>
                                 {translations[language]?.collections?.collection?.collections || "Collections"}
                             </Text>
                         </View>
                         
-                        <ScrollView style={styles.sendersScrollView}>
+                        <ScrollView style={[styles.sendersScrollView, { backgroundColor: colors.background }]}>
                             {collection.sub_collections?.map((subCollection, index) => (
-                                <View key={index} style={styles.senderCard}>
+                                <View key={index} style={[
+                                    styles.senderCard,
+                                    { borderBottomColor: colors.border, backgroundColor: colors.card }
+                                ]}>
                                     <View style={styles.senderHeader}>
-                                        <Text style={styles.senderName}>{subCollection.business_name}</Text>
+                                        <Text style={[
+                                            styles.senderName,
+                                            { color: colors.text }
+                                        ]}>{subCollection.business_name}</Text>
                                         <View style={[
                                             styles.senderStatusBadge, 
                                             { backgroundColor: getStatusColor(subCollection.status) }
@@ -381,11 +495,14 @@ export default function Collection({ type, collection }) {
                                     <View style={styles.senderInfoRow}>
                                         <View style={[
                                             styles.senderIconContainer,
-                                            { backgroundColor: '#4361EE' }
+                                            { backgroundColor: colors.primary }
                                         ]}>
                                             <Feather name="phone" size={16} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.senderInfoText}>
+                                        <Text style={[
+                                            styles.senderInfoText,
+                                            { color: colors.textSecondary }
+                                        ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.business_phone 
                                                 : subCollection.sender_phone}
@@ -423,7 +540,10 @@ export default function Collection({ type, collection }) {
                                         ]}>
                                             <Ionicons name="location-outline" size={16} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.senderInfoText}>
+                                        <Text style={[
+                                            styles.senderInfoText,
+                                            { color: colors.textSecondary }
+                                        ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.business_city 
                                                 : subCollection.sender_city}
@@ -440,7 +560,10 @@ export default function Collection({ type, collection }) {
                                             ]}>
                                                 <Ionicons name="home-outline" size={16} color="#ffffff" />
                                             </View>
-                                            <Text style={styles.senderInfoText}>
+                                            <Text style={[
+                                                styles.senderInfoText,
+                                                { color: colors.textSecondary }
+                                            ]}>
                                                 {collection.delivery_type === "package" 
                                                     ? subCollection.business_address 
                                                     : subCollection.sender_address}
@@ -455,7 +578,10 @@ export default function Collection({ type, collection }) {
                                         ]}>
                                             <MaterialIcons name="attach-money" size={16} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.senderInfoText}>
+                                        <Text style={[
+                                            styles.senderInfoText,
+                                            { color: colors.textSecondary }
+                                        ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.total_cod_value 
                                                 : subCollection.sender_amount}
@@ -469,7 +595,10 @@ export default function Collection({ type, collection }) {
                                         ]}>
                                             <Feather name="package" size={16} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.senderInfoText}>
+                                        <Text style={[
+                                            styles.senderInfoText,
+                                            { color: colors.textSecondary }
+                                        ]}>
                                             {translations[language]?.collections?.collection?.orderCount || "Order Count"}: {subCollection.order_count}
                                         </Text>
                                     </View>
@@ -482,7 +611,10 @@ export default function Collection({ type, collection }) {
                                             ]}>
                                                 <MaterialCommunityIcons name="identifier" size={16} color="#ffffff" />
                                             </View>
-                                            <Text style={styles.senderInfoText}>
+                                            <Text style={[
+                                                styles.senderInfoText,
+                                                { color: colors.textSecondary }
+                                            ]}>
                                                 {translations[language]?.collections?.collection?.orderIds || "Order IDs"}: {collection.order_ids}
                                             </Text>
                                         </View>
@@ -500,14 +632,23 @@ export default function Collection({ type, collection }) {
                     customStyles={{ bottom: 15 }}
                     position="bottom"
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
+                    <View style={[
+                        styles.modalHeader,
+                        { borderBottomColor: colors.border }
+                    ]}>
+                        <Text style={[
+                            styles.modalHeaderText,
+                            { color: colors.text }
+                        ]}>
                             {translations[language]?.collections?.collection?.whatsappOptions || "WhatsApp Options"}
                         </Text>
                     </View>
                     <View style={styles.modalContent}>
                         <TouchableOpacity
-                            style={styles.modalOption}
+                            style={[
+                                styles.modalOption,
+                                { borderBottomColor: colors.border }
+                            ]}
                             onPress={() => {
                                 handleWhatsApp972(currentPhone);
                                 setShowPhoneOptions(false);
@@ -516,13 +657,19 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
                             </View>
-                            <Text style={styles.modalOptionText}>
+                            <Text style={[
+                                styles.modalOptionText,
+                                { color: colors.text }
+                            ]}>
                                 {translations[language]?.collections?.collection?.whatsapp || "WhatsApp"} (972)
                             </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, styles.noBorder]}
+                            style={[
+                                styles.modalOption, 
+                                styles.noBorder
+                            ]}
                             onPress={() => {
                                 handleWhatsApp970(currentPhone);
                                 setShowPhoneOptions(false);
@@ -531,7 +678,10 @@ export default function Collection({ type, collection }) {
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color="#ffffff" />
                             </View>
-                            <Text style={styles.modalOptionText}>
+                            <Text style={[
+                                styles.modalOptionText,
+                                { color: colors.text }
+                            ]}>
                                 {translations[language]?.collections?.collection?.whatsapp || "WhatsApp"} (970)
                             </Text>
                         </TouchableOpacity>
@@ -542,7 +692,10 @@ export default function Collection({ type, collection }) {
                 {(user.role === "business" && collection.status_key === "returned_in_branch") && (
                     <>
                         <TouchableOpacity 
-                            style={[styles.actionButton]}
+                            style={[
+                                styles.actionButton,
+                                { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                            ]}
                             onPress={() => setShowModal(true)}
                             activeOpacity={0.7}
                         >
@@ -552,7 +705,10 @@ export default function Collection({ type, collection }) {
                             ]}>
                                 <FontAwesome6 name="money-bill-trend-up" size={18} color="#ffffff" />
                             </View>
-                            <Text style={styles.actionText}>
+                            <Text style={[
+                                styles.actionText,
+                                { color: colors.primary }
+                            ]}>
                                 {translations[language].collections.collection.request_package}
                             </Text>
                         </TouchableOpacity>

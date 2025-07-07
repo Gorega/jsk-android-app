@@ -19,10 +19,14 @@ import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { getToken } from "../../utils/secureStore";
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function ChangePasswordScreen() {
   const { language } = useLanguage();
   const { user } = useAuth();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -197,15 +201,18 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.card }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
-      <View style={[styles.container]}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Header */}
-        <View style={[styles.header]}>
-          <View style={[styles.headerContent]}>
-            <Feather name="lock" size={22} color="#4361EE" />
-            <Text style={styles.headerText}>
+        <View style={[styles.header, { 
+          backgroundColor: colors.card, 
+          borderBottomColor: colors.border
+        }]}>
+          <View style={styles.headerContent}>
+            <Feather name="lock" size={22} color={colors.primary} />
+            <Text style={[styles.headerText, { color: colors.text }]}>
               {translations[language].tabs.settings.options.changePasswordFields?.changePass || "Change Password"}
             </Text>
           </View>
@@ -219,23 +226,34 @@ export default function ChangePasswordScreen() {
         >
           {/* Security Tips */}
           {!keyboardVisible && (
-            <View style={styles.securityTipsContainer}>
-              <View style={[styles.securityTipsHeader]}>
-                <Feather name="shield" size={18} color="#4361EE" />
-                <Text style={styles.securityTipsTitle}>{translations[language].tabs.settings.options.changePasswordFields?.tips}</Text>
+            <View style={[styles.securityTipsContainer, { 
+              backgroundColor: isDark ? colors.cardDark : "#F0F9FF",
+              borderLeftColor: colors.primary
+            }]}>
+              <View style={styles.securityTipsHeader}>
+                <Feather name="shield" size={18} color={colors.primary} />
+                <Text style={[styles.securityTipsTitle, { color: colors.text }]}>
+                  {translations[language].tabs.settings.options.changePasswordFields?.tips}
+                </Text>
               </View>
               <View style={styles.securityTipsList}>
-                <View style={[styles.securityTipItem]}>
+                <View style={styles.securityTipItem}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.usage}</Text>
+                  <Text style={[styles.tipText, { color: colors.textSecondary }]}>
+                    {translations[language].tabs.settings.options.changePasswordFields?.usage}
+                  </Text>
                 </View>
-                <View style={[styles.securityTipItem]}>
+                <View style={styles.securityTipItem}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.letterInclusion}</Text>
+                  <Text style={[styles.tipText, { color: colors.textSecondary }]}>
+                    {translations[language].tabs.settings.options.changePasswordFields?.letterInclusion}
+                  </Text>
                 </View>
-                <View style={[styles.securityTipItem]}>
+                <View style={styles.securityTipItem}>
                   <Feather name="check" size={14} color="#10B981" style={styles.tipIcon} />
-                  <Text style={styles.tipText}>{translations[language].tabs.settings.options.changePasswordFields?.numbersInclusion}</Text>
+                  <Text style={[styles.tipText, { color: colors.textSecondary }]}>
+                    {translations[language].tabs.settings.options.changePasswordFields?.numbersInclusion}
+                  </Text>
                 </View>
               </View>
             </View>
@@ -246,22 +264,23 @@ export default function ChangePasswordScreen() {
             
             {/* New Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel]}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
                 {translations[language].tabs.settings.options.changePasswordFields?.newPass || "New Password"}
               </Text>
               <View style={[
                 styles.inputContainer, 
-                errors.newPassword && styles.inputError
+                { 
+                  backgroundColor: colors.card,
+                  borderColor: errors.newPassword ? "#EF4444" : colors.border
+                }
               ]}>
-                <View style={[
-                  styles.inputIconContainer,
-                ]}>
-                  <Feather name="lock" size={18} color="#94A3B8" />
+                <View style={styles.inputIconContainer}>
+                  <Feather name="lock" size={18} color={colors.textSecondary} />
                 </View>
                 <TextInput 
                   style={[
-                    styles.input
-                  
+                    styles.input,
+                    { color: colors.text }
                   ]} 
                   secureTextEntry={secureNewPassword} 
                   value={newPassword} 
@@ -272,19 +291,17 @@ export default function ChangePasswordScreen() {
                     }
                   }}
                   placeholder={translations[language].tabs.settings.options.changePasswordFields?.newPassHint || "Enter new password"}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={isDark ? colors.textSecondary : "#94A3B8"}
                 />
                 <TouchableOpacity 
-                  style={[
-                    styles.eyeIcon
-                  ]} 
+                  style={styles.eyeIcon} 
                   onPress={() => setSecureNewPassword(!secureNewPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Feather 
                     name={secureNewPassword ? "eye-off" : "eye"} 
                     size={18} 
-                    color="#94A3B8"
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -318,21 +335,23 @@ export default function ChangePasswordScreen() {
             
             {/* Confirm Password Field */}
             <View style={styles.inputField}>
-              <Text style={[styles.inputLabel]}>
+              <Text style={[styles.inputLabel, { color: colors.text }]}>
                {translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
               </Text>
               <View style={[
                 styles.inputContainer, 
-                errors.confirmPassword && styles.inputError
+                { 
+                  backgroundColor: colors.card,
+                  borderColor: errors.confirmPassword ? "#EF4444" : colors.border
+                }
               ]}>
-                <View style={[
-                  styles.inputIconContainer,
-                ]}>
-                  <Feather name="check-circle" size={18} color="#94A3B8" />
+                <View style={styles.inputIconContainer}>
+                  <Feather name="check-circle" size={18} color={colors.textSecondary} />
                 </View>
                 <TextInput 
                   style={[
-                    styles.input
+                    styles.input,
+                    { color: colors.text }
                   ]} 
                   secureTextEntry={secureConfirmPassword} 
                   value={confirmPassword} 
@@ -343,19 +362,17 @@ export default function ChangePasswordScreen() {
                     }
                   }}
                   placeholder={translations[language].tabs.settings.options.changePasswordFields?.confirmPassword}
-                  placeholderTextColor="#94A3B8"
+                  placeholderTextColor={isDark ? colors.textSecondary : "#94A3B8"}
                 />
                 <TouchableOpacity 
-                  style={[
-                    styles.eyeIcon
-                  ]} 
+                  style={styles.eyeIcon} 
                   onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
                   <Feather 
                     name={secureConfirmPassword ? "eye-off" : "eye"} 
                     size={18} 
-                    color="#94A3B8"
+                    color={colors.textSecondary}
                   />
                 </TouchableOpacity>
               </View>
@@ -367,7 +384,10 @@ export default function ChangePasswordScreen() {
         </ScrollView>
         
         {/* Submit Button */}
-        <View style={styles.footer}>
+        <View style={[styles.footer, { 
+          backgroundColor: colors.card,
+          borderTopColor: colors.border
+        }]}>
           <TouchableOpacity 
             style={[
               styles.submitButton,

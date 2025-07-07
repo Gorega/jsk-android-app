@@ -13,10 +13,14 @@ import { router, useLocalSearchParams, Stack } from 'expo-router';
 // import * as Location from 'expo-location';
 import { Linking } from 'react-native';
 import ModalPresentation from "../../components/ModalPresentation";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function RouteNavigate() {
     const { language } = useLanguage();
     const { user } = useAuth();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const params = useLocalSearchParams();
     const { routeId } = params;
     
@@ -415,20 +419,20 @@ export default function RouteNavigate() {
             case 'delivered':
             case 'received':
             case 'delivered/received':
-                return '#10B981'; // Green
+                return colors.success; // Green
             case 'on_the_way':
             case'driver_responsibility':
-                return '#4361EE'; // Blue
+                return colors.primary; // Blue
             case 'pending':
-                return '#F59E0B'; // Yellow
+                return colors.warning; // Yellow
             case 'reschedule':
-                return '#F59E0B'; // Yellow
+                return colors.warning; // Yellow
             case 'return_before_delivered_initiated':
             case 'return_after_delivered_initiated':
             case 'cancelled':
-                return '#EF4444'; // Red
+                return colors.error; // Red
             default:
-                return '#64748B'; // Gray
+                return colors.textSecondary; // Gray
         }
     };
 
@@ -466,18 +470,18 @@ export default function RouteNavigate() {
     
     if (loading || !route) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colors.background }]}>
                 <Stack.Screen options={{ headerShown: false }} />
-                <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+                <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
                 <FixedHeader 
-                    title={translations[language].routes?.navigation || "Route Navigation"} 
+                    title={translations[language]?.routes?.navigation || "Route Navigation"} 
                     showBackButton={true} 
                 />
                 
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
-                    <Text style={styles.loadingText}>
-                        {translations[language].common?.loading || "Loading..."}
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                        {translations[language]?.common?.loading || "Loading..."}
                     </Text>
                 </View>
             </View>
@@ -497,358 +501,206 @@ export default function RouteNavigate() {
     const totalOrders = safeOrders.length;
     
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Stack.Screen options={{ headerShown: false }} />
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             <FixedHeader 
                 title={safeRoute.name} 
                 showBackButton={true} 
             />
             
-            <View style={styles.progressContainer}>
+            <View style={[styles.progressContainer, { backgroundColor: colors.card, borderBottomColor: colors.divider }]}>
                 <View style={styles.progressInfo}>
-                    <Text style={styles.progressText}>
-                        {deliveredCount}/{totalOrders} {translations[language].routes?.delivered || "Delivered"}
+                    <Text style={[styles.progressText, { color: colors.success }]}>
+                        {deliveredCount}/{totalOrders} {translations[language]?.routes?.delivered || "Delivered"}
                     </Text>
-                    <Text style={styles.routeInfoText}>
-                        {translations[language].routes?.stop || "Stop"} {currentIndex + 1}/{totalOrders}
+                    <Text style={[styles.routeInfoText, { color: colors.textSecondary }]}>
+                        {translations[language]?.routes?.stop || "Stop"} {currentIndex + 1}/{totalOrders}
                     </Text>
                 </View>
-                <View style={styles.progressBarContainer}>
+                <View style={[styles.progressBarContainer, { backgroundColor: isDark ? '#3A3A3A' : '#E2E8F0' }]}>
                     <View 
                         style={[
                             styles.progressBar, 
-                            { width: `${(deliveredCount / totalOrders) * 100}%` }
+                            { width: `${(deliveredCount / totalOrders) * 100}%`, backgroundColor: colors.success }
                         ]} 
                     />
                 </View>
             </View>
             
-            <View style={styles.viewToggle}>
-                {/* <TouchableOpacity 
-                    style={[styles.toggleButton, viewMode === 'map' && styles.activeToggleButton]}
-                    onPress={() => setViewMode('map')}
-                >
-                    <Ionicons name="map" size={16} color={viewMode === 'map' ? "#FFFFFF" : "#64748B"} />
-                    <Text style={[styles.toggleText, viewMode === 'map' && styles.activeToggleText]}>
-                        {translations[language].routes?.map || "Map"}
-                    </Text>
-                </TouchableOpacity> */}
-                
+            <View style={[styles.viewToggle, { backgroundColor: colors.card }]}>
                 <TouchableOpacity 
-                    style={[styles.toggleButton, viewMode === 'list' && styles.activeToggleButton]}
+                    style={[
+                        styles.toggleButton, 
+                        viewMode === 'list' && [styles.activeToggleButton, { backgroundColor: colors.primary }]
+                    ]}
                     onPress={() => setViewMode('list')}
                 >
-                    <Feather name="list" size={16} color={viewMode === 'list' ? "#FFFFFF" : "#64748B"} />
-                    <Text style={[styles.toggleText, viewMode === 'list' && styles.activeToggleText]}>
-                        {translations[language].routes?.list || "List"}
+                    <Feather 
+                        name="list" 
+                        size={16} 
+                        color={viewMode === 'list' ? colors.buttonText : colors.textSecondary} 
+                    />
+                    <Text style={[
+                        styles.toggleText, 
+                        { color: viewMode === 'list' ? colors.buttonText : colors.textSecondary },
+                        viewMode === 'list' && styles.activeToggleText
+                    ]}>
+                        {translations[language]?.routes?.list || "List"}
                     </Text>
                 </TouchableOpacity>
             </View>
             
-            {viewMode === 'map' ? (
-                // <View style={styles.mapContainer}>
-                //     <MapView
-                //         ref={mapRef}
-                //         style={styles.map}
-                //         provider={PROVIDER_GOOGLE}
-                //         initialRegion={{
-                //             latitude: currentOrder?.latitude || 32.0853,
-                //             longitude: currentOrder?.longitude || 34.7818,
-                //             latitudeDelta: 0.05,
-                //             longitudeDelta: 0.05,
-                //         }}
-                //         showsUserLocation={true}
-                //         followsUserLocation={true}
-                //         showsMyLocationButton={true}
-                //     >
-                //         {location && location.coords && 
-                //          !isNaN(Number(location.coords.latitude)) && 
-                //          !isNaN(Number(location.coords.longitude)) && (
-                //             <Marker
-                //                 coordinate={{
-                //                     latitude: Number(location.coords.latitude),
-                //                     longitude: Number(location.coords.longitude),
-                //                 }}
-                //             >
-                //                 <View style={styles.currentLocationMarker}>
-                //                     <View style={styles.currentLocationDot} />
-                //                     <Text style={styles.markerTitle}>
-                //                         {translations[language].routes?.yourLocation || "Your Location"}
-                //                     </Text>
-                //                 </View>
-                //             </Marker>
-                //         )}
-                        
-                //         {safeOrders.map((order, index) => {
-                //             // Check if latitude and longitude are valid numbers before rendering the marker
-                //             if (!order.latitude || !order.longitude || 
-                //                 isNaN(Number(order.latitude)) || isNaN(Number(order.longitude))) {
-                //                 return null; // Skip this marker if coordinates are invalid
-                //             }
-                            
-                //             return (
-                //                 <Marker
-                //                     key={order.id}
-                //                     coordinate={{
-                //                         latitude: 1, // Ensure it's a number
-                //                         longitude: 1, // Ensure it's a number
-                //                     }}
-                //                 >
-                //                     <View style={[
-                //                         styles.customMarker,
-                //                         index === currentIndex && styles.currentMarker,
-                //                         orderStatus[order.id] === 'delivered' && styles.deliveredMarker,
-                //                         orderStatus[order.id] === 'reschedule' && styles.rescheduledMarker
-                //                     ]}>
-                //                         <Text style={styles.markerNumber}>{index + 1}</Text>
-                //                     </View>
-                //                 </Marker>
-                //             );
-                //         })}
-                        
-                //         {/* Draw route lines between points */}
-                //         {safeOrders.length > 1 && (
-                //             <Polyline
-                //                 coordinates={safeOrders.map(order => ({
-                //                     latitude:1,
-                //                     longitude: 1,
-                //                 }))}
-                //                 strokeColor="#4361EE"
-                //                 strokeWidth={3}
-                //                 lineDashPattern={[1]}
-                //             />
-                //         )}
-                //     </MapView>
-                // </View>
-                <></>
-            ) : (
-                <View style={styles.listContainer}>
-                    <ScrollView
-                        onScroll={handleScroll}
-                        scrollEventThrottle={400}
-                        showsVerticalScrollIndicator={false}
-                    >
-                        {allOrders.map((order, index) => (
-                            <TouchableOpacity
-                                key={`${order.id}-${index}`}
-                                style={[
-                                    styles.listItemCard,
-                                    index === currentIndex && styles.currentListItem,
-                                    orderStatus[order.id] === 'delivered' && styles.deliveredListItem,
-                                    orderStatus[order.id] === 'reschedule' && styles.rescheduledListItem,
-                                    expandedOrder === order.id && styles.expandedListItem
-                                ]}
-                                onPress={() => toggleExpandOrder(order.id)}
-                                onLongPress={() => router.push({
-                                    pathname: "(track)",
-                                    params: { orderId: order.order_id }
-                                })}
-                                activeOpacity={0.8}
-                            >
-                                <View style={[styles.listItemHeader]}>
-                                    <View style={[styles.orderNumberContainer, { backgroundColor: getStatusColor(orderStatus[order.id]) }]}>
-                                        <Text style={styles.orderNumber}>{index + 1}</Text>
-                                    </View>
-                                    
-                                    <View style={styles.listItemTitleContainer}>
-                                        <Text style={[styles.listItemName]}>
-                                            {order.receiver_name}
-                                        </Text>
-                                        <Text style={[styles.listItemAddress]}>
-                                            {order.receiver_address}
-                                        </Text>
-        
-                                        {(order.delivery_info.to_branch || order.delivery_info.to_driver) && (
-                                            <Text style={[styles.listItemAddress]}>
-                                                {translations[language].routes?.dispatchTo} {order.delivery_info.to_branch || order.delivery_info.to_driver}
-                                            </Text>
-                                        )}
-                                    </View>
-                                    
-                                    <View style={styles.listItemStatus}>
-                                        <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(orderStatus[order.id])}20` }]}>
-                                            <Text style={[styles.statusText, { color: getStatusColor(orderStatus[order.id]) }]}>
-                                                {order.delivery_info.status}
-                                            </Text>
-                                        </View>
-                                        <MaterialIcons 
-                                            name={expandedOrder === order.id ? "expand-less" : "expand-more"} 
-                                            size={24} 
-                                            color="#94A3B8" 
-                                        />
-                                    </View>
+            <View style={styles.listContainer}>
+                <ScrollView
+                    onScroll={handleScroll}
+                    scrollEventThrottle={400}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {allOrders.map((order, index) => (
+                        <TouchableOpacity
+                            key={`${order.id}-${index}`}
+                            style={[
+                                styles.listItemCard,
+                                { 
+                                    backgroundColor: colors.card,
+                                    borderLeftColor: getStatusColor(orderStatus[order.id])
+                                },
+                                expandedOrder === order.id && styles.expandedListItem
+                            ]}
+                            onPress={() => toggleExpandOrder(order.id)}
+                            onLongPress={() => router.push({
+                                pathname: "(track)",
+                                params: { orderId: order.order_id }
+                            })}
+                            activeOpacity={0.8}
+                        >
+                            <View style={[styles.listItemHeader]}>
+                                <View style={[styles.orderNumberContainer, { backgroundColor: getStatusColor(orderStatus[order.id]) }]}>
+                                    <Text style={styles.orderNumber}>{index + 1}</Text>
                                 </View>
                                 
-                                {expandedOrder === order.id && (
-                                    <View style={styles.expandedContent}>
-                                        <View style={styles.orderDetails}>
-                                            <View style={[styles.orderDetailItem]}>
-                                                <Feather name="package" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel]}>
-                                                    {translations[language].routes?.orderId || "Order ID"}:
-                                                </Text>
-                                                <Text style={styles.orderDetailText}>
-                                                    {order.order_id}
-                                                </Text>
-                                            </View>
-                                            
-                                            <View style={[styles.orderDetailItem]}>
-                                                <Feather name="phone" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel]}>
-                                                    {translations[language].routes?.phone || "Phone"}:
-                                                </Text>
-                                                <Text style={styles.orderDetailText}>
-                                                    {order.receiver_mobile}
-                                                </Text>
-                                            </View>
-
-                                            <View style={[styles.orderDetailItem]}>
-                                                <Feather name="package" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel]}>
-                                                    {translations[language].tabs?.orders?.order?.orderType || "Order Type"}:
-                                                </Text>
-                                                <Text style={styles.orderDetailText}>
-                                                    {order.order_type}
-                                                </Text>
-                                            </View>
-
-                                            <View style={[styles.orderDetailItem]}>
-                                                <MaterialIcons name="payment" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel]}>
-                                                    {translations[language].tabs?.orders?.track?.paymentType || "Payment Type"}:
-                                                </Text>
-                                                <Text style={styles.orderDetailText}>
-                                                    {order.payment_type}
-                                                </Text>
-                                            </View>
-
-                                            <View style={[styles.orderDetailItem]}>
-                                                <MaterialIcons name="attach-money" size={16} color="#64748B" />
-                                                <Text style={[styles.orderDetailLabel]}>
-                                                   {order.order_type_key === "receive" ?  translations[language].tabs?.orders?.create?.sections?.cost?.fields?.packageCost : 
-                                                    order.order_type_key === "payment" ? translations[language].tabs?.orders?.create?.sections?.cost?.fields?.amount : 
-                                                    translations[language].tabs?.orders?.create?.sections?.cost?.fields?.totalPackageCost}:
-                                                </Text>
-                                                <Text style={styles.orderDetailText}>
-                                                    {order.cod_value}
-                                                </Text>
-                                            </View>
+                                <View style={styles.listItemTitleContainer}>
+                                    <Text style={[styles.listItemName, { color: colors.text }]}>
+                                        {order.receiver_name}
+                                    </Text>
+                                    <Text style={[styles.listItemAddress, { color: colors.textSecondary }]}>
+                                        {order.receiver_address}
+                                    </Text>
+    
+                                    {(order.delivery_info.to_branch || order.delivery_info.to_driver) && (
+                                        <Text style={[styles.listItemAddress, { color: colors.textSecondary }]}>
+                                            {translations[language]?.routes?.dispatchTo} {order.delivery_info.to_branch || order.delivery_info.to_driver}
+                                        </Text>
+                                    )}
+                                </View>
+                                
+                                <View style={styles.listItemStatus}>
+                                    <View style={[
+                                        styles.statusBadge, 
+                                        { backgroundColor: `${getStatusColor(orderStatus[order.id])}${isDark ? '30' : '20'}` }
+                                    ]}>
+                                        <Text style={[styles.statusText, { color: getStatusColor(orderStatus[order.id]) }]}>
+                                            {order.delivery_info.status}
+                                        </Text>
+                                    </View>
+                                    <MaterialIcons 
+                                        name={expandedOrder === order.id ? "expand-less" : "expand-more"} 
+                                        size={24} 
+                                        color={colors.textTertiary} 
+                                    />
+                                </View>
+                            </View>
+                            
+                            {expandedOrder === order.id && (
+                                <View style={styles.expandedContent}>
+                                    <View style={styles.orderDetails}>
+                                        <View style={[styles.orderDetailItem]}>
+                                            <Feather name="package" size={16} color={colors.textSecondary} />
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                                {translations[language]?.routes?.orderId || "Order ID"}:
+                                            </Text>
+                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                                {order.order_id}
+                                            </Text>
                                         </View>
                                         
-                                        <View style={styles.actionButtons}>
+                                        <View style={[styles.orderDetailItem]}>
+                                            <Feather name="phone" size={16} color={colors.textSecondary} />
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                                {translations[language]?.routes?.phone || "Phone"}:
+                                            </Text>
+                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                                {order.receiver_mobile}
+                                            </Text>
+                                        </View>
+
+                                        <View style={[styles.orderDetailItem]}>
+                                            <Feather name="package" size={16} color={colors.textSecondary} />
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                                {translations[language].tabs?.orders?.order?.orderType || "Order Type"}:
+                                            </Text>
+                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                                {order.order_type}
+                                            </Text>
+                                        </View>
+
+                                        <View style={[styles.orderDetailItem]}>
+                                            <MaterialIcons name="payment" size={16} color={colors.textSecondary} />
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                                {translations[language].tabs?.orders?.track?.paymentType || "Payment Type"}:
+                                            </Text>
+                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                                {order.payment_type}
+                                            </Text>
+                                        </View>
+
+                                        <View style={[styles.orderDetailItem]}>
+                                            <MaterialIcons name="attach-money" size={16} color={colors.textSecondary} />
+                                            <Text style={[styles.orderDetailLabel, { color: colors.textSecondary }]}>
+                                               {order.order_type_key === "receive" ?  translations[language].tabs?.orders?.create?.sections?.cost?.fields?.packageCost : 
+                                                order.order_type_key === "payment" ? translations[language].tabs?.orders?.create?.sections?.cost?.fields?.amount : 
+                                                translations[language].tabs?.orders?.create?.sections?.cost?.fields?.totalPackageCost}:
+                                            </Text>
+                                            <Text style={[styles.orderDetailText, { color: colors.text }]}>
+                                                {order.cod_value}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    
+                                    <View style={styles.actionButtons}>
+                                        <TouchableOpacity 
+                                            style={[styles.actionButton, styles.callButton]}
+                                            onPress={() => handleCall(order.receiver_mobile)}
+                                        >
+                                            <Feather name="phone" size={16} color="#4361EE" />
+                                            <Text style={styles.callButtonText}>
+                                                {translations[language]?.routes?.call || "Call"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    {/* Only show status update button if the current status is allowed */}
+                                    {allowedStatuses.includes(orderStatus[order.id]) && (
+                                        <View style={styles.deliveryButtons}>
                                             <TouchableOpacity 
-                                                style={[styles.actionButton, styles.callButton]}
-                                                onPress={() => handleCall(order.receiver_mobile)}
+                                                style={[styles.deliveryButton, styles.updateStatusButton]}
+                                                onPress={() => handleStatusUpdate(order)}
                                             >
-                                                <Feather name="phone" size={16} color="#4361EE" />
-                                                <Text style={styles.callButtonText}>
-                                                    {translations[language].routes?.call || "Call"}
+                                                <Feather name="edit-2" size={16} color="#FFFFFF" />
+                                                <Text style={styles.updateStatusButtonText}>
+                                                    {translations[language]?.routes?.changeStatus || "Update Status"}
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
-                                        
-                                        {/* Only show status update button if the current status is allowed */}
-                                        {allowedStatuses.includes(orderStatus[order.id]) && (
-                                            <View style={styles.deliveryButtons}>
-                                                <TouchableOpacity 
-                                                    style={[styles.deliveryButton, styles.updateStatusButton]}
-                                                    onPress={() => handleStatusUpdate(order)}
-                                                >
-                                                    <Feather name="edit-2" size={16} color="#FFFFFF" />
-                                                    <Text style={styles.updateStatusButtonText}>
-                                                        {translations[language].routes?.changeStatus || "Update Status"}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            </View>
-                                        )}
-                                    </View>
-                                )}
-                            </TouchableOpacity>
-                        ))}
-                        {isLoadingMore && <LoadingIndicator />}
-                    </ScrollView>
-                </View>
-            )}
-            
-            {/* <View style={styles.navigationControls}>
-                <TouchableOpacity 
-                    style={[styles.navButton, currentIndex === 0 && styles.disabledNavButton]}
-                    onPress={navigateToPrevOrder}
-                    disabled={currentIndex === 0}
-                >
-                    <Feather name="chevron-left" size={24} color={currentIndex === 0 ? "#94A3B8" : "#4361EE"} />
-                    <Text style={[styles.navButtonText, currentIndex === 0 && styles.disabledNavButtonText]}>
-                        {translations[language].routes?.previous || "Previous"}
-                    </Text>
-                </TouchableOpacity>
-                
-                <View style={styles.currentDestination}>
-                    <Text style={styles.currentDestinationText}>
-                        {currentIndex + 1}/{safeOrders.length}
-                    </Text>
-                </View>
-                
-                <TouchableOpacity 
-                    style={[styles.navButton, currentIndex === safeOrders.length - 1 && styles.disabledNavButton]}
-                    onPress={navigateToNextOrder}
-                    disabled={currentIndex === safeOrders.length - 1}
-                >
-                    <Text style={[styles.navButtonText, currentIndex === safeOrders.length - 1 && styles.disabledNavButtonText]}>
-                        {translations[language].routes?.next || "Next"}
-                    </Text>
-                    <Feather name="chevron-right" size={24} color={currentIndex === safeOrders.length - 1 ? "#94A3B8" : "#4361EE"} />
-                </TouchableOpacity>
-            </View> */}
-            
-            {viewMode === 'map' && (
-                <View style={styles.currentOrderCard}>
-                    <View style={[styles.currentOrderHeader]}>
-                        <View style={styles.currentOrderInfo}>
-                            <Text style={[styles.currentOrderName]}>
-                                {currentOrder?.receiver_name}
-                            </Text>
-                            <Text style={[styles.currentOrderAddress]}>
-                                {currentOrder?.receiver_address}
-                            </Text>
-                        </View>
-                        
-                        {/* Only show status update button if the current status is allowed */}
-                        {allowedStatuses.includes(orderStatus[currentOrder?.id]) && (
-                            <TouchableOpacity 
-                                style={styles.updateStatusIconButton}
-                                onPress={() => handleStatusUpdate(currentOrder)}
-                            >
-                                <View style={styles.updateStatusIconBackground}>
-                                    <Feather name="edit-2" size={24} color="#4361EE" />
+                                    )}
                                 </View>
-                                <Text style={styles.iconButtonText}>
-                                    {translations[language].routes?.changeStatus || "Update Status"}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                    
-                    <View style={styles.currentOrderActions}>
-                        <TouchableOpacity 
-                            style={styles.directionsIconButton}
-                            onPress={() => handleDirections(currentOrder)}
-                        >
-                            <LinearGradient
-                                colors={['#4361EE', '#3A0CA3']}
-                                style={styles.directionsIconGradient}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                            >
-                                <Feather name="navigation" size={24} color="#FFFFFF" />
-                            </LinearGradient>
-                            <Text style={styles.iconButtonText}>
-                                {translations[language].routes?.navigate || "Navigate"}
-                            </Text>
+                            )}
                         </TouchableOpacity>
-                    </View>
-                </View>
-            )}
+                    ))}
+                    {isLoadingMore && <LoadingIndicator />}
+                </ScrollView>
+            </View>
             
             {showStatusUpdateModal && (
                 <ModalPresentation
@@ -857,8 +709,8 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
-                            {translations[language].routes?.selectStatus || "Select Status"}
+                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                            {translations[language]?.routes?.selectStatus || "Select Status"}
                         </Text>
                     </View>
                     <View style={styles.reasonContainer}>
@@ -866,11 +718,11 @@ export default function RouteNavigate() {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.reasonOption
+                                    styles.reasonOption,{backgroundColor: colors.surface,borderColor: colors.border}
                                 ]}
                                 onPress={() => handleStatusSelect(status)}
                             >
-                                <Text style={[styles.reasonText]}>
+                                <Text style={[styles.reasonText,{color: colors.text}]}>
                                     {status.label}
                                 </Text>
                             </TouchableOpacity>
@@ -886,8 +738,8 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
-                            {translations[language].routes?.selectReason || "Select Reason"}
+                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                            {translations[language]?.routes?.selectReason || "Select Reason"}
                         </Text>
                     </View>
                     <View style={styles.reasonContainer}>
@@ -895,11 +747,11 @@ export default function RouteNavigate() {
                             <TouchableOpacity
                                 key={index}
                                 style={[
-                                    styles.reasonOption
+                                    styles.reasonOption,{backgroundColor: colors.surface,borderColor: colors.border}
                                 ]}
                                 onPress={() => handleReasonSelect(reason)}
                             >
-                                <Text style={[styles.reasonText]}>
+                                <Text style={[styles.reasonText,{color: colors.text}]}>
                                     {reason.label}
                                 </Text>
                             </TouchableOpacity>
@@ -915,17 +767,17 @@ export default function RouteNavigate() {
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={styles.modalHeaderText}>
-                            {translations[language].routes?.confirmStatusChange || "Confirm Status Change"}
+                        <Text style={[styles.modalHeaderText,{color: colors.text}]}>
+                            {translations[language]?.routes?.confirmStatusChange || "Confirm Status Change"}
                         </Text>
                     </View>
                     <View style={styles.confirmContainer}>
-                        <Text style={[styles.confirmText]}>
-                            {translations[language].routes?.confirmStatusChangeMessage || "Are you sure you want to change the status to"} {selectedStatus?.label}?
+                        <Text style={[styles.confirmText,{color: colors.text}]}>
+                            {translations[language]?.routes?.confirmStatusChangeMessage || "Are you sure you want to change the status to"} {selectedStatus?.label}?
                         </Text>
                         {selectedReason && (
                             <Text style={[styles.reasonText]}>
-                                {translations[language].routes?.reason || "Reason"}: {selectedReason.label}
+                                {translations[language]?.routes?.reason || "Reason"}: {selectedReason.label}
                             </Text>
                         )}
                         <View style={styles.confirmButtons}>
@@ -939,7 +791,7 @@ export default function RouteNavigate() {
                                 }}
                             >
                                 <Text style={styles.cancelButtonText}>
-                                    {translations[language].common?.cancel || "Cancel"}
+                                    {translations[language]?.common?.cancel || "Cancel"}
                                 </Text>
                             </TouchableOpacity>
                             <TouchableOpacity
@@ -951,7 +803,7 @@ export default function RouteNavigate() {
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
                                     <Text style={styles.submitButtonText}>
-                                        {translations[language].common?.confirm || "Confirm"}
+                                        {translations[language]?.common?.confirm || "Confirm"}
                                     </Text>
                                 )}
                             </TouchableOpacity>
@@ -968,12 +820,12 @@ export default function RouteNavigate() {
                 >
                     <View style={styles.modalHeader}>
                         <Text style={styles.modalHeaderText}>
-                            {translations[language].routes?.callOptions}
+                            {translations[language]?.routes?.callOptions}
                         </Text>
                     </View>
                     <View style={styles.modalContent}>
                         <TouchableOpacity
-                            style={styles.modalOption}
+                            style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
                                 setShowCallOptionsModal(false);
                                 // Record contact history for phone call
@@ -981,13 +833,13 @@ export default function RouteNavigate() {
                                 Linking.openURL(`tel:${currentPhoneNumber}`);
                             }}
                         >
-                            <Text style={styles.modalOptionText}>
-                                {translations[language].routes?.regularCall}
+                            <Text style={[styles.modalOptionText,{color: colors.text}]}>
+                                {translations[language]?.routes?.regularCall}
                             </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={styles.modalOption}
+                            style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
                                 setShowCallOptionsModal(false);
                                 const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
@@ -997,11 +849,11 @@ export default function RouteNavigate() {
                                 Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
                             }}
                         >
-                            <Text style={styles.modalOptionText}> {translations[language].routes?.whatsapp} (972)</Text>
+                            <Text style={[styles.modalOptionText,{color: colors.text}]}> {translations[language]?.routes?.whatsapp} (972)</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={styles.modalOption}
+                            style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
                                 setShowCallOptionsModal(false);
                                 const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
@@ -1011,7 +863,7 @@ export default function RouteNavigate() {
                                 Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
                             }}
                         >
-                            <Text style={styles.modalOptionText}> {translations[language].routes?.whatsapp} (970)</Text>
+                            <Text style={[styles.modalOptionText,{color: colors.text}]}> {translations[language]?.routes?.whatsapp} (970)</Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
@@ -1021,8 +873,8 @@ export default function RouteNavigate() {
                                 setCurrentPhoneNumber(null);
                             }}
                         >
-                            <Text style={styles.cancelOptionText}>
-                                {translations[language].routes?.cancel}
+                            <Text style={[styles.cancelOptionText,{color: colors.text}]}>
+                                {translations[language]?.routes?.cancel}
                             </Text>
                         </TouchableOpacity>
                     </View>

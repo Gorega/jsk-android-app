@@ -12,6 +12,8 @@ import { useSocket } from '../../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { getToken } from '../../utils/secureStore';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 const TrackingOrder = () => {
   const socket = useSocket();
@@ -24,6 +26,8 @@ const TrackingOrder = () => {
   const { language } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const isRTL = language === 'ar' || language === 'he';
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   const onRefresh = useCallback(async () => {
     try {
@@ -157,16 +161,23 @@ const TrackingOrder = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.overlay}>
-        <StatusBar barStyle="light-content" backgroundColor="#4361EE" />
-        <BlurView intensity={80} style={styles.blurContainer}>
-          <View style={styles.spinnerContainer}>
-            <ActivityIndicator size="large" color="#4361EE" />
-            <Text style={styles.loadingText}>
-              {translations[language].tabs.orders.track.loading || 'Loading order...'}
-            </Text>
-          </View>
-        </BlurView>
+      <View style={[styles.overlay, { 
+        backgroundColor: colorScheme === 'dark' ? 'rgba(0, 0, 0, 0.9)' : 'rgba(31, 41, 55, 0.8)' 
+      }]}>
+        <StatusBar 
+          barStyle="light-content" 
+          backgroundColor={colorScheme === 'dark' ? '#000000' : colors.primary} 
+        />
+        <View style={[styles.spinnerContainer, { 
+          backgroundColor: colors.card,
+          borderColor: colors.border,
+          borderWidth: 1,
+        }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.primary }]}>
+            {translations[language].tabs.orders.track.loading || 'Loading order...'}
+          </Text>
+        </View>
       </View>
     );
   }
@@ -174,19 +185,19 @@ const TrackingOrder = () => {
   // Show error state if there was a problem loading the order
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <StatusBar barStyle="light-content" backgroundColor="#EF4444" />
-        <View style={styles.errorContent}>
-          <View style={styles.errorIconContainer}>
-            <Feather name="alert-circle" size={48} color="#EF4444" />
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={colorScheme === 'dark' ? "light-content" : "dark-content"} backgroundColor={colors.error} />
+        <View style={[styles.errorContent, { backgroundColor: colors.card }]}>
+          <View style={[styles.errorIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}>
+            <Feather name="alert-circle" size={48} color={colors.error} />
           </View>
-          <Text style={styles.errorTitle}>
+          <Text style={[styles.errorTitle, { color: colors.text }]}>
             {translations[language]?.tabs.orders.track.errorTitle || 'Oops!'}
           </Text>
-          <Text style={styles.errorMessage}>
+          <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>
             {translations[language]?.tabs.orders.track.orderNotFound || 'Order not found or could not be loaded'}
           </Text>
-          <Text style={styles.errorDetail}>
+          <Text style={[styles.errorDetail, { color: colors.textTertiary }]}>
             {error}
           </Text>
           <TouchableOpacity
@@ -245,34 +256,34 @@ const TrackingOrder = () => {
         return (
             <View style={[styles.currencyContainer]}>
                 {currencies.map((curr, idx) => (
-                    <Text key={idx} style={[styles.currencyText]}>{curr}</Text>
+                    <Text key={idx} style={[styles.currencyText, { color: colors.text }]}>{curr}</Text>
                 ))}
             </View>
         );
     }
     
     // Regular display for simple values - Wrap in Text component
-    return <Text style={[styles.costText]}>{value} {currency}</Text>;
+    return <Text style={[styles.costText, { color: colors.text }]}>{value} {currency}</Text>;
   };
 
   return (
     <>
-      <StatusBar barStyle="light-content" backgroundColor="#4361EE" />
+      <StatusBar barStyle={colorScheme === 'dark' ? "light-content" : "dark-content"} backgroundColor={colors.primary} />
       <ScrollView
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.background }]}
         contentContainerStyle={styles.contentContainer}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#4361EE"]}
-            tintColor="#4361EE"
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
       >
         {/* Hero Header with Order Info */}
         <LinearGradient
-          colors={['#4361EE', '#3730A3']}
+          colors={colorScheme === 'dark' ? ['#1E293B', '#0F172A'] : ['#4361EE', '#3730A3']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.heroContainer}
@@ -320,9 +331,9 @@ const TrackingOrder = () => {
         {/* Main Content */}
         <View style={styles.cardsContainer}>
           {/* Customer Info Card */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
-              colors={['#4F46E5', '#4338CA']} 
+              colors={colorScheme === 'dark' ? ['#3B82F6', '#2563EB'] : ['#4F46E5', '#4338CA']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.cardHeader]}
@@ -336,28 +347,29 @@ const TrackingOrder = () => {
             </LinearGradient>
             
             <View style={styles.cardContent}>
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
-                  <Feather name="user" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Feather name="user" size={16} color={colors.primary} style={styles.labelIcon} />
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                <Text style={[styles.infoValue, { 
+                  color: colors.text,
+                  ...Platform.select({
+                    ios: {
+                      textAlign: isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                   {order.receiver_name || '-'}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
-                  <Feather name="phone" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Feather name="phone" size={16} color={colors.primary} style={styles.labelIcon} />
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
@@ -371,10 +383,10 @@ const TrackingOrder = () => {
               </View>
               
               {order.receiver_second_mobile && (
-                <View style={[styles.infoRow]}>
+                <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                   <View style={[styles.labelContainer]}>
-                    <Feather name="phone-forwarded" size={16} color="#4F46E5" style={styles.labelIcon} />
-                    <Text style={[styles.infoLabel]}>
+                    <Feather name="phone-forwarded" size={16} color={colors.primary} style={styles.labelIcon} />
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
@@ -388,38 +400,40 @@ const TrackingOrder = () => {
                 </View>
               )}
               
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
-                  <Feather name="map-pin" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Feather name="map-pin" size={16} color={colors.primary} style={styles.labelIcon} />
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                <Text style={[styles.infoValue, { 
+                  color: colors.text,
+                  ...Platform.select({
+                    ios: {
+                      textAlign: isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                   {order.receiver_city || '-'}{order.receiver_address ? `, ${order.receiver_address}` : ''}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
-                  <Feather name="home" size={16} color="#4F46E5" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Feather name="home" size={16} color={colors.primary} style={styles.labelIcon} />
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.address}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                <Text style={[styles.infoValue, { 
+                  color: colors.text,
+                  ...Platform.select({
+                    ios: {
+                      textAlign: isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                   {order.receiver_address || '-'}
                 </Text>
               </View>
@@ -427,9 +441,9 @@ const TrackingOrder = () => {
           </View>
           
           {/* Sender Info Card */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
-              colors={['#8B5CF6', '#7C3AED']} 
+              colors={colorScheme === 'dark' ? ['#8B5CF6', '#7C3AED'] : ['#8B5CF6', '#7C3AED']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.cardHeader]}
@@ -443,28 +457,29 @@ const TrackingOrder = () => {
             </LinearGradient>
             
             <View style={styles.cardContent}>
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
                   <Feather name="briefcase" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                <Text style={[styles.infoValue, { 
+                  color: colors.text,
+                  ...Platform.select({
+                    ios: {
+                      textAlign: isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                   {order.sender || '-'}
                 </Text>
               </View>
               
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
                   <Feather name="phone" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
@@ -478,10 +493,10 @@ const TrackingOrder = () => {
               </View>
               
               {order.sender_second_mobile && (
-                <View style={[styles.infoRow]}>
+                <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                   <View style={[styles.labelContainer]}>
                     <Feather name="phone-forwarded" size={16} color="#7C3AED" style={styles.labelIcon} />
-                    <Text style={[styles.infoLabel]}>
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
@@ -495,20 +510,21 @@ const TrackingOrder = () => {
                 </View>
               )}
               
-              <View style={[styles.infoRow]}>
+              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
                   <Feather name="map-pin" size={16} color="#7C3AED" style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel]}>
+                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                <Text style={[styles.infoValue, { 
+                  color: colors.text,
+                  ...Platform.select({
+                    ios: {
+                      textAlign: isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                   {order.sender_city || '-'}{order.sender_address ? `, ${order.sender_address}` : ''}
                 </Text>
               </View>
@@ -517,7 +533,7 @@ const TrackingOrder = () => {
           </View>
 
           {/* Order Details Card */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
               colors={['#F97316', '#EA580C']} 
               start={{ x: 0, y: 0 }}
@@ -534,62 +550,62 @@ const TrackingOrder = () => {
             
             <View style={styles.cardContent}>
               <View style={styles.detailsGrid}>
-                <View style={[styles.detailsGridItem]}>
-                  <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
+                <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                  <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
                     <Feather name="package" size={18} color="#F97316" />
                   </View>
-                  <Text style={[styles.detailsLabel]}>
+                  <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.orderType}
                   </Text>
-                  <Text style={styles.detailsValue}>{order.order_type || '-'}</Text>
+                  <Text style={[styles.detailsValue, { color: colors.text }]}>{order.order_type || '-'}</Text>
                 </View>
                 
-                <View style={styles.detailsGridItem}>
-                  <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
+                <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                  <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
                     <Feather name="credit-card" size={18} color="#F97316" />
                   </View>
-                  <Text style={styles.detailsLabel}>
+                  <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.paymentType}
                   </Text>
-                  <Text style={styles.detailsValue}>{order.payment_type || '-'}</Text>
+                  <Text style={[styles.detailsValue, { color: colors.text }]}>{order.payment_type || '-'}</Text>
                 </View>
                 
                 {order.reference_id ? (
-                  <View style={styles.detailsGridItem}>
-                    <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
+                  <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                    <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
                       <Feather name="hash" size={18} color="#F97316" />
                     </View>
-                    <Text style={styles.detailsLabel}>
+                    <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
                       {translations[language].tabs.orders.track.referenceId}
                     </Text>
-                    <Text style={styles.detailsValue}>{order.reference_id}</Text>
+                    <Text style={[styles.detailsValue, { color: colors.text }]}>{order.reference_id}</Text>
                   </View>
                 ) : <></>}
                 
-                <View style={styles.detailsGridItem}>
-                  <View style={[styles.detailsIconContainer, { backgroundColor: 'rgba(249, 115, 22, 0.1)' }]}>
+                <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                  <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
                     <Feather name="box" size={18} color="#F97316" />
                   </View>
-                  <Text style={styles.detailsLabel}>
+                  <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
                     {translations[language].tabs.orders.track.itemType}
                   </Text>
-                  <Text style={styles.detailsValue}>{order.items_type || '-'}</Text>
+                  <Text style={[styles.detailsValue, { color: colors.text }]}>{order.items_type || '-'}</Text>
                 </View>
               </View>
               
               {order.driver ? (
-                <View style={styles.driverContainer}>
+                <View style={[styles.driverContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)' }]}>
                   <View style={styles.driverHeader}>
-                    <View style={[styles.driverIconContainer]}>
+                    <View style={[styles.driverIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
                       <Feather name="truck" size={18} color="#F97316" />
                     </View>
-                    <Text style={styles.driverHeaderText}>
+                    <Text style={[styles.driverHeaderText, { color: '#F97316' }]}>
                       {translations[language].tabs.orders.track.driver}
                     </Text>
                   </View>
                   
                   <View style={styles.driverContent}>
-                    <Text style={styles.driverName}>{order.driver}</Text>
+                    <Text style={[styles.driverName, { color: colors.text }]}>{order.driver}</Text>
                     {order.driver_mobile && (
                       <TouchableOpacity 
                         style={[styles.phoneButton, { backgroundColor: '#F97316' }]}
@@ -606,7 +622,7 @@ const TrackingOrder = () => {
           </View>
 
           {/* Financial Details Card */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
               colors={['#10B981', '#059669']} 
               start={{ x: 0, y: 0 }}
@@ -623,75 +639,76 @@ const TrackingOrder = () => {
             
             <View style={styles.cardContent}>
               <View style={styles.financialSummary}>
-                {!["business"].includes(authUser.role) && (<View style={[styles.financialItem]}>
-                  <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                {!["business"].includes(authUser.role) && (<View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
+                  <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="dollar-sign" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                  <Text style={[styles.financialLabel, {
+                    color: colors.textSecondary,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
                     {translations[language].tabs.orders.track.codValue}
                   </Text>
-                  <Text style={styles.financialValue}>{order.total_cod_value || '0'}</Text>
+                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.total_cod_value || '0'}</Text>
                 </View>)}
                 
-                {!["driver","delivery_company","business"].includes(authUser.role) && (<View style={[styles.financialItem]}>
-                  <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                {!["driver","delivery_company","business"].includes(authUser.role) && (<View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
+                  <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabel,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                  <Text style={[styles.financialLabel, {
+                    color: colors.textSecondary,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
                     {translations[language].tabs.orders.track.deliveryFee}
                   </Text>
-                  <Text style={styles.financialValue}>{order.delivery_fee || '0'}</Text>
+                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.delivery_fee || '0'}</Text>
                 </View>)}
                 
-                {!["driver","delivery_company"].includes(authUser.role) && (<View style={[styles.financialItem, styles.highlightedFinancialItem]}>
-                  <View style={[styles.financialIconContainer, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
+                {!["driver","delivery_company"].includes(authUser.role) && (<View style={[styles.financialItem, styles.highlightedFinancialItem, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
+                  <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)' }]}>
                     <Feather name="check-circle" size={18} color="#10B981" />
                   </View>
-                  <Text style={[styles.financialLabelHighlight,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                  <Text style={[styles.financialLabelHighlight, {
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
                     {translations[language].tabs.orders.track.netValue}
                   </Text>
                   <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
                 </View>)}
-
               </View>
               
               {/* Checks Section */}
               {order.checks && order.checks.length > 0 && (
                 <View style={[styles.checksContainer]}>
                   <LinearGradient 
-                    colors={['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.05)']} 
+                    colors={colorScheme === 'dark' ? ['rgba(16, 185, 129, 0.2)', 'rgba(16, 185, 129, 0.1)'] : ['rgba(16, 185, 129, 0.1)', 'rgba(16, 185, 129, 0.05)']} 
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={styles.checksHeader}
                   >
                     <Feather name="credit-card" size={18} color="#10B981" style={{ marginRight: 10 }} />
-                    <Text style={styles.checksHeaderText}>
+                    <Text style={[styles.checksHeaderText, { color: '#10B981' }]}>
                       {translations[language].tabs.orders.track.checks || 'Checks'}
                     </Text>
                   </LinearGradient>
                   
                   {order.checks.map((check, index) => (
-                    <View key={index} style={[styles.checkItem]}>
-                      <View style={[styles.checkHeader]}>
-                        <Text style={styles.checkNumberLabel}>
+                    <View key={index} style={[styles.checkItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                      <View style={[styles.checkHeader, { borderBottomColor: colors.border }]}>
+                        <Text style={[styles.checkNumberLabel, { color: colors.text }]}>
                           {translations[language].tabs.orders.track.checkNumber}: {check.number || '-'}
                         </Text>
                       </View>
@@ -699,20 +716,20 @@ const TrackingOrder = () => {
                       <View style={styles.checkDetails}>
                         <View style={[styles.checkDetailItem]}>
                           <Feather name="dollar-sign" size={14} color="#10B981" style={styles.checkDetailIcon} />
-                          <Text style={styles.checkDetailLabel}>
+                          <Text style={[styles.checkDetailLabel, { color: colors.textSecondary }]}>
                             {translations[language].tabs.orders.track.checkValue}:
                           </Text>
-                          <Text style={styles.checkDetailValue}>
+                          <Text style={[styles.checkDetailValue, { color: colors.text }]}>
                             {formatCurrencyValue(check.value, check.currency)}
                           </Text>
                         </View>
                         
                         <View style={[styles.checkDetailItem]}>
                           <Feather name="calendar" size={14} color="#10B981" style={styles.checkDetailIcon} />
-                          <Text style={styles.checkDetailLabel}>
+                          <Text style={[styles.checkDetailLabel, { color: colors.textSecondary }]}>
                             {translations[language].tabs.orders.track.checkDate}:
                           </Text>
-                          <Text style={styles.checkDetailValue}>
+                          <Text style={[styles.checkDetailValue, { color: colors.text }]}>
                             {formatDate(check.date)}
                           </Text>
                         </View>
@@ -726,7 +743,7 @@ const TrackingOrder = () => {
 
           {/* Notes Section if applicable */}
           {order.note_content ? (
-            <View style={styles.modernCard}>
+            <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
               <LinearGradient 
                 colors={['#F59E0B', '#D97706']} 
                 start={{ x: 0, y: 0 }}
@@ -742,15 +759,16 @@ const TrackingOrder = () => {
               </LinearGradient>
               
               <View style={styles.cardContent}>
-                <View style={[styles.noteContainer]}>
+                <View style={[styles.noteContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(245, 158, 11, 0.05)' }]}>
                   <Feather name="message-square" size={20} color="#F59E0B" style={styles.noteIcon} />
-                  <Text style={[styles.noteText,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                  <Text style={[styles.noteText, {
+                    color: colors.text,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
                     {order.note_content}
                   </Text>
                 </View>
@@ -759,9 +777,9 @@ const TrackingOrder = () => {
           ) : <></>}
 
           {/* Package Info Card */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
-              colors={['#4361EE', '#3730A3']} 
+              colors={colorScheme === 'dark' ? ['#3B82F6', '#2563EB'] : ['#4361EE', '#3730A3']} 
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={[styles.cardHeader]}
@@ -777,101 +795,106 @@ const TrackingOrder = () => {
             <View style={styles.cardContent}>
               <View style={[styles.packageWrapper]}>
                 <View>
-                  <View style={styles.packageImagePlaceholder}>
+                  <View style={[styles.packageImagePlaceholder, { backgroundColor: colorScheme === 'dark' ? 'rgba(67, 97, 238, 0.2)' : 'rgba(67, 97, 238, 0.1)' }]}>
                     <Feather name="box" size={32} color="#4361EE" />
                   </View>
                 </View>
                 
                 <View style={styles.packageInfo}>
-                  <View style={[styles.packageInfoRow]}>
+                  <View style={[styles.packageInfoRow, { borderBottomColor: colors.border }]}>
                     <View style={[styles.packageLabelContainer]}>
                       <Feather name="box" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel]}>
+                      <Text style={[styles.packageInfoLabel, { color: colors.textSecondary }]}>
                         {translations[language].tabs.orders.track.package}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
+                    <Text style={[styles.packageInfoValue, {
+                      color: colors.text,
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : ""
+                        }
+                      }),
                     }]}>
                       {order?.order_items ? order?.order_items : translations[language].tabs.orders.track.unknown}
                     </Text>
                   </View>
                   
-                  <View style={[styles.packageInfoRow]}>
+                  <View style={[styles.packageInfoRow, { borderBottomColor: colors.border }]}>
                     <View style={[styles.packageLabelContainer]}>
                       <Feather name="hash" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel]}>
+                      <Text style={[styles.packageInfoLabel, { color: colors.textSecondary }]}>
                         {translations[language].tabs.orders.track.quantity}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
+                    <Text style={[styles.packageInfoValue, {
+                      color: colors.text,
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : ""
+                        }
+                      }),
                     }]}>
                       {order?.number_of_items || 0}
                     </Text>
                   </View>
                   
-                  <View style={[styles.packageInfoRow]}>
+                  <View style={[styles.packageInfoRow, { borderBottomColor: colors.border }]}>
                     <View style={[styles.packageLabelContainer]}>
                       <Feather name="anchor" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                      <Text style={[styles.packageInfoLabel]}>
+                      <Text style={[styles.packageInfoLabel, { color: colors.textSecondary }]}>
                         {translations[language].tabs.orders.track.weight}
                       </Text>
                     </View>
-                    <Text style={[styles.packageInfoValue,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
+                    <Text style={[styles.packageInfoValue, {
+                      color: colors.text,
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : ""
+                        }
+                      }),
                     }]}>
                       {order?.order_weight || 0} kg
                     </Text>
                   </View>
                   
                   {order.received_items ? (
-                    <View style={[styles.packageInfoRow]}>
+                    <View style={[styles.packageInfoRow, { borderBottomColor: colors.border }]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-square" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                        <Text style={[styles.packageInfoLabel]}>
+                        <Text style={[styles.packageInfoLabel, { color: colors.textSecondary }]}>
                           {translations[language].tabs.orders.track.receivedItems}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue,{
+                      <Text style={[styles.packageInfoValue, {
+                        color: colors.text,
                         ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
+                          ios: {
+                            textAlign: isRTL ? "left" : ""
+                          }
                         }),
-                    }]}>
+                      }]}>
                         {order?.received_items}
                       </Text>
                     </View>
                   ) : <></>}
                   
                   {order.received_quantity ? (
-                    <View style={[styles.packageInfoRow]}>
+                    <View style={[styles.packageInfoRow, { borderBottomColor: colors.border }]}>
                       <View style={styles.packageLabelContainer}>
                         <Feather name="check-circle" size={16} color="#4361EE" style={styles.packageLabelIcon} />
-                        <Text style={[styles.packageInfoLabel]}>
+                        <Text style={[styles.packageInfoLabel, { color: colors.textSecondary }]}>
                           {translations[language].tabs.orders.track.receivedQuantity}
                         </Text>
                       </View>
-                      <Text style={[styles.packageInfoValue,{
+                      <Text style={[styles.packageInfoValue, {
+                        color: colors.text,
                         ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
+                          ios: {
+                            textAlign: isRTL ? "left" : ""
+                          }
                         }),
-                    }]}>
+                      }]}>
                         {order?.received_quantity}
                       </Text>
                     </View>
@@ -882,7 +905,7 @@ const TrackingOrder = () => {
           </View>
 
           {/* Delivery Status Timeline */}
-          <View style={styles.modernCard}>
+          <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
               colors={['#6366F1', '#4F46E5']} 
               start={{ x: 0, y: 0 }}
@@ -900,9 +923,11 @@ const TrackingOrder = () => {
             {/* Timeline */}
             <View style={[
               styles.timelineContainer,
+              { backgroundColor: colors.card }
             ]}>
               <View style={[
-                styles.timelineLine
+                styles.timelineLine,
+                { backgroundColor: colorScheme === 'dark' ? 'rgba(99, 102, 241, 0.3)' : 'rgba(99, 102, 241, 0.2)' }
               ]}></View>
               
               {order.order_status_history?.map((item, index) => {
@@ -926,28 +951,29 @@ const TrackingOrder = () => {
                     >
                       <Feather name={statusInfo.icon} size={20} color="#ffffff" />
                     </LinearGradient>
-                    <View style={styles.timelineContent}>
-                      <Text style={[styles.timelineStatus,{
+                    <View style={[styles.timelineContent, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                      <Text style={[styles.timelineStatus, {
+                        color: colors.text,
                         ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
+                          ios: {
+                            textAlign: isRTL ? "left" : ""
+                          }
                         }),
-                    }]}>
+                      }]}>
                         {item.new_status} {item?.status_reason ? ` | ${item?.status_reason}` : ''}
                       </Text>
                       
                       <View style={[styles.timelineDetailsContainer]}>
                         <Feather name="map-pin" size={14} color="#6366F1" style={styles.timelineDetailIcon} />
-                        <Text style={[styles.timelineDetails]}>
+                        <Text style={[styles.timelineDetails, { color: colors.textSecondary }]}>
                           {item.branch}
                         </Text>
                       </View>
                       
                       <View style={[styles.timelineDateContainer]}>
                         <View style={styles.timelineDateItem}>
-                          <Feather name="calendar" size={12} color="#94A3B8" style={styles.timelineDateIcon} />
-                          <Text style={[styles.timelineDate]}>
+                          <Feather name="calendar" size={12} color={colors.textTertiary} style={styles.timelineDateIcon} />
+                          <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                             {date.toLocaleDateString(
                               'en-US',
                               { year: 'numeric', month: 'short', day: 'numeric' }
@@ -955,8 +981,8 @@ const TrackingOrder = () => {
                           </Text>
                         </View>
                         <View style={styles.timelineDateItem}>
-                          <Feather name="clock" size={12} color="#94A3B8" style={styles.timelineDateIcon} />
-                          <Text style={[styles.timelineDate]}>
+                          <Feather name="clock" size={12} color={colors.textTertiary} style={styles.timelineDateIcon} />
+                          <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                             {date.toLocaleTimeString(
                               'en-US',
                               { hour: '2-digit', minute: '2-digit' }
@@ -973,7 +999,7 @@ const TrackingOrder = () => {
 
           {/* Support Section */}
           {authUser.role === "business" && (
-            <View style={styles.modernCard}>
+            <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
               <LinearGradient 
                 colors={['#EF4444', '#DC2626']} 
                 start={{ x: 0, y: 0 }}
@@ -991,13 +1017,14 @@ const TrackingOrder = () => {
               <View style={styles.supportContent}>
                 <View style={styles.supportTextContainer}>
                   <Feather name="alert-circle" size={24} color="#EF4444" style={styles.supportTextIcon} />
-                  <Text style={[styles.supportText,{
-                        ...Platform.select({
-                            ios: {
-                                textAlign:isRTL ? "left" : ""
-                            }
-                        }),
-                    }]}>
+                  <Text style={[styles.supportText, {
+                    color: colors.textSecondary,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
                     {translations[language].tabs.orders.track.issue}
                   </Text>
                 </View>
@@ -1017,13 +1044,13 @@ const TrackingOrder = () => {
                     style={styles.supportButtonGradient}
                   >
                     <Feather name="message-circle" size={18} color="#ffffff" style={{ marginRight: 10 }} />
-                      <Text style={[styles.supportButtonText,{
-                          ...Platform.select({
-                              ios: {
-                                  textAlign:isRTL ? "left" : ""
-                              }
-                          }),
-                      }]}>
+                    <Text style={[styles.supportButtonText, {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : ""
+                        }
+                      }),
+                    }]}>
                       {translations[language].tabs.orders.track.openCase}
                     </Text>
                   </LinearGradient>
@@ -1268,6 +1295,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+    textAlign: 'center',
   },
   
   // Driver Section
@@ -1280,7 +1308,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
-    gap:10
+    gap: 10
   },
   driverIconContainer: {
     width: 32,
@@ -1299,7 +1327,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap:10
+    gap: 10
   },
   driverName: {
     fontSize: 15,
@@ -1318,7 +1346,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
-    gap:7
+    gap: 7
   },
   highlightedFinancialItem: {
     backgroundColor: 'rgba(16, 185, 129, 0.05)',
@@ -1397,7 +1425,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 8,
-    gap:10
+    gap: 10
   },
   checkDetailLabel: {
     fontSize: 14,
@@ -1416,7 +1444,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     flexDirection: 'row',
-    gap:15
+    gap: 15
   },
   noteIcon: {
     marginTop: 2,
@@ -1431,7 +1459,7 @@ const styles = StyleSheet.create({
   // Package Styles
   packageWrapper: {
     flexDirection: 'row',
-    gap:10
+    gap: 10
   },
   packageImagePlaceholder: {
     width: 80,
@@ -1457,7 +1485,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    gap:7
+    gap: 7
   },
   packageInfoLabel: {
     fontSize: 14,
@@ -1486,11 +1514,11 @@ const styles = StyleSheet.create({
   timelineItem: {
     flexDirection: 'row',
     marginBottom: 30,
-    position: 'relative'
+    position: 'relative',
+    gap: 10
   },
   lastTimelineItem: {
     marginBottom: 0,
-    gap:10
   },
   timelineIconContainer: {
     width: 42,
@@ -1516,7 +1544,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    gap:10
+    gap: 10
   },
   timelineDetails: {
     fontSize: 14,
@@ -1526,12 +1554,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    gap:10
+    gap: 10
   },
   timelineDateItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap:10
+    gap: 10
   },
   timelineDate: {
     fontSize: 12,
@@ -1656,12 +1684,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap:10
+    gap: 10
   },
   errorButtonText: {
     color: 'white',
     fontWeight: '600',
     fontSize: 16,
+  },
+  
+  // Currency display
+  currencyContainer: {
+    flexDirection: 'column',
+  },
+  currencyText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  costText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
   },
 });
 

@@ -7,14 +7,18 @@ import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function CameraScanner() {
   const { language } = useLanguage();
+  const { isRTL } = useRTLStyles();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const rtl = useRTLStyles();
+  const { colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -55,7 +59,6 @@ export default function CameraScanner() {
         params: { orderId: orderId }
       });
     } catch (err) {
-      console.error('Error processing scan:', err);
       setError(translations[language].camera.scanInvalidTextError || 'Invalid scan data');
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -124,11 +127,11 @@ export default function CameraScanner() {
         <View style={styles.overlay}>
           {/* Scanner frame with animated border */}
           <View style={styles.frameBorder}>
-            <View style={styles.cornerTL} />
-            <View style={styles.cornerTR} />
-            <View style={styles.cornerBL} />
-            <View style={styles.cornerBR} />
-          </View>
+          <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+          <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+        </View>
           
           {/* Instructions text */}
           <View style={styles.instructionsContainer}>
@@ -172,13 +175,13 @@ export default function CameraScanner() {
           <TouchableOpacity 
             style={[
               styles.backButtonContainer,
-              rtl.isRTL ? { right: 20 } : { left: 20 }
+              isRTL ? { right: 20 } : { left: 20 }
             ]}
             onPress={() => router.back()}
           >
             <View style={styles.backButtonCircle}>
               <Feather 
-                name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
+                name={isRTL ? "chevron-right" : "chevron-left"} 
                 size={24} 
                 color="#FFFFFF" 
               />
@@ -203,52 +206,42 @@ const styles = StyleSheet.create({
   frameBorder: {
     width: 250,
     height: 250,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
   },
-  cornerTL: {
+  corner: {
     position: 'absolute',
-    top: 0,
-    left: 0,
     width: 40,
     height: 40,
+  },
+  topLeft: {
+    top: 0,
+    left: 0,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderTopLeftRadius: 12,
   },
-  cornerTR: {
-    position: 'absolute',
+  topRight: {
     top: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderTopRightRadius: 12,
   },
-  cornerBL: {
-    position: 'absolute',
+  bottomLeft: {
     bottom: 0,
     left: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderBottomLeftRadius: 12,
   },
-  cornerBR: {
-    position: 'absolute',
+  bottomRight: {
     bottom: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderBottomRightRadius: 12,
   },
   instructionsContainer: {

@@ -7,37 +7,47 @@ import { useCameraPermissions } from 'expo-camera';
 import { translations } from '../utils/languageContext';
 import { useLanguage } from '../utils/languageContext';
 import { RTLWrapper } from '@/utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function TrackOrder(){
     const [value,setValue] = useState("");
     const [permission,requestPermission] = useCameraPermissions();
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
 
     return <RTLWrapper>
-        <View style={[styles.track,{
+        <View style={[styles.track, {
             ...Platform.select({
                 ios: {
                     flexDirection:"column",
                     alignItems:isRTL ? "flex-start" : ""
                 }
             }),
+            backgroundColor: isDark ? colors.surface : undefined,
         }]}>
-        <Text style={[styles.h2]}>{translations[language].track.title}</Text>
-        <Text style={[styles.onPress]}>{translations[language].track.desc}</Text>
+        <Text style={[styles.h2, { color: colors.text }]}>{translations[language].track.title}</Text>
+        <Text style={[styles.onPress, { color: colors.textSecondary }]}>{translations[language].track.desc}</Text>
         <View style={[styles.flex]}>
-            <View style={[styles.inputBox]}>
-                <Feather name="package" size={24} color="black" />
+            <View style={[styles.inputBox, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border 
+            }]}>
+                <Feather name="package" size={24} color={colors.iconDefault} />
                 <TextInput
-                    style={[styles.input,{
+                    style={[styles.input, {
                         ...Platform.select({
                             ios: {
                                 textAlign:isRTL ? "right" : ""
                             }
                         }),
+                        color: colors.text
                     }]}
-                    placeholder={translations[language].track.placeholder} 
+                    placeholder={translations[language].track.placeholder}
+                    placeholderTextColor={colors.textTertiary} 
                     value={value}
                     onChangeText={(input)=> setValue(input)}
                     returnKeyType="done"
@@ -47,14 +57,16 @@ export default function TrackOrder(){
                     }}
                 />
             </View>
-            <TouchableOpacity style={styles.button} onPress={()=> {
+            <TouchableOpacity style={[styles.button, {
+                backgroundColor: colors.buttonPrimary
+            }]} onPress={()=> {
               if(permission){
                 router.push("(camera)/lookupOrder")
               }else{
                 requestPermission()
               }
             }}>
-                <Ionicons name="scan" size={24} color="white" />
+                <Ionicons name="scan" size={24} color={colors.buttonText} />
             </TouchableOpacity>
         </View>
     </View>

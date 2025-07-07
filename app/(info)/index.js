@@ -4,19 +4,30 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function HomeScreen(){
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar 
+                barStyle={isDark ? "light-content" : "dark-content"} 
+                backgroundColor={colors.statusBarBg} 
+            />
             
             <ScrollView 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                <View style={styles.cardContainer}>
+                <View style={[styles.cardContainer, { 
+                    backgroundColor: colors.card,
+                    shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000" 
+                }]}>
                     <LinearGradient
                         colors={['#4361EE', '#3A0CA3']}
                         start={{ x: 0, y: 0 }}
@@ -26,20 +37,22 @@ export default function HomeScreen(){
                         <Feather name="info" size={24} color="white" />
                     </LinearGradient>
                     
-                    <Text style={[styles.title,{
+                    <Text style={[styles.title, {
+                        color: colors.text,
                         ...Platform.select({
                             ios: {
-                                textAlign:isRTL ? "left" : ""
+                                textAlign: isRTL ? "left" : ""
                             }
                         }),
                     }]}>
                         {translations[language].about.aboutLabel}
                     </Text>
                     
-                    <Text style={[styles.description,{
+                    <Text style={[styles.description, {
+                        color: colors.textSecondary,
                         ...Platform.select({
                             ios: {
-                                textAlign:isRTL ? "left" : ""
+                                textAlign: isRTL ? "left" : ""
                             }
                         }),
                     }]}>

@@ -2,17 +2,25 @@ import { View, Text, StyleSheet, Pressable } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from "react";
 import Field from "./Field";
-import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
+import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function Section({section, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, fieldErrors, setFieldErrors}) {
     const [showFields, setShowFields] = useState(true);
     const rtl = useRTLStyles();
+    const { colorScheme, isDark } = useTheme();
+    const colors = Colors[colorScheme];
 
     return (
         <View style={[
             styles.section,
             {display: section.visibility === "hidden" ? "none" : "flex"},
-            section.isHeader && styles.headerSection
+            section.isHeader && styles.headerSection,
+            {
+                backgroundColor: colors.card,
+                shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : '#000',
+            },
         ]}>
             {section.isHeader ? (
                 <View style={styles.headerContent}>
@@ -24,18 +32,21 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                         <View style={[
                             styles.label,
                             styles.stickyHeader,
-                            !showFields && styles.bottomBorder
+                            !showFields && styles.bottomBorder,
+                            { backgroundColor: colors.card },
                         ]}>
                             <View style={[
                                 styles.labelContent
                             ]}>
                                 <View style={[
-                                    styles.iconContainer
+                                    styles.iconContainer,
+                                    { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.08)' }
                                 ]}>
                                     {section.icon}
                                 </View>
                                 <Text style={[
-                                    styles.labelText
+                                    styles.labelText,
+                                    { color: colors.text }
                                 ]}>
                                     {section.label}
                                 </Text>
@@ -44,7 +55,8 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                                 style={[
                                     styles.arrowIcon, 
                                     showFields && styles.activeSection,
-                                    rtl.isRTL && {transform: [{rotate: showFields ? '270deg' : '180deg'}]}
+                                    rtl.isRTL && {transform: [{rotate: showFields ? '270deg' : '180deg'}]},
+                                    { color: '#4361EE' }
                                 ]} 
                                 name={rtl.isRTL ? "arrow-left" : "arrow-right"} 
                                 size={24} 

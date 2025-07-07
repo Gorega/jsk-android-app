@@ -6,6 +6,8 @@ import { useState } from "react";
 import { translations } from '../../../utils/languageContext';
 import { useLanguage } from '../../../utils/languageContext';
 import { useAuth } from '../../../RootLayout';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 export default function Contact({ contact, orderId }) {
     const { language } = useLanguage();
@@ -13,6 +15,8 @@ export default function Contact({ contact, orderId }) {
     const isRTL = language === 'ar' || language === 'he';
     const [showContactModal, setShowContactModal] = useState(false);
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     // Function to record contact history
     const recordContactHistory = async (contactType) => {
@@ -72,11 +76,13 @@ export default function Contact({ contact, orderId }) {
         <>
             <TouchableOpacity 
                 onPress={() => setShowContactModal(true)}
-                style={styles.contactButton}
+                style={[styles.contactButton,{
+                    backgroundColor: colors.success + '1A'
+                }]}
             >
                 {contact.type === "phone" ? 
-                    <FontAwesome name="phone" size={20} color="#22c55e" /> : 
-                    <Feather name="message-square" size={20} color="#22c55e" />
+                    <FontAwesome name="phone" size={20} color={colors.success} /> : 
+                    <Feather name="message-square" size={20} color={colors.success} />
                 }
             </TouchableOpacity>
 
@@ -86,8 +92,11 @@ export default function Contact({ contact, orderId }) {
                     setShowModal={setShowContactModal}
                     customStyles={{ bottom: 15 }}
                 >
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent,{
+                        backgroundColor: colors.card
+                    }]}>
                         <Text style={[styles.modalTitle,{
+                            color: colors.text,
                         ...Platform.select({
                             ios: {
                                 textAlign:isRTL ? "left" : ""
@@ -98,7 +107,9 @@ export default function Contact({ contact, orderId }) {
                         </Text>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption]}
+                            style={[styles.modalOption,{
+                                borderBottomColor: colors.border
+                            }]}
                             onPress={() => {
                                 if (contact.type === "phone") {
                                     handlePhoneCall();
@@ -108,28 +119,36 @@ export default function Contact({ contact, orderId }) {
                                 setShowContactModal(false);
                             }}
                         >
-                            <View style={styles.modalIconContainer}>
+                            <View style={[styles.modalIconContainer,{
+                                backgroundColor: colors.primary
+                            }]}>
                                 {contact.type === "phone" 
-                                    ? <FontAwesome name="phone" size={20} color="#ffffff" /> 
-                                    : <Feather name="message-square" size={20} color="#ffffff" />
+                                    ? <FontAwesome name="phone" size={20} color={colors.textInverse} /> 
+                                    : <Feather name="message-square" size={20} color={colors.textInverse} />
                                 }
                             </View>
-                            <Text style={[styles.modalOptionText]}>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
                                 {translations[language].tabs.orders.order.contactPhone} {contact.label}
                             </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption, styles.withoutBorder]}
+                            style={[styles.modalOption, styles.withoutBorder,{
+                                borderBottomColor: colors.border
+                            }]}
                             onPress={() => {
                                 setShowContactModal(false);
                                 setShowWhatsappOptions(true);
                             }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
-                                <FontAwesome name="whatsapp" size={20} color="#ffffff" />
+                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
                             </View>
-                            <Text style={[styles.modalOptionText]}>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
                                 {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
                             </Text>
                         </TouchableOpacity>
@@ -145,6 +164,7 @@ export default function Contact({ contact, orderId }) {
                 >
                     <View style={styles.modalContent}>
                         <Text style={[styles.modalTitle,{
+                            color: colors.text,
                         ...Platform.select({
                             ios: {
                                 textAlign:isRTL ? "left" : ""
@@ -155,16 +175,20 @@ export default function Contact({ contact, orderId }) {
                         </Text>
                         
                         <TouchableOpacity
-                            style={[styles.modalOption]}
+                            style={[styles.modalOption,{
+                                borderBottomColor: colors.border
+                            }]}
                             onPress={() => {
                                 handleWhatsApp972();
                                 setShowWhatsappOptions(false);
                             }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
-                                <FontAwesome name="whatsapp" size={20} color="#ffffff" />
+                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
                             </View>
-                            <Text style={[styles.modalOptionText]}>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
                                 {`+972${contact.phone}`}
                             </Text>
                         </TouchableOpacity>
@@ -177,9 +201,11 @@ export default function Contact({ contact, orderId }) {
                             }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
-                                <FontAwesome name="whatsapp" size={20} color="#ffffff" />
+                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
                             </View>
-                            <Text style={[styles.modalOptionText]}>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
                                 {`+970${contact.phone}`}
                             </Text>
                         </TouchableOpacity>

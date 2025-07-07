@@ -1,4 +1,4 @@
-import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch, FlatList, ActivityIndicator } from "react-native";
+import { TextInput, View, Pressable, Text, StyleSheet, TouchableOpacity, Switch } from "react-native";
 import PickerModal from "../pickerModal/PickerModal";
 import { useState, useEffect } from "react";
 import { useLanguage } from '../../utils/languageContext';
@@ -10,6 +10,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { translations } from '../../utils/languageContext';
 import { router } from "expo-router";
 import { getToken } from "../../utils/secureStore";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
@@ -22,6 +24,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
     const [phoneSearchValue, setPhoneSearchValue] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [searchLoading, setSearchLoading] = useState(false);
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
@@ -116,15 +120,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         }
     };
 
-    // Handle selecting a receiver from search results
-    const selectReceiver = (receiver) => {
-        if (field.onReceiverSelect) {
-            field.onReceiverSelect(receiver);
-        }
-        setShowPhoneSearchModal(false);
-        setPhoneSearchValue('');
-    };
-
     return (
         <View style={[
             field.visibility === "hidden" ? styles.hiddenField : styles.fieldContainer,
@@ -134,14 +129,19 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
             field.type === "orderTypeButton" && styles.orderTypeButtonContainer,
             error && styles.fieldError,
             field.type === "message" && styles.messageContainer,
-            isFocused && styles.fieldFocused
+            isFocused && styles.fieldFocused,
+            {
+                backgroundColor: colors.card,
+                borderColor: isDark ? colors.border : 'rgba(203, 213, 225, 0.8)',
+            }
         ]}>
             {/* Field Label */}
             {field.type !== "message" && field.type !== "button" && field.type !== "orderTypeButton" && (
                 <Text style={[
                     styles.label,
                     { 
-                        backgroundColor: "#fff",
+                        backgroundColor: colors.card,
+                        color: colors.textSecondary
                     }
                 ]}>
                     {field.label}
@@ -154,7 +154,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     <>
                         <View style={[
                             styles.inputWrapper,
-                            field.name === "reference_id" && styles.scanInputWrapper
+                            field.name === "reference_id" && styles.scanInputWrapper,
+                            error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
+
                         ]}>
                             {field.name === "receiver_mobile" ? (
                                 <TouchableOpacity 
@@ -163,7 +165,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     activeOpacity={0.7}
                                 >
                                     <TextInput 
-                                        style={[styles.input]}
+                                        style={[
+                                            styles.input,
+                                            { color: colors.text }
+                                        ]}
                                         value={field.value || ""}
                                         editable={false}
                                         pointerEvents="none"
@@ -173,7 +178,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 <TextInput 
                                     style={[
                                         styles.input,
-                                        field.name === "reference_id" && styles.scanInput
+                                        field.name === "reference_id" && styles.scanInput,
+                                        { color: colors.text }
                                     ]}
                                     value={field.value || ""}
                                     onFocus={() => {
@@ -223,17 +229,19 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             )}
                         </View>
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>}
                     </>
                 )}
 
                 {field.type === "currencyInput" && (
                     <View style={[
-                        styles.currencyInputContainer
+                        styles.currencyInputContainer,
+                        error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
                     ]}>
                         <TextInput 
                             style={[
-                                styles.currencyInput
+                                styles.currencyInput,
+                                { color: colors.text }
                             ]}
                             value={field.value}
                             onFocus={() => setIsFocused(true)}
@@ -255,14 +263,17 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         />
                         
                         <Pressable 
-                            style={styles.currencySelector}
+                            style={[
+                                styles.currencySelector,
+                                { backgroundColor: isDark ? colors.inputBg : 'rgba(203, 213, 225, 0.2)' }
+                            ]}
                             onPress={() => {
                                 if (field.showCurrencyPicker) {
                                     field.showCurrencyPicker(field.index);
                                 }
                             }}
                         >
-                            <Text style={styles.currencyText}>
+                            <Text style={[styles.currencyText, { color: colors.primary }]}>
                                 {getCurrencySymbol(field.currency)} {field.currency}
                             </Text>
                             {field.showCurrencyPicker && (
@@ -279,12 +290,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "addCurrencyButton" && (
                     <TouchableOpacity
-                        style={styles.addCurrencyButton}
+                        style={[
+                            styles.addCurrencyButton,
+                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}
                         onPress={field.onPress}
                         activeOpacity={0.7}
                     >
-                        <Feather name="plus" size={18} color="#4361EE" />
-                        <Text style={styles.addCurrencyButtonText}>
+                        <Feather name="plus" size={18} color={colors.primary} />
+                        <Text style={[styles.addCurrencyButtonText, { color: colors.primary }]}>
                             {field.value || translations[language].tabs.orders.order.add_currency}
                         </Text>
                     </TouchableOpacity>
@@ -292,7 +306,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "select" && (
                     <Pressable 
-                        style={styles.selectField} 
+                        style={[
+                            styles.selectField,
+                            error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
+                        ]} 
                         onPress={() => {
                             setIsFocused(true);
                             setShowPickerModal(true);
@@ -302,7 +319,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             styles.selectContent
                         ]}>
                             <Text style={[
-                                styles.selectText
+                                styles.selectText,
+                                { color: colors.text }
                             ]}>
                                 {field.value || field.placeholder}
                             </Text>
@@ -312,16 +330,26 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 color="#64748B"
                             />
                         </View>
-                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        {error && <Text style={[styles.errorText, { color: colors.text }]}>{error}</Text>}
                     </Pressable>
                 )}
 
                 {field.type === "orderTypeButton" && (
                     <TouchableOpacity
-                        style={[
-                            styles.orderTypeButton,
-                            field.isSelected && styles.orderTypeButtonSelected
-                        ]}
+                    style={[
+                        styles.orderTypeButton,
+                        { 
+                            backgroundColor: isDark ? colors.surface : '#F8FAFC',
+                            borderColor: isDark ? colors.border : '#E2E8F0' 
+                        },
+                        field.isSelected && [
+                            { 
+                                backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF',
+                                borderColor: colors.primary,
+                                shadowColor: colors.primary
+                            }
+                        ]
+                    ]}
                         onPress={field.onPress}
                         activeOpacity={0.7}
                     >
@@ -332,7 +360,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         )}
                         <Text style={[
                             styles.orderTypeButtonText,
-                            field.isSelected && styles.orderTypeButtonTextSelected
+                            field.isSelected && styles.orderTypeButtonTextSelected,
+                            { color: colors.text }
                         ]}>
                             {field.label}
                         </Text>
@@ -356,7 +385,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 styles.buttonContent
                             ]}>
                                 <Feather name="plus" size={16} color="#FFFFFF" />
-                                <Text style={styles.buttonText}>
+                                <Text style={[styles.buttonText, { color: colors.text }]}>
                                     {field.value}
                                 </Text>
                             </View>
@@ -366,17 +395,19 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "message" && (
                     <View style={styles.messageContent}>
-                        <View style={styles.messageIconContainer}>
+                        <View>
                             <MaterialIcons name="info-outline" size={24} color="#F59E0B" />
                         </View>
                         <View style={styles.messageTextContainer}>
                             <Text style={[
-                                styles.messageTitle
+                                styles.messageTitle,
+                                { color: colors.text }
                             ]}>
                                 {field.label}
                             </Text>
                             <Text style={[
-                                styles.messageText
+                                styles.messageText,
+                                { color: colors.text }
                             ]}>
                                 {field.value}
                             </Text>
@@ -388,9 +419,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     <View style={styles.checksContainer}>
                         {field.value && field.value.length > 0 ? (
                             field.value.map((check, index) => (
-                                <View key={index} style={styles.checkItem}>
+                                <View key={index} style={[
+                                    styles.checkItem,
+                                    { 
+                                        backgroundColor: isDark ? colors.surface : '#F8FAFC',
+                                        borderColor: colors.border 
+                                    }
+                                ]}>
                                     <View style={styles.checkHeader}>
-                                        <Text style={styles.checkTitle}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
+                                        <Text style={[styles.checkTitle, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
                                         <TouchableOpacity
                                             style={styles.removeCheckButton}
                                             onPress={() => {
@@ -404,9 +441,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     </View>
                                     
                                     <View style={styles.checkField}>
-                                        <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
+                                        <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
                                         <TextInput
-                                            style={styles.checkInput}
+                                            style={[styles.checkInput, { color: colors.text }]}
                                             value={check.number}
                                             onChangeText={(text) => {
                                                 const updatedChecks = [...field.value];
@@ -420,9 +457,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     
                                     <View style={styles.checkRow}>
                                         <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
                                             <TextInput
-                                                style={styles.checkInput}
+                                                style={[styles.checkInput, { color: colors.text }]}
                                                 value={check.value ? check.value.toString() : ''}
                                                 onChangeText={(text) => {
                                                     const updatedChecks = [...field.value];
@@ -436,10 +473,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         </View>
                                         
                                         <View style={[styles.checkField, { flex: 1 }]}>
-                                            <Text style={styles.checkFieldLabel}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
                                             <View style={styles.checkCurrencySelect}>
                                                 <Pressable
-                                                    style={styles.currencySelector}
+                                                    style={[styles.currencySelector, { backgroundColor: isDark ? colors.inputBg : 'rgba(203, 213, 225, 0.2)' }]}
                                                     onPress={() => {
                                                         // Handle currency change
                                                         const currencies = ['ILS', 'USD', 'JOD'];
@@ -454,7 +491,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                         field.onChange(updatedChecks);
                                                     }}
                                                 >
-                                                    <Text style={styles.currencyText}>
+                                                    <Text style={[styles.currencyText, { color: colors.primary }]}>
                                                         {getCurrencySymbol(check.currency || 'ILS')} {check.currency || 'ILS'}
                                                     </Text>
                                                     <Feather 
@@ -470,7 +507,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </View>
                             ))
                         ) : (
-                            <Text style={styles.noChecksText}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
+                            <Text style={[styles.noChecksText, { color: colors.text }]}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
                         )}
                         
                         <TouchableOpacity
@@ -486,7 +523,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             }}
                         >
                             <Feather name="plus" size={18} color="#FFFFFF" />
-                            <Text style={styles.addCheckButtonText}>
+                            <Text style={[styles.addCheckButtonText, { color: colors.text }]}>
                                 {translations[language].tabs.orders.order.orderChecks.addCheck}
                             </Text>
                         </TouchableOpacity>
@@ -498,10 +535,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     <PickerModal
                         list={field.list}
                         showPickerModal={showPickerModal}
-                        setShowPickerModal={() => {
-                            setShowPickerModal(false);
-                            setIsFocused(false);
-                        }}
+                        setShowModal={setShowPickerModal}
                         setSelectedValue={setSelectedValue}
                         field={field}
                         loadMoreData={loadMoreData}
@@ -509,6 +543,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         prickerSearchValue={prickerSearchValue}
                         setPickerSearchValue={setPickerSearchValue}
                         setFieldErrors={setFieldErrors}
+                        searchLoading={searchLoading}
                     />
                 )}
 
@@ -520,7 +555,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     >
                         <View style={styles.phoneSearchContainer}>
                             <View style={styles.phoneSearchHeader}>
-                                <Text style={styles.phoneSearchTitle}>
+                                <Text style={[styles.phoneSearchTitle, { color: colors.text }]}>
                                     {translations[language]?.tabs?.orders?.create?.sections?.client?.fields?.searchReceiver}
                                 </Text>
                                 <TouchableOpacity
@@ -533,7 +568,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             
                             <View style={styles.phoneSearchInputContainer}>
                                 <TextInput
-                                    style={styles.phoneSearchInput}
+                                    style={[
+                                        styles.phoneSearchInput,
+                                        { color: colors.text }
+                                    ]}
                                     value={phoneSearchValue}
                                     onChangeText={(text) => {
                                         setPhoneSearchValue(text);
@@ -559,50 +597,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             </View>
                             
-                            {/* Debug info */}
-                            <Text style={{color: '#64748B', marginBottom: 8}}>
-                            {translations[language]?.tabs?.orders?.create?.sections?.client?.fields?.found} {searchResults.length} {translations[language]?.tabs?.orders?.create?.sections?.client?.fields?.receivers}
-                            </Text>
-                            
-                            <View style={{flex: 1, minHeight: 200}}>
-                                {searchLoading ? (
-                                    <ActivityIndicator size="large" color="#4361EE" style={styles.searchLoader} />
-                                ) : (
-                                    <>
-                                        {searchResults.length > 0 ? (
-                                            <FlatList
-                                                data={searchResults}
-                                                keyExtractor={(item) => (item.receiver_id || item.id || Math.random().toString()).toString()}
-                                                renderItem={({ item }) => (
-                                                    <TouchableOpacity
-                                                        style={styles.receiverItem}
-                                                        onPress={() => selectReceiver(item)}
-                                                    >
-                                                        <View style={styles.receiverInfo}>
-                                                            <Text style={styles.receiverName}>{item.name || 'Unknown'}</Text>
-                                                            <Text style={styles.receiverPhone}>{item.phone || item.mobile || 'No phone'}</Text>
-                                                            {(item.address || item.city || item.area) && (
-                                                                <Text style={styles.receiverAddress}>
-                                                                    {[item.city, item.area, item.address].filter(Boolean).join(', ')}
-                                                                </Text>
-                                                            )}
-                                                        </View>
-                                                        <Feather name="chevron-right" size={20} color="#64748B" />
-                                                    </TouchableOpacity>
-                                                )}
-                                                style={[styles.resultsList, {height: 200}]}
-                                                contentContainerStyle={styles.resultsContent}
-                                            />
-                                        ) : (
-                                            phoneSearchValue && phoneSearchValue.length >= 3 && !searchLoading && (
-                                                <Text style={styles.noResults}>
-                                                    {translations[language]?.tabs?.orders?.create?.sections?.client?.fields?.noReceivers}
-                                                </Text>
-                                            )
-                                        )}
-                                    </>
-                                )}
-                            </View>
                         </View>
                     </ModalPresentation>
                 )}
@@ -620,7 +614,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 styles.dateContent
                             ]}>
                                 <Text style={[
-                                    styles.dateText
+                                    styles.dateText,
+                                    { color: colors.text }
                                 ]}>
                                     {selectedDate || field.value || "Select Date"}
                                 </Text>
@@ -664,7 +659,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             setIsFocused(false);
                                         }}
                                     >
-                                        <Text style={{ color: "#4361EE" }}>
+                                        <Text style={{ color: colors.primary }}>
                                             Cancel
                                         </Text>
                                     </TouchableOpacity>

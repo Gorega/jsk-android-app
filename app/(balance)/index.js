@@ -8,11 +8,15 @@ import useFetch from "../../utils/useFetch";
 import { MaterialIcons, AntDesign, Entypo } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function BalanceHistoryScreen() {
-  const { currency,value } = useLocalSearchParams();
+  const { currency, value } = useLocalSearchParams();
   const { user } = useAuth();
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const { data: { data }, getRequest, isLoading } = useFetch();
   const [page, setPage] = useState(1);
   const [refreshing, setRefreshing] = useState(false);
@@ -22,7 +26,7 @@ export default function BalanceHistoryScreen() {
 
   const fetchBalanceHistory = async (pageNum = 1) => {
     try {
-      await getRequest(`/api/users/${user.userId}/balances/history?page=${pageNum}&currency=${currency}`,language);
+      await getRequest(`/api/users/${user.userId}/balances/history?page=${pageNum}&currency=${currency}`, language);
     } catch (error) {
     }
   };
@@ -88,13 +92,13 @@ export default function BalanceHistoryScreen() {
 
   const getGradientColors = (operation) => {
     return operation === "add" 
-      ? ["#06D6A0", "#4361EE"] 
+      ? ["#06D6A0", colors.primary] 
       : ["#F72585", "#7209B7"];
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString( "en-US", {
+    return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -104,7 +108,13 @@ export default function BalanceHistoryScreen() {
   };
 
   const renderBalanceItem = ({ item }) => (
-    <View style={[styles.transactionCard]}>
+    <View style={[
+      styles.transactionCard,
+      { 
+        backgroundColor: colors.card,
+        shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)'
+      }
+    ]}>
       <LinearGradient
         colors={getGradientColors(item.operation)}
         start={{ x: 0, y: 0 }}
@@ -116,13 +126,17 @@ export default function BalanceHistoryScreen() {
       
       <View style={styles.transactionDetails}>
         <View style={styles.transactionHeader}>
-          <Text style={[styles.transactionType,{
-      ...Platform.select({
-          ios: {
-              textAlign:rtl.isRTL ? "left" : "right"
-          }
-      }),
-  }]} numberOfLines={1}>
+          <Text style={[
+            styles.transactionType,
+            { color: colors.text },
+            {
+              ...Platform.select({
+                ios: {
+                  textAlign: rtl.isRTL ? "left" : "right"
+                }
+              }),
+            }
+          ]} numberOfLines={1}>
             {item.reference_type === "payment" 
               ? translations[language]?.balance?.paymentType || "Payment" 
               : item.reference_type === "transaction" 
@@ -140,20 +154,26 @@ export default function BalanceHistoryScreen() {
           </Text>
         </View>
         
-        <Text style={[styles.transactionNotes,{
+        <Text style={[
+          styles.transactionNotes,
+          { color: colors.textSecondary },
+          {
             ...Platform.select({
-                ios: {
-                    textAlign:rtl.isRTL ? "left" : "right"
-                }
+              ios: {
+                textAlign: rtl.isRTL ? "left" : "right"
+              }
             }),
-        }]} numberOfLines={2}>
+          }
+        ]} numberOfLines={2}>
           {item.notes}
         </Text>
         <View>
-          <Text style={[styles.transactionDate]}>
+          <Text style={[
+            styles.transactionDate,
+            { color: colors.textTertiary }
+          ]}>
             {formatDate(item.created_at)}
           </Text>
-        
         </View>
       </View>
     </View>
@@ -163,9 +183,9 @@ export default function BalanceHistoryScreen() {
     <View style={styles.summaryContainer}>
       <LinearGradient
         colors={currency === "ILS" 
-          ? ["#4CC9F0", "#4361EE"] 
+          ? [colors.accent, colors.primary] 
           : currency === "USD" 
-            ? ["#3A0CA3", "#480CA8"] 
+            ? [colors.secondary, isDark ? "#5A4CB7" : "#480CA8"] 
             : ["#7209B7", "#F72585"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -192,15 +212,15 @@ export default function BalanceHistoryScreen() {
     
     return (
       <View style={styles.footerLoader}>
-        <ActivityIndicator size="small" color="#4361EE" />
+        <ActivityIndicator size="small" color={colors.primary} />
       </View>
     );
   };
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <MaterialIcons name="account-balance-wallet" size={60} color="#CBD5E1" />
-      <Text style={styles.emptyText}>
+      <MaterialIcons name="account-balance-wallet" size={60} color={colors.textTertiary} />
+      <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
         {translations[language]?.balance?.noTransactions || "No transactions found"}
       </Text>
     </View>
@@ -208,9 +228,9 @@ export default function BalanceHistoryScreen() {
 
   if (isLoading && !data && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4361EE" />
-        <Text style={styles.loadingText}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           {translations[language]?.balance.loading || "Loading data..."}
         </Text>
       </View>
@@ -218,7 +238,7 @@ export default function BalanceHistoryScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={historyData}
         renderItem={renderBalanceItem}
@@ -231,8 +251,8 @@ export default function BalanceHistoryScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={["#4361EE"]}
-            tintColor="#4361EE"
+            colors={[colors.primary]}
+            tintColor={colors.primary}
           />
         }
         onEndReached={loadMoreData}
@@ -244,9 +264,8 @@ export default function BalanceHistoryScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingTop:25,
+    paddingTop: 25,
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   listContent: {
     padding: 20,
@@ -256,12 +275,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#4B5563",
   },
   summaryContainer: {
     marginBottom: 20,
@@ -294,16 +311,14 @@ const styles = StyleSheet.create({
   },
   transactionCard: {
     flexDirection: "row",
-    backgroundColor: "white",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 3,
-    gap:10
+    gap: 10
   },
   iconContainer: {
     width: 40,
@@ -324,7 +339,6 @@ const styles = StyleSheet.create({
   transactionType: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
     flex: 1,
   },
   transactionAmount: {
@@ -339,18 +353,16 @@ const styles = StyleSheet.create({
   },
   transactionNotes: {
     fontSize: 14,
-    color: "#64748B",
     marginBottom: 10,
   },
   transactionFooter: {
     flexDirection: "row",
     justifyContent: "flex-end",
     alignItems: "center",
-    gap:10
+    gap: 10
   },
   transactionDate: {
     fontSize: 12,
-    color: "#94A3B8",
   },
   footerLoader: {
     paddingVertical: 20,
@@ -364,7 +376,6 @@ const styles = StyleSheet.create({
   emptyText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#94A3B8",
     textAlign: "center",
   },
 });

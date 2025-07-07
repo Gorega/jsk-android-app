@@ -8,9 +8,13 @@ import ModalPresentation from "../../components/ModalPresentation";
 import { getToken } from "../../utils/secureStore";
 import Section from "../../components/create/Section";
 import Feather from '@expo/vector-icons/Feather';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function EditPhoneScreen() {
     const { language } = useLanguage();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState({});
@@ -194,7 +198,7 @@ export default function EditPhoneScreen() {
     // Define the sections for the form
     const sections = [{
         label: translations[language].tabs.orders.order.receiverPhones || 'Receiver Phones',
-        icon: <Feather name="phone" size={22} color="#4361EE" />,
+        icon: <Feather name="phone" size={22} color={colors.primary} />,
         fields: [{
             label: translations[language].tabs.orders.create.sections.client.fields.firstPhone || 'First Phone',
             type: "input",
@@ -219,11 +223,11 @@ export default function EditPhoneScreen() {
     }];
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             {loading ? (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
-                    <Text style={styles.loadingText}>
+                <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
                         {translations[language].tabs.orders.order.loading || 'Loading...'}
                     </Text>
                 </View>
@@ -242,9 +246,13 @@ export default function EditPhoneScreen() {
                         ))}
                     </ScrollView>
                     
-                    <View style={styles.buttonContainer}>
+                    <View style={[styles.buttonContainer, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
                         <TouchableOpacity
-                            style={[styles.submitButton, submitting && styles.submitButtonDisabled]}
+                            style={[
+                                styles.submitButton, 
+                                submitting && styles.submitButtonDisabled,
+                                { backgroundColor: submitting ? colors.buttonSecondary : colors.primary }
+                            ]}
                             onPress={handleSubmit}
                             disabled={submitting}
                         >
@@ -258,11 +266,11 @@ export default function EditPhoneScreen() {
                         </TouchableOpacity>
                         
                         <TouchableOpacity
-                            style={styles.cancelButton}
+                            style={[styles.cancelButton, { backgroundColor: isDark ? colors.surface : '#F1F5F9' }]}
                             onPress={() => router.back()}
                             disabled={submitting}
                         >
-                            <Text style={styles.cancelButtonText}>
+                            <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
                                 {translations[language].tabs.orders.create.cancel || 'Cancel'}
                             </Text>
                         </TouchableOpacity>
@@ -279,6 +287,7 @@ export default function EditPhoneScreen() {
                 >
                     <View style={[
                         styles.alertContainer,
+                        { backgroundColor: colors.card },
                         showAlert.type === 'success' ? styles.successContainer : styles.errorContainer
                     ]}>
                         <View style={[
@@ -291,19 +300,21 @@ export default function EditPhoneScreen() {
                                 color="#FFFFFF" 
                             />
                         </View>
-                        <Text style={styles.alertTitle}>{showAlert.title}</Text>
-                        <Text style={styles.alertMessage}>{showAlert.message}</Text>
+                        <Text style={[styles.alertTitle, { color: colors.text }]}>{showAlert.title}</Text>
+                        <Text style={[styles.alertMessage, { color: colors.textSecondary }]}>{showAlert.message}</Text>
                         <TouchableOpacity
                             style={[
                                 styles.alertButton,
-                                showAlert.type === 'success' ? styles.successButton : styles.errorButton
+                                showAlert.type === 'success' 
+                                    ? { backgroundColor: colors.success } 
+                                    : { backgroundColor: colors.error }
                             ]}
                             onPress={() => {
                                 setShowAlert({ ...showAlert, visible: false });
                                 if (showAlert.onClose) showAlert.onClose();
                             }}
                         >
-                            <Text style={styles.alertButtonText}>
+                            <Text style={[styles.alertButtonText, { color: colors.white }]}>
                                 {translations[language].tabs.orders.order.ok || 'OK'}
                             </Text>
                         </TouchableOpacity>
@@ -317,7 +328,6 @@ export default function EditPhoneScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
     },
     loadingContainer: {
         flex: 1,
@@ -327,7 +337,6 @@ const styles = StyleSheet.create({
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#64748B',
     },
     scrollView: {
         flex: 1,
@@ -403,31 +412,20 @@ const styles = StyleSheet.create({
     alertTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        marginBottom: 8,
-        textAlign: 'center',
+        marginBottom: 10,
     },
     alertMessage: {
-        fontSize: 14,
-        color: '#64748B',
+        fontSize: 16,
+        marginBottom: 20,
         textAlign: 'center',
-        marginBottom: 16,
     },
     alertButton: {
         paddingVertical: 10,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    successButton: {
-        backgroundColor: '#10B981',
-    },
-    errorButton: {
-        backgroundColor: '#EF4444',
+        paddingHorizontal: 20,
+        borderRadius: 5,
     },
     alertButtonText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 14,
-    },
+        fontSize: 16,
+        fontWeight: 'bold',
+    }
 });

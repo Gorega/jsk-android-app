@@ -7,9 +7,13 @@ import { router } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function HomeScreen(){
     const { language } = useLanguage();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
     const [isOpen, setIsOpen] = useState(false);
     const isRTL = language === 'ar' || language === 'he';
 
@@ -25,15 +29,15 @@ export default function HomeScreen(){
     }, []);
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             
             <ScrollView 
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
                 {/* Status Card */}
-                <View style={styles.statusCard}>
+                <View style={[styles.statusCard, { backgroundColor: colors.card, shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)' }]}>
                     <LinearGradient
                         colors={isOpen ? ['#06D6A0', '#059669'] : ['#FF6B6B', '#DC2626']}
                         start={{ x: 0, y: 0 }}
@@ -44,19 +48,26 @@ export default function HomeScreen(){
                     </LinearGradient>
                     
                     <View style={[styles.statusTextContainer]}>
-                        <Text style={[styles.statusTitle,{
-                                    ...Platform.select({
-                                        ios: {
-                                            textAlign:isRTL ? "left" : ""
-                                        }
-                                    }),
-                                }]}>
+                        <Text style={[
+                            styles.statusTitle,
+                            { color: colors.text },
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }
+                        ]}>
                             {translations[language].contact.weAre}{' '}
                             <Text style={{color: isOpen ? "#059669" : "#DC2626", fontWeight: '700'}}>
                                 {isOpen ? translations[language].contact.open : translations[language].contact.closed} {translations[language].contact.now}
                             </Text>
                         </Text>
-                        <Text style={[styles.statusSubtitle]}>
+                        <Text style={[
+                            styles.statusSubtitle,
+                            { color: colors.textSecondary }
+                        ]}>
                             {isOpen 
                                 ? (translations[language].contact?.openingHours || "Opening hours: 9:00 AM - 10:00 PM") 
                                 : (translations[language].contact?.closingHours || "We'll be back tomorrow at 9:00 AM")}
@@ -65,31 +76,39 @@ export default function HomeScreen(){
                 </View>
                 
                 {/* Contact Card */}
-                <View style={styles.contactCard}>
+                <View style={[styles.contactCard, { backgroundColor: colors.card, shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)' }]}>
                     <View style={[styles.contactRow]}>
-                        <Feather name="phone" size={20} color="#4361EE" />
+                        <Feather name="phone" size={20} color={colors.primary} />
                         <View style={[styles.contactTextContainer]}>
-                            <Text style={[styles.contactLabel,{
+                            <Text style={[
+                                styles.contactLabel,
+                                { color: colors.textSecondary },
+                                {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
-                                }]}>{translations[language].contact.local}</Text>
-                            <Text style={styles.contactValue}>+972566150002</Text>
+                                }
+                            ]}>{translations[language].contact.local}</Text>
+                            <Text style={[styles.contactValue, { color: colors.text }]}>+972566150002</Text>
                         </View>
                     </View>
                 </View>
                 
                 {/* Social Media Card */}
-                <View style={styles.socialCard}>
-                    <Text style={[styles.socialTitle,{
+                <View style={[styles.socialCard, { backgroundColor: colors.card, shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)' }]}>
+                    <Text style={[
+                        styles.socialTitle,
+                        { color: colors.text },
+                        {
                             ...Platform.select({
                                 ios: {
-                                    textAlign:isRTL ? "left" : ""
+                                    textAlign: isRTL ? "left" : ""
                                 }
                             }),
-                        }]}>
+                        }
+                    ]}>
                         {translations[language].contact?.connectWithUs}
                     </Text>
                     
@@ -106,7 +125,9 @@ export default function HomeScreen(){
                             >
                                 <FontAwesome name="facebook" size={24} color="white" />
                             </LinearGradient>
-                            <Text style={styles.socialButtonText}>{translations[language].contact.facebook}</Text>
+                            <Text style={[styles.socialButtonText, { color: colors.textSecondary }]}>
+                                {translations[language].contact.facebook}
+                            </Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
@@ -121,7 +142,9 @@ export default function HomeScreen(){
                             >
                                 <FontAwesome5 name="instagram" size={24} color="white" />
                             </LinearGradient>
-                            <Text style={styles.socialButtonText}>{translations[language].contact.instagram}</Text>
+                            <Text style={[styles.socialButtonText, { color: colors.textSecondary }]}>
+                                {translations[language].contact.instagram}
+                            </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
@@ -136,7 +159,9 @@ export default function HomeScreen(){
                             >
                                 <FontAwesome5 name="tiktok" size={24} color="white" />
                             </LinearGradient>
-                            <Text style={styles.socialButtonText}>{translations[language].contact.tiktok}</Text>
+                            <Text style={[styles.socialButtonText, { color: colors.textSecondary }]}>
+                                {translations[language].contact.tiktok}
+                            </Text>
                         </TouchableOpacity>
                         
                         <TouchableOpacity 
@@ -151,7 +176,9 @@ export default function HomeScreen(){
                             >
                                 <FontAwesome name="whatsapp" size={24} color="white" />
                             </LinearGradient>
-                            <Text style={styles.socialButtonText}>{translations[language].contact.whatsapp}</Text>
+                            <Text style={[styles.socialButtonText, { color: colors.textSecondary }]}>
+                                {translations[language].contact.whatsapp}
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -159,7 +186,7 @@ export default function HomeScreen(){
                 {/* Visit Website Button */}
                 <TouchableOpacity style={styles.websiteButtonContainer} onPress={() => router.push("https://taiar.org/ar")}>
                     <LinearGradient
-                        colors={['#4361EE', '#3A0CA3']}
+                        colors={[colors.primary, colors.secondary]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                         style={styles.websiteButton}
@@ -178,13 +205,10 @@ export default function HomeScreen(){
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: "#f8f9fa",
     },
     headerWrapper: {
-        backgroundColor: '#ffffff',
         paddingVertical: 16,
         alignItems: "center",
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.05,
         shadowRadius: 15,
@@ -193,19 +217,16 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 18,
         fontWeight: "700",
-        color: "#1F2937",
     },
     scrollContent: {
         padding: 20,
         paddingTop: 25,
     },
     statusCard: {
-        backgroundColor: '#ffffff',
         borderRadius: 20,
         padding: 18,
         flexDirection: 'row',
         alignItems: 'center',
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -225,18 +246,14 @@ const styles = StyleSheet.create({
     statusTitle: {
         fontSize: 17,
         fontWeight: "600",
-        color: "#1F2937",
         marginBottom: 4,
     },
     statusSubtitle: {
         fontSize: 14,
-        color: "#64748B",
     },
     contactCard: {
-        backgroundColor: '#ffffff',
         borderRadius: 20,
         padding: 18,
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -253,19 +270,15 @@ const styles = StyleSheet.create({
     },
     contactLabel: {
         fontSize: 14,
-        color: "#64748B",
         marginBottom: 2,
     },
     contactValue: {
         fontSize: 17,
         fontWeight: "600",
-        color: "#1F2937",
     },
     socialCard: {
-        backgroundColor: '#ffffff',
         borderRadius: 20,
         padding: 18,
-        shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
@@ -275,7 +288,6 @@ const styles = StyleSheet.create({
     socialTitle: {
         fontSize: 17,
         fontWeight: "600",
-        color: "#1F2937",
         marginBottom: 16,
     },
     socialButtonsContainer: {
@@ -296,14 +308,12 @@ const styles = StyleSheet.create({
     },
     socialButtonText: {
         fontSize: 14,
-        color: "#4B5563",
     },
     websiteButtonContainer: {
         marginTop: 24,
         borderRadius: 8,
         overflow: 'hidden',
         elevation: 2,
-        shadowColor: '#4361EE',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 4,

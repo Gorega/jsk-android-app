@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -11,7 +11,8 @@ import {
   StatusBar,
   KeyboardAvoidingView,
   Platform,
-  Image
+  Image,
+  Keyboard
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -23,10 +24,14 @@ import { useSocket } from '../../utils/socketContext';
 import { getToken } from "../../utils/secureStore";
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRTLStyles } from '../../utils/RTLWrapper';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function ComplaintDetails() {
   const socket = useSocket();
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const { complaintId } = useLocalSearchParams();
   const { user } = useAuth();
   const [complaint, setComplaint] = useState(null);
@@ -35,6 +40,8 @@ export default function ComplaintDetails() {
   const [sending, setSending] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const inputRef = useRef(null);
   const rtl = useRTLStyles();
 
   // Fetch complaint details along with its messages
@@ -62,6 +69,31 @@ export default function ComplaintDetails() {
   useEffect(() => {
     fetchComplaintDetails();
   }, [complaintId, language]);
+  
+  // Handle keyboard events
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        // Blur the input when keyboard is dismissed
+        if (inputRef.current) {
+          inputRef.current.blur();
+        }
+      }
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
 
   // Pull-to-refresh functionality
   const onRefresh = useCallback(() => {
@@ -170,10 +202,10 @@ export default function ComplaintDetails() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
-        <ActivityIndicator size="large" color="#4361EE" />
-        <Text style={styles.loadingText}>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
           {translations[language]?.complaints.loading || 'Loading...'}
         </Text>
       </View>
@@ -182,17 +214,17 @@ export default function ComplaintDetails() {
 
   if (!complaint) {
     return (
-      <View style={styles.errorContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
         <Image 
           source={""} 
           style={styles.errorImage}
           resizeMode="contain"
         />
-        <Text style={styles.errorTitle}>
+        <Text style={[styles.errorTitle, { color: colors.text }]}>
           {translations[language]?.complaints?.notFoundTitle || 'Not Found'}
         </Text>
-        <Text style={styles.errorText}>
+        <Text style={[styles.errorText, { color: colors.textSecondary }]}>
           {translations[language]?.complaints?.notFound || 'Complaint not found'}
         </Text>
         <TouchableOpacity 
@@ -201,7 +233,7 @@ export default function ComplaintDetails() {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={['#4361EE', '#3A0CA3']}
+            colors={[colors.primary, colors.secondary]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.errorButtonGradient}
@@ -220,99 +252,119 @@ export default function ComplaintDetails() {
 
   return (
     <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
-      >
-      <View style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+      style={{ flex: 1, backgroundColor: colors.background }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={0}
+    >
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
         
-        {/* Complaint Information Card */}
-        <View style={styles.infoCard}>
-          <View style={styles.complaintHeader}>
-            <LinearGradient
-              colors={statusInfo.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.statusBadge}
-            >
-              <Ionicons name={statusInfo.icon} size={14} color="white" />
-              <Text style={styles.statusText}>{complaint.status}</Text>
-            </LinearGradient>
-            
-            <View style={styles.complaintId}>
-              <Text style={styles.complaintIdText}>
-                #{complaintId}
-              </Text>
-            </View>
-          </View>
-          
-          <Text style={[styles.subject,{
-                  ...Platform.select({
-                      ios: {
-                          flexDirection:"column",
-                          textAlign:rtl.isRTL ? "left" : ""
-                      }
-                  }),
-              }]}>
-            {complaint.subject}
-          </Text>
-          
-          <View style={[styles.descriptionContainer,{
-                  ...Platform.select({
-                      ios: {
-                          flexDirection:"column",
-                          alignItems:rtl.isRTL ? "flex-start" : ""
-                      }
-                  }),
-              }]}>
-            <Text style={[styles.descriptionLabel]}>
-              {translations[language]?.complaints?.issue || 'Issue'}
-            </Text>
-            <Text style={[styles.description]}>
-              {complaint.description}
-            </Text>
-          </View>
-          
-          <View style={styles.detailsContainer}>
-            <View style={[styles.detailRow]}>
-              <View style={[styles.detailIconContainer]}>
-                <Feather name="package" size={16} color="#4361EE" />
+        {/* Complaint Information Card - Hidden when keyboard is visible */}
+        {!keyboardVisible && (
+          <View style={[styles.infoCard, { backgroundColor: colors.card, shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)' }]}>
+            <View style={styles.complaintHeader}>
+              <LinearGradient
+                colors={statusInfo.gradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.statusBadge}
+              >
+                <Ionicons name={statusInfo.icon} size={14} color="white" />
+                <Text style={styles.statusText}>{complaint.status}</Text>
+              </LinearGradient>
+              
+              <View style={styles.complaintId}>
+                <Text style={[styles.complaintIdText, { color: colors.textSecondary }]}>
+                  #{complaintId}
+                </Text>
               </View>
-              <Text style={styles.detailLabel}>
-                {translations[language]?.complaints?.orderId || 'Order ID'}:
-              </Text>
-              <Text style={styles.detailValue}>#{complaint.order_id}</Text>
             </View>
             
-            <View style={[styles.detailRow]}>
-              <View style={[styles.detailIconContainer]}>
-                <Feather name="calendar" size={16} color="#4361EE" />
-              </View>
-              <Text style={styles.detailLabel}>
-                {translations[language]?.complaints?.createdAt || 'Created'}:
+            <Text style={[
+              styles.subject,
+              { color: colors.text },
+              {
+                ...Platform.select({
+                  ios: {
+                    flexDirection: "column",
+                    textAlign: rtl.isRTL ? "left" : ""
+                  }
+                }),
+              }
+            ]}>
+              {complaint.subject}
+            </Text>
+            
+            <View style={[
+              styles.descriptionContainer,
+              { backgroundColor: colors.surface },
+              {
+                ...Platform.select({
+                  ios: {
+                    flexDirection: "column",
+                    alignItems: rtl.isRTL ? "flex-start" : ""
+                  }
+                }),
+              }
+            ]}>
+              <Text style={[styles.descriptionLabel, { color: colors.textSecondary }]}>
+                {translations[language]?.complaints?.issue || 'Issue'}
               </Text>
-              <Text style={styles.detailValue}>{formatDate(complaint.created_at)}</Text>
+              <Text style={[styles.description, { color: colors.text }]}>
+                {complaint.description}
+              </Text>
+            </View>
+            
+            <View style={[styles.detailsContainer, { borderTopColor: colors.border }]}>
+              <View style={[styles.detailRow]}>
+                <View style={[styles.detailIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EFF6FF' }]}>
+                  <Feather name="package" size={16} color={colors.primary} />
+                </View>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  {translations[language]?.complaints?.orderId || 'Order ID'}:
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>#{complaint.order_id}</Text>
+              </View>
+              
+              <View style={[styles.detailRow]}>
+                <View style={[styles.detailIconContainer, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EFF6FF' }]}>
+                  <Feather name="calendar" size={16} color={colors.primary} />
+                </View>
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>
+                  {translations[language]?.complaints?.createdAt || 'Created'}:
+                </Text>
+                <Text style={[styles.detailValue, { color: colors.text }]}>{formatDate(complaint.created_at)}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* Messages Section */}
-        <View style={styles.messagesContainer}>
-          <View style={[styles.sectionHeader]}>
-            <Feather name="message-circle" size={18} color="#4361EE" />
-            <Text style={styles.sectionTitle}>
-              {translations[language]?.complaints?.conversation || 'Conversation'}
-            </Text>
-          </View>
+        <View style={[
+          styles.messagesContainer, 
+          { 
+            backgroundColor: colors.card, 
+            shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)',
+            marginTop: keyboardVisible ? 0 : 10,
+            flex: 1
+          }
+        ]}>
+          {!keyboardVisible && (
+            <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
+              <Feather name="message-circle" size={18} color={colors.primary} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {translations[language]?.complaints?.conversation || 'Conversation'}
+              </Text>
+            </View>
+          )}
           
           {messages.length === 0 ? (
             <View style={styles.noMessagesContainer}>
-              <Feather name="message-square" size={40} color="#CBD5E1" />
-              <Text style={styles.noMessagesText}>
+              <Feather name="message-square" size={40} color={colors.textTertiary} />
+              <Text style={[styles.noMessagesText, { color: colors.text }]}>
                 {translations[language]?.complaints?.noMessages || 'No messages yet'}
               </Text>
-              <Text style={styles.noMessagesSubtext}>
+              <Text style={[styles.noMessagesSubtext, { color: colors.textSecondary }]}>
                 {translations[language]?.complaints?.startConversation || 'Start the conversation by sending a message'}
               </Text>
             </View>
@@ -326,20 +378,20 @@ export default function ComplaintDetails() {
                   <View style={[
                     styles.messageContainer,
                     isUserMessage ? styles.userMessage : styles.agentMessage,
-                    isUserMessage ? { alignSelf: 'flex-start' } : null,
-                    !isUserMessage ? { alignSelf: 'flex-end' } : null
+                    isUserMessage ? { alignSelf: 'flex-end' } : { alignSelf: 'flex-start' }
                   ]}>
                     <View style={[
                       styles.messageBubble,
-                      isUserMessage ? styles.userBubble : styles.agentBubble
+                      isUserMessage ? [styles.userBubble, { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EFF6FF' }] : [styles.agentBubble, { backgroundColor: isDark ? colors.surface : '#F1F5F9' }]
                     ]}>
-                      <Text style={styles.messageSender}>
+                      <Text style={[styles.messageSender, { color: colors.textSecondary }]}>
                         {item.sender_name || (isUserMessage ? (translations[language]?.complaints?.you || 'You') : (translations[language]?.complaints?.supportAgent || 'Support Agent'))}
                       </Text>
-                      <Text style={styles.messageText}>{item.message}</Text>
+                      <Text style={[styles.messageText, { color: colors.text }]}>{item.message}</Text>
                     </View>
                     <Text style={[
                       styles.messageTime,
+                      { color: colors.textTertiary },
                       { textAlign: rtl.isRTL ? (isUserMessage ? 'left' : 'right') : (isUserMessage ? 'right' : 'left') }
                     ]}>
                       {formatDate(item.created_at)}
@@ -349,7 +401,7 @@ export default function ComplaintDetails() {
               }}
               contentContainerStyle={styles.messagesList}
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#4361EE"]} />
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} tintColor={colors.primary} />
               }
               inverted={false}
             />
@@ -357,18 +409,33 @@ export default function ComplaintDetails() {
         </View>
 
         {/* Send New Message */}
-        <View style={[styles.inputContainer]}>
+        <View style={[styles.inputContainer, { 
+          backgroundColor: colors.card, 
+          borderTopColor: colors.border,
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0
+        }]}>
           <TextInput
-            style={[styles.input]}
+            ref={inputRef}
+            style={[
+              styles.input, 
+              { 
+                backgroundColor: colors.inputBg, 
+                borderColor: colors.inputBorder,
+                color: colors.inputText
+              }
+            ]}
             placeholder={translations[language]?.complaints?.messagePlaceholder || 'Type a message...'}
-            placeholderTextColor="#94A3B8"
+            placeholderTextColor={colors.textTertiary}
             value={newMessage}
             onChangeText={setNewMessage}
             multiline
           />
           <TouchableOpacity 
             onPress={sendMessage} 
-            style={styles.sendButton} 
+            style={[styles.sendButton, { backgroundColor: colors.primary }]} 
             disabled={sending || !newMessage.trim()}
             activeOpacity={0.8}
           >
@@ -387,25 +454,21 @@ export default function ComplaintDetails() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8f9fa",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8f9fa",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#4B5563",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
-    backgroundColor: "#f8f9fa",
   },
   errorImage: {
     width: 120,
@@ -415,13 +478,11 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1F2937",
     marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
     textAlign: "center",
-    color: "#6B7280",
     marginBottom: 24,
   },
   errorButton: {
@@ -446,12 +507,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   infoCard: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     margin: 16,
     marginBottom: 0,
     padding: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -462,7 +521,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    gap:10
+    gap: 10
   },
   statusBadge: {
     flexDirection: "row",
@@ -478,24 +537,20 @@ const styles = StyleSheet.create({
     fontSize: 12
   },
   complaintId: {
-    backgroundColor: "#F1F5F9",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
   complaintIdText: {
-    color: "#64748B",
     fontSize: 12,
     fontWeight: "500",
   },
   subject: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1F2937",
     marginBottom: 12,
   },
   descriptionContainer: {
-    backgroundColor: "#F9FAFB",
     borderRadius: 12,
     padding: 12,
     marginBottom: 16,
@@ -503,17 +558,14 @@ const styles = StyleSheet.create({
   descriptionLabel: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#4B5563",
     marginBottom: 6,
   },
   description: {
     fontSize: 14,
-    color: "#4B5563",
     lineHeight: 20,
   },
   detailsContainer: {
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
     paddingTop: 16,
   },
   detailRow: {
@@ -526,26 +578,22 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: "#EFF6FF",
     justifyContent: "center",
     alignItems: "center"
   },
   detailLabel: {
     fontSize: 14,
-    color: "#6B7280",
   },
   detailValue: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#1F2937",
   },
   messagesContainer: {
     flex: 1,
     margin: 16,
     marginTop: 10,
-    backgroundColor: "#FFFFFF",
+    marginBottom: 0,
     borderRadius: 16,
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 15,
@@ -556,16 +604,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    gap: 8
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
   },
   messagesList: {
     padding: 16,
     paddingBottom: 80,
+    paddingTop: 10,
   },
   noMessagesContainer: {
     flex: 1,
@@ -576,13 +624,11 @@ const styles = StyleSheet.create({
   noMessagesText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
     marginTop: 16,
     marginBottom: 8,
   },
   noMessagesSubtext: {
     fontSize: 14,
-    color: "#6B7280",
     textAlign: "center",
     paddingHorizontal: 16,
   },
@@ -591,10 +637,10 @@ const styles = StyleSheet.create({
     maxWidth: "80%",
   },
   userMessage: {
-    alignSelf: "flex-end",
+    // alignSelf handled in component
   },
   agentMessage: {
-    alignSelf: "flex-start",
+    // alignSelf handled in component
   },
   messageBubble: {
     borderRadius: 16,
@@ -602,57 +648,45 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   userBubble: {
-    backgroundColor: "#EFF6FF",
     borderTopRightRadius: 4,
   },
   agentBubble: {
-    backgroundColor: "#F1F5F9",
     borderTopLeftRadius: 4,
   },
   messageSender: {
     fontSize: 12,
     fontWeight: "600",
     marginBottom: 4,
-    color: "#64748B",
   },
   messageText: {
     fontSize: 14,
-    color: "#1F2937",
     lineHeight: 20,
   },
   messageTime: {
     fontSize: 11,
-    color: "#94A3B8",
     marginTop: 4,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
     gap: 10,
-    // Add bottom padding for extra space
-    paddingBottom: Platform.OS === 'ios' ? 25 : 12
+    paddingBottom: Platform.OS === 'ios' ? 12 : 12
   },
   input: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     paddingHorizontal: 16,
     paddingVertical: 10,
     fontSize: 14,
-    color: "#1F2937",
     maxHeight: 100,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#4361EE",
     justifyContent: "center",
     alignItems: "center",
     marginLeft: 10,

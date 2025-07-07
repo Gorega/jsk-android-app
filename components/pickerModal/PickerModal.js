@@ -2,44 +2,48 @@ import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, D
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 import FlatListData from "../FlatListData";
 import { useState, useEffect, useMemo } from 'react';
 
-export default function PickerModal({list, showPickerModal, setShowPickerModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors}) {
+export default function PickerModal({list, showPickerModal, setShowModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue: externalSearchValue, setPickerSearchValue: setExternalSearchValue, setFieldErrors, searchLoading}) {
     const { language } = useLanguage();
+    const { colorScheme, isDark } = useTheme();
+    const colors = Colors[colorScheme];
     const { name } = field;
     const [modalHeight, setModalHeight] = useState(Dimensions.get('window').height * 0.7);
     const isRTL = language === 'ar' || language === 'he';
+    
+    // Local search state when external search state is not provided
+    const [internalSearchValue, setInternalSearchValue] = useState("");
+    
+    // Use external search state if provided, otherwise use internal state
+    const searchValue = externalSearchValue !== undefined ? externalSearchValue : internalSearchValue;
+    const setSearchValue = setExternalSearchValue || setInternalSearchValue;
 
     // Filter list based on search value
     const filteredList = useMemo(() => {
-        if (!prickerSearchValue || !list?.length) return list;
+        if (!searchValue || !list?.length) return list;
         
         return list.filter(item => {
-            const searchText = prickerSearchValue.toLowerCase();
+            const searchText = searchValue.toLowerCase();
             const itemLabel = (item.label || item.name || '').toLowerCase();
             return itemLabel.includes(searchText);
         });
-    }, [list, prickerSearchValue]);
+    }, [list, searchValue]);
 
-    // Adjust modal height on orientation change
-    useEffect(() => {
-        const updateDimensions = () => {
-            setModalHeight(Dimensions.get('window').height * 0.7);
-        };
-
-        const dimensionsListener = Dimensions.addEventListener('change', updateDimensions);
-
-        return () => {
-            dimensionsListener.remove();
-        };
-    }, []);
+    // Function to handle modal close with filter clearing
+    const handleCloseModal = () => {
+        setSearchValue('');
+        setShowModal(false);
+    };
 
     return (
         <Modal
             animationType="slide"
             visible={showPickerModal}
-            onRequestClose={() => setShowPickerModal(false)}
+            onRequestClose={handleCloseModal}
             transparent
         >
             <KeyboardAvoidingView
@@ -47,32 +51,42 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                 style={styles.container}
             >
                 <SafeAreaView style={styles.safeArea}>
-                    <View style={[styles.contentWrapper, { height: modalHeight }]}>
-                        <View style={styles.header}>
-                            <Text style={styles.headerTitle}>
+                    <View style={[styles.contentWrapper, { 
+                        height: modalHeight,
+                        backgroundColor: colors.card,
+                        shadowColor: colors.cardShadow
+                    }]}>
+                        <View style={[styles.header, {
+                            borderBottomColor: colors.border
+                        }]}>
+                            <Text style={[styles.headerTitle, { color: colors.text }]}>
                                 {translations[language].picker.choose} {field.label}
                             </Text>
                             <TouchableOpacity
                                 style={[styles.closeButton]}
-                                onPress={() => setShowPickerModal(false)}
+                                onPress={handleCloseModal}
                             >
-                                <Ionicons name="close" size={24} color="#6B7280" />
+                                <Ionicons name="close" size={24} color={colors.textSecondary} />
                             </TouchableOpacity>
                         </View>
 
                         {field.showSearchBar && (
-                            <View style={styles.searchContainer}>
+                            <View style={[styles.searchContainer, {
+                                borderBottomColor: colors.border
+                            }]}>
                                 <View style={[
-                                    styles.searchInputContainer
+                                    styles.searchInputContainer,
+                                    { backgroundColor: colors.inputBg }
                                 ]}>
                                     <Ionicons 
                                         name="search" 
                                         size={20} 
-                                        color="#6B7280" 
+                                        color={colors.textSecondary} 
                                     />
                                     <TextInput
                                         style={[
                                             styles.searchInput,
+                                            { color: colors.inputText },
                                             {
                                                 ...Platform.select({
                                                     ios: {
@@ -82,17 +96,24 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                             }
                                         ]}
                                         placeholder={translations[language].picker.searchPlaceholder}
-                                        placeholderTextColor="#9CA3AF"
-                                        value={prickerSearchValue}
-                                        onChangeText={(input) => setPickerSearchValue(input)}
+                                        placeholderTextColor={colors.textTertiary}
+                                        value={searchValue}
+                                        onChangeText={(input) => setSearchValue(input)}
                                         autoFocus={true}
                                     />
+                                    {searchLoading && (
+                                        <ActivityIndicator 
+                                            size="small" 
+                                            color={colors.primary}
+                                            style={styles.searchLoadingIndicator} 
+                                        />
+                                    )}
                                 </View>
                             </View>
                         )}
 
                         <View style={styles.listContainer}>
-                            {loading ? <ActivityIndicator size="small" color="#4361EE" />
+                            {loading ? <ActivityIndicator size="small" color={colors.primary} />
                              :
                              <FlatListData
                                 list={filteredList || []}
@@ -101,7 +122,8 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                 children={(item) => (
                                     <TouchableOpacity 
                                         style={[
-                                            styles.itemContainer
+                                            styles.itemContainer,
+                                            { borderBottomColor: colors.border }
                                         ]}
                                         onPress={() => {
                                             setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
@@ -126,14 +148,17 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                                 });
                                             }
                                             
-                                            setShowPickerModal(false);
+                                            // Clear search and close modal
+                                            setSearchValue('');
+                                            setShowModal(false);
                                         }}
                                         activeOpacity={0.7}
                                     >
                                         <View style={styles.itemContent}>
                                             <Text 
                                                 style={[
-                                                    styles.itemText
+                                                    styles.itemText,
+                                                    { color: colors.text }
                                                 ]}
                                             >
                                                 {item.label || `${item.name} ${item.phone ? "/ " + item.phone : ""}`}
@@ -143,7 +168,7 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                                             <Ionicons 
                                                 name={isRTL ? "chevron-back" : "chevron-forward"} 
                                                 size={18} 
-                                                color="#4F46E5"
+                                                color={colors.primary}
                                             />
                                         </View>
                                     </TouchableOpacity>
@@ -151,12 +176,18 @@ export default function PickerModal({list, showPickerModal, setShowPickerModal, 
                             /> }
                         </View>
 
-                        <View style={styles.footer}>
+                        <View style={[styles.footer, {
+                            borderTopColor: colors.border
+                        }]}>
                             <TouchableOpacity 
-                                style={styles.cancelButton}
-                                onPress={() => setShowPickerModal(false)}
+                                style={[styles.cancelButton, {
+                                    backgroundColor: colors.buttonSecondary
+                                }]}
+                                onPress={handleCloseModal}
                             >
-                                <Text style={styles.cancelButtonText}>
+                                <Text style={[styles.cancelButtonText, {
+                                    color: isDark ? colors.text : colors.textSecondary
+                                }]}>
                                     {translations[language].picker.cancel}
                                 </Text>
                             </TouchableOpacity>
@@ -179,13 +210,11 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-end'
     },
     contentWrapper: {
-        backgroundColor: 'white',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
         width: '100%',
         maxHeight: '90%',
         overflow: 'hidden',
-        shadowColor: "#000",
         shadowOffset: {
             width: 0,
             height: -3,
@@ -200,13 +229,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
         position: 'relative'
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#111827'
     },
     closeButton: {
         position: 'absolute',
@@ -217,12 +244,10 @@ const styles = StyleSheet.create({
     searchContainer: {
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6'
     },
     searchInputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
         borderRadius: 12,
         paddingHorizontal: 12,
         paddingVertical: 10
@@ -230,7 +255,6 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         fontSize: 15,
-        color: '#374151'
     },
     listContainer: {
         flex: 1
@@ -242,13 +266,11 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6'
     },
     itemContent: {
     },
     itemText: {
         fontSize: 16,
-        color: '#374151',
     },
     checkmarkContainer: {
         paddingLeft: 8
@@ -258,17 +280,18 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 16,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6'
     },
     cancelButton: {
         paddingVertical: 10,
         paddingHorizontal: 20,
         borderRadius: 10,
-        backgroundColor: '#F3F4F6'
     },
     cancelButtonText: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#4B5563'
-    }
+    },
+    searchLoadingIndicator: {
+        position: 'absolute',
+        right: 12,
+    },
 });

@@ -7,9 +7,14 @@ import { useLanguage } from '../../utils/languageContext';
 import UsersView from '../../components/users/UsersView';
 import { getToken } from "../../utils/secureStore";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function HomeScreen() {
     const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy, setActiveSearchBy] = useState("");
@@ -186,16 +191,16 @@ export default function HomeScreen() {
         
         return (
             <View style={styles.emptyContainer}>
-                <Ionicons name="people-outline" size={60} color="#CBD5E1" />
-                <Text style={styles.emptyTitle}>
+                <Ionicons name="people-outline" size={60} color={colors.textTertiary} />
+                <Text style={[styles.emptyTitle, { color: colors.text }]}>
                     {translations[language].users.noUsersFound}
                 </Text>
-                <Text style={styles.emptyMessage}>
+                <Text style={[styles.emptyMessage, { color: colors.textSecondary }]}>
                     {translations[language].users.tryDifferentFilters}
                 </Text>
                 {(activeFilter || activeSearchBy || activeDate || searchValue) && (
                     <TouchableOpacity 
-                        style={styles.clearButton}
+                        style={[styles.clearButton, { backgroundColor: colors.primary }]}
                         onPress={() => {
                             setSearchValue("");
                             setActiveFilter("");
@@ -205,7 +210,7 @@ export default function HomeScreen() {
                             clearFilters();
                         }}
                     >
-                        <Text style={styles.clearButtonText}>
+                        <Text style={[styles.clearButtonText, { color: colors.buttonText }]}>
                             {translations[language].users.clearFilters}
                         </Text>
                     </TouchableOpacity>
@@ -215,7 +220,7 @@ export default function HomeScreen() {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Search
                 searchValue={searchValue}
                 setSearchValue={(input) => setSearchValue(input)}
@@ -246,8 +251,8 @@ export default function HomeScreen() {
                             <RefreshControl
                                 refreshing={refreshing}
                                 onRefresh={onRefresh}
-                                colors={["#4361EE"]}
-                                tintColor="#4361EE"
+                                colors={[colors.primary]}
+                                tintColor={colors.primary}
                             />
                         }
                     />
@@ -256,9 +261,9 @@ export default function HomeScreen() {
 
             {/* Loading Spinner */}
             {isLoading && !refreshing && (
-                <View style={styles.overlay}>
-                    <View style={styles.spinnerContainer}>
-                        <ActivityIndicator size="large" color="#4361EE" />
+                <View style={[styles.overlay, { backgroundColor: colorScheme === 'dark' ? 'rgba(26, 26, 26, 0.8)' : 'rgba(255, 255, 255, 0.8)' }]}>
+                    <View style={[styles.spinnerContainer, { backgroundColor: colors.card }]}>
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
                 </View>
             )}
@@ -269,7 +274,6 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8FAFC',
     },
     content: {
         flex: 1,
@@ -278,16 +282,7 @@ const styles = StyleSheet.create({
     statsContainer: {
         marginHorizontal: 16,
         marginVertical: 12,
-        backgroundColor: 'white',
         borderRadius: 12,
-        shadowColor: "#64748B",
-        shadowOffset: {
-            width: 0,
-            height: 1,
-        },
-        shadowOpacity: 0.08,
-        shadowRadius: 2.65,
-        elevation: 2,
     },
     statsContent: {
         flexDirection: 'row',
@@ -303,18 +298,15 @@ const styles = StyleSheet.create({
     statNumber: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#1E293B',
         marginBottom: 4,
     },
     statLabel: {
         fontSize: 14,
-        color: '#64748B',
         textAlign: 'center',
     },
     statsDivider: {
         width: 1,
         height: 40,
-        backgroundColor: '#E2E8F0',
     },
     emptyContainer: {
         flex: 1,
@@ -325,25 +317,21 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#334155',
         marginTop: 16,
         marginBottom: 8,
         textAlign: 'center',
     },
     emptyMessage: {
         fontSize: 15,
-        color: '#64748B',
         textAlign: 'center',
         marginBottom: 24,
     },
     clearButton: {
         paddingVertical: 12,
         paddingHorizontal: 20,
-        backgroundColor: '#4361EE',
         borderRadius: 8,
     },
     clearButtonText: {
-        color: 'white',
         fontWeight: '600',
         fontSize: 15,
     },
@@ -353,13 +341,11 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
     },
     spinnerContainer: {
-        backgroundColor: 'white',
         padding: 24,
         borderRadius: 12,
         shadowColor: '#000',

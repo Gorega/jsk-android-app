@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView,Platform } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -8,13 +8,16 @@ import Feather from '@expo/vector-icons/Feather';
 import { useAuth } from "../../RootLayout";
 import PickerModal from '../../components/pickerModal/PickerModal';
 import { router } from 'expo-router';
-import { getToken } from '../../utils/secureStore';
 import { Audio } from 'expo-av';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function CameraScanner() {
   const { user } = useAuth();
   const { language } = useLanguage();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [error, setError] = useState(null);
@@ -23,16 +26,17 @@ export default function CameraScanner() {
   const [success, setSuccess] = useState(false);
   const [scannedItems, setScannedItems] = useState([]);
   const [branches, setBranches] = useState([]);
-  const [drivers,setDrivers] = useState([]);
+  const [drivers, setDrivers] = useState([]);
   const [showCreateDispatchedCollectionModal, setShowCreateDispatchedCollectionModal] = useState(false);
   const [showPickerModal, setShowPickerModal] = useState(false);
   const [currentField, setCurrentField] = useState(null);
   const [note, setNote] = useState("");
-  const rtl = useRTLStyles();
+  const { isRTL } = useRTLStyles();
   const [manualOrderId, setManualOrderId] = useState("");
+  
   const [selectedValue, setSelectedValue] = useState({
     toBranch: null,
-    toDriver:null
+    toDriver: null
   });
   const [processingBarcode, setProcessingBarcode] = useState(false);
 
@@ -100,7 +104,7 @@ export default function CameraScanner() {
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          'Accept-Language': language,
+          'Accept-Language': language
           // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
@@ -110,7 +114,6 @@ export default function CameraScanner() {
           to_branch_id: selectedValue.toBranch?.branch_id ? selectedValue.toBranch?.branch_id : null,
           to_driver_id: selectedValue.toDriver?.user_id ? selectedValue.toDriver?.user_id : null,
           note_content: note,
-          from_driver_balance: false
         })
       });
       
@@ -340,17 +343,18 @@ export default function CameraScanner() {
 
   if (!permission?.granted) {
     return (
-      <SafeAreaView style={styles.permissionContainer}>
-        <View style={styles.permissionContent}>
-          <Feather name="camera-off" size={50} color="#4361EE" />
-          <Text style={styles.permissionText}>
+      <SafeAreaView style={[styles.permissionContainer, { backgroundColor: colors.background }]}>
+        <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
+        <View style={[styles.permissionContent, { backgroundColor: colors.card }]}>
+          <Feather name="camera-off" size={50} color={colors.primary} />
+          <Text style={[styles.permissionText, { color: colors.text }]}>
             {translations[language].camera.permission.request}
           </Text>
           <TouchableOpacity 
-            style={styles.permissionButton}
+            style={[styles.permissionButton, { backgroundColor: colors.primary }]}
             onPress={requestPermission}
           >
-            <Text style={styles.permissionButtonText}>
+            <Text style={[styles.permissionButtonText, { color: colors.buttonText }]}>
               {translations[language]?.grantPermission || 'Grant Permission'}
             </Text>
           </TouchableOpacity>
@@ -361,7 +365,8 @@ export default function CameraScanner() {
 
   return (
     <>
-      <View style={styles.container}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <CameraView
           style={[StyleSheet.absoluteFillObject, { height: '60%' }]}
           active={!showCreateDispatchedCollectionModal}
@@ -384,13 +389,13 @@ export default function CameraScanner() {
               <TouchableOpacity 
                 style={[
                   styles.backButtonContainer,
-                  rtl.isRTL ? { right: 20 } : { left: 20 }
+                  isRTL ? { right: 20 } : { left: 20 }
                 ]}
                 onPress={() => router.back()}
               >
                 <View style={styles.backButtonCircle}>
                   <Feather 
-                    name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
+                    name={isRTL ? "chevron-right" : "chevron-left"} 
                     size={24} 
                     color="#FFFFFF" 
                   />
@@ -398,11 +403,11 @@ export default function CameraScanner() {
               </TouchableOpacity>
             {/* Scanner frame with animated border */}
             <View style={styles.frameBorder}>
-              <View style={styles.cornerTL} />
-              <View style={styles.cornerTR} />
-              <View style={styles.cornerBL} />
-              <View style={styles.cornerBR} />
-            </View>
+              <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+              <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+              <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+              <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+          </View>
           
             {/* Instructions text */}
             <View style={styles.instructionsContainer}>
@@ -421,11 +426,11 @@ export default function CameraScanner() {
               
               {(scanned && !showCreateDispatchedCollectionModal) && (
                 <TouchableOpacity
-                  style={styles.rescanButton}
+                  style={[styles.rescanButton, { backgroundColor: colors.primary }]}
                   onPress={() => setScanned(false)}
                 >
-                  <Feather name="refresh-cw" size={16} color="white" style={{marginRight: 8}} />
-                  <Text style={styles.rescanButtonText}>
+                  <Feather name="refresh-cw" size={16} color={colors.buttonText} style={{marginRight: 8}} />
+                  <Text style={[styles.rescanButtonText, { color: colors.buttonText }]}>
                     {translations[language].camera.scanAgainTapText}
                   </Text>
                 </TouchableOpacity>
@@ -435,149 +440,184 @@ export default function CameraScanner() {
         </CameraView>
       
         {showCreateDispatchedCollectionModal ? (
-          <View style={styles.modalContainer}>
-            <View style={[styles.modalHeader]}>
-              <Text style={styles.modalTitle}>
+          <View style={[styles.modalContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.divider }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
                 {translations[language].camera.createCollection}
               </Text>
               <TouchableOpacity 
-                style={[styles.backButton, rtl.isRTL && { right: 16 }]} 
+                style={[styles.backButton, isRTL && { right: 16 }]} 
                 onPress={() => setShowCreateDispatchedCollectionModal(false)}
               >
                 <Feather 
-                  name={rtl.isRTL ? "chevron-right" : "chevron-left"} 
+                  name={isRTL ? "chevron-right" : "chevron-left"} 
                   size={24} 
-                  color="#4361EE" 
+                  color={colors.primary} 
                 />
               </TouchableOpacity>
             </View>
             
             <ScrollView>
-            <View style={styles.modalContent}>
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel,{
-                    ...Platform.select({
-                        ios: {
-                            textAlign:rtl.isRTL ? "left" : "right"
-                        }
-                    }),
-                }]}>
-                  {translations[language].camera.note}
-                </Text>
-                <TextInput
-                  style={[styles.textInput]}
-                  placeholder={translations[language].camera.notePlaceholder}
-                  value={note}
-                  onChangeText={(input) => setNote(input)}
-                  multiline={true}
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                  placeholderTextColor="#94A3B8"
-                />
-              </View>
-              
-              <View style={styles.fieldContainer}>
-                <Text style={[styles.fieldLabel,{
-                    ...Platform.select({
-                        ios: {
-                            textAlign:rtl.isRTL ? "left" : "right"
-                        }
-                    }),
-                }]}>
-                  {translations[language].camera.toBranch}
-                </Text>
-                <TouchableOpacity 
-                  style={styles.pickerButton} 
-                  onPress={() => branchHandler('toBranch')}
-                >
+              <View style={styles.modalContent}>
+                <View style={styles.fieldContainer}>
                   <Text style={[
-                    styles.pickerButtonText, 
-                    selectedValue.toBranch?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
-                  ]}>
-                    {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
-                  </Text>
-                  <Feather name="chevron-down" size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-
-              <View style={[styles.fieldContainer]}>
-                <Text style={[styles.fieldLabel,{
-                    ...Platform.select({
+                    styles.fieldLabel,
+                    { color: colors.textSecondary },
+                    {
+                      ...Platform.select({
                         ios: {
-                            textAlign:rtl.isRTL ? "left" : "right"
+                          textAlign:isRTL ? "left" : "right"
                         }
-                    }),
-                }]}>
-                  {translations[language].camera.toDriver}
-                </Text>
-                <TouchableOpacity 
-                  style={styles.pickerButton} 
-                  onPress={() => driverHandler('toDriver')}
-                >
-                  <Text style={[
-                    styles.pickerButtonText, 
-                    selectedValue.toDriver?.name ? styles.pickerSelectedText : styles.pickerPlaceholderText,
+                      }),
+                    }
                   ]}>
-                    {selectedValue.toDriver?.name || translations[language].camera.selectDriver}
+                    {translations[language].camera.note}
                   </Text>
-                  <Feather name="chevron-down" size={18} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.actionButtons}>
-                <TouchableOpacity 
-                  style={styles.cancelButton} 
-                  onPress={() => setShowCreateDispatchedCollectionModal(false)}
-                >
-                  <Text style={styles.cancelButtonText}>
-                    {translations[language].camera.cancel}
-                  </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    style={[
+                      styles.textInput, 
+                      { 
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg,
+                        color: colors.inputText
+                      }
+                    ]}
+                    placeholder={translations[language].camera.notePlaceholder}
+                    placeholderTextColor={colors.textTertiary}
+                    value={note}
+                    onChangeText={(input) => setNote(input)}
+                    multiline={true}
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                  />
+                </View>
                 
-                <TouchableOpacity 
-                  style={styles.confirmButton} 
-                  onPress={createDispatchedCollection}
-                  disabled={formSpinner.status}
-                >
-                  {formSpinner.status ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.confirmButtonText}>
-                      {translations[language].camera.confirm}
+                <View style={styles.fieldContainer}>
+                  <Text style={[
+                    styles.fieldLabel,
+                    { color: colors.textSecondary },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : "right"
+                        }
+                      }),
+                    }
+                  ]}>
+                    {translations[language].camera.toBranch}
+                  </Text>
+                  <TouchableOpacity 
+                    style={[
+                      styles.pickerButton, 
+                      { 
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg
+                      }
+                    ]} 
+                    onPress={() => branchHandler('toBranch')}
+                  >
+                    <Text style={[
+                      styles.pickerButtonText, 
+                      selectedValue.toBranch?.name 
+                        ? [styles.pickerSelectedText, { color: colors.text }] 
+                        : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                    ]}>
+                      {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
                     </Text>
-                  )}
-                </TouchableOpacity>
+                    <Feather name="chevron-down" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.fieldContainer]}>
+                  <Text style={[
+                    styles.fieldLabel,
+                    { color: colors.textSecondary },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : "right"
+                        }
+                      }),
+                    }
+                  ]}>
+                    {translations[language].camera.toDriver}
+                  </Text>
+                  <TouchableOpacity 
+                    style={[
+                      styles.pickerButton, 
+                      { 
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg
+                      }
+                    ]} 
+                    onPress={() => driverHandler('toDriver')}
+                  >
+                    <Text style={[
+                      styles.pickerButtonText, 
+                      selectedValue.toDriver?.name 
+                        ? [styles.pickerSelectedText, { color: colors.text }] 
+                        : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                    ]}>
+                      {selectedValue.toDriver?.name || translations[language].camera.selectDriver}
+                    </Text>
+                    <Feather name="chevron-down" size={18} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity 
+                    style={[styles.cancelButton, { borderColor: colors.border }]} 
+                    onPress={() => setShowCreateDispatchedCollectionModal(false)}
+                  >
+                    <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
+                      {translations[language].camera.cancel}
+                    </Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    style={[styles.confirmButton, { backgroundColor: colors.primary }]} 
+                    onPress={createDispatchedCollection}
+                    disabled={formSpinner.status}
+                  >
+                    {formSpinner.status ? (
+                      <ActivityIndicator size="small" color={colors.buttonText} />
+                    ) : (
+                      <Text style={[styles.confirmButtonText, { color: colors.buttonText }]}>
+                        {translations[language].camera.confirm}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
             </ScrollView>
           </View>
         ) : (
-          <View style={styles.scannedItemsContainer}>
-            <View style={styles.scannedHeaderContainer}>
+          <View style={[styles.scannedItemsContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.scannedHeaderContainer, { borderBottomColor: colors.divider }]}>
               <View style={[
                 styles.scannedHeader
               ]}>
                 <View style={styles.totalContainer}>
-                  <Text style={styles.totalLabel}>
+                  <Text style={[styles.totalLabel, { color: colors.text }]}>
                     {translations[language].camera.totalScanned}:
                   </Text>
-                  <View style={styles.totalBadge}>
+                  <View style={[styles.totalBadge, { backgroundColor: colors.primary }]}>
                     <Text style={styles.totalValue}>{scannedItems.length}</Text>
                   </View>
                 </View>
                 
                 {scannedItems.length > 0 && (
                   <TouchableOpacity 
-                    style={styles.nextButton} 
+                    style={[styles.nextButton, { backgroundColor: colors.primary }]} 
                     onPress={() => setShowCreateDispatchedCollectionModal(true)}
                   >
-                    <Text style={styles.nextButtonText}>
+                    <Text style={[styles.nextButtonText, { color: colors.buttonText }]}>
                       {translations[language].camera.next}
                     </Text>
                     <Feather 
-                      name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
+                      name={isRTL ? "chevron-left" : "chevron-right"} 
                       size={16} 
-                      color="#FFFFFF" 
+                      color={colors.buttonText} 
                     />
                   </TouchableOpacity>
                 )}
@@ -587,18 +627,27 @@ export default function CameraScanner() {
             {/* Add manual input section */}
             <View style={styles.manualInputContainer}>
               <TextInput
-                style={[styles.manualInput]}
+                style={[
+                  styles.manualInput, 
+                  { 
+                    borderColor: colors.inputBorder,
+                    backgroundColor: colors.inputBg,
+                    color: colors.inputText
+                  }
+                ]}
                 placeholder={translations[language].camera.enterOrderId}
                 value={manualOrderId}
                 onChangeText={setManualOrderId}
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.textTertiary}
               />
               <TouchableOpacity 
-                style={styles.addButton}
+                style={[styles.addButton, { backgroundColor: colors.primary }]}
                 onPress={handleManualOrderAdd}
               >
-                <Feather name="plus" size={16} color="#FFFFFF" />
-                <Text style={styles.addButtonText}>{translations[language].camera.add}</Text>
+                <Feather name="plus" size={16} color={colors.buttonText} />
+                <Text style={[styles.addButtonText, { color: colors.buttonText }]}>
+                  {translations[language].camera.add}
+                </Text>
               </TouchableOpacity>
             </View>
             
@@ -612,33 +661,40 @@ export default function CameraScanner() {
                   <View 
                     key={index} 
                     style={[
-                      styles.itemContainer
+                      styles.itemContainer,
+                      { 
+                        backgroundColor: isDark ? colors.surface : '#F9FAFB'
+                      }
                     ]}
                   >
                     <View style={[
                       styles.itemContent
                     ]}>
                       <View style={[
-                        styles.itemIconContainer
+                        styles.itemIconContainer,
+                        { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
                       ]}>
-                        <Feather name="package" size={16} color="#4361EE" />
+                        <Feather name="package" size={16} color={colors.primary} />
                       </View>
-                      <View style={[styles.itemTextContainer,{
+                      <View style={[
+                        styles.itemTextContainer,
+                        {
                           ...Platform.select({
-                              ios: {
-                                  alignItems:rtl.isRTL ? "flex-start" : "flex-end"
-                              }
+                            ios: {
+                              alignItems: isRTL ? "flex-start" : "flex-end"
+                            }
                           }),
-                      }]}>
-                        <Text style={[styles.itemText]}>
+                        }
+                      ]}>
+                        <Text style={[styles.itemText, { color: colors.text }]}>
                           {typeof item === 'object' ? item.order_id : item}
                         </Text>
                         {typeof item === 'object' && (
                           <>
-                            <Text style={[styles.itemDetailText]}>
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary }]}>
                               {item.receiver_name}
                             </Text>
-                            <Text style={[styles.itemDetailText]}>
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary }]}>
                               {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
                             </Text>
                           </>
@@ -647,21 +703,24 @@ export default function CameraScanner() {
                     </View>
                     
                     <TouchableOpacity 
-                      style={styles.deleteButton}
+                      style={[
+                        styles.deleteButton,
+                        { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }
+                      ]}
                       onPress={() => {
                         const updatedItems = scannedItems.filter((_, i) => i !== index);
                         setScannedItems(updatedItems);
                       }}
                     >
-                      <Feather name="trash-2" size={18} color="#EF4444" />
+                      <Feather name="trash-2" size={18} color={colors.error} />
                     </TouchableOpacity>
                   </View>
                 ))}
               </ScrollView>
             ) : (
               <View style={styles.emptyContainer}>
-                <Feather name="inbox" size={40} color="#94A3B8" />
-                <Text style={styles.emptyText}>
+                <Feather name="inbox" size={40} color={colors.textTertiary} />
+                <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                   {translations[language].camera.noItemsYet}
                 </Text>
               </View>
@@ -675,7 +734,7 @@ export default function CameraScanner() {
           list={currentField === "toBranch" ? branches : drivers}
           setSelectedValue={setSelectedValue}
           showPickerModal={showPickerModal}
-          setShowPickerModal={setShowPickerModal}
+          setShowModal={setShowPickerModal}
           loading={loading}
           field={{
             name: currentField,
@@ -684,6 +743,8 @@ export default function CameraScanner() {
               : translations[language].camera.toDriver,
             showSearchBar: true
           }}
+          colors={colors}
+          isDark={isDark}
         />
       )}
     </>
@@ -693,7 +754,6 @@ export default function CameraScanner() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
   },
   overlay: {
     flex: 1,
@@ -714,60 +774,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   frameBorder: {
-    width: 220,
-    height: 220,
+    width: 250,
+    height: 250,
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
-    marginTop:-50
   },
-  cornerTL: {
+  corner: {
     position: 'absolute',
-    top: 0,
-    left: 0,
     width: 40,
     height: 40,
+  },
+  topLeft: {
+    top: 0,
+    left: 0,
     borderTopWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderTopLeftRadius: 12,
   },
-  cornerTR: {
-    position: 'absolute',
+  topRight: {
     top: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderTopWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderTopRightRadius: 12,
   },
-  cornerBL: {
-    position: 'absolute',
+  bottomLeft: {
     bottom: 0,
     left: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderLeftWidth: 4,
-    borderColor: '#4361EE',
     borderBottomLeftRadius: 12,
   },
-  cornerBR: {
-    position: 'absolute',
+  bottomRight: {
     bottom: 0,
     right: 0,
-    width: 40,
-    height: 40,
     borderBottomWidth: 4,
     borderRightWidth: 4,
-    borderColor: '#4361EE',
     borderBottomRightRadius: 12,
   },
   instructionsContainer: {
     position: 'absolute',
-    bottom: 70,
+    bottom: 95,
     left: 0,
     right: 0,
     alignItems: 'center',
@@ -818,7 +867,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 8,
   },
-  // Scanned items container styles
   scannedItemsContainer: {
     position: 'absolute',
     bottom: 0,
@@ -973,7 +1021,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
   },
-  // Modal styles
   modalContainer: {
     position: 'absolute',
     bottom: 0,

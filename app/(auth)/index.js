@@ -19,12 +19,15 @@ import {
 import { Link, useRouter, Redirect } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
 import TayarLogo from "../../assets/images/tayar_logo.png";
+import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
 import Field from "../../components/sign/Field";
 import { useAuth } from "../../RootLayout";
 import { saveToken, getToken, setMasterAccountId, addAccountToMaster, setDirectLogin } from "../../utils/secureStore";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 // Get screen dimensions
 const { height } = Dimensions.get('window');
@@ -44,6 +47,8 @@ export default function SignIn() {
   const router = useRouter();
   const { language } = useLanguage();
   const { isAuthenticated, setIsAuthenticated, setUserId } = useAuth();
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   const [loginForm, setLoginForm] = useState({
     phone: "",
@@ -299,10 +304,6 @@ export default function SignIn() {
       
       // Basic validation
       let hasError = false;
-      if (!loginForm.phone) {
-        setFormErrors(prev => ({...prev, phone:translations[language]?.auth.phoneRequired}));
-        hasError = true;
-      }
       if (!loginForm.password) {
         setFormErrors(prev => ({...prev, password:translations[language]?.auth.passwordRequired}));
         hasError = true;
@@ -414,34 +415,50 @@ export default function SignIn() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.card }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
       <KeyboardAvoidingView 
-        style={styles.container}
+        style={[styles.container, { backgroundColor: colors.card }]}
         behavior={Platform.OS === 'ios' ? 'padding' : null}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
         enabled={Platform.OS === 'ios'}
       >
         {/* Fixed Header - Make it smaller when keyboard is shown */}
-        <View style={[styles.header, keyboardVisible && styles.headerSmall]}>
-          <Image 
-            style={[styles.logo, keyboardVisible && styles.logoSmall]} 
-            source={TayarLogo} 
-            resizeMode="contain" 
-          />
+        <View style={[
+          styles.header, 
+          keyboardVisible && styles.headerSmall,
+          { backgroundColor: colors.card, borderBottomColor: colors.border }
+        ]}>
+          {isDark ? (
+            <Image 
+              style={[styles.logo, keyboardVisible && styles.logoSmall]} 
+              source={TayarDarkLogo} 
+              resizeMode="contain" 
+            />
+          ) : (
+            <Image 
+              style={[styles.logo, keyboardVisible && styles.logoSmall]} 
+              source={TayarLogo} 
+              resizeMode="contain" 
+            />
+          )}
           
           {/* Hide welcome text when keyboard is visible */}
           {!keyboardVisible && (
             <View>
-              <Text style={styles.title}>{translations[language]?.auth.welcome}</Text>
-              <Text style={styles.subtitle}>{translations[language]?.auth.signMessage}</Text>
+              <Text style={[styles.title, { color: colors.text }]}>
+                {translations[language]?.auth.welcome}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                {translations[language]?.auth.signMessage}
+              </Text>
             </View>
           )}
         </View>
         
         {/* Main content area */}
-        <View style={styles.mainContent}>
+        <View style={[styles.mainContent, { backgroundColor: colors.background }]}>
           <ScrollView 
             ref={scrollViewRef}
             style={styles.contentContainer}
@@ -457,23 +474,29 @@ export default function SignIn() {
             {isBiometricAvailable && previousLoginInfo && (
               <View style={styles.biometricContainer}>
                 <TouchableOpacity
-                  style={[styles.biometricButton]}
+                  style={[
+                    styles.biometricButton,
+                    { 
+                      backgroundColor: isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)',
+                      borderColor: isDark ? 'rgba(67, 97, 238, 0.3)' : 'rgba(67, 97, 238, 0.2)'
+                    }
+                  ]}
                   onPress={biometricAuthHandler}
                   disabled={loading}
                   activeOpacity={0.8}
                 >
-                  <MaterialIcons name="fingerprint" size={28} color="#4361EE" />
-                  <Text style={styles.biometricText}>
+                  <MaterialIcons name="fingerprint" size={28} color={colors.primary} />
+                  <Text style={[styles.biometricText, { color: colors.primary }]}>
                     {translations[language]?.auth?.loginWithBiometric || 
                       `Login with ${biometricType === 'face' ? 'Face ID' : 'Fingerprint'}`}
                   </Text>
                 </TouchableOpacity>
                 <View style={styles.dividerContainer}>
-                  <View style={styles.divider} />
-                  <Text style={styles.dividerText}>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
                     {translations[language]?.auth?.or || 'OR'}
                   </Text>
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
                 </View>
               </View>
             )}
@@ -505,7 +528,7 @@ export default function SignIn() {
               activeOpacity={0.7}
               onPress={() => router.push("https://wa.me/972566150002")}
             >
-              <Text style={styles.forgotPasswordText}>
+              <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
                 {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
               </Text>
             </TouchableOpacity>
@@ -514,32 +537,39 @@ export default function SignIn() {
           {/* Always visible footer */}
           <View style={[
             styles.footer,
+            { 
+              backgroundColor: colors.card,
+              borderTopColor: colors.border
+            },
             // Adjust position when keyboard is visible
             keyboardVisible && Platform.OS === 'ios' ? {
               position: 'absolute',
               bottom: footerHeight,
               left: 0,
               right: 0,
-              backgroundColor: '#FFFFFF',
               paddingBottom: 10,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(0,0,0,0.1)',
               zIndex: 999,
             } : keyboardVisible && Platform.OS === 'android' ? {
               position: 'absolute',
               bottom: 0,
               left: 0,
               right: 0,
-              backgroundColor: '#FFFFFF',
               paddingBottom: 10,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(0,0,0,0.1)',
               zIndex: 999,
             } : {}
           ]}>
             {/* Login button */}
             <TouchableOpacity
-              style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+              style={[
+                styles.loginButton, 
+                { backgroundColor: colors.primary },
+                loading && [
+                  styles.loginButtonDisabled,
+                  { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
+                ]
+              ]}
               onPress={loginHandler}
               disabled={loading}
               activeOpacity={0.8}
@@ -555,12 +585,12 @@ export default function SignIn() {
             
             {/* Register link */}
             <View style={styles.registerLinkContainer}>
-              <Text style={styles.registerText}>
+              <Text style={[styles.registerText, { color: colors.textSecondary }]}>
                 {translations[language]?.auth.dontHaveAccount}
               </Text>
               <Link href="/sign-up" asChild>
                 <TouchableOpacity style={styles.registerLink}>
-                  <Text style={styles.registerLinkText}>
+                  <Text style={[styles.registerLinkText, { color: colors.primary }]}>
                     {translations[language]?.auth.register}
                   </Text>
                 </TouchableOpacity>
@@ -617,7 +647,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
   },
   scrollContent: {
     paddingHorizontal: 20,

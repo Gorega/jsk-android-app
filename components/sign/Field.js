@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { 
   StyleSheet, 
   TextInput, 
@@ -7,13 +7,15 @@ import {
   Platform,
   TouchableOpacity,
   Animated,
-  KeyboardAvoidingView
+  TouchableWithoutFeedback
 } from "react-native";
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import PickerModal from "../pickerModal/PickerModal"
 import { useLanguage } from "../../utils/languageContext";
+import { useTheme } from "../../utils/themeContext";
+import { Colors } from "../../constants/Colors";
 
-export default function Field({field, setSelectedValue, multiline, onFocus}) {
+export default function Field({field, setSelectedValue, multiline, onFocus, isDark, colors}) {
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [searchValue, setSearchValue] = useState('');
@@ -21,6 +23,11 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
     const animatedScale = useState(new Animated.Value(0.95))[0];
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
+    
+    // Use provided colors or get from theme context
+    const themeContext = useTheme();
+    const themeColors = colors || (themeContext ? Colors[themeContext.colorScheme] : Colors.light);
+    const isThemeDark = isDark !== undefined ? isDark : (themeContext ? themeContext.isDark : false);
 
     // Animation when field receives focus
     const handleFocus = () => {
@@ -95,22 +102,33 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
         }
     };
 
+    // Handle input field press - ensure focus
+    const handleInputPress = () => {
+        // This will programmatically focus the TextInput
+        if (inputRef && inputRef.current) {
+            inputRef.current.focus();
+        }
+    };
+
+    // Create a ref for the TextInput
+    const inputRef = React.createRef();
 
     return (
         <View style={[
             styles.fieldContainer,
             field.containerStyle,
             { 
-                borderColor: field.error ? "#EF4444" : isFocused ? "#4361EE" : "rgba(0,0,0,0.08)",
-                marginBottom: field.error ? 32 : 16 // Dynamic margin based on error
+                borderColor: field.error ? themeColors.error : isFocused ? themeColors.primary : isThemeDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                marginBottom: field.error ? 32 : 16, // Dynamic margin based on error
+                backgroundColor: themeColors.card
             }
         ]}>
             {/* Field Label */}
             <Text style={[
                 styles.label,
                 { 
-                    backgroundColor: "#fff",
-                    color: field.error ? "#EF4444" : isFocused ? "#4361EE" : "#64748B",
+                    backgroundColor: themeColors.card,
+                    color: field.error ? themeColors.error : isFocused ? themeColors.primary : themeColors.textSecondary,
                 }
             ]}>
                 {field.label}
@@ -118,74 +136,85 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
 
             <View style={styles.inputContent}>
                 {field.type === "input" && (
-                    <View style={styles.inputWrapper}>
-                        <View style={[
-                            styles.iconContainer,
-                            isFocused && styles.activeIconContainer,
-                            {textAlign: isRTL ? 'right' : 'left'}
-                        ]}>
-                            <Feather 
-                                name={getFieldIcon()} 
-                                size={18} 
-                                color={isFocused ? "#4361EE" : "#94A3B8"} 
-                            />
-                        </View>
-                        
-                        <TextInput
-                            multiline={multiline}
-                            style={[
-                                styles.input,
-                                isFocused && styles.activeInput,
+                    <TouchableWithoutFeedback onPress={handleInputPress}>
+                        <View style={styles.inputWrapper}>
+                            <View style={[
+                                styles.iconContainer,
+                                isFocused && styles.activeIconContainer,
                                 {textAlign: isRTL ? 'right' : 'left'}
-                            ]}
-                            value={field.value}
-                            onChangeText={field.onChange}
-                            secureTextEntry={field.secureTextEntry}
-                            onFocus={handleFocus}
-                            onBlur={handleBlur}
-                            placeholderTextColor="#9CA3AF"
-                            placeholder={field.placeholder}
-                            keyboardType={field.keyboardType || "default"}
-                            autoCapitalize={field.autoCapitalize || "sentences"}
-                            returnKeyType="next"
-                            blurOnSubmit={false}
-                        />
-                        
-                        {field.rightIcon && (
-                            <View style={styles.rightIconContainer}>
-                                {field.rightIcon}
+                            ]}>
+                                <Feather 
+                                    name={getFieldIcon()} 
+                                    size={18} 
+                                    color={isFocused ? themeColors.primary : themeColors.iconDefault} 
+                                />
                             </View>
-                        )}
-                        
-                        <Animated.View 
-                            style={[
-                                styles.focusBorder,
-                                {
-                                    opacity: animatedOpacity,
-                                    transform: [{ scale: animatedScale }]
-                                }
-                            ]} 
-                        />
-                        
-                        {field.error && (
-                            <Text style={[styles.errorText,
-                            {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
+                            
+                            <TextInput
+                                ref={inputRef}
+                                multiline={multiline}
+                                style={[
+                                    styles.input,
+                                    { color: themeColors.text },
+                                    isFocused && [styles.activeInput, { color: themeColors.primary }],
+                                    {textAlign: isRTL ? 'right' : 'left'}
+                                ]}
+                                value={field.value}
+                                onChangeText={field.onChange}
+                                secureTextEntry={field.secureTextEntry}
+                                onFocus={handleFocus}
+                                onBlur={handleBlur}
+                                placeholderTextColor={themeColors.textTertiary}
+                                placeholder={field.placeholder}
+                                keyboardType={field.keyboardType || "default"}
+                                autoCapitalize={field.autoCapitalize || "sentences"}
+                                returnKeyType="next"
+                                blurOnSubmit={false}
+                            />
+                            
+                            {field.rightIcon && (
+                                <View style={styles.rightIconContainer}>
+                                    {field.rightIcon}
+                                </View>
+                            )}
+                            
+                            <Animated.View 
+                                style={[
+                                    styles.focusBorder,
+                                    {
+                                        opacity: animatedOpacity,
+                                        transform: [{ scale: animatedScale }],
+                                        borderColor: `${themeColors.primary}40` // 25% opacity
                                     }
-                                }),
-                            }
-                            ]}>{field.error}</Text>
-                        )}
-                    </View>
+                                ]} 
+                                pointerEvents="none"
+                            />
+                            
+                            {field.error && (
+                                <Text style={[
+                                    styles.errorText,
+                                    { color: themeColors.error },
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign: isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    {field.error}
+                                </Text>
+                            )}
+                        </View>
+                    </TouchableWithoutFeedback>
                 )}
 
                 {field.type === "select" && (
                     <View style={styles.selectWrapper}>
                         <TouchableOpacity 
-                          style={[styles.selectField,
-                            {textAlign: isRTL ? 'right' : 'left'}
+                          style={[
+                              styles.selectField,
+                              {textAlign: isRTL ? 'right' : 'left'}
                           ]} 
                           onPress={() => {
                               setShowPickerModal(true);
@@ -202,13 +231,13 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
                                     <Feather 
                                         name={getFieldIcon()} 
                                         size={18} 
-                                        color={isFocused ? "#4361EE" : "#94A3B8"} 
+                                        color={isFocused ? themeColors.primary : themeColors.iconDefault} 
                                     />
                                 </View>
                                 
                                 <Text style={[
                                     styles.selectText,
-                                    field.value ? styles.valueText : styles.placeholderText
+                                    field.value ? [styles.valueText, { color: themeColors.text }] : [styles.placeholderText, { color: themeColors.textTertiary }]
                                 ]}>
                                     {field.value || field.placeholder || 'Select...'}
                                 </Text>
@@ -217,7 +246,7 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
                             <View style={[
                                 styles.dropdownIconContainer
                             ]}>
-                                <Feather name="chevron-down" size={18} color="#94A3B8" />
+                                <Feather name="chevron-down" size={18} color={themeColors.iconDefault} />
                             </View>
                             
                             <Animated.View 
@@ -225,22 +254,28 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
                                     styles.focusBorder,
                                     {
                                         opacity: animatedOpacity,
-                                        transform: [{ scale: animatedScale }]
+                                        transform: [{ scale: animatedScale }],
+                                        borderColor: `${themeColors.primary}40` // 25% opacity
                                     }
                                 ]} 
+                                pointerEvents="none"
                             />
                         </TouchableOpacity>
                         
                         {field.error && (
-                            <Text style={[styles.errorText,
+                            <Text style={[
+                                styles.errorText,
+                                { color: themeColors.error },
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
                                 }
-                            ]}>{field.error}</Text>
+                            ]}>
+                                {field.error}
+                            </Text>
                         )}
                     </View>
                 )}
@@ -250,7 +285,7 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
                     <PickerModal
                         list={field.list}
                         showPickerModal={showPickerModal}
-                        setShowPickerModal={() => {
+                        setShowModal={() => {
                             setShowPickerModal(false);
                             handleBlur();
                         }}
@@ -261,6 +296,8 @@ export default function Field({field, setSelectedValue, multiline, onFocus}) {
                         }}
                         prickerSearchValue={searchValue}
                         setPickerSearchValue={setSearchValue}
+                        isDark={isThemeDark}
+                        colors={themeColors}
                     />
                 )}
             </View>
@@ -274,7 +311,6 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         padding: 0,
         position: 'relative',
-        backgroundColor: "#FFFFFF",
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -323,12 +359,12 @@ const styles = StyleSheet.create({
         paddingVertical: 18,
         paddingRight: 16,
         paddingLeft: 8,
-        color: '#1F2937',
         fontWeight: '400',
         minHeight: 58,
+        zIndex: 1,
     },
     activeInput: {
-        color: '#4361EE',
+        // Color is applied dynamically
     },
     rightIconContainer: {
         position: 'absolute',
@@ -346,8 +382,8 @@ const styles = StyleSheet.create({
         bottom: 0,
         borderRadius: 16,
         borderWidth: 2,
-        borderColor: 'rgba(67, 97, 238, 0.2)',
         pointerEvents: 'none',
+        zIndex: 0,
     },
     selectWrapper: {
         position: 'relative',
@@ -360,17 +396,19 @@ const styles = StyleSheet.create({
         position: 'relative',
         minHeight: 58,
         justifyContent: 'center',
+        zIndex: 1,
     },
     selectText: {
         fontSize: 16,
         paddingVertical: 18,
         fontWeight: '400',
+        zIndex: 1,
     },
     valueText: {
-        color: '#1F2937',
+        // Color is applied dynamically
     },
     placeholderText: {
-        color: '#9CA3AF',
+        // Color is applied dynamically
     },
     dropdownIconContainer: {
         position: 'absolute',
@@ -380,19 +418,18 @@ const styles = StyleSheet.create({
         height: 24,
         justifyContent: 'center',
         alignItems: 'center',
+        zIndex: 2,
     },
     errorText: {
-        color: '#EF4444',
         fontSize: 12,
         paddingHorizontal: 16,
         fontWeight: '500',
         position: 'absolute',
-        zIndex: 2,
         width: '100%',
         marginTop: 4,
         left: 0,
         right: 0,
-        bottom:-22,
+        bottom: -22,
         zIndex: 2,
     }
 });

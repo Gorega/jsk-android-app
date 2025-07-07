@@ -16,6 +16,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { RTLWrapper, useRTLStyles } from '../../utils/RTLWrapper';
 import AddOptionsModal from '../../components/AddOptionsModal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 
 export default function TabLayout() {
@@ -26,6 +28,10 @@ export default function TabLayout() {
   const { user } = useAuth();
   const addButtonScale = new Animated.Value(1);
   const rtl = useRTLStyles();
+  
+  // Add theme context
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
 
   // Shared navigation handler for orders tab
   const handleOrdersPress = useCallback(() => {
@@ -79,7 +85,7 @@ export default function TabLayout() {
     }, 150);
   };
 
-  // First, let's create a complete TabLabel component for better organization
+  // Update TabLabel component to use theme colors
   const TabLabel = ({ focused, label }) => (
     <View style={{
       alignItems: 'center',
@@ -93,11 +99,11 @@ export default function TabLayout() {
         ellipsizeMode="tail"
         style={{
           fontSize: 11,
-          color: focused ? "#4361EE" : "#94A3B8",
-          fontWeight: focused ? '600' : '400', // Ensure these are strings, not booleans
+          color: focused ? colors.primary : colors.textTertiary,
+          fontWeight: focused ? '600' : '400',
           textAlign: 'center',
           maxWidth: '100%',
-          ...rtl.text, // Apply RTL text styling
+          ...rtl.text,
         }}
       >
         {label}
@@ -117,7 +123,7 @@ export default function TabLayout() {
         <Component 
           name={name} 
           size={focused ? 24 : 22} 
-          color={focused ? "#4361EE" : "#94A3B8"} 
+          color={focused ? colors.primary : colors.iconDefault} 
         />
       </View>
     );
@@ -176,12 +182,12 @@ export default function TabLayout() {
               ]}
             >
               <LinearGradient
-                colors={['#4361EE', '#3A0CA3']}
+                colors={[colors.gradientStart, colors.gradientEnd]}
                 style={styles.addButton}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-               {["driver","delivery_company"].includes(user.role) ? <MaterialIcons name="route" size={24} color="#FFFFFF" /> : <FontAwesome6 name="plus" size={22} color="#FFFFFF" />}
+                {["driver","delivery_company"].includes(user.role) ? <MaterialIcons name="route" size={24} color="white" /> : <FontAwesome6 name="plus" size={22} color="white" />}
               </LinearGradient>
             </Animated.View>
           </TouchableOpacity>
@@ -225,20 +231,50 @@ export default function TabLayout() {
   // Use RTL-aware styles for the tab bar
   const tabBarStyles = rtl.createStyles({
     tabBar: {
-      backgroundColor: '#FFFFFF',
-      flexDirection: 'row', // This will be transformed to row-reverse in RTL
+      backgroundColor: colors.tabBarBg,
+      flexDirection: 'row',
       height: Platform.OS === 'ios' ? 88 : 72,
       paddingTop: Platform.OS === 'ios' ? 10 : 8,
       paddingBottom: Platform.OS === 'ios' ? 28 : 16,
-      borderTopWidth: 1,
-      borderTopColor: 'rgba(0,0,0,0.06)',
-      shadowColor: '#000',
+      borderTopColor: colors.tabBarBorder,
+      shadowColor: isDark ? '#000' : '#000',
       shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: 0.07,
+      shadowOpacity: isDark ? 0.2 : 0.07,
       shadowRadius: 3,
       elevation: 10,
     }
   });
+  
+  // Move the styles inside the component
+  const styles = {
+    addButtonContainer: {
+      top: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      height: 50,
+      width: Platform.OS === 'ios' ? 70 : 60,
+    },
+    addButtonWrapper: {
+      borderRadius: 30,
+      shadowColor: colors.primary,
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.35,
+      shadowRadius: 6,
+      elevation: 8,
+    },
+    addButton: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 3,
+      borderColor: colors.background,
+    },
+  };
   
   return (
     <RTLWrapper>
@@ -255,6 +291,8 @@ export default function TabLayout() {
           tabBarShowLabel: true,
           tabBarHideOnKeyboard: true,
           headerShown: true,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.iconDefault,
         }}
       >
         {/* No need to reverse the tabs manually, RTLWrapper will handle it */}
@@ -275,34 +313,3 @@ export default function TabLayout() {
     </RTLWrapper>
   );
 }
-
-const styles = {
-  addButtonContainer: {
-    top: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 50,
-    width: Platform.OS === 'ios' ? 70 : 60,
-  },
-  addButtonWrapper: {
-    borderRadius: 30,
-    shadowColor: '#4361EE',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-  addButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#4361EE',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: '#FFFFFF',
-  },
-};

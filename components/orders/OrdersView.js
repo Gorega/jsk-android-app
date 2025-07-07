@@ -5,15 +5,37 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { RTLWrapper } from '@/utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
+import React from 'react';
+
+// Create a memoized OrderItem component to prevent unnecessary re-renders
+const OrderItem = React.memo(function OrderItem({ item, metadata }) {
+    return (
+        <View style={styles.orderContainer}>
+            <Order user={metadata} order={item} />
+        </View>
+    );
+});
 
 export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading }) {
     const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+
+    const renderOrderItem = React.useCallback(({ item }) => {
+        return <OrderItem item={item} metadata={metadata} />;
+    }, [metadata]);
 
     if (isLoading) {
         return (
-            <View style={styles.overlay}>
-                <View style={styles.spinnerContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
+            <View style={[styles.overlay,{
+                backgroundColor: colors.background + 'E6'
+            }]}>
+                <View style={[styles.spinnerContainer,{
+                    backgroundColor: colors.card
+                }]}>
+                    <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             </View>
         );
@@ -25,19 +47,20 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
             list={data || []}
             loadMoreData={loadMoreData}
             loadingMore={loadingMore}
-            children={(item) => (
-                <View style={styles.orderContainer}>
-                    <Order user={metadata} order={item} />
-                </View>
-            )}
+            renderItem={renderOrderItem}
+            keyExtractor={(item) => item.order_id.toString()}
             refreshControl={refreshControl}
         />
     ) : (
-        <View style={styles.empty}>
-            <View style={styles.emptyIconContainer}>
-                <MaterialCommunityIcons name="package-variant" size={40} color="#4361EE" />
+        <View style={[styles.empty, { backgroundColor: colors.background }]}>
+            <View style={[styles.emptyIconContainer,{
+                backgroundColor: colors.primary + '1A'
+            }]}>
+                <MaterialCommunityIcons name="package-variant" size={40} color={colors.primary} />
             </View>
-            <Text style={[styles.emptyText]}>
+            <Text style={[styles.emptyText,{
+                color: colors.text
+            }]}>
                 {translations[language].tabs.orders.emptyArray}
             </Text>
         </View>

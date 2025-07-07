@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, Platform } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
@@ -10,9 +10,14 @@ import { router } from 'expo-router';
 import UserBox from "../orders/userBox/UserBox";
 import { useSocket } from '../../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
 
 export default function User({ user }) {
     const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    
     const [showControl, setShowControl] = useState(false);
     const socket = useSocket();
     const [isOnline, setIsOnline] = useState(false);
@@ -151,12 +156,19 @@ export default function User({ user }) {
             >
                 <View style={[
                     styles.user,
+                    { backgroundColor: colors.card },
                     isOnline && styles.onlineUserHighlight
                 ]}>
                     {/* Header with ID & Status */}
                     <View style={[styles.header]}>
-                        <View style={[styles.idContainer]}>
-                            <Text style={styles.idText}>#{user?.user_id}</Text>
+                        <View style={[
+                            styles.idContainer,
+                            { 
+                                borderColor: colors.primary,
+                                backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF'
+                            }
+                        ]}>
+                            <Text style={[styles.idText, { color: colors.primary }]}>#{user?.user_id}</Text>
                             {isActiveAccount && (
                                 <View style={styles.activeStatusIndicator} />
                             )}
@@ -189,7 +201,10 @@ export default function User({ user }) {
                     </View>
 
                     {/* User Info Section */}
-                    <View style={[styles.userInfoSection]}>
+                    <View style={[
+                        styles.userInfoSection,
+                        { backgroundColor: colorScheme === 'dark' ? colors.surface : '#F8FAFC' }
+                    ]}>
                         <UserBox 
                             styles={styles} 
                             box={{
@@ -201,25 +216,28 @@ export default function User({ user }) {
                     </View>
 
                     {/* Location Section */}
-                    <View style={styles.section}>
+                    <View style={[
+                        styles.section,
+                        { borderBottomColor: colors.border }
+                    ]}>
                         <View style={[styles.sectionContent]}>
                             <Ionicons 
                                 name="location-outline" 
                                 size={22} 
-                                color="#4361EE" 
+                                color={colors.primary} 
                                 style={[styles.sectionIcon]}
                             />
-                            <View style={[styles.textContainer,{
+                            <View style={[styles.textContainer, {
                                 ...Platform.select({
                                     ios: {
-                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                        alignItems: isRTL ? "flex-start" : "flex-end"
                                     }
                                 }),
                             }]}>
-                                <Text style={[styles.sectionTitle]}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>
                                     {translations[language].users.user.location}
                                 </Text>
-                                <Text style={[styles.sectionText]}>
+                                <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
                                     {user?.city} {user.address ? `, ${user.address}` : ""}
                                 </Text>
                             </View>
@@ -227,25 +245,28 @@ export default function User({ user }) {
                     </View>
 
                     {/* Role Section */}
-                    <View style={styles.section}>
+                    <View style={[
+                        styles.section,
+                        { borderBottomColor: colors.border }
+                    ]}>
                         <View style={[styles.sectionContent]}>
                             <MaterialIcons 
                                 name="admin-panel-settings" 
                                 size={22} 
-                                color="#4361EE" 
+                                color={colors.primary} 
                                 style={[styles.sectionIcon]}
                             />
-                            <View style={[styles.textContainer,{
+                            <View style={[styles.textContainer, {
                                 ...Platform.select({
                                     ios: {
-                                        alignItems:isRTL ? "flex-start" : "flex-end"
+                                        alignItems: isRTL ? "flex-start" : "flex-end"
                                     }
                                 }),
                             }]}>
-                                <Text style={[styles.sectionTitle]}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>
                                     {translations[language].users.user.role}
                                 </Text>
-                                <Text style={[styles.sectionText]}>
+                                <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
                                     {user?.role}
                                 </Text>
                             </View>
@@ -262,14 +283,14 @@ export default function User({ user }) {
                     setShowModal={setShowControl}
                     customStyles={{ bottom: 15 }}
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={styles.modalTitle}>
+                    <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
                             {translations[language].users.user.options}
                         </Text>
                     </View>
 
                     <TouchableOpacity 
-                        style={[styles.modalItem]} 
+                        style={[styles.modalItem, { borderBottomColor: colors.border }]} 
                         onPress={() => {
                             setShowControl(false);
                             router.push({
@@ -278,10 +299,13 @@ export default function User({ user }) {
                             });
                         }}
                     >
-                        <View style={[styles.modalItemIconContainer]}>
-                            <Feather name="edit" size={20} color="#4361EE" />
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF' }
+                        ]}>
+                            <Feather name="edit" size={20} color={colors.primary} />
                         </View>
-                        <Text style={styles.modalItemText}>
+                        <Text style={[styles.modalItemText, { color: colors.text }]}>
                             {translations[language].users.user.edit}
                         </Text>
                     </TouchableOpacity>
@@ -298,7 +322,6 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     user: {
-        backgroundColor: "white",
         borderRadius: 12,
         padding: 16,
         shadowColor: "#64748B",
@@ -324,16 +347,13 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        borderColor: "#4361EE",
         borderWidth: 1,
-        backgroundColor: "#EEF2FF",
         flexDirection: "row",
         alignItems: "center",
     },
     idText: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#4361EE",
         textAlign: "center",
     },
     activeStatusIndicator: {
@@ -388,13 +408,11 @@ const styles = StyleSheet.create({
     userInfoSection: {
         marginBottom: 12,
         padding: 12,
-        backgroundColor: "#F8FAFC",
         borderRadius: 8,
     },
     section: {
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: "#E2E8F0",
     },
     sectionContent: {
         flexDirection: "row",
@@ -411,12 +429,10 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#334155",
         marginBottom: 2,
     },
     sectionText: {
         fontSize: 14,
-        color: "#64748B",
     },
     onlineNowText: {
         fontSize: 12,
@@ -428,19 +444,16 @@ const styles = StyleSheet.create({
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderBottomWidth: 1,
-        borderBottomColor: "#E2E8F0",
     },
     modalTitle: {
         fontSize: 16,
         fontWeight: "600",
-        color: "#1E293B",
         textAlign: "center",
     },
     modalItem: {
         padding: 16,
         flexDirection: "row",
         alignItems: "center",
-        borderBottomColor: "#E2E8F0",
         borderBottomWidth: 1,
         gap: 12,
     },
@@ -448,13 +461,11 @@ const styles = StyleSheet.create({
         width: 36,
         height: 36,
         borderRadius: 18,
-        backgroundColor: "#EEF2FF",
         justifyContent: "center",
         alignItems: "center",
     },
     modalItemText: {
         fontSize: 16,
-        color: "#334155",
         fontWeight: "500",
     },
     // Support styles for UserBox if needed

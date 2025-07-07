@@ -18,6 +18,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
 
 
 export default function HomeScreen() {
@@ -42,6 +44,8 @@ export default function HomeScreen() {
   const [packageCollections, setPackageCollections] = useState([]);
   const [selectedCollections, setSelectedCollections] = useState([]);
   const [isLoadingCollections, setIsLoadingCollections] = useState(false);
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
   
   // Animation value for percentage badge
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -525,8 +529,8 @@ export default function HomeScreen() {
 
   return (
     <RTLWrapper>
-      <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#f8f9fa" />
+       <View style={[styles.container, { backgroundColor: colors.surface }]}>
+       <StatusBar barStyle={colors.statusBarStyle === 'light' ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -570,7 +574,7 @@ export default function HomeScreen() {
 
         {/* Summary Section */}
         {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
-          <Text style={[styles.sectionTitle]}>
+          <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
           </Text>
         </View>}
@@ -599,6 +603,7 @@ export default function HomeScreen() {
             >
               <View style={[
                 styles.card, 
+                { backgroundColor: colors.card, shadowColor: colors.cardShadow }
               ]}>
                 <LinearGradient
                   colors={box.gradientColors}
@@ -617,7 +622,7 @@ export default function HomeScreen() {
                           textAlign:rtl.isRTL ? "left" : ""
                       }
                   })
-                  }]]}>
+                  },{color:colors.text}]]}>
                     {box.label}
                   </Text>
                   <View style={[styles.statsContainer]}>
@@ -628,15 +633,16 @@ export default function HomeScreen() {
                               textAlign:rtl.isRTL ? "left" : ""
                           }
                       })
-                      }]}>
+                      },{color:colors.text}]}
+                      >
                         {box.numberOfOrders || 0}
                       </Text>
-                      <Text style={[styles.statLabel]}>
+                      <Text style={[styles.statLabel,{color:colors.textSecondary}]}>
                         {translations[language].tabs.index.boxes.ofOrders}
                       </Text>
                     </View>
                     {box.money && (
-                      <Text style={[styles.moneyText]}>
+                      <Text style={[styles.moneyText,{color: colors.success}]}>
                         {box.money}
                       </Text>
                     )}
@@ -649,7 +655,7 @@ export default function HomeScreen() {
 
         {/* Balance Section */}
         <View style={[styles.sectionHeader]}>
-          <Text style={[styles.sectionTitle]}>
+        <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.balanceTitle || 'Your Balance'}
           </Text>
         </View>
@@ -665,7 +671,7 @@ export default function HomeScreen() {
               })}
             >
               <LinearGradient
-                colors={['#4CC9F0', '#4361EE']}
+                 colors={isDark ? ['#4CC9F0', '#4361EE'] : ['#4CC9F0', '#4361EE']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
@@ -699,7 +705,7 @@ export default function HomeScreen() {
               })}
             >
               <LinearGradient
-                colors={['#3A0CA3', '#480CA8']}
+                 colors={isDark ? ['#3A0CA3', '#480CA8'] : ['#3A0CA3', '#480CA8']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
@@ -733,7 +739,7 @@ export default function HomeScreen() {
               })}
             >
               <LinearGradient
-                colors={['#7209B7', '#F72585']}
+                 colors={isDark ? ['#7209B7', '#F72585'] : ['#7209B7', '#F72585']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.balanceGradient}
@@ -762,7 +768,7 @@ export default function HomeScreen() {
         {user.role === "business" && (
           <>
             <View style={[styles.sectionHeader]}>
-              <Text style={[styles.sectionTitle]}>
+            <Text style={[styles.sectionTitle,{color:colors.text}]}>
                 {translations[language]?.collections?.collection?.confirmTitle}
               </Text>
             </View>
@@ -798,16 +804,20 @@ export default function HomeScreen() {
               position="bottom"
               customStyles={{ maxHeight: '90%' }}
             >
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalHeaderText}>
+               <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
+                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                  <Text style={[styles.modalHeaderText, { color: colors.text }]}>
                     {translations[language]?.collections?.collection?.pendingConfirmations}
                   </Text>
                 </View>
 
-                <View style={styles.tabsContainer}>
+                <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
                   <TouchableOpacity
-                    style={[styles.tab, selectedType === 'money' && styles.activeTab]}
+                    style={[
+                        styles.tab,
+                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
+                        selectedType === 'money' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
+                      ]}
                     onPress={() => {
                       setSelectedType('money');
                       setSelectedCollections([]);
@@ -823,7 +833,11 @@ export default function HomeScreen() {
                     )}
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.tab, selectedType === 'package' && styles.activeTab]}
+                    style={[
+                        styles.tab,
+                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
+                        selectedType === 'package' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
+                      ]}
                     onPress={() => {
                       setSelectedType('package');
                       setSelectedCollections([]);
@@ -859,17 +873,25 @@ export default function HomeScreen() {
                           key={collection.collection_id}
                           style={[
                             styles.collectionItem,
-                            selectedCollections.includes(collection.collection_id) && styles.selectedCollectionItem
+                            {
+                              backgroundColor: colors.surface,
+                              borderColor: colors.border
+                            },
+                            selectedCollections.includes(collection.collection_id) && !isDark && styles.selectedCollectionItem
                           ]}
                           onPress={() => handleCollectionSelect(collection.collection_id)}
                           activeOpacity={0.8}
                         >
                           <View style={styles.collectionItemHeader}>
                             <View style={styles.collectionIdContainer}>
-                              <Text style={styles.collectionIdLabel}>
+                                <Text style={[styles.collectionIdLabel,{
+                                    color: colors.text
+                                }]}>
                                 {translations[language]?.collections?.collection?.collectionId}:
                               </Text>
-                              <Text style={styles.collectionId}>#{collection.collection_id}</Text>
+                              <Text style={[styles.collectionId,{
+                                color: colors.text
+                              }]}>#{collection.collection_id}</Text>
                             </View>
                             <View style={styles.orderCountContainer}>
                               <Text style={styles.orderCount}>
@@ -880,18 +902,26 @@ export default function HomeScreen() {
 
                           <View style={styles.collectionItemBody}>
                             <View style={styles.orderIdsContainer}>
-                              <Text style={styles.orderIdsLabel}>
+                                <Text style={[styles.orderIdsLabel,{
+                                    color: colors.text
+                                }]}>
                                 {translations[language]?.collections?.collection?.orderIds}:
                               </Text>
-                              <Text style={styles.orderIds}>
+                              <Text style={[styles.orderIds,{
+                                color: colors.text
+                              }]}>
                                 {Array.isArray(collection.order_ids) ? collection.order_ids.join(', ') : collection.order_ids || '-'}
                               </Text>
                             </View>
                             <View style={styles.valueContainer}>
-                              <Text style={styles.valueLabel}>
+                            <Text style={[styles.valueLabel,{
+                                color: colors.text
+                              }]}>
                                 {translations[language]?.collections?.collection?.totalNetValue}:
                               </Text>
-                              <Text style={styles.value}>{collection.total_net_value}</Text>
+                              <Text style={[styles.value,{
+                                color: colors.success
+                              }]}>{collection.total_net_value}</Text>
                             </View>
                           </View>
 
@@ -936,7 +966,7 @@ export default function HomeScreen() {
 
         {/* Status Section */}
         {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
-          <Text style={[styles.sectionTitle]}>
+        <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
           </Text>
         </View>}
@@ -1016,12 +1046,12 @@ export default function HomeScreen() {
                     </Animated.View>
                   </View>
                   
-                  <Text style={styles.circleTitle} numberOfLines={1}>
+                  <Text style={[styles.circleTitle,{color:colors.text}]} numberOfLines={1}>
                     {box.label}
                   </Text>
                   
                   {box.money && (
-                    <Text style={[styles.circleMoney]} numberOfLines={1}>
+                    <Text style={[styles.circleMoney,{color:colors.success}]} numberOfLines={1}>
                       {box.money}
                     </Text>
                   )}
@@ -1038,14 +1068,20 @@ export default function HomeScreen() {
         setShowModal={setShowMoneyModal}
         position="bottom"
       >
-        <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText]}>
+       <View style={[styles.modalHeader,{
+          borderBottomColor: colors.border
+        }]}>
+          <Text style={[styles.modalHeaderText,{
+            color: colors.text
+          }]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
         </View>
         
         <TouchableOpacity
-          style={[styles.modalOption]}
+          style={[styles.modalOption,{
+            borderBottomColor: colors.border
+          }]}
           onPress={() => handleGeneralCollectRequest("money", "prepare")}
           disabled={isProcessing}
         >
@@ -1059,7 +1095,9 @@ export default function HomeScreen() {
               ]}>
                 <MaterialIcons name="payments" size={18} color="#ffffff" />
               </View>
-              <Text style={[styles.modalOptionText]}>
+              <Text style={[styles.modalOptionText,{
+                color: colors.text
+              }]}>
                 {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
               </Text>
             </>
@@ -1077,7 +1115,9 @@ export default function HomeScreen() {
           ]}>
             <Feather name="send" size={18} color="#ffffff" />
           </View>
-          <Text style={[styles.modalOptionText]}>
+          <Text style={[styles.modalOptionText,{
+            color: colors.text
+          }]}>
             {translations[language]?.collections?.collection?.send_money || 'Send Money'}
           </Text>
         </TouchableOpacity>
@@ -1089,8 +1129,12 @@ export default function HomeScreen() {
         setShowModal={setShowPackageModal}
         position="bottom"
       >
-        <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText]}>
+       <View style={[styles.modalHeader,{
+          borderBottomColor: colors.border
+        }]}>
+        <Text style={[styles.modalHeaderText,{
+            color: colors.text
+          }]}>
             {translations[language]?.collections?.collection?.actions}
           </Text>
         </View>
@@ -1110,7 +1154,9 @@ export default function HomeScreen() {
               ]}>
                 <MaterialIcons name="inventory" size={18} color="#ffffff" />
               </View>
-              <Text style={[styles.modalOptionText]}>
+              <Text style={[styles.modalOptionText,{
+                color: colors.text
+              }]}>
                 {translations[language]?.collections?.collection?.prepare_package || 'Prepare Package'}
               </Text>
             </>
@@ -1128,7 +1174,9 @@ export default function HomeScreen() {
           ]}>
             <Feather name="send" size={18} color="#ffffff" />
           </View>
-          <Text style={[styles.modalOptionText]}>
+          <Text style={[styles.modalOptionText,{
+            color: colors.text
+          }]}>
             {translations[language]?.collections?.collection?.send_package || 'Send Package'}
           </Text>
         </TouchableOpacity>
@@ -1141,7 +1189,9 @@ export default function HomeScreen() {
         position="bottom"
       >
         <View style={styles.modalHeader}>
-          <Text style={[styles.modalHeaderText]}>
+        <Text style={[styles.modalHeaderText,{
+            color: colors.text
+          }]}>
             {translations[language]?.driverNotification?.title || "Notify Drivers"}
           </Text>
         </View>
@@ -1151,7 +1201,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={driver.driver_id}
               style={[
-                styles.driverItem
+                styles.driverItem,
+                {
+                  backgroundColor: colors.surface
+                }
               ]}
               onPress={() => handleDriverSelect(driver.driver_id)}
             >
@@ -1164,10 +1217,14 @@ export default function HomeScreen() {
                 )}
               </View>
               <View style={styles.driverInfo}>
-                <Text style={[styles.driverName]}>
+              <Text style={[styles.driverName,{
+                  color: colors.text
+                }]}>
                   {driver.name}
                 </Text>
-                <Text style={[styles.driverPhone]}>
+                <Text style={[styles.driverPhone,{
+                  color: colors.textSecondary
+                }]}>
                   {driver.phone}
                 </Text>
               </View>
