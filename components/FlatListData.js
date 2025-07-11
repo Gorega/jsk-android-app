@@ -1,7 +1,7 @@
 import { FlatList, ActivityIndicator, View, StyleSheet, Text, Platform } from 'react-native';
-import React from 'react';
+import React, { forwardRef } from 'react';
 
-function FlatListDataComponent({ 
+const FlatListDataComponent = forwardRef(({ 
     list, 
     loadMoreData, 
     loadingMore, 
@@ -10,8 +10,9 @@ function FlatListDataComponent({
     renderItem,
     keyExtractor,
     getItemLayout,
+    maintainVisibleContentPosition,
     ...props 
-}) {
+}, ref) => {
     // Handle both function children and renderItem prop for backwards compatibility
     const renderItemFunction = React.useCallback(
         renderItem || (({ item }) => children(item)),
@@ -30,33 +31,35 @@ function FlatListDataComponent({
         }
     }, [loadMoreData, loadingMore]);
 
-    // No need to memoize the list data again, as it should already be memoized by the parent component
+    // Create safe position config - ensure all values are valid types
+    const positionConfig = Platform.OS === 'ios' ? {
+        minIndexForVisible: 0,
+        // Explicitly set to a number instead of null
+        autoscrollToTopThreshold: 0
+    } : undefined;
 
     return (
         <FlatList
+            ref={ref}
             data={list}
             renderItem={renderItemFunction}
             keyExtractor={extractKey}
             onEndReached={handleEndReached}
-            onEndReachedThreshold={0.2} // Lower threshold to reduce frequency of load more events
+            onEndReachedThreshold={0.2}
             refreshControl={refreshControl}
             getItemLayout={getItemLayout}
             initialNumToRender={5}
             maxToRenderPerBatch={3}
             updateCellsBatchingPeriod={50}
             windowSize={3}
-            removeClippedSubviews={Platform.OS !== 'ios'} // Conditionally apply for non-iOS
+            removeClippedSubviews={Platform.OS !== 'ios'}
             showsVerticalScrollIndicator={false}
-            // Conditionally apply for non-iOS
-            {...(Platform.OS !== 'ios' && {
-                maintainVisibleContentPosition: {
-                    minIndexForVisible: 0,
-                }
-            })}
+            // Only apply maintainVisibleContentPosition on iOS
+            {...(Platform.OS === 'ios' ? { maintainVisibleContentPosition: positionConfig } : {})}
             {...props}
         />
     );
-}
+});
 
 // Use a more efficient comparison function for the memo
 const FlatListData = React.memo(FlatListDataComponent, (prevProps, nextProps) => {
@@ -68,6 +71,9 @@ const FlatListData = React.memo(FlatListDataComponent, (prevProps, nextProps) =>
     // If we got here, the components are equal
     return true;
 });
+
+// Add display name for better debugging
+FlatListData.displayName = 'FlatListData';
 
 const styles = StyleSheet.create({
     loadingMore: {

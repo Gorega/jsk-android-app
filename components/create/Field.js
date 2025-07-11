@@ -14,6 +14,12 @@ import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 
 export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
+    // Add safety check for undefined field
+    if (!field) {
+        console.warn("Field component received undefined field");
+        return null;
+    }
+    
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState("");
@@ -142,7 +148,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     styles.label,
                     { 
                         backgroundColor: colors.card,
-                        color: colors.textSecondary
+                        color: field.name === "net_value" ? colors.success : colors.textSecondary
                     }
                 ]}>
                     {field.label}
@@ -156,10 +162,11 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         <View style={[
                             styles.inputWrapper,
                             field.name === "reference_id" && styles.scanInputWrapper,
-                            error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
+                            error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 },
 
                         ]}>
-                            {field.name === "receiver_mobile" ? (
+                            {/* Check if it's receiver_mobile AND has onPress (for search) */}
+                            {field.name === "receiver_mobile" && field.onPress ? (
                                 <TouchableOpacity 
                                     style={styles.receiverInputWrapper}
                                     onPress={field.onPress}
@@ -168,14 +175,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     <TextInput 
                                         style={[
                                             styles.input,
-                                            { color: colors.text },
                                             {
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "right" : ""
                                                     }
                                                 }),
-                                                color: colors.text
+                                                color: colors.success
                                             }
                                         ]}
                                         value={field.value || ""}
@@ -188,7 +194,6 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     style={[
                                         styles.input,
                                         field.name === "reference_id" && styles.scanInput,
-                                        { color: colors.text },
                                         {
                                             ...Platform.select({
                                                 ios: {
@@ -222,7 +227,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }}
                                     placeholder={field.placeholder || ""}
                                     placeholderTextColor="#94A3B8"
-                                    editable={editable}
+                                    editable={field.editable !== undefined ? field.editable : editable}
+                                    keyboardType={field.keyboardType || "default"}
                                 />
                             )}
                             
@@ -252,6 +258,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     textAlign:isRTL ? "right" : ""
                                 }
                             }),
+                            color: '#EF4444'
                         }]}>{error}</Text>}
                     </>
                 )}

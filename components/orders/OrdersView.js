@@ -10,10 +10,10 @@ import { Colors } from '@/constants/Colors';
 import React from 'react';
 
 // Create a memoized OrderItem component to prevent unnecessary re-renders
-const OrderItem = React.memo(function OrderItem({ item, metadata }) {
+const OrderItem = React.memo(function OrderItem({ item, metadata, onStatusChange }) {
     return (
         <View style={styles.orderContainer}>
-            <Order user={metadata} order={item} />
+            <Order user={metadata} order={item} onStatusChange={onStatusChange} />
         </View>
     );
 }, (prevProps, nextProps) => {
@@ -24,15 +24,15 @@ const OrderItem = React.memo(function OrderItem({ item, metadata }) {
            JSON.stringify(prevProps.metadata) === JSON.stringify(nextProps.metadata);
 });
 
-export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading }) {
+export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading, onStatusChange }) {
     const { language } = useLanguage();
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
 
     // Memoize the renderOrderItem function to prevent recreating it on each render
     const renderOrderItem = React.useCallback(({ item }) => {
-        return <OrderItem item={item} metadata={metadata} />;
-    }, [metadata]);
+        return <OrderItem item={item} metadata={metadata} onStatusChange={onStatusChange} />;
+    }, [metadata, onStatusChange]);
 
     // Memoize the keyExtractor function
     const keyExtractor = React.useCallback((item) => item.order_id.toString(), []);

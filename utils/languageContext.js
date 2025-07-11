@@ -301,86 +301,73 @@ export const translations = {
         },
         "order": {
           "states": {
-            "pickedUp": "Picked Up",
-            "on_the_way_back": "On the Way Back",
-            "deliveredToDestinationBranch": "Delivered to Destination Branch",
-            "rescheduleReasons": {
-              "title": "Reschedule",
-              "receiverRequest": "Receiver Requested",
-              "receiverUnavailable": "Receiver Unavailable",
-              "incorrectTiming": "Incorrect Timing",
-              "businessRequest": "Business Requested",
-              "deliveryOverload": "Delivery Overload"
-            },
-            "return_before_delivered_initiated": {
-              "title": "Return Initiated Before Delivery",
-              "businessCancellation": "Cancelled by Business",
-              "receiverCancellation": "Cancelled by Receiver",
-              "addressError": "Incorrect Address",
-              "noResponse": "No Response"
-            },
-            "return_after_delivered_initiated": {
-              "title": "Return Initiated After Delivery",
-              "businessCancellation": "Cancelled by Business",
-              "receiverCancellation": "Cancelled by Receiver",
-              "paymentFailure": "Payment Failure",
-              "addressError": "Incorrect Address",
-              "noResponse": "No Response",
-              "packageIssue": "Issue with Package"
-            },
-            "returned": {
-              "title": "Returned",
-              "businessCancellation": "Cancelled by Business",
-              "receiverCancellation": "Cancelled by Receiver",
-              "paymentFailure": "Payment Failure",
-              "addressError": "Incorrect Address",
-              "noResponse": "No Response",
-              "packageIssue": "Issue with Package"
+            "on_the_way_back": "Returned to delivery process",
+            "pickedUp": "Picked up",
+            "deliveredToDestinationBranch": "Delivered to destination branch",
+            "rejected": "Rejected",
+            "cancelled": "Cancelled",
+            "stuck": "Stuck",
+            "rescheduled": "Rescheduled",
+            "return_before_delivered_initiated": "Return before delivery initiated",
+            "return_after_delivered_initiated": "Return after delivery initiated",
+            "delayed": "Delayed",
+            "suspendReasons": {
+              "closed": "Closed",
+              "no_response": "No response",
+              "cancelled_from_office": "Cancelled from office",
+              "address_changed": "Address changed",
+              "not_compatible": "Not compatible with specifications",
+              "delivery_fee_issue": "Doesn't want to pay delivery fee",
+              "duplicate_reschedule": "Duplicate reschedule request",
+              "receive_issue": "Doesn't want to receive",
+              "sender_cancelled": "Cancelled by sender",
+              "reschedule_request": "Recipient requested delivery reschedule",
+              "incorrect_number": "Incorrect number",
+              "not_existing": "Recipient doesn't exist in country",
+              "cod_issue": "Doesn't want to pay for shipment",
+              "death_issue": "Recipient has death case",
+              "not_exist_in_address": "Recipient doesn't exist at delivery address",
+              "receiver_cancelled": "Cancelled by recipient",
+              "receiver_no_response": "No response from recipient",
+              "order_incomplete": "Shipment incomplete",
+              "receive_request_issue": "Recipient didn't request shipment",
+              "other": "Other reason"
             },
             "delivered": "Delivered",
             "waiting": "Waiting",
-            "inBranch": "In Branch",
-            "inProgress": "In Progress",
-            "rejected": {
-              "title": "Rejected",
-              "rejectionReasons": {
-                "businessCancellation": "Cancelled by Business",
-                "invalidOrder": "Invalid Order"
-              }
-            },
-            "stuck": {
-              "title": "Stuck",
-              "stuckReasons": {
-                "paymentIssue": "Payment Issue",
-                "incorrectAddress": "Incorrect Address"
-              }
-            },
-            "delayed": {
-              "title": "Delayed",
-              "delayReasons": {
-                "sortingDelay": "Sorting Delay",
-                "highOrderVolume": "High Order Volume",
-                "technicalIssue": "Technical Issue"
-              }
-            },
-            "delivered":"Delivered",
-            "received":"Received",
-            "delivered_received":"Delivered / Received"
+            "inBranch": "In branch",
+            "inProgress": "In progress",
+            "delivered": "Delivered",
+            "received": "Received",
+            "delivered_received": "Delivered / Received"
           },
-          "editPhone": "Edit Receiver Phone",
-          "receiverPhones": "Receiver Phones",
+          "editPhone": "Edit",
+          "receiverAddress": "Recipient address",
+          "codValue": "COD value",
+          "codUpdateReason": "Reason for changing COD value",
+          "enterReason": "Enter reason for change",
+          "codUpdateNote": "Note: Changing COD value requires sender approval",
+          "loading": "Loading...",
+          "codValue": "Shipment cost",
+          "error": "Error",
+          "errorFetchingOrder": "Error fetching order data",
+          "ok": "OK",
+          "phoneUpdateSuccess": "Phone numbers updated successfully",
+          "receiverDetailsUpdateSuccess": "Recipient details updated successfully",
+          "codUpdateRequestSuccess": "COD value change request sent successfully",
+          "receiverPhones": "Recipient phones",
           "loading": "Loading...",
           "error": "Error",
           "errorFetchingOrder": "Error fetching order data",
           "ok": "OK",
-          "missingStatus": "Missing status value",
-          "selectReason": "Select Reason",
+          "missingStatus": "No status selected",
+          "selectReason": "Select reason",
           "statusChangeSuccess": "Status updated successfully",
           "statusChangeError": "Failed to update status",
-          "selectBranch": "Select Branch",
+          "selectBranch": "Select branch",
           "reason": "Reason",
           "branch": "Branch",
-          "orderType": "Order Type",
+          "orderType": "Shipment type",
           "unknown": "Unknown",
           "userSenderBoxLabel": "Sender",
           "userClientBoxLabel": "Client",
@@ -390,47 +377,57 @@ export const translations = {
           "contactPhone": "Phone",
           "contactWhatsapp": "WhatsApp",
           "edit": "Edit",
-          "changeStatus": "Change Status",
-          "changeStatusAlert": "You are about to change this order's status to",
-          "changeStatusAlertNote": "Leave a note...",
+          "status":"Status",
+          "changeStatus": "Change status",
+          "changeStatusAlert": "You're about to change shipment status to",
+          "changeStatusAlertNote": "Write a note...",
           "changeStatusAlertConfirm": "Confirm",
           "changeStatusAlertCancel": "Cancel",
           "print": "Print",
           "location": "Location",
-          "financialDetails": "Financial Details",
-          "codValue": "Parcel Cost",
-          "netValue": "Amount Due to Merchant",
-          "deliveryFee": "Delivery Fee",
-          "checksAvailable": "Available Checks",
+          "to_branch":"Sent to branch",
+          "to_driver":"Sent to driver",
+          "financialDetails": "Financial details",
+          "codValue": "Shipment cost",
+          "netValue": "Amount due to merchant",
+          "deliveryFee": "Delivery fee",
+          "checksAvailable": "Available checks",
           "note": "Note",
-          "add_currency": "Add Another Currency",
-          "orderActions": "Order Actions",
-          "to_branch":"To Branch",
-          "to_driver":"To Driver",
-          "status":"Status",
-          "receivedItems":"Received Items",
-          "receivedQuantity":"Received Quantity",
-          "statusChangeOffline": "Status will update when online",
+          "add_currency": "Add another currency",
           "success": "Success",
+          "orderActions": "Order actions",
+          "receivedItems": "Received items",
+          "receivedQuantity": "Received quantity",
+          "noteRequiredForOther": "Note required when selecting \"Other\" reason",
+          "statusChangeOffline": "Status will update when online",
           "orderChecks": {
-            "addCheck": "Add Check",
-            "title": "Order Checks",
-            "orderId": "Order ID",
+            "addCheck": "Add check",
+            "title": "Order checks",
+            "orderId": "Order number",
             "loading": "Loading...",
-            "totalChecks": "Total Checks",
-            "totalValue": "Total Value",
+            "totalChecks": "Total checks",
+            "totalValue": "Total value",
             "check": "Check",
-            "number": "Number",
-            "checkNumberPlaceholder": "Enter check number",
             "value": "Value",
+            "checkNumberPlaceholder": "Enter check number",
+            "number": "Number",
             "currency": "Currency",
             "date": "Date",
-            "noChecks": "No Checks Found",
-            "noChecksMessage": "There are no checks associated with this order.",
+            "noChecks": "No checks",
+            "noChecksMessage": "No checks associated with this order.",
             "backToOrder": "Back",
-            "checkDetails": "Check Details"
+            "checkDetails": "Check details",
           }
         },
+        "validation": {
+          "required": "This field is required"
+        },
+        "save": "Save changes",
+        "cancel": "Cancel",
+        "error": "Error",
+        "success": "Success",
+        "errorMsg": "An error occurred",
+        "errorValidationMsg": "Please correct the errors in the form",
         // (create)
         create:{
           edit:"Edit Order",
@@ -545,6 +542,7 @@ export const translations = {
             cost:{
               title:"Cost",
               fields:{
+                "netValue": "Net Value",
                 checks:"Checks",
                 packageCost:"Package Cost",
                 amount:"Amount",
@@ -1035,7 +1033,8 @@ export const translations = {
       searchBy:"Search By",
       searchByDate:"Search By Date",
       cancel:"Cancel",
-      confirm:"Confirm"
+      confirm:"Confirm",
+      results:"results"
     },
 
     // pickerModal
@@ -1416,15 +1415,15 @@ export const translations = {
           returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
           returned: "مرتجع",
           returnedInBranch: "مرتجع في الفرع",
-          returnedOut: "مرتجع خارجي",
-          businessReturnedDelivered: "مرتجع تم تسليمه للتاجر",
+          returnedOut: "جاري تسليم المرتجع / التبديل",
+          businessReturnedDelivered: "تم تسليم المرتجع / التبديل للتاجر",
           delivered: "تم التوصيل",
-          moneyInBranch: "النقود في الفرع",
-          moneyOut: "النقود خارجة",
-          businessPaid: "تم الدفع للأعمال",
+          moneyInBranch: "المال في الفرع",
+          moneyOut: "جاري تسليم المال",
+          businessPaid: "مدفوع",
           completed: "مكتمل",
-          received:"تم الاستلام",
-          "delivered/received":"تم التوصيل والاستلام",
+          received:"تم الاحضار",
+          "delivered/received":"تم التوصيل والاحضار",
           dispatched_to_branch:"نقل الى الفرع المرسل اليه",
           // searchByGroup
           orderId: "معرف الطرد",
@@ -1497,72 +1496,59 @@ export const translations = {
         "order": {
           "states": {
             "on_the_way_back": "اعادته الى قيد التوصيل",
-            "pickedUp": "تم الاستلام",
+            "pickedUp": "تم الاحضار",
             "deliveredToDestinationBranch": "تم التوصيل إلى الفرع الوجهة",
-            "rescheduleReasons": {
-              "title": "مؤجل",
-              "receiverRequest": "بطلب من المستلم",
-              "receiverUnavailable": "المستلم غير متاح",
-              "incorrectTiming": "توقيت غير مناسب",
-              "businessRequest": "بطلب من التاجر",
-              "deliveryOverload": "زيادة عدد الطلبات"
-            },
-            "return_before_delivered_initiated": {
-              "title": "إرجاع قبل التوصيل",
-              "businessCancellation": "إلغاء من التاجر",
-              "receiverCancellation": "إلغاء من المستلم",
-              "addressError": "خطأ في العنوان",
-              "noResponse": "لا يوجد رد"
-            },
-            "return_after_delivered_initiated": {
-              "title": "إرجاع بعد التوصيل",
-              "businessCancellation": "إلغاء من التاجر",
-              "receiverCancellation": "إلغاء من المستلم",
-              "paymentFailure": "فشل في الدفع",
-              "addressError": "خطأ في العنوان",
-              "noResponse": "لا يوجد رد",
-              "packageIssue": "مشكلة في الطرد"
-            },
-            "returned": {
-              "title": "تم الإرجاع",
-              "businessCancellation": "إلغاء من التاجر",
-              "receiverCancellation": "إلغاء من المستلم",
-              "paymentFailure": "فشل في الدفع",
-              "addressError": "خطأ في العنوان",
-              "noResponse": "لا يوجد رد",
-              "packageIssue": "مشكلة في الطرد"
+            "rejected": "مرفوض",
+            "cancelled": "ملغي",
+            "stuck": "عالق",
+            "rescheduled": "مؤجل",
+            "return_before_delivered_initiated": "ارجاع قبل التسليم",
+            "return_after_delivered_initiated": "ارجاع بعد التسليم",
+            "delayed": "متأخر",
+            "suspendReasons": {
+              "closed": "مغلق",
+              "no_response": "لا يوجد رد",
+              "cancelled_from_office": "ملغي من المكتب",
+              "address_changed": "تم تغيير العنوان",
+              "not_compatible": "غير متوافق للمواصفات",
+              "delivery_fee_issue": "لا يريد دفع تكلفة التوصيل",
+              "duplicate_reschedule": "طلب تأجيل متكرر",
+              "receive_issue": "لا يريد الاستلام",
+              "sender_cancelled": "ملغي من المرسل",
+              "reschedule_request": "المستلم طلب تأجيل الاستلام",
+              "incorrect_number": "رقم غير صحيح",
+              "not_existing": "المستلم غير موجود في البلد",
+              "cod_issue": "لا يريد دفع تكلفة الطرد",
+              "death_issue": "المستلم لديه حالة وفاة",
+              "not_exist_in_address": "المستلم غير موجود في العنوان المطلوب تسليمه", 
+              "receiver_cancelled": "ملغي من المستلم",
+              "receiver_no_response": "لا يوجد رد من المستلم",
+              "order_incomplete": "الطرد غير مكتمل",
+              "receive_request_issue": "المستلم لم يطلب الطرد",
+              "other": "سبب اخر"
             },
             "delivered": "تم التوصيل",
             "waiting": "في الانتظار",
             "inBranch": "في الفرع",
             "inProgress": "قيد التنفيذ",
-            "rejected": {
-              "title": "مرفوض",
-              "rejectionReasons": {
-                "businessCancellation": "إلغاء من التاجر",
-                "invalidOrder": "طلب غير صالح"
-              }
-            },
-            "stuck": {
-              "title": "عالق",
-              "stuckReasons": {
-                "paymentIssue": "مشكلة في الدفع",
-                "incorrectAddress": "عنوان غير صحيح"
-              }
-            },
-            "delayed": {
-              "title": "تأخير",
-              "delayReasons": {
-                "sortingDelay": "تأخير في الفرز",
-                "highOrderVolume": "كمية طلبات كبيرة",
-                "technicalIssue": "مشكلة تقنية"
-              }
-            },
             "delivered": "تم التوصيل",
-            "received": "تم الاستلام",
-            "delivered_received": "تم التوصيل / تم الاستلام"
+            "received": "تم الاحضار",
+            "delivered_received": "تم التوصيل / تم الاحضار"
           },
-          "editPhone": "تعديل هاتف المستلم",
+          "editPhone": "تعديل",
+          "receiverAddress": "عنوان المستلم",
+          "codValue": "قيمة الدفع عند الاستلام",
+          "codUpdateReason": "سبب تغيير قيمة الدفع عند الاستلام",
+          "enterReason": "أدخل سبب التغيير",
+          "codUpdateNote": "ملاحظة: يتطلب تغيير قيمة الدفع عند الاستلام موافقة المرسل",
+          "loading": "جاري التحميل...",
+          "codValue": "تكلفة الطرد",
+          "error": "خطأ",
+          "errorFetchingOrder": "خطأ في جلب بيانات الطلب",
+          "ok": "موافق",
+          "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
+          "receiverDetailsUpdateSuccess": "تم تحديث بيانات المستلم بنجاح",
+          "codUpdateRequestSuccess": "تم إرسال طلب تغيير قيمة الدفع عند الاستلام بنجاح",
           "receiverPhones": "هواتف المستلم",
           "loading": "جاري التحميل...",
           "error": "خطأ",
@@ -1606,6 +1592,7 @@ export const translations = {
           "orderActions": "إجراءات الطلب",
           "receivedItems": "العناصر المستلمة",
           "receivedQuantity": "الكمية المستلمة",
+          "noteRequiredForOther": "ملاحظة مطلوبة عند اختيار سبب \"آخر\"",
           "statusChangeOffline": "سيتم تحديث الحالة عند الاتصال بالانترنت",
           "orderChecks": {
             "addCheck": "إضافة شيك",
@@ -1623,9 +1610,18 @@ export const translations = {
             "noChecks": "لا توجد شيكات",
             "noChecksMessage": "لا توجد شيكات مرتبطة بهذا الطلب.",
             "backToOrder": "رجوع",
-            "checkDetails": "تفاصيل الشيك"
+            "checkDetails": "تفاصيل الشيك",
           }
         },
+        validation: {
+          required: "هذا الحقل مطلوب"
+        },
+        save: "حفظ التغييرات",
+        cancel: "إلغاء",
+        error: "خطأ",
+        success: "نجاح",
+        errorMsg: "حدث خطأ",
+        errorValidationMsg: "يرجى تصحيح الأخطاء في النموذج",
         // (create)
         create: {
           edit: "تعديل الطرد",
@@ -1642,6 +1638,7 @@ export const translations = {
           "save": "حفظ التغييرات",
           "cancel": "إلغاء",
           "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
+          "receiverDetailsUpdateSuccess": "تم تحديث بيانات المستلم بنجاح",
           sections: {
             referenceId:{
               title:"الرقم المرجعي (اختياري)",
@@ -1741,6 +1738,7 @@ export const translations = {
             cost: {
               title: "التكلفة",
               fields: {
+                "netValue": "القيمة الصافية",
                 "checks":"الشيكات",
                 "packageCost": "سعر الطرد غير شامل التوصيل",
                 "totalPackageCost": "سعر الطرد شامل التوصيل",
@@ -1760,7 +1758,7 @@ export const translations = {
               fields: {
                 description:"الوصف",
                 product: "المنتج",
-                quantity: "الكمية",
+                quantity: "عدد التوابع",
                 weight: "الوزن",
                 orderType: "نوع الطرد"
               }
@@ -2140,7 +2138,34 @@ export const translations = {
         title:"تأكيد مطلوب",
         message:"هل تريد تأكيد هذا الطلب؟",
         confirm:"تأكيد",
-        cancel:"إلغاء"
+        cancel:"إلغاء",
+        cod_update:{
+          title:"تأكيد تعديل قيمة الطرد",
+          message:"هل تريد تأكيد تعديل قيمة الطرد؟",
+          approve:"تأكيد",
+          reject:"رفض",
+          successMessage:"تم تعديل قيمة الطرد بنجاح"
+        },
+        money_in:{
+          title:"تأكيد معاملة دفع",
+          message:"هل تريد تأكيد معاملة دفع؟",
+          confirm:"تأكيد",
+          cancel:"إلغاء",
+          successMessage:"تم تأكيد المعاملة بنجاح",
+          amount:"المبلغ",
+          currency:"العملة",
+          recipient:"المستلم"
+        },
+        money_out:{
+          title:"تأكيد معاملة سحب",
+          message:"هل تريد تأكيد معاملة سحب؟",
+          confirm:"تأكيد",
+          cancel:"إلغاء",
+          successMessage:"تم تأكيد المعاملة بنجاح",
+          amount:"المبلغ",
+          currency:"العملة",
+          recipient:"المستلم"
+        }
       }
     },
 
@@ -2154,6 +2179,7 @@ export const translations = {
       confirm: "تأكيد",
       all: "الكل",
       selectFilter: "اختر فلتر",
+      results: "نتائج"
     },
 
     // pickerModal
@@ -2277,423 +2303,1138 @@ export const translations = {
       mobileNumber: "מספר טלפון",
       email: "אימייל",
       password: "סיסמה",
-      role:"התפקיד",
       city: "עיר",
       area: "אזור",
-      address: "כתובת"
+      address: "כתובת",
+      comercialName:"שם מסחרי",
+      registerSuccess:"יצרת בהצלחה את חשבונך, אנא התחבר כעת",
+      registrationFailed:"החשבון שלך לא נוצר בהצלחה",
+      loginFailed:"ההתחברות לא בוצעה בהצלחה",
+      phonePlaceholder: "הזן את מספר הטלפון שלך",
+      passwordPlaceholder: "הזן סיסמה",
+      biometricLoginFailed: "התחברות ביומטרית נכשלה",
+      noPreviousLogin: "אנא התחבר תחילה עם פרטיך כדי להפעיל התחברות ביומטרית",
+      biometricPrompt: "התחברות באמצעות ביומטריה",
+      cancel: "ביטול",
+      biometricFailed: "אימות נכשל",
+      credentialsNotFound: "פרטי התחברות שמורים לא נמצאו",
+      phoneRequired: "נדרש מספר טלפון",
+      passwordRequired: "נדרשת סיסמה",
+      welcome: "ברוך שובך",
+      signMessage: "היכנס לחשבון שלך",
+      loginWithBiometric: "התחברות ביומטרית",
+      or: "או",
+      forgotPassword: "שכחת סיסמה?",
+      register: "הרשמה",
+      usernamePlaceholder: "הזן את שמך המלא",
+      emailPlaceholder: "הזן אימייל (אופציונלי)",
+      phonePlaceholder: "הזן מספר טלפון",
+      passwordPlaceholder: "צור סיסמה",
+      confirmPasswordPlaceholder: "אשר סיסמה",
+      comercialNamePlaceholder: "הזן את שם העסק שלך",
+      businessActivity: "סוג פעילות עסקית",
+      businessActivityPlaceholder: "מה אתה מוכר/מציע? (אופציונלי)",
+      cityPlaceHolder: "בחר עיר",
+      areaPlaceholder: "הזן אזור",
+      addressPlaceholder: "הזן כתובת",
+      secondPhone: "מספר טלפון נוסף",
+      secondPhonePlaceholder: "הזן מספר טלפון חלופי (אופציונלי)",
+      website: "אתר אינטרנט",
+      websitePlaceholder: "הזן קישור לאתר (אופציונלי)",
+      tiktok: "טיקטוק",
+      facebook: "פייסבוק",
+      instagram: "אינסטגרם",
+      tiktokPlaceholder: "הזן שם משתמש בטיקטוק (אופציונלי)",
+      facebookPlaceholder: "הזן את עמוד הפייסבוק שלך (אופציונלי)",
+      instagramPlaceholder: "הזן את חשבון האינסטגרם שלך (אופציונלי)",
+      personalInfo: "מידע אישי",
+      businessDetails: "פרטי עסק",
+      socialMedia: "מדיה חברתית",
+      nameRequired: "נדרש שם",
+      passwordValidation: "הסיסמה חייבת להכיל לפחות 6 תווים",
+      passwordConfirmation: "אנא אשר סיסמה",
+      passwordMismatch: "הסיסמאות לא תואמות",
+      businessNameRequired: "נדרש שם עסק",
+      cityRequired: "נדרשת עיר",
+      noFields: "אין שדות זמינים בשלב זה",
+      successRegiser: "נרשמת בהצלחה",
+      back: "קודם",
+      next: "הבא",
+      createAccount: "צור חשבון",
+      step: "שלב",
+      of: "מתוך",
+      role:{
+        title:"תפקיד",
+        business:"עסק",
+        driver:"נהג"
+      }
     },
+
+    errors:{
+      error:"שגיאה",
+      success:"בוצע בהצלחה"
+    },
+
+    "check": {
+    "receiver": {
+      "title": "אימות נמען",
+      "desc": "הזן מספר טלפון כדי לבדוק אם הנמען קיים",
+      "placeholder": "הזן מספר טלפון",
+      "results": "תוצאות חיפוש",
+      "noResults": "לא נמצא נמען עם מספר זה",
+      "totalOrders": "סה\"כ הזמנות",
+      "returnedOrders": "החזרות",
+      "comment": "הערות"
+    }
+  },
+
+    driverNotification:{
+      title:"הודעת נהגים על חבילות מוכנות לאיסוף",
+      cancel:"ביטול",
+      send:"שלח",
+      sendNotification:"שלח הודעה",
+      sending:"שולח הודעה...",
+      sent:"הודעה נשלחה",
+      error:"שליחת הודעה נכשלה",
+      selectDrivers:"בחר נהגים",
+      selectDriversMessage:"אנא בחר את הנהגים שברצונך להודיע להם.",
+      success:"בוצע בהצלחה",
+      errorMessage:"שליחת הודעה נכשלה",
+      notificationSent:"הודעה נשלחה בהצלחה",
+    },
+
+    routes: {
+      title: "מסלולים",
+      routeDetails: "פרטי מסלול",
+      navigation: "ניווט במסלול",
+      activeTabs: "מסלולים פעילים",
+      completedTabs: "הושלמו",
+      noActiveRoutes: "אין מסלולים פעילים",
+      noCompletedRoutes: "אין מסלולים שהושלמו",
+      createRoutePrompt: "צור מסלול חדש כדי לארגן את משלוחיך",
+      createRoute: "צור מסלול חדש",
+      create: "צור מסלול",
+      edit: "ערוך",
+      navigate: "ניווט",
+      routeName: "שם המסלול",
+      enterRouteName: "הזן שם מסלול",
+      orders: "הזמנות",
+      optimized: "מותאם",
+      completed: "הושלם",
+      addOrders: "הוסף הזמנות",
+      optimize: "התאם",
+      listView: "תצוגת רשימה",
+      mapView: "תצוגת מפה",
+      noOrders: "אין הזמנות במסלול זה",
+      addOrdersPrompt: "הוסף הזמנות כדי ליצור את מסלול המשלוח שלך",
+      dragInstructions: "לחץ והחזק כדי לסדר מחדש",
+      markAsCompleted: "סמן כהושלם",
+      saveRoute: "שמור מסלול",
+      removeOrder: "הסר הזמנה",
+      callOptions: "אפשרויות שיחה",
+      whatsapp: "וואטסאפ",
+      regularCall: "שיחה רגילה",
+      cancel: "ביטול",
+      removeOrderConfirm: "האם אתה בטוח שברצונך להסיר הזמנה זו מהמסלול?",
+      errorLoadingRoute: "שגיאה בטעינת פרטי מסלול",
+      cannotModifyCompleted: "לא ניתן לערוך מסלול שהושלם",
+      needMoreOrders: "נדרשות לפחות שתי הזמנות כדי להתאים מסלול",
+      optimizationFailed: "התאמת המסלול נכשלה",
+      routeOptimizedMessage: "המסלול שלך מותאם כעת לסדר המשלוח היעיל ביותר.",
+      alreadyCompleted: "מסלול זה כבר הושלם",
+      emptyRouteCompletion: "לא ניתן להשלים מסלול ריק",
+      completeRoute: "השלם מסלול",
+      completeRouteConfirm: "האם אתה בטוח שברצונך לסמן מסלול זה כהושלם? לא ניתן לבטל פעולה זו.",
+      completionFailed: "השלמת המסלול נכשלה",
+      routeCompleted: "המסלול סומן כהושלם בהצלחה",
+      errorAddingOrders: "הוספת הזמנות למסלול נכשלה",
+      errorRemovingOrder: "הסרת הזמנה מהמסלול נכשלה",
+      saveFailed: "שמירת המסלול נכשלה",
+      routeSaved: "המסלול נשמר בהצלחה",
+      yourLocation: "מיקומך הנוכחי",
+      noAvailableOrders: "אין הזמנות זמינות",
+      checkOrders: "בדוק בדף ההזמנות למשלוחים זמינים",
+      delivered: "נמסר",
+      stop: "תחנה",
+      map: "מפה",
+      list: "רשימה",
+      orderId: "מספר הזמנה",
+      phone: "טלפון",
+      call: "שיחה",
+      changeStatus: "עדכן סטטוס",
+      selectStatus: "בחר סטטוס",
+      selectReason: "בחר סיבה",
+      confirmStatusChange: "אשר שינוי סטטוס",
+      confirmStatusChangeMessage: "האם אתה בטוח שברצונך לשנות את הסטטוס ל",
+      reason: "סיבה",
+      statusChangeNotAllowed: "לא ניתן לשנות את סטטוס ההזמנה הזו",
+      errorUpdatingStatus: "עדכון הסטטוס נכשל",
+      deleteRouteTitle: "מחק מסלול",
+      deleteRouteConfirm: "האם אתה בטוח שברצונך למחוק מסלול זה? לא ניתן לבטל פעולה זו.",
+      routeDeleted: "המסלול נמחק בהצלחה",
+      error: "שגיאה",
+      accessDeniedMessage: "פיצ'ר זה זמין רק לנהגים וחברות משלוחים.",
+      routeNotFound: "המסלול לא נמצא",
+      locationPermission: "הרשאת מיקום",
+      locationNeeded: "נדרשת הרשאת מיקום לניווט.",
+      dispatchTo: "שלח אל"
+    },
+
+    common:{
+      delete:"מחק",
+      cancel:"ביטול",
+      confirm:"אשר",
+      save:"שמור",
+      close:"סגור",
+      edit:"ערוך",
+      view:"צפה",
+      success:"בוצע בהצלחה",
+      error:"שגיאה",
+      search:"חפש",
+      add:"הוסף",
+      complete:"הושלם",
+      selectOption:"בחר",
+      assignOrders:"הקצה משלוחים",
+      loadingOrders:"טוען...",
+      retry:"נסה שוב",
+      loading:"טוען...",
+      loadingMore:"טוען עוד..."
+    },
+
+    balance:{
+      balanceHistory:"היסטוריית יתרות",
+      "paymentType": "סוג תשלום",
+      "transactionType": "עסקה",
+      "otherType": "עדכון",
+      "balanceAfter": "יתרה לאחר עסקה",
+      "currentBalance": "יתרה נוכחית",
+      "noTransactions": "לא נמצאו עסקאות",
+      "loading": "טוען"
+    },
+
     // (tabs)
-    tabs:{
-      index:{
-        title:"לוח מחוונים",
-        boxes:{
-          todayOrders:"הזמנות היום",
-          moneyInBranches:"כסף בסניפים",
-          moneyInBranch:"כסף בסניף",
-          moneyWithDrivers:"כסף עם נהגים",
-          moneyWithDriver:"כסף עם נהג",
-          inWaiting:"בהמתנה",
-          inBranch:"בסניף",
-          onTheWay:"בדרך",
-          delivered:"נמסר",
-          returned:"הוחזר",
-          rescheduled:"נדחה מחדש",
-          stuck:"תקוע",
-          rejected:"נדחה",
-          ofOrders:"מתוך הזמנות",
-          withDriver:"עם נהג"
+    tabs: {
+      index: {
+        title: "בית",
+        summaryTitle:"סיכום משלוחים",
+        statusTitle:"סקירה כללית",
+        boxes: {
+          todayOrders: "הזמנות היום",
+          moneyInBranches: "כסף בסניפים",
+          readyMoney:"כסף מוכן לאיסוף",
+          readyOrders:"משלוחים מוחזרים/מוחלפים מוכנים לאיסוף",
+          moneyInBranch: "כסף בסניף",
+          moneyWithDrivers: "כסף אצל נהגים",
+          moneyWithDriver: "כסף אצלי",
+          inWaiting: "בהמתנה",
+          inBranch: "בסניף",
+          onTheWay: "בדרך",
+          delivered: "נמסר",
+          returned: "הוחזר",
+          rescheduled: "נדחה",
+          stuck: "תקוע",
+          rejected: "נדחה",
+          ofOrders: "מתוך משלוחים",
+          withDriver: "אצל נהג"
+        },
+        balanceTitle:"היתרה שלך",
+        balance:{
+          available:"יתרה נוכחית",
         }
       },
-      orders:{
-        title:"הזמנות",
-        emptyArray:"אין הזמנות להצגה",
-        filters:{
+      orders: {
+        title: "משלוחים",
+        emptyArray: "אין הזמנות להצגה",
+        filters: {
           // filterByGroup
-          all:"הכל",
-          waiting:"בהמתנה",
-          rejected:"נדחה",
-          inBranch:"בסניף",
-          inProgress:"בתהליך",
-          stuck:"תקוע",
-          delayed:"מאוחר",
-          onTheWay:"בדרך",
-          rescheduled:"נדחה מחדש",
-          returnBeforeDeliveredInitiated:"החזרה לפני תחילת המסירה",
-          returnAfterDeliveredInitiated:"החזרה לאחר תחילת המסירה",
-          returned:"הוחזר",
-          returnedInBranch:"הוחזר בסניף",
-          returnedOut:"הוחזר מחוץ לסניף",
-          businessReturnedDelivered:"החזרה עסקית נמסרה",
-          delivered:"נמסר",
-          moneyInBranch:"כסף בסניף",
-          moneyOut:"כסף מחוץ לסניף",
-          businessPaid:"שולם לעסק",
-          completed:"הושלם",
+          all: "הכל",
+          waiting: "בהמתנה",
+          rejected: "נדחה",
+          inBranch: "בסניף",
+          inProgress: "בתהליך",
+          stuck: "תקוע",
+          delayed: "איחור",
+          onTheWay: "בדרך",
+          rescheduled: "נדחה",
+          returnBeforeDeliveredInitiated: "החזרה לפני מסירה החלה",
+          returnAfterDeliveredInitiated: "החזרה לאחר מסירה החלה",
+          returned: "הוחזר",
+          returnedInBranch: "הוחזר בסניף",
+          returnedOut: "בתהליך החזרה/החלפה",
+          businessReturnedDelivered: "החזרה/החלפה נמסרה למוכר",
+          delivered: "נמסר",
+          moneyInBranch: "כסף בסניף",
+          moneyOut: "בתהליך מסירת כסף",
+          businessPaid: "שולם",
+          completed: "הושלם",
+          received:"נאסף",
+          "delivered/received":"נמסר/נאסף",
+          dispatched_to_branch:"נשלח לסניף היעד",
           // searchByGroup
-          orderId:"מספר הזמנה",
-          referenceID:"מספר מזהה",
-          sender:"שולח",
-          receiverName:"שם המקבל",
-          receiverPhone:"טלפון המקבל",
-          receiverCity:"עיר המקבל",
-          receiverArea:"אזור המקבל",
-          receiverAddress:"כתובת המקבל",
-          driverName:"שם הנהג",
+          orderId: "מספר משלוח",
+          referenceID: "מספר מזהה",
+          sender: "שולח",
+          receiverName: "שם לקוח",
+          receiverPhone: "טלפון לקוח",
+          receiverCity: "עיר לקוח",
+          receiverArea: "אזור לקוח",
+          receiverAddress: "כתובת לקוח",
+          driverName: "שם נהג",
           // searchByDateGroup
-          today:"היום",
-          yesterday:"אתמול",
-          thisWeek:"השבוע",
-          thisMonth:"החודש",
-          thisYear:"השנה",
-          selectDate:"בחר תאריך",
+          today: "היום",
+          yesterday: "אתמול",
+          thisWeek: "השבוע",
+          thisMonth: "החודש",
+          thisYear: "השנה",
+          selectDate: "בחר תאריך"
         },
-        order:{
-          states:{
-            pickedUp:"נאסף",
-            deliveredToDestinationBranch:"נמסר לסניף היעד",
-            reschedule:"לדחות מחדש",
-            returnBeforeDeliveredInitiated:"החזרה לפני תחילת המסירה",
-            returnAfterDeliveredInitiated:"החזרה לאחר תחילת המסירה",
-            returned:"הוחזר",
-            delivered:"נמסר",
-            waiting:"בהמתנה",
-            inBranch:"בסניף",
-            inProgress:"בתהליך",
-            rejected:"נדחה",
-            stuck:"תקוע",
-            delayed:"מאוחר"
+        track: {
+          orderTracking: "מעקב משלוח",
+          order: "משלוח",
+          package: "חבילה",
+          quantity: "כמות",
+          weight: "משקל",
+          receivedItems: "פריטים שהתקבלו",
+          receivedQuantity: "כמות שהתקבלה",
+          deliveryStatus: "סטטוס מסירה",
+          branch: "סניף",
+          issue: "יש לך בעיה? הגש תלונה",
+          openCase: "פתח תלונה",
+          unknown: "לא ידוע",
+          "loading": "טוען...",
+          "errorTitle": "סליחה!",
+          "orderNotFound": "ההזמנה לא נמצאה או שלא ניתן לטעון אותה",
+          "goBack": "חזרה",
+          "tryAgain": "נסה שוב",
+          "receiverInfo": "פרטי נמען",
+          "name": "שם",
+          "mobile": "נייד",
+          "secondMobile": "נייד נוסף",
+          "location": "מיקום",
+          "address": "כתובת",
+          "senderInfo": "פרטי שולח",
+          "orderDetails": "פרטי הזמנה",
+          "orderType": "סוג הזמנה",
+          "paymentType": "סוג תשלום",
+          "referenceId": "מספר מזהה",
+          "itemType": "סוג משלוח",
+          "driver": "נהג",
+          "financialDetails": "פרטים פיננסיים",
+          "codValue": "ערך תשלום במסירה",
+          "deliveryFee": "עמלת משלוח",
+          "netValue": "נטו למוכר",
+          "checks": "המחאות",
+          "checkNumber": "מספר המחאה",
+          "checkValue": "ערך המחאה",
+          "checkDate": "תאריך המחאה",
+          "notes": "הערות",
+          "packageDetails": "פרטי חבילה",
+          "package": "חבילה",
+          "quantity": "כמות",
+          "weight": "משקל",
+          "receivedItems": "פריטים שהתקבלו",
+          "receivedQuantity": "כמות שהתקבלה",
+          "deliveryStatus": "סטטוס מסירה",
+          "needHelp": "צריך עזרה",
+          "openCase": "הגש תלונה"
+        },
+        "order": {
+          "states": {
+            "on_the_way_back": "הוחזר לתהליך משלוח",
+            "pickedUp": "נאסף",
+            "deliveredToDestinationBranch": "נמסר לסניף היעד",
+            "rejected": "נדחה",
+            "cancelled": "בוטל",
+            "stuck": "תקוע",
+            "rescheduled": "נדחה",
+            "return_before_delivered_initiated": "החזרה לפני מסירה",
+            "return_after_delivered_initiated": "החזרה לאחר מסירה",
+            "delayed": "איחור",
+            "suspendReasons": {
+              "closed": "סגור",
+              "no_response": "אין תגובה",
+              "cancelled_from_office": "בוטל מהמשרד",
+              "address_changed": "כתובת השתנתה",
+              "not_compatible": "לא תואם למפרט",
+              "delivery_fee_issue": "לא רוצה לשלם עמלת משלוח",
+              "duplicate_reschedule": "בקשה לדחייה כפולה",
+              "receive_issue": "לא רוצה לקבל",
+              "sender_cancelled": "בוטל על ידי השולח",
+              "reschedule_request": "הנמען ביקש לדחות את הקבלה",
+              "incorrect_number": "מספר לא נכון",
+              "not_existing": "הנמען לא קיים בארץ",
+              "cod_issue": "לא רוצה לשלם עבור המשלוח",
+              "death_issue": "לנמען יש מקרה פטירה",
+              "not_exist_in_address": "הנמען לא קיים בכתובת המסירה", 
+              "receiver_cancelled": "בוטל על ידי הנמען",
+              "receiver_no_response": "אין תגובה מהנמען",
+              "order_incomplete": "המשלוח לא הושלם",
+              "receive_request_issue": "הנמען לא ביקש את המשלוח",
+              "other": "סיבה אחרת"
+            },
+            "delivered": "נמסר",
+            "waiting": "בהמתנה",
+            "inBranch": "בסניף",
+            "inProgress": "בתהליך",
+            "delivered": "נמסר",
+            "received": "נאסף",
+            "delivered_received": "נמסר / נאסף"
           },
-          userSenderBoxLabel:"שולח",
-          userClientBoxLabel:"לקוח",
-          userDriverBoxLabel:"נהג",
-          userBoxPhoneContactLabel:"שיחה",
-          userBoxMessageContactLabel:"הודעה",
-          contactPhone:"טלפון",
-          contactWhatsapp:"וואטסאפ",
-          edit:"ערוך",
-          changeStatus:"שנה סטטוס",
-          changeStatusAlert:"אתה עומד לשנות את סטטוס ההזמנה ל",
-          changeStatusAlertNote:"השאר הערה...",
-          changeStatusAlertConfirm:"אישור",
-          changeStatusAlertCancel:"ביטול",
-          print:"הדפס",
-          receivedItems:"פריטים נמסרים",
-          receivedQuantity:"כמות נמסרים"
+          "editPhone": "ערוך",
+          "receiverAddress": "כתובת נמען",
+          "codValue": "ערך תשלום במסירה",
+          "codUpdateReason": "סיבה לשינוי ערך תשלום במסירה",
+          "enterReason": "הזן סיבה לשינוי",
+          "codUpdateNote": "הערה: שינוי ערך תשלום במסירה דורש אישור מהשולח",
+          "loading": "טוען...",
+          "codValue": "ערך משלוח",
+          "error": "שגיאה",
+          "errorFetchingOrder": "שגיאה בטעינת פרטי הזמנה",
+          "ok": "אישור",
+          "phoneUpdateSuccess": "מספרי הטלפון עודכנו בהצלחה",
+          "receiverDetailsUpdateSuccess": "פרטי הנמען עודכנו בהצלחה",
+          "codUpdateRequestSuccess": "בקשת שינוי ערך תשלום במסירה נשלחה בהצלחה",
+          "receiverPhones": "טלפוני נמען",
+          "loading": "טוען...",
+          "error": "שגיאה",
+          "errorFetchingOrder": "שגיאה בטעינת פרטי הזמנה",
+          "ok": "אישור",
+          "missingStatus": "לא נבחר סטטוס",
+          "selectReason": "בחר סיבה",
+          "statusChangeSuccess": "הסטטוס עודכן בהצלחה",
+          "statusChangeError": "עדכון הסטטוס נכשל",
+          "selectBranch": "בחר סניף",
+          "reason": "סיבה",
+          "branch": "סניף",
+          "orderType": "סוג משלוח",
+          "unknown": "לא ידוע",
+          "userSenderBoxLabel": "שולח",
+          "userClientBoxLabel": "לקוח",
+          "userDriverBoxLabel": "נהג",
+          "userBoxPhoneContactLabel": "שיחה",
+          "userBoxMessageContactLabel": "הודעה",
+          "contactPhone": "טלפון",
+          "contactWhatsapp": "וואטסאפ",
+          "edit": "ערוך",
+          "status":"סטטוס",
+          "changeStatus": "שנה סטטוס",
+          "changeStatusAlert": "אתה עומד לשנות את סטטוס המשלוח ל",
+          "changeStatusAlertNote": "רשום הערה...",
+          "changeStatusAlertConfirm": "אשר",
+          "changeStatusAlertCancel": "ביטול",
+          "print": "הדפס",
+          "location": "מיקום",
+          "to_branch":"נשלח לסניף",
+          "to_driver":"נשלח לנהג",
+          "financialDetails": "פרטים פיננסיים",
+          "codValue": "ערך משלוח",
+          "netValue": "נדרש למוכר",
+          "deliveryFee": "עמלת משלוח",
+          "checksAvailable": "המחאות זמינות",
+          "note": "הערה",
+          "add_currency": "הוסף מטבע אחר",
+          "success": "הצלחה",
+          "orderActions": "פעולות הזמנה",
+          "receivedItems": "פריטים שהתקבלו",
+          "receivedQuantity": "כמות שהתקבלה",
+          "noteRequiredForOther": "נדרשת הערה כאשר בוחרים סיבה \"אחר\"",
+          "statusChangeOffline": "הסטטוס יעודכן כאשר תהיה חיבור לאינטרנט",
+          "orderChecks": {
+            "addCheck": "הוסף המחאה",
+            "title": "המחאות הזמנה",
+            "orderId": "מספר הזמנה",
+            "loading": "טוען...",
+            "totalChecks": "סה\"כ המחאות",
+            "totalValue": "ערך כולל",
+            "check": "המחאה",
+            "value": "ערך",
+            "checkNumberPlaceholder": "הזן מספר המחאה",
+            "number": "מספר",
+            "currency": "מטבע",
+            "date": "תאריך",
+            "noChecks": "אין המחאות",
+            "noChecksMessage": "אין המחאות המשויכות להזמנה זו.",
+            "backToOrder": "חזרה",
+            "checkDetails": "פרטי המחאה",
+          }
         },
+        validation: {
+          required: "שדה זה נדרש"
+        },
+        save: "שמור שינויים",
+        cancel: "ביטול",
+        error: "שגיאה",
+        success: "הצלחה",
+        errorMsg: "אירעה שגיאה",
+        errorValidationMsg: "אנא תקן את השגיאות בטופס",
         // (create)
-        create:{
-          edit:"ערוך הזמנה",
-          create:"צור הזמנה",
-          submit:"שלח",
-          sections:{
-            sender:{
-              title:"שולח",
-              fields:{
-                sender:"שולח",
+        create: {
+          edit: "ערוך משלוח",
+          create: "צור הזמנה",
+          submit: "שלח",
+          loading: "טוען...",
+          success:"הפעולה הצליחה",
+          successMsg:"המשלוח נרשם בהצלחה",
+          error: "שגיאה",
+          errorValidationMsg: "אנא בדוק את השדות המסומנים כשגויים",
+          errorMsg: "אירעה שגיאה בלתי צפויה, אנא פנה לסוכן התמיכה לעזרה",
+          insufficientBalance:"יתרה לא מספקת",
+          insufficientBalanceMsg:"היתרה שלך לא מספיקה להשלמת פעולה זו",
+          "save": "שמור שינויים",
+          "cancel": "ביטול",
+          "phoneUpdateSuccess": "מספרי הטלפון עודכנו בהצלחה",
+          "receiverDetailsUpdateSuccess": "פרטי הנמען עודכנו בהצלחה",
+          sections: {
+            referenceId:{
+              title:"מספר מזהה (אופציונלי)",
+              explain:"הכנס את קוד QR שלך אם קיים"
+            },
+            sender: {
+              title: "שולח",
+              fields: {
+                "sender": "שולח",
+                "with_money_receive": "עם קבלת כסף",
+                "my_balance_deduct": "חיוב מהיתרה שלי",
+                "sender_deduct": "חיוב מהיתרת השולח",
+                "processing_return": "בתהליך החזרה",
+                "please_wait": "אנא המתן...",
+                "return_success": "החזרה בוצעה בהצלחה",
+                "balance_returned": "היתרה הוחזרה בהצלחה",
+                "return_error": "שגיאה בהחזרה",
+                "return_failed": "החזרת היתרה נכשלה",
+                "deduction_error": "שגיאה בחיוב",
+                "deduction_failed": "עיבוד החיוב נכשל",
+                "updating_deductions": "מעדכן חיובים",
+                "update_deduction_failed": "עדכון חיובים נכשל",
+                "deduction_success": "חיוב בוצע בהצלחה",
+                "deduction_processed": "חיוב בוצע בהצלחה",
+                "processing_deduction": "מעבד חיוב",
+                "select_deduction_method": "בחר שיטת חיוב",
+                "choose_deduction_method": "בחר כיצד לחייב את היתרה",
+                "manual_deduction": "חיוב ידני",
+                "auto_deduction": "חיוב אוטומטי",
+                "checking_balance": "בודק יתרה",
+                "select_deduction_currency": "בחר מטבע חיוב",
+                "choose_currency": "בחר מטבע",
+                "available": "זמין",
+                "needed": "נדרש",
+                "deduct_amount": "סכום לחיוב",
+                "current_balance": "יתרה נוכחית",
+                "new_balance": "יתרה חדשה",
+                "deduction_ready": "חיוב מוכן",
+                "deduction_on_submit": "החיוב יבוצע בעת השליחה",
+                "insufficient_balance_for": "היתרה לא מספיקה עבור",
+                "confirm_auto_deductions": "אשר חיובים אוטומטיים",
+                "system_will_deduct": "המערכת תחייב",
+                "from_available_balances": "מהיתרות הזמינות",
+                "deductions_ready": "חיובים מוכנים",
+                "deductions_on_submit": "חיובים יבוצעו בעת השליחה",
+                "sender_required": "נדרש שולח",
+                "cod_required": "נדרש ערך משלוח",
+                "no_cod_values": "לא נמצאו ערכי תשלום במסירה",
+                "cancel": "ביטול",
+                "confirm": "אשר",
+                "confirm_deduction": "אשר חיוב",
+                "confirm_return": "אשר החזרה",
+                "confirm_balance_return": "אשר החזרת יתרה",
+                "return_balance_confirmation": "האם ברצונך להחזיר את הסכומים שחויבו קודם ליתרת השולח?",
+                "yes": "כן",
+                "no": "לא",
+                "ok": "אישור",
+                "currency_mismatch": "שגיאת התאמת מטבע",
+                "exceed_balance": "חרג מהיתרה",
+                "exceed_balance_desc": "אפשר חריגה מהיתרה",
+                "balance_confirmation": "אישור יתרה",
+                "balance_change_confirmation": "פעולה זו תשפיע על יתרת השולח. האם ברצונך להמשיך?",
+                "return_balance": "החזר יתרה",
+                "deduction_amounts": "סכומים לחיוב",
+                "balance_after": "יתרה לאחר",
+                "auto_deduction_notice": "הערת חיוב אוטומטי",
+                "auto_deduction_message": "החיוב יתבצע אוטומטית מהיתרה שלך בעת האישור, אם אין לך יתרה מספקת אנא פנה לסניף הקרוב כדי לשלם עבור פעולה זו אצל פקיד הקבלה."
               }
             },
-            client:{
-              title:"לקוח",
-              fields:{
-                client:"לקוח",
-                firstPhone:"מספר טלפון",
-                secondPhone:"מספר טלפון שני",
-                city:"עיר",
-                area:"אזור",
-                address:"כתובת"
+            client: {
+              title: "לקוח",
+              fields: {
+                found:"נמצא אוטומטית",
+                name:"שם",
+                client: "לקוח",
+                firstPhone: "מספר טלפון",
+                secondPhone: "מספר טלפון שני",
+                city: "עיר",
+                area: "אזור",
+                address: "כתובת",
+                searchReceiver:"חפש לקוח",
+                enterPhone:"הזן מספר טלפון",
+                noReceivers:"אין לקוחות",
+                found:"נמצא",
+                receivers:"לקוחות",
+                search_error:"יש להזין מספר טלפון תקין",
+                no_results:"אין לקוחות",
+                enter_more:"הזן לפחות 3 ספרות לחיפוש",
+                add_new:"הוסף לקוח חדש",
+                enter_valid_phone:"הזן מספר טלפון תקין",
+                add_new_receiver:"הוסף לקוח חדש",
+                unnamed:"לא ידוע",
+                search_receiver:"הזן טלפון לקוח",
+                search_placeholder:"הזן מספר טלפון"
               }
             },
-            cost:{
-              title:"עלות",
-              fields:{
-                packageCost:"עלות החבילה",
-                deliveryFee:"עמלת משלוח",
-                isReplaced:"הוחלף",
+            cost: {
+              title: "עלות",
+              fields: {
+                "netValue": "ערך נטו",
+                "checks":"המחאות",
+                "packageCost": "מחיר משלוח ללא משלוח",
+                "totalPackageCost": "מחיר משלוח כולל משלוח",
+                "amount": "סכום",
+                "deliveryFee": "עמלת משלוח",
+                "isReplaced": "הוחלף",
+                "insufficient_balance": "יתרה לא מספקת",
+                "balance": "יתרה נוכחית",
+                "insufficient_balance_alert": "לא מספיק להשלמת פעולה זו",
+                "missing_fields": "שדות חסרים",
+                "fields_required": "יש להזין פרטי נמען או עמלת משלוח או ערך תשלום במסירה"
               }
             },
-            details:{
-              title:"פרטי ההזמנה",
-              fields:{
-                product:"מוצר",
-                quantity:"כמות",
-                weight:"משקל",
-                orderType:"סוג ההזמנה"
+            details: {
+              title: "פרטי משלוח",
+              paymentDetailsTitle:"פרטי תשלום",
+              fields: {
+                description:"תיאור",
+                product: "מוצר",
+                quantity: "מספר פריטים",
+                weight: "משקל",
+                orderType: "סוג משלוח"
               }
             },
-            orderTypes:{
-              delivery:"Delivery",
-              receive:"Receive",
-              "delivery/receive":"Delivery / Recieve"
+            orderTypes: {
+              title: "סוג משלוח",
+              titlePlaceholder:"בחר סוג משלוח",
+              delivery: "משלוח",
+              receive: "איסוף",
+              "delivery/receive": "משלוח / החלפה",
+              payment: "תשלום",
+              receivedItems: "פריטים שהתקבלו",
+              receivedQuantity: "כמות שהתקבלה"
             },
-            currencyList:{
-              ILS:"ILS",
-              USD:"USD",
-              JOD:"JOD"
+            currencyList: {
+              title: "מטבע",
+              ILS: "שקל",
+              USD: "דולר",
+              JOD: "דינר"
             },
-            paymentType:{
-              cash:"Cash",
-              check:"Check",
-              "cash/check":"Cash/Check"
+            itemsContentTypeList:{
+              "normal": "רגיל",
+              "large": "גדול",
+              "extra_large": "גדול מאוד",
+              "fragile": "שביר",
+              "high_value": "ערך גבוה"
             },
-            itemsCotnentType:{
-              normal:"Noraml"
+            paymentType: {
+              title: "סוג תשלום",
+              cash: "מזומן",
+              check: "המחאה",
+              "cash/check": "מזומן/המחאה"
+            },
+            itemsCotnentType: {
+              title: "סוג תוכן פריטים",
+              normal: "רגיל"
+            },
+            notes: {
+              title: "הערות",
+              note: "הערה"
+            },
+            checks:{
+              add:"הוסף המחאה",
+              check:"המחאה",
+              number:"מספר",
+              value:"סכום",
+              currency:"מטבע",
+              date:"תאריך"
             }
+          },
+            "validation": {
+            "required": "שדה זה נדרש"
           }
         }
       },
-      collections:{
-        title:"גבייה",
-        options:{
-          collect:"גבה את הכסף שלך",
-          money:"גביית כספים",
-          driver:"גביית נהגים",
-          returned:"גבייה מוחזרת",
-          runsheet:"גביית גיליון ריצה",
+      collections: {
+        title: "גבייה",
+        close:"סגור",
+        options: {
+          "driver_money_collections": "גביית כספים מנהגים",
+          "business_money_collections": "גביית כספים מעסקים",
+          "driver_returned_collections": "גביית החזרות/קבלות מנהגים",
+          "business_returned_collections": "גביית החזרות/קבלות מעסקים",
+          "runsheet_collections": "גביית משלוחים בתהליך",
+          "sent_collections": "גבייה שנשלחה עם נהגים",
+          "my_money_collections":"גביית הכספים שלי",
+          "my_returned_collections":"גביית החזרות/קבלות שלי",
+          "driver_own_collections":"גביית הכספים שלי מעסקים",
+          "driver_own_sent_collections":"גבייה שנשלחה לעסקים"
         }
       },
-      settings:{
-        title:"הגדרות",
-        options:{
-          users:"משתמשים",
-          language:{
-            title:"שפה",
-            options:{
-              ar:"ערבית",
-              en:"אנגלית",
-              he:"עברית"
+      settings: {
+        title: "הגדרות",
+        options: {
+          users: "משתמשים",
+          language: {
+            title: "שפה",
+            options: {
+              ar: "ערבית",
+              en: "אנגלית",
+              he: "עברית"
             }
           },
-          changePassword:"שנה סיסמה",
-          contactUs:"צור קשר",
-          aboutUs:"אודותינו",
-          locations:"מיקומים",
-          logout:"התנתק"
+          theme:{
+            title:"עיצוב",
+            options:{
+              light:"בהיר",
+              dark:"כהה",
+              system:"אוטומטי"
+            }
+          },
+          complaints: "תלונות",
+          changePassword: "שנה סיסמה",
+          changePasswordFields: {
+            currentPasswordRequired: "נדרשת סיסמה נוכחית",
+            newPasswordRequired: "נדרשת סיסמה חדשה",
+            passwordValidationRequired: "הסיסמה חייבת להכיל לפחות 8 תווים",
+            confirmPasswordRequired: "אנא אשר סיסמה",
+            passwordMatchValidation: "הסיסמאות לא תואמות",
+            success: "הצלחה",
+            successMsg: "הסיסמה שונתה בהצלחה",
+            changePass: "שנה סיסמה",
+            tips: "טיפים לאבטחה",
+            usage: "השתמש ב-8 תווים לפחות",
+            letterInclusion: "כלול אותיות גדולות",
+            numbersInclusion: "כלול מספרים וסמלים",
+            currentPass: "סיסמה נוכחית",
+            currentPassHint: "הזן את הסיסמה הנוכחית",
+            newPass: "סיסמה חדשה",
+            newPassHint: "הזן סיסמה חדשה",
+            confirmPassword: "אשר סיסמה",
+            weak: "חלשה",
+            medium: "בינונית",
+            strong: "חזקה",
+            veryStrong: "חזקה מאוד",
+            updating: "מעדכן..."
+          },          
+          contactUs: "צור קשר",
+          aboutUs: "אודות",
+          locations: "מיקומים",
+          logout: "התנתק",
+          deleteAccount: "מחק חשבון",
+          deleteAccountHint: "האם אתה בטוח שברצונך למחוק את החשבון?",
+          switchAccount:"החלף חשבון",
+          otherAccounts:"חשבונות נוספים",
+          addNewAccount:"הוסף חשבון חדש",
+          currentAccount:"חשבון נוכחי",
+          active:"פעיל",
+          addNewAccount: "הוסף חשבון חדש",
+          addAccount:"הוסף חשבון",
+          accountSwitched:"החשבון הוחלף",
+          accountSwitchedMessage:"החלפת החשבון בוצעה בהצלחה",
+          accountAlreadyExists:"החשבון כבר קיים",
+          accountAdded:"חשבון נוסף",
+          accountAddedMessage:"החשבון נוסף בהצלחה",
+          removeAccount:"מחק חשבון",
+          removeAccountMessage:"האם אתה בטוח שברצונך למחוק חשבון זה? תוכל להוסיף אותו שוב מאוחר יותר.",
+          cancel:"ביטול",
+          remove:"מחק"
         }
       }
     },
 
     // (collection)
-    collections:{
-      title:"גבייה",
-      emptyArray:"אין גבייה להצגה",
-      filters:{
-        //filterByGroup
-        all:"הכל",
-        returnedInBranch:"הוחזר בסניף",
-        deleted:"נמחק",
-        returnedOut:"הוחזר מחוץ לסניף",
-        returnedDelivered:"הוחזר ונמסר",
-        completed:"הושלם",
-        moneyInBranch:"כסף בסניף",
-        moneyOut:"כסף מחוץ לסניף",
-        paid:"שולם",
-        pending:"ממתין",
-        inDispatchedToBranch:"בתהליך משלוח לסניף",
-        partial:"חלקי",
-        returnedDelivered:"הוחזר ונמסר",
+    collections: {
+      title: "גבייה",
+      emptyArray: "אין גבייה להצגה",
+      filters: {
+        // filterByGroup
+        all: "הכל",
+        returnedInBranch: "הוחזר בסניף",
+        deleted: "נמחק",
+        returnedOut: "הוחזר חיצוני",
+        returnedDelivered: "החזרה נמסרה",
+        completed: "הושלם",
+        moneyInBranch: "כסף בסניף",
+        moneyOut: "כסף בחוץ",
+        paid: "שולם",
+        pending: "ממתין",
+        inDispatchedToBranch: "בתהליך משלוח לסניף",
+        partial: "חלקי",
+        returnedDelivered: "החזרה נמסרה",
         // searchByGroup
-        collectionId:"מספר גבייה",
-        sender:"שולח",
-        driver:"נהג",
-        prevDriver:"נהג קודם",
-        currentBranch:"סניף נוכחי",
+        collectionId: "מספר גבייה",
+        sender: "שולח",
+        driver: "נהג",
+        prevDriver: "נהג קודם",
+        currentBranch: "סניף נוכחי",
         // searchByDateGroup
-        today:"היום",
-        yesterday:"אתמול",
-        thisWeek:"השבוע",
-        thisMonth:"החודש",
-        thisYear:"השנה",
-        selectDate:"בחר תאריך"
+        today: "היום",
+        yesterday: "אתמול",
+        thisWeek: "השבוע",
+        thisMonth: "החודש",
+        thisYear: "השנה",
+        selectDate: "בחר תאריך"
       },
-      collection:{
-        numberOfOrders:"מספר הזמנות",
-        numberOfCollections:"מספר גבייה",
-        moneyToDeliver:"כסף למסירה",
-        moneyToCollect:"כסף לגבייה",
-        checksToDeliver:"צ'קים למסירה",
-        currentBranch:"סניף נוכחי",
-        toBranch:"לסניף",
-        print:"הדפס",
-        collections:"גבייה",
-        orders:"הזמנות",
+      collection: {
+        numberOfOrders: "מספר משלוחים",
+        numberOfCollections: "מספר גבייה",
+        moneyToDeliver: "כסף למסירה",
+        moneyToCollect: "סה\"כ גביית כספים",
+        checksToDeliver: "המחאות למסירה",
+        currentBranch: "סניף נוכחי",
+        toBranch: "סניף יעד",
+        print: "הדפס",
+        collections: "גבייה",
+        orders: "משלוחים",
+        actions: "בחר פעולה",
+        "request_money": "בקש את הכסף שלך",
+        "prepare_money": "הכן את הכסף שלי",
+        "send_money": "שלח כסף אל",
+        "request_package": "בקש את המשלוחים שלך",
+        "prepare_package": "הכן את המשלוחים שלי",
+        "send_package": "שלח משלוחים אל",
+        "confirmPaymentMessage": "על ידי השלמת פעולה זו, אתה מאשר שקיבלת את הסכום, והחברה אינה אחראית עוד לכל תלונה עתידית",
+        "cancel": "ביטול",
+        "confirm": "אשר",
+        "confirmReturnedMessage": "על ידי ביצוע זה, אתה מאשר שקיבלת את המשלוח, והחברה אינה אחראית עוד לכל תלונה עתידית לגבי קבלתו.",
+        confirmTitle:"אשר קבלה",
+        pendingConfirmations:"אישורים ממתינים",
+        moneyCollections:"גביית כספים",
+        packageCollections:"גביית משלוחים",
+        noCollectionsToConfirm:"אין גבייה לאישור",
+        collectionId:"מספר גבייה",
+        orderIds:"מספרי משלוחים",
+        totalNetValue:"ערך נטו כולל",
+        confirmPayment:"אשר תשלום",
+        confirmDelivery:"אשר מסירה",
+        partialSuccess:"הצלחה חלקית",
+        updatedCollections:"גבייה עודכנה",
+        success:"הצלחה",
+        statusUpdated:"הסטטוס עודכן",
+        failedCollections:"גבייה שלא עודכנה בהצלחה",
+        error:"שגיאה",
+        tryAgainLater:"אנא נסה שוב מאוחר יותר",
+        deliveryType:"סוג משלוח",
+        orderCount:"מספר משלוחים",
+        whatsappOptions:"אפשרויות וואטסאפ"
       }
     },
 
     // (users)
-    users:{
-      title:"משתמשים",
-      emptyArray:"אין משתמשים להצגה",
-      filters:{
+    users: {
+      title: "משתמשים",
+      emptyArray: "אין משתמשים להצגה",
+      filters: {
         // filterByGroup
-        all:"הכל",
-        active:"פעיל",
-        inactive:"לא פעיל",
-        //searchByGroup
-        userId:"מספר משתמש",
-        name:"שם",
-        commercial:"שם מסחרי",
-        email:"אימייל",
-        phone:"טלפון",
-        branch:"סניף",
-        role:"תפקיד",
-        city:"עיר",
-        area:"אזור",
-        address:"כתובת",
-        //searchByDateGroup
-        today:"היום",
-        yesterday:"אתמול",
-        thisWeek:"השבוע",
-        thisMonth:"החודש",
-        thisYear:"השנה",
-        selectDate:"בחר תאריך",
+        all: "הכל",
+        active: "פעיל",
+        inactive: "לא פעיל",
+        // searchByGroup
+        userId: "מספר משתמש",
+        name: "שם",
+        commercial: "שם מסחרי",
+        email: "אימייל",
+        phone: "טלפון",
+        branch: "סניף",
+        role: "תפקיד",
+        city: "עיר",
+        area: "אזור",
+        address: "כתובת",
+        // searchByDateGroup
+        today: "היום",
+        yesterday: "אתמול",
+        thisWeek: "השבוע",
+        thisMonth: "החודש",
+        thisYear: "השנה",
+        selectDate: "בחר תאריך"
       },
-      user:{
-        name:"שם",
-        role:"תפקיד",
-        edit:"ערוך"
+      user: {
+        name: "שם",
+        role: "תפקיד",
+        edit: "ערוך",
+        location:"מיקום"
       },
-      //(create_user)
-      create:{
-        edit:"ערוך משתמש",
-        create:"צור משתמש",
-        submit:"שלח",
-        sections:{
-          user:{
-            title:"משתמש",
-            fields:{
-              name:"שם",
-              commercial:"שם מסחרי",
-              firstPhone:"מספר טלפון",
-              secondPhone:"מספר טלפון שני",
-              affillator:"שותף",
-              city:"עיר",
-              area:"אזור",
-              address:"כתובת",
+      // (create_user)
+      create: {
+        edit: "ערוך משתמש",
+        create: "צור משתמש",
+        submit: "שלח",
+        loading: "טוען...",
+        error: "שגיאה",
+        errorValidationMsg: "אנא בדוק את השדות המסומנים",
+        errorMsg: "אירעה שגיאה בלתי צפויה, אנא פנה לסוכן התמיכה לעזרה",
+        success:"הפעולה הצליחה",
+        successMsg:"הפעולה בוצעה בהצלחה",
+        sections: {
+          user: {
+            title: "משתמש",
+            fields: {
+              name: "שם",
+              commercial: "שם מסחרי",
+              firstPhone: "מספר טלפון",
+              secondPhone: "מספר טלפון שני",
+              affillator: "חתימה",
+              city: "עיר",
+              area: "אזור",
+              address: "כתובת"
             }
           },
-          details:{
-            title:"פרטים",
-            fields:{
-              role:"תפקיד",
-              pricelist:"רשימת מחירים"
+          details: {
+            title: "פרטים",
+            fields: {
+              role: "תפקיד",
+              pricelist: "רשימת מחירים",
+              branch:"סניף",
+              manager:"מנהל חשבון"
             }
           }
         }
       }
     },
 
+    complaints: {
+      title: "תלונות",
+      complaint: "תלונה",
+      complaintId: "מספר תלונה",
+      createdBy: "נוצר על ידי",
+      supportAgent: "סוכן תמיכה",
+      submit_complaint: "הגש תלונה",
+      openComplaint: "פתח תלונה להזמנה",
+      subject: "נושא",
+      description: "תיאור",
+      describe: "תאר את תלונתך...",
+      submit: "שלח",
+      success: "הצלחה",
+      error: "שגיאה",
+      employeeName: "שם עובד",
+      successMsg: "התלונה הוגשה בהצלחה.",
+      errorMsg: "הגשת התלונה נכשלה.",
+      errorFailed: "אירעה שגיאה.",
+      errorValidationMsg: "אנא מלא את כל השדות",
+      orderId: "מספר משלוח",
+      resolved: "נפתר",
+      createdAt: "נוצר ב",
+      messagePlaceholder: "כתוב הודעה...",
+      notFound: "התלונה לא נמצאה",
+      // searchByDateGroup
+      today: "היום",
+      yesterday: "אתמול",
+      thisWeek: "השבוע",
+      thisMonth: "החודש",
+      thisYear: "השנה",
+      selectDate: "בחר תאריך",
+      status: {
+        title: "סטטוס",
+        all: "הכל",
+        open: "בטיפול",
+        closed: "סגור"
+      },
+      ok:"אישור",
+      order:"משלוח",
+      subjectPlaceholder:"הזן כותרת תלונה",
+      describePlaceholder:"הזן תיאור הבעיה",
+      "noComplaints": "אין תלונות",
+      "noComplaintsDesc": "אין תלונות התואמות את המסננים שלך.",
+      "newComplaint": "תלונה חדשה",
+      "actions": "פעולות",
+      "markAsResolved": "סמן כפתור",
+      "respond": "הגב לתלונה",
+      "viewDetails": "צפה בפרטים",
+      "loading": "טוען...",
+      "notFoundTitle": "לא נמצא",
+      "goBack": "חזרה",
+      "issue": "בעיה",
+      "conversation": "שיחה",
+      "noMessages": "אין הודעות עדיין",
+      "startConversation": "התחל שיחה על ידי שליחת הודעה",
+      "you": "אתה",
+      "supportAgent": "סוכן תמיכה"
+    },
+
+    // Notifications
+    notifications:{
+      title:"הודעות",
+      deleteAll:"מחק הכל",
+      noNotifications:"אין הודעות",
+      order:"הזמנה",
+      noNotificationsTitle:"אין הודעות",
+      loading:"טוען...",
+      newNotification:"הודעה חדשה",
+      newNotificationMessage:"יש לך הודעה חדשה",
+      deleteAllConfirm:"האם אתה בטוח שברצונך למחוק את כל ההודעות?",
+      confirmation:{
+        processing:"מעבד...",
+        pleaseWait:"אנא המתן...",
+        success:"הצלחה",
+        error:"שגיאה",
+        confirm:"אשר",
+        ok:"אישור",
+        errorFailed:"אירעה שגיאה",
+        errorValidationMsg:"אנא מלא את כל השדות",
+        cancelled:"ביטול",
+        cancelledMessage:"הבקשה בוטלה",
+        successMessage:"האישור עובד בהצלחה",
+        transactionId:"מספר עסקה",
+        title:"נדרש אישור",
+        message:"האם ברצונך לאשר פעולה זו?",
+        confirm:"אשר",
+        cancel:"ביטול",
+        cod_update:{
+          title:"אשר עדכון ערך משלוח",
+          message:"האם ברצונך לאשר שינוי ערך משלוח?",
+          approve:"אשר",
+          reject:"דחה",
+          successMessage:"ערך המשלוח עודכן בהצלחה"
+        },
+        money_in:{
+          title:"אשר עסקת תשלום",
+          message:"האם ברצונך לאשר עסקת תשלום?",
+          confirm:"אשר",
+          cancel:"ביטול",
+          successMessage:"העסקה אושרה בהצלחה",
+          amount:"סכום",
+          currency:"מטבע",
+          recipient:"נמען"
+        },
+        money_out:{
+          title:"אשר עסקת משיכה",
+          message:"האם ברצונך לאשר עסקת משיכה?",
+          confirm:"אשר",
+          cancel:"ביטול",
+          successMessage:"העסקה אושרה בהצלחה",
+          amount:"סכום",
+          currency:"מטבע",
+          recipient:"נמען"
+        }
+      }
+    },
+
     // Search
-    search:{
-      placeholder:"חיפוש",
-      by:"לפי",
-      searchBy:"חפש לפי",
-      searchByDate:"חפש לפי תאריך",
-      cancel:"ביטול",
-      confirm:"אישור"
+    search: {
+      placeholder: "חיפוש",
+      by: "לפי",
+      searchBy: "חיפוש לפי",
+      searchByDate: "חיפוש לפי תאריך",
+      cancel: "ביטול",
+      confirm: "אשר",
+      all: "הכל",
+      selectFilter: "בחר מסנן",
+      results: "תוצאות"
     },
 
     // pickerModal
-    picker:{
-      choose:"בחר",
-      cancel:"ביטול",
-      searchPlaceholder:"חיפוש"
+    picker: {
+      choose: "בחר",
+      cancel: "ביטול",
+      searchPlaceholder: "חיפוש"
     },
 
     // (camera)
-    camera:{
-      permission:{
-        notGranted:"אין הרשאה למצלמה",
-        request:"מבקש הרשאה למצלמה...",
+    camera: {
+      permission: {
+        notGranted: "הרשאת מצלמה לא ניתנה",
+        request: "מבקש הרשאת מצלמה..."
       },
-      scanText:"הנח ברקוד בתוך המסגרת",
-      scanDuplicateTextError:"הפריט כבר נסרק",
-      scanInvalidTextError:"פורמט סריקה לא תקין",
-      scanAgainTapText:"הקש כדי לסרוק שוב",
-      note:"השאר הערה...",
-      fromBranch:"מסניף",
-      toBranch:"לסניף",
-      confirm:"אישור",
-      cancel:"ביטול",
-      totalScanned:"סה\"כ נסרק"
+      scanText: "הצב ברקוד בתוך המסגרת",
+      scanDuplicateTextError: "הפריט נסרק בעבר",
+      scanInvalidTextError: "פורמט סריקה לא תקין",
+      scanAgainTapText: "הקש לסרוק שוב",
+      note: "השאר הערה...",
+      fromBranch: "מהסניף",
+      toBranch: "לסניף",
+      confirm: "אשר",
+      cancel: "ביטול",
+      totalScanned: "סה\"כ נסרק",
+      enterOrderId:"הזן מספר סידורי של משלוח",
+      add:"הוסף",
+      toDriver:"לנהג",
     },
 
     // (change_password)
-    chnagePassword:{
-      title:"שנה סיסמה",
-      currentPass:"סיסמה נוכחית",
-      currentPassHint:"הזן את הסיסמה הנוכחית שלך המשמשת להתחברות",
-      newPass:"סיסמה חדשה",
-      changePass:"שנה סיסמה"
+    chnagePassword: {
+      title: "שנה סיסמה",
+      currentPass: "סיסמה נוכחית",
+      currentPassHint: "הזן את הסיסמה הנוכחית המשמשת להתחברות",
+      newPass: "סיסמה חדשה",
+      changePass: "שנה סיסמה"
     },
 
     // (contact_us)
-    contact:{
-      title:"צור קשר",
-      open:"פתוח",
-      closed:"סגור",
-      weAre:"אנחנו",
-      now:"עכשיו",
-      local:"מקומי",
-      facebook:"פייסבוק",
-      tiktok:"טיקטוק",
-      instagram:"אנסטגרם",
-      whatsapp:"וואטסאפ",
-      visitSite:"בקר באתר שלנו"
+    contact: {
+      title: "צור קשר",
+      open: "פתוח",
+      closed: "סגור",
+      weAre: "המשרדים שלנו",
+      now: "עכשיו",
+      local: "מקומי",
+      facebook: "פייסבוק",
+      tiktok: "טיקטוק",
+      instagram: "אינסטגרם",
+      whatsapp: "וואטסאפ",
+      visitSite: "בקר באתר שלנו",
+      openingHours:"שעות פעילות: 9:00 - 22:00",
+      closingHours:"נחזור מחר ב-9:00",
+      connectWithUs:"צור איתנו קשר"
     },
 
     // (about_us)
-    about:{
-      title:"אודותינו",
-      aboutLabel:"אודות חברת טייאר",
-      aboutDesc:"בטייאר, אנו מתמחים במשלוח חבילות באיכות גבוהה ברחבי הגדה המערבית, ירושלים וארץ 48. המשימה שלנו היא לספק פתרונות משלוח מהירים, אמינים ובטוחים המותאמים לצרכים שלך. בין אם מדובר במשלוחים עסקיים או משלוחים אישיים, אנו מבטיחים שכל חבילה תגיע ליעדה בבטחה ובזמן. עם מחויבות למצוינות ולשביעות רצון הלקוחות, טייאר היא השותף האמין שלך ללוגיסטיקה חלקה. התנסה במשלוח ללא טרחה עם צוות שנותן עדיפות ליעילות ולטיפול.",
+    about: {
+      title: "אודות",
+      aboutLabel: "אודות טיאר",
+      aboutDesc: "בטיאר, אנו מתמחים במתן שירותי משלוח באיכות גבוהה ברחבי הגדה המערבית, ירושלים ואזורי 48. המשימה שלנו היא לספק פתרונות משלוח מהירים, אמינים ובטוחים המותאמים לצרכיך. בין אם מדובר במשלוחים עסקיים או משלוחים אישיים, אנו מבטיחים שכל חבילה תגיע ליעדה בבטחה ובזמן. עם המחויבות שלנו למצוינות ולשביעות רצון הלקוחות, טיאר היא השותף האמין שלך לחוויה לוגיסטית חלקה. נסה משלוח ללא דאגות עם צוות שנותן עדיפות ליעילות ולטיפול."
     },
 
     // (locations)
-    locations:{
-      title:"מיקומים",
-      tulkarm:{
-        title:"טול כרם",
-        desc:"המיקום המרכזי"
+    locations: {
+      title: "מיקומים",
+      tulkarm: {
+        title: "טול כרם",
+        desc: "המרכז הראשי"
       },
-      hebron:{
-        title:"חברון",
-        desc:"מרכז משלוחים בחברון"
+      hebron: {
+        title: "חברון",
+        desc: "מרכז משלוחים בחברון"
       },
-      ramallah:{
-        title:"רמאללה",
-        desc:"מרכז משלוחים ברמאללה"
+      ramallah: {
+        title: "רמאללה",
+        desc: "מרכז משלוחים ברמאללה"
       },
-      jenin:{
-        title:"ג'נין",
-        desc:"מרכז משלוחים בג'נין"
+      jenin: {
+        title: "ג'נין",
+        desc: "מרכז משלוחים בג'נין"
       }
     },
 
     // greeting
-    greeting:{
-      morning:"בוקר טוב! ☀️",
-      afternoon:"צהריים טובים! 🌤️",
-      evening:"ערב טוב! 🌙"
+    greeting: {
+      morning: "בוקר טוב! ☀️",
+      afternoon: "צהריים טובים! 🌤️",
+      evening: "ערב טוב! 🌙"
     },
 
     // track
-    track:{
-      title:"עקוב אחר החבילה שלך",
-      desc:"הזן מספר הזמנה כדי להתחיל במעקב",
-      placeholder:"לדוגמה: 12321411",
+    track: {
+      title: "עקוב אחר משלוח שלך",
+      desc: "הזן מספר משלוח כדי להתחיל מעקב",
+      placeholder: "לדוגמה: 12321411"
     },
 
     roles: {
-      admin: "מנהל מערכת",
+      admin: "מנהל",
       business: "עסק",
-      manager: "מנהל",
+      manager: "אדמיניסטרטיבי",
       driver: "נהג",
       accountant: "רואה חשבון",
-      entery: "הזנת נתונים",
+      entery: "מזין נתונים",
       warehouse_admin: "מנהל מחסן",
-      warehouse_staff: "צוות מחסן",
+      warehouse_staff: "עובד מחסן",
       delivery_company: "חברת משלוחים",
-      support_agent: "נציג תמיכה",
+      support_agent: "סוכן תמיכה",
       sales_representative: "נציג מכירות"
     }
   }

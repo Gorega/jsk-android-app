@@ -1,7 +1,7 @@
 import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useLocalSearchParams, usePathname } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -29,6 +29,12 @@ export default function Orders() {
     const [refreshing, setRefreshing] = useState(false);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const isOnOrdersScreen = useRef(true);
+
+    // Track if we're on the orders screen
+    useEffect(() => {
+        isOnOrdersScreen.current = pathname === "/(tabs)/orders";
+    }, [pathname]);
 
     // Reset filters when reset param changes
     useEffect(() => {
@@ -70,6 +76,12 @@ export default function Orders() {
         try {
             setRefreshing(true);
             setPage(1);
+            // Clear all filters when refreshing
+            setSearchValue("");
+            setActiveFilter("");
+            setActiveSearchBy("");
+            setActiveDate("");
+            setSelectedDate("");
             await fetchData(1, false);
         } catch (error) {
         } finally {
@@ -121,23 +133,14 @@ export default function Orders() {
         name: translations[language].tabs.orders.filters.inBranch,
         action: "in_branch"
     }, {
-        name: translations[language].tabs.orders.filters.inProgress,
-        action: "in_progress"
-    }, {
         name: translations[language].tabs.orders.filters.stuck,
         action: "stuck"
-    }, {
-        name: translations[language].tabs.orders.filters.delayed,
-        action: "delayed"
-    }, {
-        name: translations[language].tabs.orders.filters.onTheWay,
-        action: "on_the_way"
-    }, {
+    },{
         name: translations[language].tabs.orders.filters.rescheduled,
         action: "reschedule"
     }, {
-        name: translations[language].tabs.orders.filters.dispatched_to_branch,
-        action: "dispatched_to_branch"
+        name: translations[language].tabs.orders.filters.onTheWay,
+        action: "on_the_way"
     }, {
         name: translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
         action: "return_before_delivered_initiated"
@@ -198,9 +201,6 @@ export default function Orders() {
         name: translations[language].tabs.orders.filters.receiverCity,
         action: "receiver_city"
     }, {
-        name: translations[language].tabs.orders.filters.receiverArea,
-        action: "receiver_area"
-    }, {
         name: translations[language].tabs.orders.filters.receiverAddress,
         action: "receiver_address"
     }, {
@@ -243,6 +243,7 @@ export default function Orders() {
             if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
             queryParams.append('page', pageNumber);
             queryParams.append('language_code', language);
+
 
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`, {
                 method: "GET",
@@ -289,19 +290,131 @@ export default function Orders() {
         }
     }, [loadingMore, data, page, fetchData]);
 
+    // Function to handle order status updates locally
+    const handleOrderStatusUpdate = useCallback((orderId, statusLabel, statusKey) => {
+        try {
+            if (!orderId || (statusKey === undefined)) {
+                console.warn("Invalid order update data", { orderId, statusLabel, statusKey });
+                return;
+            }
+            
+            setData(prevData => {
+                try {
+                    // If no data yet, don't update anything
+                    if (!prevData?.data || !Array.isArray(prevData.data)) return prevData;
+                    
+                    // Find the order in the current data
+                    const orderIndex = prevData.data.findIndex(order => order && order.order_id === orderId);
+                    
+                    // If order not found, return unchanged data
+                    if (orderIndex === -1) return prevData;
+                    
+                    // Check if the updated status matches the current filter
+                    // If there's an active filter and the new status doesn't match, remove the order
+                    if (activeFilter && activeFilter !== statusKey) {
+                        // Create a new array without the updated order
+                        const filteredData = prevData.data.filter(order => order && order.order_id !== orderId);
+                        
+                        // Return the updated data object with the order remokoved
+                        return {
+                            ...prevData,
+                            data: filteredData,
+                            // Update metadata to reflect the removed item
+                            metadata: {
+                                ...(prevData.metadata || {}),
+                                total_records: ((prevData.metadata && prevData.metadata.total_records) || 0) - 1
+                            }
+                        };
+                    }
+                    
+                    // If no filter or status matches filter, update the order
+                    // Create a new array with the updated order
+                    const updatedData = [...prevData.data];
+                    updatedData[orderIndex] = {
+                        ...updatedData[orderIndex],
+                        status: statusLabel || statusKey, // Fallback to statusKey if label is missing
+                        status_key: statusKey
+                    };
+                    
+                    // Return the updated data object
+                    return {
+                        ...prevData,
+                        data: updatedData
+                    };
+                } catch (error) {
+                    return prevData;
+                }
+            });
+        } catch (error) {
+        }
+    }, [activeFilter]);
+
     useEffect(() => {
         if (!socket) return;
 
         const handleOrderUpdate = (notification) => {
-            switch (notification.type) {
+            // Only process updates if we're on the orders screen
+            if (!isOnOrdersScreen.current) return;
+            
+            // Safely access notification data
+            const notificationData = notification?.data || {};
+            
+            switch (notification?.type) {
                 case 'ORDER_CREATED':
-                case 'ORDER_UPDATED':
+                    // For new orders, we don't need to refresh the entire list
+                    // Only fetch if the current filter would include this order
+                    if (!activeFilter || (notificationData.status_key === activeFilter)) {
+                        // Instead of refreshing the entire list, we could append the new order
+                        // But for simplicity and to ensure proper sorting, we'll fetch
+                        fetchData(1, false);
+                    }
+                    break;
+                    
                 case 'COLLECTION_CREATED':
                 case 'COLLECTION_UPDATED':
                 case 'COLLECTION_DELETED':
-                case 'STATUS_UPDATED':
+                    // For collection changes, we need to refresh as they might affect multiple orders
                     fetchData(1, false);
                     break;
+                    
+                case 'ORDER_UPDATED':
+                case 'STATUS_UPDATED':
+                    // If we have the order ID and status information in the notification,
+                    // update it locally instead of fetching the entire list
+                    if (notificationData.order_id) {
+                        const orderId = notificationData.order_id;
+                        const statusKey = notificationData.status || notificationData.status_key;
+                        const statusLabel = notificationData.status_label || notificationData.status;
+                        
+                        // Only update if we have all the necessary information
+                        if (orderId && statusKey) {
+                            try {
+                                // Check if the order is in our current view
+                                const orderExists = data?.data && Array.isArray(data.data) && 
+                                    data.data.some(order => order && order.order_id === orderId);
+                                
+                                // Check if the order should be in our view based on filter
+                                const shouldBeInView = !activeFilter || activeFilter === statusKey;
+                                
+                                if (orderExists) {
+                                    // If the order exists in our current view, update it
+                                    // Our handleOrderStatusUpdate will take care of removing it if it no longer matches the filter
+                                    handleOrderStatusUpdate(orderId, statusLabel, statusKey);
+                                } else if (shouldBeInView) {
+                                    // If the order isn't in our view but should be (based on filter),
+                                    // we need to refresh to include it
+                                    // This is a rare case - only happens when another user/device changes an order's status
+                                    // to match our current filter
+                                    fetchData(1, false);
+                                }
+                                // If the order isn't in our view and shouldn't be based on filter, do nothing
+                            } catch (error) {
+                                console.error("Error handling order update:", error);
+                            }
+                        }
+                    }
+                    break;
+                    
                 default:
                     break;
             }
@@ -314,7 +427,7 @@ export default function Orders() {
             socket.off('orderUpdate', handleOrderUpdate);
             socket.off('collectionUpdate', handleOrderUpdate);
         };
-    }, [socket, fetchData]);
+    }, [socket, fetchData, handleOrderStatusUpdate, activeFilter, data]);
 
     useEffect(() => {
         setPage(1);
@@ -378,7 +491,7 @@ export default function Orders() {
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             
-            <Search {...searchProps} />
+            <Search {...searchProps} searchResultCount={data?.metadata?.total_records} />
             
             <View style={styles.ordersList}>
                 <OrdersView
@@ -388,6 +501,7 @@ export default function Orders() {
                     loadingMore={loadingMore}
                     isLoading={isLoading}
                     refreshControl={refreshControl}
+                    onStatusChange={handleOrderStatusUpdate}
                 />
             </View>
         </View>

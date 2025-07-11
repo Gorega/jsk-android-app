@@ -385,6 +385,180 @@ export default function HomeScreen() {
                 value: deliveryFee || form.deliveryFee,
                 readOnly: true,
                 editable: ["admin", "manager","entery"].includes(user.role) ? true : false
+            },
+            {
+                label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
+                type: "input",
+                name: "net_value",
+                value: (() => {
+                    // Define currency exchange rates
+                    const CURRENCY_EXCHANGE_RATES = {
+                        ILS_TO_USD: 0.27,  // 1 ILS = 0.27 USD
+                        ILS_TO_JOD: 0.19,  // 1 ILS = 0.19 JOD
+                        USD_TO_ILS: 3.7,   // 1 USD = 3.7 ILS
+                        USD_TO_JOD: 0.71,  // 1 USD = 0.71 JOD
+                        JOD_TO_ILS: 5,     // 1 JOD = 5 ILS
+                        JOD_TO_USD: 1.41,  // 1 JOD = 1.41 USD
+                    };
+                    
+                    // Group COD values by currency
+                    const codByCurrency = {
+                        ILS: 0,
+                        JOD: 0,
+                        USD: 0
+                    };
+                    
+                    codAmounts.forEach(cod => {
+                        const value = parseFloat(cod.value || 0);
+                        const currency = cod.currency || 'ILS';
+                        
+                        if (!isNaN(value) && value > 0) {
+                            codByCurrency[currency] = (codByCurrency[currency] || 0) + value;
+                        }
+                    });
+                    
+                    // Get delivery fee
+                    const deliveryFeeValue = parseFloat(deliveryFee || form.deliveryFee || 0);
+                    const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
+                    
+                    // Calculate ILS fees (currently only delivery fee)
+                    const ilsFees = deliveryFeeCurrency === 'ILS' ? deliveryFeeValue : 0;
+                    
+                    // Check if this is a payment order or receive without money receive
+                    const isPaymentOrReceiveWithoutMoney = 
+                        (selectedValue.orderType?.value === "payment" || 
+                        (selectedValue.orderType?.value === "receive" && !form.withMoneyReceive));
+                    
+                    // Calculate ILS net value
+                    let ilsNetValue = 0;
+                    
+                    // If there are ILS fees
+                    if (ilsFees > 0) {
+                        // If ILS COD exists
+                        if (codByCurrency.ILS > 0) {
+                            if (isPaymentOrReceiveWithoutMoney) {
+                                // Add fees for payment or receive without money receive
+                                ilsNetValue = codByCurrency.ILS + ilsFees;
+                            } else {
+                                // Check if ILS COD is sufficient (normal case - subtract fees)
+                                if (codByCurrency.ILS >= ilsFees) {
+                                    ilsNetValue = codByCurrency.ILS - ilsFees;
+                                } 
+                                // Check if JOD can cover the deficit
+                                else if ((codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= (ilsFees - codByCurrency.ILS)) {
+                                    ilsNetValue = 0; // JOD covers the remainder
+                                }
+                                // Check if USD can cover the deficit
+                                else if ((codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS) >= (ilsFees - codByCurrency.ILS)) {
+                                    ilsNetValue = 0; // USD covers the remainder
+                                }
+                                // If no other currency can cover the deficit
+                                else {
+                                    ilsNetValue = codByCurrency.ILS - ilsFees;
+                                }
+                            }
+                        }
+                        // No ILS COD value exists
+                        else {
+                            if (isPaymentOrReceiveWithoutMoney) {
+                                // Add fees for payment or receive without money receive
+                                ilsNetValue = ilsFees;
+                            } else {
+                                // Check if JOD can cover ILS deficit
+                                if ((codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= ilsFees) {
+                                    ilsNetValue = 0; // JOD can cover it
+                                }
+                                // Check if USD can cover ILS deficit
+                                else if ((codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS) >= ilsFees) {
+                                    ilsNetValue = 0; // USD can cover it
+                                }
+                                // If no other currency can cover
+                                else {
+                                    ilsNetValue = -ilsFees;
+                                }
+                            }
+                        }
+                    }
+                    // If no ILS fees but ILS COD exists
+                    else if (codByCurrency.ILS > 0) {
+                        ilsNetValue = codByCurrency.ILS;
+                    }
+                    // No ILS fees and no ILS COD
+                    else {
+                        ilsNetValue = 0;
+                    }
+                    
+                    // Calculate JOD net value
+                    let jodNetValue = 0;
+                    
+                    // Only calculate if JOD COD exists
+                    if (codByCurrency.JOD > 0) {
+                        if (isPaymentOrReceiveWithoutMoney) {
+                            // Add fees for payment or receive without money receive
+                            jodNetValue = codByCurrency.JOD;
+                        } else {
+                            // Start with JOD COD
+                            jodNetValue = codByCurrency.JOD;
+                            
+                            // Check if we need to cover ILS deficit
+                            const ilsDeficit = ilsFees - codByCurrency.ILS;
+                            
+                            if (ilsDeficit > 0 && 
+                                (codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= ilsDeficit) {
+                                // Convert ILS deficit to JOD and deduct
+                                jodNetValue -= ilsDeficit / CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
+                            }
+                        }
+                    }
+                    
+                    // Calculate USD net value
+                    let usdNetValue = 0;
+                    
+                    // Only calculate if USD COD exists
+                    if (codByCurrency.USD > 0) {
+                        if (isPaymentOrReceiveWithoutMoney) {
+                            // Add fees for payment or receive without money receive
+                            usdNetValue = codByCurrency.USD;
+                        } else {
+                            // Start with USD COD
+                            usdNetValue = codByCurrency.USD;
+                            
+                            // Check if there's an ILS deficit and JOD hasn't already covered it
+                            const ilsDeficit = ilsFees - codByCurrency.ILS;
+                            const jodCoverage = codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
+                            
+                            if (ilsDeficit > 0 && jodCoverage < ilsDeficit) {
+                                // Calculate remaining deficit after JOD contribution
+                                const remainingDeficit = ilsDeficit - jodCoverage;
+                                
+                                // Convert ILS deficit to USD and deduct, but don't go below zero
+                                const deficitInUsd = remainingDeficit / CURRENCY_EXCHANGE_RATES.USD_TO_ILS;
+                                usdNetValue -= Math.min(usdNetValue, deficitInUsd);
+                            }
+                        }
+                    }
+                    
+                    // Format the result with pipe separators
+                    const netValues = [];
+                    
+                    // Always include ILS
+                    netValues.push(`ILS: ${ilsNetValue.toFixed(2)}`);
+                    
+                    // Only include JOD if COD exists
+                    if (codByCurrency.JOD > 0) {
+                        netValues.push(`JOD: ${jodNetValue.toFixed(2)}`);
+                    }
+                    
+                    // Only include USD if COD exists
+                    if (codByCurrency.USD > 0) {
+                        netValues.push(`USD: ${usdNetValue.toFixed(2)}`);
+                    }
+                    
+                    return netValues.join(' | ');
+                })(),
+                readOnly: true,
+                editable: false,
+                style: { fontWeight: 'bold', color: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.05)' }
             }
         ].filter(Boolean)
     },!["payment"].includes(selectedValue.orderType?.value) ? {

@@ -876,7 +876,7 @@ export default function HomeScreen() {
                       setSelectedCollections([]);
                     }}
                   >
-                    <Text style={[styles.tabText, selectedType === 'money' && styles.activeTabText]}>
+                    <Text style={[styles.tabText,{color:colors.text}]}>
                       {translations[language]?.collections?.collection?.moneyCollections}
                     </Text>
                     {moneyCollections?.length > 0 && (
@@ -896,7 +896,7 @@ export default function HomeScreen() {
                       setSelectedCollections([]);
                     }}
                   >
-                    <Text style={[styles.tabText, selectedType === 'package' && styles.activeTabText]}>
+                    <Text style={[styles.tabText,{color:colors.text}]}>
                       {translations[language]?.collections?.collection?.packageCollections}
                     </Text>
                     {packageCollections?.length > 0 && (
@@ -915,8 +915,8 @@ export default function HomeScreen() {
                   <ScrollView style={styles.collectionsScroll}>
                     {(selectedType === 'money' ? moneyCollections : packageCollections)?.length === 0 ? (
                       <View style={styles.noDataContainer}>
-                        <Ionicons name="information-circle-outline" size={48} color="#64748B" />
-                        <Text style={styles.noDataText}>
+                        <Ionicons name="information-circle-outline" size={48} color={colors.primary} />
+                        <Text style={[styles.noDataText,{color:colors.text}]}>
                           {translations[language]?.collections?.collection?.noCollectionsToConfirm}
                         </Text>
                       </View>

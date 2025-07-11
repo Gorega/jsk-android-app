@@ -7,10 +7,33 @@ import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 
 export default function Section({section, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, fieldErrors, setFieldErrors}) {
+    // Add safety check for undefined section
+    if (!section) {
+        console.warn("Section component received undefined section");
+        return null;
+    }
+    
     const [showFields, setShowFields] = useState(true);
     const rtl = useRTLStyles();
     const { colorScheme, isDark } = useTheme();
     const colors = Colors[colorScheme];
+
+    // Ensure fields is always an array
+    const safeFields = (() => {
+        if (!section.fields) return [];
+        if (Array.isArray(section.fields)) {
+            // Handle both regular arrays and arrays that need to be flattened
+            try {
+                // Check if any element is an array (needs flattening)
+                const needsFlattening = section.fields.some(item => Array.isArray(item));
+                return needsFlattening ? section.fields.flat() : section.fields;
+            } catch (error) {
+                console.warn("Error flattening fields array:", error);
+                return section.fields;
+            }
+        }
+        return [];
+    })();
 
     return (
         <View style={[
@@ -66,7 +89,7 @@ export default function Section({section, setSelectedValue, loadMoreData, loadin
                     </Pressable>
                     {showFields && (
                         <View style={styles.fields}>
-                            {section?.fields?.flat().map((field, index) => (
+                            {safeFields.filter(field => field).map((field, index) => (
                                 <Field
                                     field={field}
                                     key={index}

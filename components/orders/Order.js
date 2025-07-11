@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform, ActivityIndicator,TextInput } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform, ActivityIndicator,TextInput,ScrollView } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -22,7 +22,7 @@ import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
 import React from 'react';
 
-function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true }) {
+function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true, onStatusChange }) {
     const { language } = useLanguage();
     const { user: authUser } = useAuth();
     const [showControl, setShowControl] = useState(false);
@@ -30,7 +30,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [showConfirmStatusChangeUpdateModal, setShowConfirmStatusChangeUpdateModal] = useState(false);
     const [selectedValue, setSelectedValue] = useState({});
     const [UpdatedStatusNote, setUpdatedStatusNote] = useState("");
-    const [isMinimized, setIsMinimized] = useState(["driver", "delivery_company"].includes(authUser.role));
+    const [isMinimized, setIsMinimized] = useState(["driver", "delivery_company"].includes(authUser?.role || ""));
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
@@ -40,7 +40,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [pendingStatusUpdates, setPendingStatusUpdates] = useState([]);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
-
+    const [reasonSearchQuery, setReasonSearchQuery] = useState('');
+    
+    // Safely access authUser role with a default value
+    const authUserRole = authUser?.role || "user";
     
     // Animation value for smooth transition
     const heightAnim = useRef(new Animated.Value(1)).current;
@@ -89,37 +92,130 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         outputRange: ['0deg', '180deg']
     });
 
-    const statusOptions = authUser.role === "driver" || authUser.role === "delivery_company" ? [{
-        label: translations[language].tabs?.orders?.order?.states?.on_the_way_back, value: "on_the_way"
-    },{
-        label: translations[language].tabs.orders.order.states.rescheduleReasons?.title, value: "reschedule",
+    const statusOptions = authUserRole === "driver" || authUserRole === "delivery_company" ? [{
+        label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
         requiresReason: true,
         reasons: [
-            { value: 'receiver_request', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverRequest || "Receiver Request" },
-            { value: 'customer_unavailable', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverUnavailable || "Customer Unavailable" },
-            { value: 'incorrect_timing', label: translations[language].tabs?.orders.order?.states?.rescheduleReasons?.incorrectTiming || "Incorrect Timing" },
-            { value: 'business_request', label: translations[language].tabs?.orders.order?.states?.rescheduleReasons?.businessRequest || "Business Request" },
-            { value: 'delivery_overload', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.deliveryOverload || "Delivery Overload" }
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+        ]
+        },{
+            label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
+            requiresReason: true,
+            reasons: [
+                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+            ]
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
+            requiresReason: true,
+            reasons: [
+                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+            ]
+        }, {
+        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
+        requiresReason: true,
+        reasons: [
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
         ]
     }, {
-        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.title, value: "return_before_delivered_initiated",
+        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states.return_before_delivered_initiated?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states.return_before_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'address_error', label: translations[language].tabs?.orders.order?.states?.return_before_delivered_initiated?.addressRrror || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs?.orders.order?.states?.return_before_delivered_initiated?.noResponse || "No Response" }
-        ]
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.title, value: "return_after_delivered_initiated",
-        requiresReason: true,
-        reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
-            { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-            { value: 'payment_failure', label: translations[language].tabs?.orders.order?.states.return_after_delivered_initiated?.paymentFailure || "Payment Failure" },
-            { value: 'address_error', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.addressError || "Address Error" },
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.noResponse || "No Response" },
-            { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states.return_after_delivered_initiated?.packageIssue || "Package Issue" }
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
         ]
     }, {
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
@@ -134,19 +230,80 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     }, {
         label: translations[language].tabs?.orders?.order?.states?.inBranch, value: "in_branch",
         requiresBranch: true
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.rejected?.title, value: "rejected",
+    },{
+        label: translations[language].tabs?.orders?.order?.states?.cancelled, value: "cancelled",
         requiresReason: true,
         reasons: [
-            { value: 'business_cancellation', label: translations[language].tabs.orders?.order?.states?.rejected?.rejectionReasons?.businessCancellation || "Business Cancellation" },
-            { value: 'invalid_order', label: translations[language].tabs.orders?.order?.states?.rejected?.rejectionReasons?.invalidOrder || "Invalid Order" }
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
         ]
     }, {
-        label: translations[language].tabs?.orders?.order?.states?.stuck?.title, value: "stuck",
+        label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
         requiresReason: true,
         reasons: [
-            { value: 'payment_issue', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.paymentIssue || "Payment Issue" },
-            { value: 'incorrect_address', label: translations[language].tabs?.orders?.order?.states?.stuck?.stuckReasons?.incorrectAddress || "Incorrect Address" }
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
+        ]
+    }, {
+        label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
+        requiresReason: true,
+        reasons: [
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
         ]
     }];
 
@@ -271,10 +428,17 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         setIsUpdating(true);
         
         try {
-            await processPendingStatusUpdates();
-            // If we still have failed updates, show an error
-            if (pendingStatusUpdates.length > 0) {
-                setErrorMessage(translations[language]?.common?.someUpdatesFailed || "Some updates failed. Please try again later.");
+            const result = await processPendingStatusUpdates();
+            // If we still have failed updates, show an error with details if available
+            if (result && result.failedUpdates && result.failedUpdates.length > 0) {
+                // Check if we have specific error details from any of the failed updates
+                const errorDetails = result.failedUpdates.find(update => update.errorDetails)?.errorDetails;
+                
+                setErrorMessage(
+                    errorDetails || 
+                    translations[language]?.common?.someUpdatesFailed || 
+                    "Some updates failed. Please try again later."
+                );
                 setShowErrorModal(true);
             }
         } catch (error) {
@@ -332,8 +496,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         
                         // Update the cached order with the status (to be safe)
                         await updateCachedOrder(update);
+                        
+                        // Call the onStatusChange callback to update the parent component
+                        if (typeof onStatusChange === 'function' && update.order_id === order.order_id) {
+                            // Find the status label from the options
+                            const statusOption = statusOptions.find(option => option.value === update.status);
+                            onStatusChange(update.order_id, statusOption?.label || update.status, update.status);
+                        }
                     } else {
-                        // It's a real error
+                        // It's a real error - store the error details with the update for better error reporting
+                        update.errorDetails = data.details || data.error;
                         failedUpdates.push(update);
                     }
                 } else {
@@ -341,8 +513,17 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     
                     // Update the cached order with the new status
                     await updateCachedOrder(update);
+                    
+                    // Call the onStatusChange callback to update the parent component
+                    if (typeof onStatusChange === 'function' && update.order_id === order.order_id) {
+                        // Find the status label from the options
+                        const statusOption = statusOptions.find(option => option.value === update.status);
+                        onStatusChange(update.order_id, statusOption?.label || update.status, update.status);
+                    }
                 }
             } catch (error) {
+                // Store any error message with the update
+                update.errorDetails = error.message || "Unknown error occurred";
                 failedUpdates.push(update);
             }
         }
@@ -514,7 +695,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }
     }, [order]);
 
-    // Modified changeStatusHandler with better error handling
+    // Modified changeStatusHandler with validation for "other" reason
     const changeStatusHandler = async () => {
         // Prevent multiple rapid clicks
         if (isUpdating) return;
@@ -538,6 +719,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     setErrorMessage(translations[language].tabs.orders.order.missingStatus);
                     setShowErrorModal(true);
                 }, 300);
+                setIsUpdating(false);
+                return;
+            }
+            
+            // Check if reason is "other" and note is empty
+            if (selectedReason?.value === 'other' && !UpdatedStatusNote.trim()) {
+                setErrorMessage(translations[language]?.tabs?.orders?.order?.noteRequiredForOther);
+                setShowErrorModal(true);
                 setIsUpdating(false);
                 return;
             }
@@ -586,6 +775,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         };
                         await cacheOrder(updatedOrder);
                         
+                        // Call the onStatusChange callback to update the parent component
+                        if (typeof onStatusChange === 'function') {
+                            onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
+                        }
+                        
                         // Reset state values
                         setSelectedReason(null);
                         setSelectedBranch(null);
@@ -598,9 +792,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             setTimeout(() => setShowSuccessModal(false), 2500);
                         }, 100);
                     } else {
-                        // Show error message
+                        // Show error message with the actual error details from backend
                         setTimeout(() => {
-                            setErrorMessage(data.error || translations[language].tabs.orders.order.statusChangeError);
+                            // Use data.details if available, otherwise fallback to data.error or generic message
+                            setErrorMessage(data.details || data.error || translations[language].tabs.orders.order.statusChangeError);
                             setShowErrorModal(true);
                         }, 100);
                     }
@@ -640,6 +835,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             status_key: selectedValue.status?.value
         };
         await cacheOrder(updatedOrder);
+        
+        // Call the onStatusChange callback to update the parent component
+        if (typeof onStatusChange === 'function') {
+            onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
+        }
         
         // Reset state values
         setSelectedReason(null);
@@ -888,16 +1088,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         <View style={{alignItems: 'center', flexDirection: 'row' }}>
                             {renderConnectivityStatus()}
                             <TouchableOpacity 
-                                onPress={() => !["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && setShowStatusUpdateModal(true)} 
+                                onPress={() => !["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && setShowStatusUpdateModal(true)} 
                                 style={[
                                     styles.statusBadge, 
                                     { 
                                         backgroundColor: getStatusColor(order.status_key)
                                     }
                                 ]}
-                                activeOpacity={!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) ? 0.7 : 1}
+                                activeOpacity={!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) ? 0.7 : 1}
                             >
-                                {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && (
+                                {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
                                     <MaterialIcons 
                                         name="published-with-changes" 
                                         size={18} 
@@ -949,7 +1149,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
                                     <Text style={[styles.minimizedValue,{color:colors.text}]} >
-                                        {["business"].includes(authUser.role) ? order.total_net_value : order.total_cod_value} {order.currency}
+                                        {["business"].includes(authUserRole) ? order.total_net_value : order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>
@@ -1123,7 +1323,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         >
                             {/* User information sections */}
                             <View style={[styles.userInfoSection]}>
-                                {authUser.role !== "business" && (
+                                {authUserRole !== "business" && (
                                     <UserBox 
                                         box={{
                                             label: translations[language].tabs.orders.order.userSenderBoxLabel,
@@ -1143,7 +1343,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     orderId={order.order_id}
                                 />
                                 
-                                {!["driver","delivery_company", "business"].includes(authUser.role) && (
+                                {!["driver","delivery_company", "business"].includes(authUserRole) && (
                                     <UserBox 
                                         box={{
                                             label: translations[language].tabs.orders.order.userDriverBoxLabel,
@@ -1193,7 +1393,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </View>
 
                             {/* sent to branch section */}
-                            {((order.to_branch || order.to_driver) && ["driver","delivery_company"].includes(authUser.role)) && <View style={styles.orderTypeSection}>
+                            {((order.to_branch || order.to_driver) && ["driver","delivery_company"].includes(authUserRole)) && <View style={styles.orderTypeSection}>
                                 <View style={[styles.sectionRow]}>
                                     <View style={[
                                         styles.iconWrapper, 
@@ -1290,7 +1490,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 </Text>
                                 
                                 <View style={[styles.costSection]}>
-                                    {!["business"].includes(authUser.role) && (<View style={[
+                                    {!["business"].includes(authUserRole) && (<View style={[
                                         styles.costCard,{
                                             backgroundColor: colors.surface
                                         }
@@ -1318,7 +1518,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>)}
                                     
                                     {/* Only show delivery fee for non-driver/delivery_company roles */}
-                                    {!["driver", "delivery_company","business"].includes(authUser.role) && (
+                                    {!["driver", "delivery_company","business"].includes(authUserRole) && (
                                         <View style={[
                                             styles.costCard,{
                                                 backgroundColor: colors.surface
@@ -1352,7 +1552,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     )}
                                     
                                     {/* Only show net value for non-driver/delivery_company roles */}
-                                    {!["driver", "delivery_company"].includes(authUser.role) && (
+                                    {!["driver", "delivery_company"].includes(authUserRole) && (
                                         <View style={[
                                             styles.costCard,{
                                                 backgroundColor: colors.surface
@@ -1502,10 +1702,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         {/* Edit Order button logic */}
                         {(
                             // For business users, only show on "waiting" status
-                            (authUser.role === "business" && order.status_key === "waiting") ||
+                            (authUserRole === "business" && order.status_key === "waiting") ||
                             
                             // For driver and delivery_company, never show
-                            (!["driver", "delivery_company", "business"].includes(authUser.role) && 
+                            (!["driver", "delivery_company", "business"].includes(authUserRole) && 
                              ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way", 
                               "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
                               "return_before_delivered_initiated", "return_after_delivered_initiated", 
@@ -1545,11 +1745,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         {/* Edit receiver phone button logic */}
                         {(
                             // For driver and delivery_company
-                            (["driver", "delivery_company"].includes(authUser.role) && 
+                            (["driver", "delivery_company"].includes(authUserRole) && 
                              ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
                             
                             // For business users
-                            (authUser.role === "business" && 
+                            (authUserRole === "business" && 
                              ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
                               "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
                         ) && (
@@ -1584,7 +1784,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </TouchableOpacity>
                         )}
                         
-                        {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUser.role) && (
+                        {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
@@ -1645,7 +1845,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </Text>
                         </TouchableOpacity>
 
-                        {["business"].includes(authUser.role) && <TouchableOpacity 
+                        {["business"].includes(authUserRole) && <TouchableOpacity 
                             style={[
                                 styles.controlOption, 
                                 styles.noBorder
@@ -1739,8 +1939,37 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             {translations[language].tabs.orders.order.selectReason || "Select Reason"}
                         </Text>
                     </View>
-                    <View style={styles.reasonContainer}>
-                        {statusOptions.find(option => option.value === selectedValue.status?.value)?.reasons?.map((reason, index) => (
+                    
+                    {/* Search input for reasons */}
+                    <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+                        <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                        <TextInput
+                            style={[styles.searchInput, { color: colors.text }]}
+                            placeholder={translations[language].common?.search || "Search reasons..."}
+                            placeholderTextColor={colors.textSecondary}
+                            value={reasonSearchQuery}
+                            onChangeText={setReasonSearchQuery}
+                        />
+                        {reasonSearchQuery ? (
+                            <TouchableOpacity onPress={() => setReasonSearchQuery('')}>
+                                <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        ) : null}
+                    </View>
+                    
+                    {/* Scrollable reason container with fixed height */}
+                    <ScrollView 
+                        style={styles.reasonScrollContainer}
+                        contentContainerStyle={styles.reasonContainer}
+                        showsVerticalScrollIndicator={true}
+                    >
+                        {statusOptions
+                            .find(option => option.value === selectedValue.status?.value)?.reasons
+                            ?.filter(reason => 
+                                !reasonSearchQuery || 
+                                reason.label.toLowerCase().includes(reasonSearchQuery.toLowerCase())
+                            )
+                            .map((reason, index) => (
                             <TouchableOpacity
                                 key={index}
                                 style={[
@@ -1760,7 +1989,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 </Text>
                             </TouchableOpacity>
                         ))}
-                    </View>
+                    </ScrollView>
                 </ModalPresentation>
             )}
 
@@ -1824,7 +2053,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     }),
                                 }]}>
                             {translations[language].tabs.orders.order.changeStatusAlert} 
-                            <Text style={styles.highlightText}> {statusOptions.find(option => option.value === selectedValue.status?.value)?.label || ''}</Text>
+                            <Text style={[styles.highlightText,{
+                                color: colors.text,
+                            }]}> {statusOptions.find(option => option.value === selectedValue.status?.value)?.label || ''}</Text>
                         </Text>
                         
                         {selectedBranch && (
@@ -1839,7 +2070,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 }]}>
                                     {translations[language].tabs.orders.order.branch || "Branch"}:
                                 </Text>
-                                <Text style={styles.selectedDetailValue}>{selectedBranch.label}</Text>
+                                <Text style={[styles.selectedDetailValue,{
+                                    color: colors.text,
+                                }]}>{selectedBranch.label}</Text>
                             </View>
                         )}
                         
@@ -1869,6 +2102,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         <TextInput
                             style={[
                                 styles.noteInput,
+                                {
+                                    backgroundColor: colors.surface,
+                                    color: colors.text,
+                                },
                                 {
                                     ...Platform.select({
                                         ios: {
@@ -1900,7 +2137,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
                                     <Text style={[styles.confirmButtonText,{
-                                        color: colors.text
+                                        color: isDark ?  colors.text : "#ffff"
                                     }]}>
                                         {translations[language].tabs.orders.order.changeStatusAlertConfirm}
                                     </Text>
@@ -1936,12 +2173,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             <FontAwesome5 name="check-circle" size={32} color="#FFFFFF" />
                         </View>
                         <Text style={[styles.successModalTitle,{
-                            color: colors.text
+                            color: colors.success
                         }]}>
                             {translations[language].tabs.orders.order.success}
                         </Text>
                         <Text style={[styles.successModalMessage,{
-                            color: colors.text,
+                            color: colors.success,
                             ...Platform.select({
                                 ios: {
                                     textAlign:isRTL ? "left" : ""
@@ -1966,12 +2203,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             <FontAwesome5 name="exclamation-circle" size={32} color="#FFFFFF" />
                         </View>
                         <Text style={[styles.errorModalTitle,{
-                            color: colors.text
+                            color: colors.error
                         }]}>
                             {translations[language].tabs.orders.order.error}
                         </Text>
                         <Text style={[styles.errorModalMessage,{
-                            color: colors.text
+                            color: colors.error
                         }]}>
                             {errorMessage}
                         </Text>
@@ -1980,7 +2217,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             onPress={() => setShowErrorModal(false)}
                         >
                             <Text style={[styles.errorModalButtonText,{
-                                color: colors.text
+                                color: isDark ?  colors.text : "#ffff"
                             }]}>
                                 {translations[language].tabs.orders.order.ok || "OK"}
                             </Text>
@@ -2655,6 +2892,29 @@ const styles = StyleSheet.create({
     syncNowText: {
         color: '#F59E0B',
         fontWeight: '600',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.06)',
+        backgroundColor: '#f9fafb',
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        padding: 8,
+    },
+    reasonScrollContainer: {
+        maxHeight: 300, // Fixed height for the scrollable area
+    },
+    reasonContainer: {
+        width: '100%',
     },
 });
 

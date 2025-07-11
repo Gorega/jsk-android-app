@@ -30,7 +30,9 @@ export default function NotificationsComponent() {
   const [confirmationModal, setConfirmationModal] = useState({
     visible: false,
     notificationId: null,
-    loading: false
+    loading: false,
+    notificationType: null,
+    orderData: null
   });
 
   // Register for push notifications
@@ -102,14 +104,48 @@ export default function NotificationsComponent() {
     }
   };
 
-  const handleNotificationItemClick = async (notificationId, notificationType, notificationOrderId) => {
+  const handleNotificationItemClick = async (notificationId, notificationType, notificationOrderId, metadata) => {
     try {
       // For confirmation type notifications, show confirmation modal
       if (notificationType === "confirmation") {
+        // Initialize metadata type
+        let metadataType = 'generic';
+        let parsedMetadata = metadata;
+        
+        // Handle metadata - could be a string type identifier or a JSON object
+        if (metadata) {
+          if (typeof metadata === 'string') {
+            // If metadata is a simple string, use it as the type
+            metadataType = metadata;
+            // Try parsing if it's a JSON string
+            try {
+              parsedMetadata = JSON.parse(metadata);
+              metadataType = parsedMetadata.type || 'generic';
+            } catch (e) {
+              // If parsing fails, keep the original metadata
+              parsedMetadata = metadata;
+            }
+          } else if (typeof metadata === 'object') {
+            // If metadata is already an object, get the type property
+            metadataType = metadata.type || 'generic';
+            parsedMetadata = metadata;
+          }
+        }
+        
+        // Find the notification in notificationsData to get the message
+        const notificationItem = notificationsData.find(n => n.notification_id === notificationId);
+        const notificationMessage = notificationItem ? notificationItem.translated_message : '';
+        
         setConfirmationModal({
           visible: true,
           notificationId: notificationId,
-          loading: false
+          loading: false,
+          notificationType: metadataType,
+          orderData: {
+            orderId: notificationOrderId,
+            metadata: parsedMetadata,
+            notificationMessage: notificationMessage
+          }
         });
         return;
       }
@@ -150,8 +186,69 @@ export default function NotificationsComponent() {
     }
   };
 
-  // Update function to handle confirmation response
-  const handleConfirmationResponse = async (confirm) => {
+  // Handle COD value update confirmation
+  const handleCodValueUpdateConfirmation = async (action) => {
+    
+    try {
+      // Show loading state
+      setConfirmationModal(prev => ({ ...prev, loading: true }));
+      
+      const url = `${process.env.EXPO_PUBLIC_API_URL}/api/orders/${confirmationModal.orderData.orderId}/confirm_cod_value_update`;
+      
+      const requestBody = {
+        notification_id: confirmationModal.notificationId,
+        action: action ? 'approve' : 'reject'
+      };
+      
+      const res = await fetch(url, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          'Accept': 'application/json',
+          "Content-Type": "application/json",
+          "Accept-Language": language
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.message || data.error || `HTTP error! status: ${res.status}`);
+      }
+      
+      // Update notifications list - remove the notification
+      setNotificationsData(prev => 
+        prev.filter(n => n.notification_id !== confirmationModal.notificationId)
+      );
+      
+      // Show success message
+      setConfirmationModal({
+        visible: true,
+        notificationId: null,
+        loading: false,
+        success: true,
+        confirmed: action,
+        notificationType: 'cod_update_request',
+        orderData: {
+          ...confirmationModal.orderData,
+          orderId: data.order_id
+        }
+      });
+      
+    } catch (error) {
+      
+      // Show error message
+      setConfirmationModal(prev => ({ 
+        ...prev, 
+        loading: false,
+        error: error.message 
+      }));
+    }
+  };
+
+  // Handle money transaction confirmation
+  const handleMoneyTransactionConfirmation = async (confirm) => {
     try {
       // Show loading state
       setConfirmationModal(prev => ({ ...prev, loading: true }));
@@ -189,9 +286,34 @@ export default function NotificationsComponent() {
         loading: false,
         success: true,
         confirmed: confirm,
+        notificationType: confirmationModal.notificationType,
         transactionId: data.transactionId
       });
       
+    } catch (error) {
+      // Show error message
+      setConfirmationModal(prev => ({ 
+        ...prev, 
+        loading: false,
+        error: error.message 
+      }));
+    }
+  };
+
+  // Update function to handle confirmation response
+  const handleConfirmationResponse = async (confirm) => {
+    try {
+      // Check notification type and handle accordingly
+      switch (confirmationModal.notificationType) {
+        case 'cod_update_request':
+          return handleCodValueUpdateConfirmation(confirm);
+        case 'money_in':
+        case 'money_out':
+          return handleMoneyTransactionConfirmation(confirm);
+        default:
+          // Generic confirmation handling for other types
+          return handleMoneyTransactionConfirmation(confirm);
+      }
     } catch (error) {
       // Show error message
       setConfirmationModal(prev => ({ 
@@ -252,7 +374,7 @@ export default function NotificationsComponent() {
     }
   };
 
-  const getIcon = (type) => {
+  const getIcon = (type, metadata) => {
     switch (type) {
       case 'order':
         return (
@@ -276,6 +398,50 @@ export default function NotificationsComponent() {
             <MaterialIcons name="local-shipping" size={20} color="white" />
           </LinearGradient>
         );
+      case 'confirmation':
+        // Check metadata type if available
+        let metadataType = 'generic';
+        if (metadata && typeof metadata === 'object' && metadata.type) {
+          metadataType = metadata.type;
+        }
+        
+        // Return icon based on confirmation type
+        switch (metadataType) {
+          case 'cod_update_request':
+            return (
+              <LinearGradient
+                colors={['#F59E0B', '#D97706']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.notificationIconGradient}
+              >
+                <MaterialIcons name="attach-money" size={20} color="white" />
+              </LinearGradient>
+            );
+          case 'money_in':
+          case 'money_out':
+            return (
+              <LinearGradient
+                colors={['#10B981', '#059669']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.notificationIconGradient}
+              >
+                <MaterialIcons name="account-balance-wallet" size={20} color="white" />
+              </LinearGradient>
+            );
+          default:
+            return (
+              <LinearGradient
+                colors={['#6366F1', '#4F46E5']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.notificationIconGradient}
+              >
+                <MaterialIcons name="check-circle" size={20} color="white" />
+              </LinearGradient>
+            );
+        }
       default:
         return (
           <LinearGradient
@@ -327,11 +493,11 @@ export default function NotificationsComponent() {
     >
       <TouchableOpacity 
         style={styles.notificationContent}
-        onPress={() => handleNotificationItemClick(notification.notification_id, notification.type, notification.order_id)}
+        onPress={() => handleNotificationItemClick(notification.notification_id, notification.type, notification.order_id, notification.metadata)}
         activeOpacity={0.7}
       >
         <View style={styles.iconContainer}>
-          {getIcon(notification.type)}
+          {getIcon(notification.type, notification.metadata)}
           {!notification.is_read && <View style={styles.unreadIndicator} />}
         </View>
         
@@ -402,6 +568,106 @@ export default function NotificationsComponent() {
     </View>
   );
 
+  // Get confirmation title and message based on notification type
+  const getConfirmationContent = () => {
+    const notificationType = confirmationModal.notificationType;
+    const metadata = typeof confirmationModal.orderData?.metadata === 'object' 
+      ? confirmationModal.orderData?.metadata 
+      : {};
+    
+    switch (notificationType) {
+      case 'cod_update_request':
+        // Extract information from metadata
+        const currentCodValue = metadata.current_cod_value || '';
+        const requestedCodValue = metadata.requested_cod_value || '';
+        const currentCurrency = metadata.current_currency || '';
+        const requestedCurrency = metadata.requested_currency || '';
+        const reason = metadata.reason || '';
+        
+        return {
+          title: translations[language]?.notifications?.confirmation?.cod_update?.title || "Confirm COD Value Update",
+          message: translations[language]?.notifications?.confirmation?.cod_update?.message || 
+                  `Do you want to approve changing the COD value from ${currentCodValue} ${currentCurrency} to ${requestedCodValue} ${requestedCurrency}?${reason ? `\nReason: ${reason}` : ''}`,
+          confirmText: translations[language]?.notifications?.confirmation?.cod_update?.approve || "Approve",
+          cancelText: translations[language]?.notifications?.confirmation?.cod_update?.reject || "Reject",
+          successMessage: translations[language]?.notifications?.confirmation?.cod_update?.successMessage || 
+                        "COD value update request has been processed successfully."
+        };
+      
+      case 'money_in':
+        // Extract information from metadata
+        const amount = metadata.amount || '';
+        const currency = metadata.currency || '';
+        const fromUserId = metadata.from_user_id || '';
+        const toUserId = metadata.to_user_id || '';
+        
+        // Extract user information from the notification message if available
+        let userInfo = '';
+        if (confirmationModal.orderData && typeof confirmationModal.orderData.notificationMessage === 'string') {
+          const message = confirmationModal.orderData.notificationMessage;
+          // Try to extract user info from message format like "Please confirm transaction 100 ILS to wael | 0593686817"
+          const match = message.match(/to\s+([^|]+)\s*\|\s*([0-9]+)/i);
+          if (match && match.length >= 3) {
+            userInfo = `${match[1].trim()} | ${match[2].trim()}`;
+          }
+        }
+        
+        return {
+          title: translations[language]?.notifications?.confirmation?.money_in?.title || "Confirm Money Transaction",
+          message: translations[language]?.notifications?.confirmation?.money_in?.message || 
+                  `Do you want to confirm receiving ${amount} ${currency}?${userInfo ? `\nTo: ${userInfo}` : ''}`,
+          confirmText: translations[language]?.notifications?.confirmation?.money_in?.confirm || "Confirm",
+          cancelText: translations[language]?.notifications?.confirmation?.money_in?.cancel || "Cancel",
+          successMessage: translations[language]?.notifications?.confirmation?.money_in?.successMessage || 
+                        "Transaction has been confirmed successfully.",
+          detailsContent: (
+            <View style={styles.transactionDetails}>
+              <Text style={[styles.transactionDetailItem, { color: colors.textSecondary }]}>
+                {translations[language]?.notifications?.confirmation?.money_in?.amount || "Amount"}: {amount} {currency}
+              </Text>
+              {userInfo && (
+                <Text style={[styles.transactionDetailItem, { color: colors.textSecondary }]}>
+                  {translations[language]?.notifications?.confirmation?.money_in?.recipient || "Recipient"}: {userInfo}
+                </Text>
+              )}
+            </View>
+          )
+        };
+        
+      case 'money_out':
+        const outAmount = metadata.amount || '';
+        const outCurrency = metadata.currency || '';
+        
+        return {
+          title: translations[language]?.notifications?.confirmation?.money_out?.title || "Confirm Money Transaction",
+          message: translations[language]?.notifications?.confirmation?.money_out?.message || 
+                  `Do you want to confirm sending ${outAmount} ${outCurrency}?`,
+          confirmText: translations[language]?.notifications?.confirmation?.money_out?.confirm || "Confirm",
+          cancelText: translations[language]?.notifications?.confirmation?.money_out?.cancel || "Cancel",
+          successMessage: translations[language]?.notifications?.confirmation?.money_out?.successMessage || 
+                        "Transaction has been confirmed successfully.",
+          detailsContent: (
+            <View style={styles.transactionDetails}>
+              <Text style={[styles.transactionDetailItem, { color: colors.textSecondary }]}>
+                {translations[language]?.notifications?.confirmation?.money_out?.amount || "Amount"}: {outAmount} {outCurrency}
+              </Text>
+            </View>
+          )
+        };
+      
+      default:
+        return {
+          title: translations[language]?.notifications?.confirmation?.title || "Confirmation Required",
+          message: translations[language]?.notifications?.confirmation?.message || "Do you want to confirm this request?",
+          confirmText: translations[language]?.notifications?.confirmation?.confirm || "Confirm",
+          cancelText: translations[language]?.notifications?.confirmation?.cancel || "Cancel",
+          successMessage: translations[language]?.notifications?.confirmation?.successMessage || "Your confirmation has been processed successfully."
+        };
+    }
+  };
+
+  const confirmationContent = getConfirmationContent();
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {isLoading ? (
@@ -428,7 +694,9 @@ export default function NotificationsComponent() {
               notificationId: null,
               loading: false,
               success: false,
-              error: null
+              error: null,
+              notificationType: null,
+              orderData: null
             });
           }
         }}
@@ -461,7 +729,9 @@ export default function NotificationsComponent() {
                 onPress={() => setConfirmationModal({
                   visible: false,
                   notificationId: null,
-                  loading: false
+                  loading: false,
+                  notificationType: null,
+                  orderData: null
                 })}
               >
                 <Text style={styles.confirmationButtonText}>
@@ -488,7 +758,7 @@ export default function NotificationsComponent() {
               </Text>
               <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
                 {confirmationModal.confirmed 
-                  ? (translations[language]?.notifications?.confirmation?.successMessage || "Your confirmation has been processed successfully.")
+                  ? (confirmationContent.successMessage || translations[language]?.notifications?.confirmation?.successMessage || "Your confirmation has been processed successfully.")
                   : (translations[language]?.notifications?.confirmation?.cancelledMessage || "The request has been cancelled.")}
               </Text>
               {confirmationModal.confirmed && confirmationModal.transactionId && (
@@ -504,7 +774,9 @@ export default function NotificationsComponent() {
                 onPress={() => setConfirmationModal({
                   visible: false,
                   notificationId: null,
-                  loading: false
+                  loading: false,
+                  notificationType: null,
+                  orderData: null
                 })}
               >
                 <Text style={styles.confirmationButtonText}>
@@ -518,18 +790,22 @@ export default function NotificationsComponent() {
                 <Ionicons name="help-circle" size={40} color="white" />
               </View>
               <Text style={[styles.confirmationTitle, { color: colors.text }]}>
-                {translations[language]?.notifications?.confirmation?.title || "Confirmation Required"}
+                {confirmationContent.title}
               </Text>
               <Text style={[styles.confirmationMessage, { color: colors.textSecondary }]}>
-                {translations[language]?.notifications?.confirmation?.message || "Do you want to confirm this request?"}
+                {confirmationContent.message}
               </Text>
+              
+              {/* Show additional details if available */}
+              {confirmationContent.detailsContent}
+              
               <View style={styles.confirmationButtonsRow}>
                 <TouchableOpacity
                   style={[styles.confirmationButton, styles.confirmationButtonCancel]}
                   onPress={() => handleConfirmationResponse(false)}
                 >
                   <Text style={styles.confirmationButtonText}>
-                    {translations[language]?.notifications?.confirmation?.cancel || "Cancel"}
+                    {confirmationContent.cancelText}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -537,7 +813,7 @@ export default function NotificationsComponent() {
                   onPress={() => handleConfirmationResponse(true)}
                 >
                   <Text style={styles.confirmationButtonText}>
-                    {translations[language]?.notifications?.confirmation?.confirm || "Confirm"}
+                    {confirmationContent.confirmText}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -810,5 +1086,17 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  transactionDetails: {
+    width: '100%',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 20,
+  },
+  transactionDetailItem: {
+    fontSize: 14,
+    marginBottom: 4,
+    color: '#4B5563',
   },
 });

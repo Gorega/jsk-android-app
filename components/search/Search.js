@@ -31,7 +31,8 @@ export default function Search({
     showScanButton = true,
     addPaddingSpace,
     onClearFilters,
-    onScanCollection
+    onScanCollection,
+    searchResultCount
   }){
 
     const { language } = useLanguage();
@@ -117,7 +118,7 @@ export default function Search({
 
     return <>
       <SafeAreaView style={[styles.searchBox, {paddingTop: addPaddingSpace ? 32 : 12, backgroundColor: colors.card}]}>
-        <View style={[styles.search]}>
+        <View style={styles.search}>
           <Animated.View 
             style={[
               styles.inputField, 
@@ -226,7 +227,7 @@ export default function Search({
             )}
           </View>
         )}
-
+        
         <View style={styles.filter}>
           <TouchableOpacity 
             style={[styles.selectBox, activeFilter && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
@@ -250,6 +251,16 @@ export default function Search({
               </View>
             </View>
           </TouchableOpacity>
+          
+          {(activeSearchBy || activeDate || activeFilter || searchValue) && searchResultCount !== undefined && (
+            <View style={[styles.searchResultCount, {
+              backgroundColor: isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)'
+            }]}>
+              <Text style={[styles.searchResultCountText, {color: isDark ? colors.primary : colors.primary}]}>
+                {searchResultCount} {translations[language]?.search?.results || 'results'}
+              </Text>
+            </View>
+          )}
         </View>
       </SafeAreaView>
 
@@ -525,6 +536,9 @@ const styles = StyleSheet.create({
       marginTop: 12,
       paddingBottom: 5,
       width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
   },
   selectBox: {
       backgroundColor: '#F8F9FA',
@@ -538,6 +552,7 @@ const styles = StyleSheet.create({
       elevation: 2,
       borderWidth: 1,
       borderColor: '#E2E8F0',
+      flex: 1,
   },
   activeSelectBox: {
       borderColor: '#4361EE',
@@ -757,5 +772,16 @@ const styles = StyleSheet.create({
       right: 10,
       top: 0,
       padding: 8,
+  },
+  searchResultCount: {
+      paddingVertical: 4,
+      paddingHorizontal: 12,
+      backgroundColor: 'rgba(67, 97, 238, 0.08)',
+      borderRadius: 8,
+      marginLeft: 10,
+  },
+  searchResultCountText: {
+      fontSize: 13,
+      fontWeight: '500',
   },
 })

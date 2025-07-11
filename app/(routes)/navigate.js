@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, Platform, ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, StatusBar, Alert, ActivityIndicator, Platform, ScrollView, TextInput } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
@@ -40,6 +40,9 @@ export default function RouteNavigate() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [showCallOptionsModal, setShowCallOptionsModal] = useState(false);
     const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
+    // Add search state for filtering reasons
+    const [reasonSearchQuery, setReasonSearchQuery] = useState('');
+    const [filteredReasons, setFilteredReasons] = useState([]);
     
     const mapRef = useRef(null);
     
@@ -47,60 +50,138 @@ export default function RouteNavigate() {
     const isAllowed = ["driver", "delivery_company"].includes(user.role);
     
     // Add these status options
-    const statusOptions = [
-        {
-            label: translations[language].tabs?.orders?.order?.states?.on_the_way_back,
-            value: "on_the_way"
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.title,
-            value: "reschedule",
+    const statusOptions = [{
+        label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
+        requiresReason: true,
+        reasons: [
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+        ]
+        },{
+            label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
             requiresReason: true,
             reasons: [
-                { value: 'receiver_request', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverRequest || "Receiver Request" },
-                { value: 'customer_unavailable', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.receiverUnavailable || "Customer Unavailable" },
-                { value: 'incorrect_timing', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.incorrectTiming || "Incorrect Timing" },
-                { value: 'business_request', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.businessRequest || "Business Request" },
-                { value: 'delivery_overload', label: translations[language].tabs?.orders?.order?.states?.rescheduleReasons?.deliveryOverload || "Delivery Overload" }
+                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
             ]
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.title,
-            value: "return_before_delivered_initiated",
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
             requiresReason: true,
             reasons: [
-                { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.businessCancellation || "Business Cancellation" },
-                { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-                { value: 'address_error', label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.addressError || "Address Error" },
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated?.noResponse || "No Response" }
+                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
             ]
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.title,
-            value: "return_after_delivered_initiated",
-            requiresReason: true,
-            reasons: [
-                { value: 'business_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.businessCancellation || "Business Cancellation" },
-                { value: 'receiver_cancellation', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.receiverCancellation || "Receiver Cancellation" },
-                { value: 'payment_failure', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.paymentFailure || "Payment Failure" },
-                { value: 'address_error', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.addressError || "Address Error" },
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.noResponse || "No Response" },
-                { value: 'package_issue', label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated?.packageIssue || "Package Issue" }
-            ]
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.delivered,
-            value: "delivered"
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.received,
-            value: "received"
-        },
-        {
-            label: translations[language].tabs?.orders?.order?.states?.delivered_received,
-            value: "delivered/received"
-        }
-    ];
+        }, {
+        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
+        requiresReason: true,
+        reasons: [
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+        ]
+    }, {
+        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
+        requiresReason: true,
+        reasons: [
+            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+        ]
+    }, {
+        label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
+    }, {
+        label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
+    }, {
+        label: translations[language].tabs?.orders?.order?.states?.delivered_received, value: "delivered/received"
+    }];
     
     // Add these state variables near the other useState declarations
     const [page, setPage] = useState(1);
@@ -294,12 +375,30 @@ export default function RouteNavigate() {
         setShowStatusUpdateModal(false);
         
         if (status.requiresReason) {
+            // Reset search query and set filtered reasons to all reasons
+            setReasonSearchQuery('');
+            setFilteredReasons(status.reasons || []);
             setShowReasonModal(true);
         } else {
             setShowConfirmModal(true);
         }
     };
-    
+
+    // Add a function to handle reason search
+    const handleReasonSearch = (text) => {
+        setReasonSearchQuery(text);
+        if (!selectedStatus || !selectedStatus.reasons) return;
+        
+        if (text.trim() === '') {
+            setFilteredReasons(selectedStatus.reasons);
+        } else {
+            const filtered = selectedStatus.reasons.filter(reason => 
+                reason.label.toLowerCase().includes(text.toLowerCase())
+            );
+            setFilteredReasons(filtered);
+        }
+    };
+
     const handleReasonSelect = (reason) => {
         setSelectedReason(reason);
         setShowReasonModal(false);
@@ -750,8 +849,8 @@ export default function RouteNavigate() {
                                             style={[styles.actionButton, styles.callButton]}
                                             onPress={() => handleCall(order.receiver_mobile)}
                                         >
-                                            <Feather name="phone" size={16} color="#4361EE" />
-                                            <Text style={styles.callButtonText}>
+                                            <Feather name="phone" size={16} color={colors.success} />
+                                            <Text style={[styles.callButtonText,{color: colors.success}]}>
                                                 {translations[language]?.routes?.call || "Call"}
                                             </Text>
                                         </TouchableOpacity>
@@ -807,10 +906,11 @@ export default function RouteNavigate() {
                                 onPress={() => handleStatusSelect(status)}
                             >
                                 <Text style={[styles.reasonText,{
+                                    color: colors.text,
                                     ...Platform.select({
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
-                                        }
+                                        },
                                     }),
                                 }]}>
                                     {status.label}
@@ -838,27 +938,57 @@ export default function RouteNavigate() {
                             {translations[language]?.routes?.selectReason || "Select Reason"}
                         </Text>
                     </View>
-                    <View style={styles.reasonContainer}>
-                        {selectedStatus?.reasons?.map((reason, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.reasonOption,{backgroundColor: colors.surface,borderColor: colors.border}
-                                ]}
-                                onPress={() => handleReasonSelect(reason)}
-                            >
-                                <Text style={[styles.reasonText,{
-                                    ...Platform.select({
-                                        ios: {
-                                            textAlign:isRTL ? "left" : ""
-                                        }
-                                    }),
-                                }]}>
-                                    {reason.label}
-                                </Text>
+                    
+                    {/* Add search input */}
+                    <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+                        <Feather name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+                        <TextInput
+                            style={[styles.searchInput, { color: colors.text }]}
+                            placeholder={translations[language]?.common?.search || "Search reasons..."}
+                            placeholderTextColor={colors.textSecondary}
+                            value={reasonSearchQuery}
+                            onChangeText={handleReasonSearch}
+                        />
+                        {reasonSearchQuery ? (
+                            <TouchableOpacity onPress={() => handleReasonSearch('')}>
+                                <Feather name="x" size={18} color={colors.textSecondary} />
                             </TouchableOpacity>
-                        ))}
+                        ) : null}
                     </View>
+                    
+                    {/* Make the reason container scrollable with fixed height */}
+                    <ScrollView 
+                        style={[styles.reasonScrollContainer]}
+                        contentContainerStyle={styles.reasonContainer}
+                        showsVerticalScrollIndicator={true}
+                    >
+                        {filteredReasons.length > 0 ? (
+                            filteredReasons.map((reason, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.reasonOption,{backgroundColor: colors.surface,borderColor: colors.border}
+                                    ]}
+                                    onPress={() => handleReasonSelect(reason)}
+                                >
+                                    <Text style={[styles.reasonText,{
+                                        color: colors.text,
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                        {reason.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))
+                        ) : (
+                            <Text style={[styles.noResultsText, { color: colors.textSecondary }]}>
+                                {translations[language]?.common?.noResults || "No results found"}
+                            </Text>
+                        )}
+                    </ScrollView>
                 </ModalPresentation>
             )}
             
@@ -870,6 +1000,7 @@ export default function RouteNavigate() {
                 >
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalHeaderText,{
+                            color: colors.text,
                             ...Platform.select({
                                 ios: {
                                     textAlign:isRTL ? "left" : ""
@@ -881,6 +1012,7 @@ export default function RouteNavigate() {
                     </View>
                     <View style={styles.confirmContainer}>
                         <Text style={[styles.confirmText,{
+                            color: colors.text,
                             ...Platform.select({
                                 ios: {
                                     textAlign:isRTL ? "left" : ""
@@ -891,6 +1023,7 @@ export default function RouteNavigate() {
                         </Text>
                         {selectedReason && (
                             <Text style={[styles.reasonText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -940,6 +1073,7 @@ export default function RouteNavigate() {
                 >
                     <View style={styles.modalHeader}>
                         <Text style={[styles.modalHeaderText,{
+                            color: colors.text,
                             ...Platform.select({
                                 ios: {
                                     textAlign:isRTL ? "left" : ""
@@ -960,6 +1094,7 @@ export default function RouteNavigate() {
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -982,6 +1117,7 @@ export default function RouteNavigate() {
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1002,6 +1138,7 @@ export default function RouteNavigate() {
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1018,6 +1155,7 @@ export default function RouteNavigate() {
                             }}
                         >
                             <Text style={[styles.cancelOptionText,{
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1574,5 +1712,30 @@ const styles = StyleSheet.create({
     cancelOptionText: {
         fontSize: 16,
         color: '#64748B',
+    },
+    // Add new styles for search and scrollable container
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E2E8F0',
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: 40,
+        fontSize: 14,
+    },
+    reasonScrollContainer: {
+        maxHeight: 400, // Fixed height for the scrollable area
+    },
+    noResultsText: {
+        textAlign: 'center',
+        padding: 16,
+        fontSize: 14,
     },
 });
