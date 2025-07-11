@@ -356,7 +356,7 @@ export default function RouteNavigate() {
         const orderReference = order.order_id || order.reference || '';
         const businessName = user?.business?.name || 'طيار للتوصيل';
         const codValue = order.cod_value || '';
-        const currency = order.currency || '₪';
+        const currency = order.currency || '';
         const deliveryDate = 'اليوم';
         
         // Create message based on language
