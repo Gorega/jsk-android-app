@@ -4,7 +4,7 @@ import { useLanguage } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import ModalPresentation from '../ModalPresentation';
 import { router } from 'expo-router';
 import UserBox from "../orders/userBox/UserBox";
@@ -12,8 +12,9 @@ import { useSocket } from '../../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import React from 'react';
 
-export default function User({ user }) {
+function User({ user }) {
     const { language } = useLanguage();
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
@@ -121,7 +122,7 @@ export default function User({ user }) {
     }, [socket, user.user_id]);
 
     // Format time since last seen
-    const formatLastSeen = () => {
+    const formatLastSeen = useCallback(() => {
         if (!lastSeen || !(lastSeen instanceof Date) || isNaN(lastSeen.getTime())) {
             return translations[language].users.user.offline;
         }
@@ -143,7 +144,25 @@ export default function User({ user }) {
                 return `${diffDays} ${translations[language].users.user.daysAgo}`;
             }
         }
-    };
+    }, [lastSeen, language]);
+
+    // Memoize the status text to prevent recalculation
+    const statusText = useMemo(() => {
+        return isOnline ? 
+            translations[language].users.user.online : 
+            isActiveAccount ? 
+                (lastSeen ? formatLastSeen() : translations[language].users.user.active) : 
+                translations[language].users.user.inactive;
+    }, [isOnline, isActiveAccount, lastSeen, formatLastSeen, language]);
+
+    // Memoize the handleEditPress function
+    const handleEditPress = useCallback(() => {
+        setShowControl(false);
+        router.push({
+            pathname: "(create_user)",
+            params: { userId: user.user_id }
+        });
+    }, [user.user_id]);
 
     return (
         <>
@@ -190,11 +209,7 @@ export default function User({ user }) {
                                     { transform: [{ scale: isOnline ? pulseAnim : 1 }] }
                                 ]} />
                                 <Text style={styles.statusText}>
-                                    {isOnline ? 
-                                        translations[language].users.user.online : 
-                                        isActiveAccount ? 
-                                            (lastSeen ? formatLastSeen() : translations[language].users.user.active) : 
-                                            translations[language].users.user.inactive}
+                                    {statusText}
                                 </Text>
                             </View>
                         </LinearGradient>
@@ -291,13 +306,7 @@ export default function User({ user }) {
 
                     <TouchableOpacity 
                         style={[styles.modalItem, { borderBottomColor: colors.border }]} 
-                        onPress={() => {
-                            setShowControl(false);
-                            router.push({
-                                pathname: "(create_user)",
-                                params: { userId: user.user_id }
-                            });
-                        }}
+                        onPress={handleEditPress}
                     >
                         <View style={[
                             styles.modalItemIconContainer,
@@ -314,6 +323,19 @@ export default function User({ user }) {
         </>
     );
 }
+
+// Wrap the component with React.memo to prevent unnecessary re-renders
+export default React.memo(User, (prevProps, nextProps) => {
+    // Only re-render if essential properties change
+    return (
+        prevProps.user.user_id === nextProps.user.user_id &&
+        prevProps.user.name === nextProps.user.name &&
+        prevProps.user.active_status === nextProps.user.active_status &&
+        prevProps.user.role === nextProps.user.role &&
+        prevProps.user.city === nextProps.user.city &&
+        prevProps.user.address === nextProps.user.address
+    );
+});
 
 const styles = StyleSheet.create({
     userPressable: {

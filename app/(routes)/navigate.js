@@ -5,6 +5,7 @@ import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FixedHeader from "../../components/FixedHeader";
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 // import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -41,6 +42,8 @@ export default function RouteNavigate() {
     const [showCallOptionsModal, setShowCallOptionsModal] = useState(false);
     const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
     const [currentOrderForContact, setCurrentOrderForContact] = useState(null);
+    // Add state for message options modal
+    const [showMessageOptionsModal, setShowMessageOptionsModal] = useState(false);
     // Add search state for filtering reasons
     const [reasonSearchQuery, setReasonSearchQuery] = useState('');
     const [filteredReasons, setFilteredReasons] = useState([]);
@@ -350,20 +353,18 @@ export default function RouteNavigate() {
     // Generate WhatsApp message template with dynamic order data
     const generateWhatsAppMessage = (order) => {
         if (!order) return '';
-        
         // Extract all available data with fallbacks
         const receiverName = order.receiver_name || '';
         const orderReference = order.order_id || order.reference || '';
-        const businessName = user?.business?.name || 'طيار للتوصيل';
         const codValue = order.cod_value || '';
         const currency = order.currency || '';
         const deliveryDate = 'اليوم';
         
         // Create message based on language
         if (language === 'ar' || language === 'he') {
-            return `مرحبا ${receiverName}، منحكي معك من شركة طيار للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
+            return `مرحبا ${receiverName}، منحكي معك من شركة طيار للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
         } else {
-            return `Hello ${receiverName}, this is Taiar delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+            return `Hello ${receiverName}, this is Taiar delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
         }
     };
 
@@ -375,16 +376,13 @@ export default function RouteNavigate() {
         setShowCallOptionsModal(true);
     };
     
-    // Add function to handle message sending
+    // Modified message handler to show options modal
     const handleMessage = (phoneNumber, order) => {
         if (!phoneNumber) return;
         
-        // Record contact history
-        recordContactHistory('رسالة SMS');
-        
-        // Generate message and open SMS app
-        const message = generateWhatsAppMessage(order);
-        Linking.openURL(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`);
+        setCurrentPhoneNumber(phoneNumber);
+        setCurrentOrderForContact(order);
+        setShowMessageOptionsModal(true);
     };
 
     const handleStatusUpdate = (order) => {
@@ -568,7 +566,7 @@ export default function RouteNavigate() {
         }
     };
 
-    // Add this function to record contact history
+    // Function to record contact history
     const recordContactHistory = async (contactType) => {
         // Only record if user is driver or delivery_company and orderId exists
         if (!user || !['driver', 'delivery_company'].includes(user.role?.toLowerCase()) || !currentOrderForContact?.order_id) {
@@ -594,6 +592,39 @@ export default function RouteNavigate() {
         } catch (error) {
             console.error('Error recording contact history:', error);
         }
+    };
+
+    // Handle SMS message
+    const handleSMS = () => {
+        if (!currentPhoneNumber || !currentOrderForContact) return;
+        
+        recordContactHistory('رسالة SMS');
+        const message = generateWhatsAppMessage(currentOrderForContact);
+        Linking.openURL(`sms:${currentPhoneNumber}?body=${encodeURIComponent(message)}`);
+    };
+
+    // Handle WhatsApp with 972 prefix
+    const handleWhatsApp972 = () => {
+        if (!currentPhoneNumber || !currentOrderForContact) return;
+        
+        const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+            currentPhoneNumber.substring(1) : currentPhoneNumber;
+        
+        recordContactHistory('whatsapp_972');
+        const message = generateWhatsAppMessage(currentOrderForContact);
+        Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}&text=${encodeURIComponent(message)}`);
+    };
+
+    // Handle WhatsApp with 970 prefix
+    const handleWhatsApp970 = () => {
+        if (!currentPhoneNumber || !currentOrderForContact) return;
+        
+        const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+            currentPhoneNumber.substring(1) : currentPhoneNumber;
+        
+        recordContactHistory('whatsapp_970');
+        const message = generateWhatsAppMessage(currentOrderForContact);
+        Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}&text=${encodeURIComponent(message)}`);
     };
 
     if (!isAllowed) {
@@ -987,7 +1018,13 @@ export default function RouteNavigate() {
                     <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
                         <Feather name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
                         <TextInput
-                            style={[styles.searchInput, { color: colors.text }]}
+                            style={[styles.searchInput, { color: colors.text },{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "right" : ""
+                                    }
+                                }),
+                            }]}
                             placeholder={translations[language]?.common?.search || "Search reasons..."}
                             placeholderTextColor={colors.textSecondary}
                             value={reasonSearchQuery}
@@ -1209,6 +1246,103 @@ export default function RouteNavigate() {
                                 }),
                             }]}>
                                 {translations[language]?.routes?.cancel}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ModalPresentation>
+            )}
+            
+            {/* Add Message Options Modal */}
+            {showMessageOptionsModal && (
+                <ModalPresentation
+                    showModal={showMessageOptionsModal}
+                    setShowModal={setShowMessageOptionsModal}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.modalHeader}>
+                        <Text style={[styles.modalHeaderText,{
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
+                            {translations[language]?.tabs?.orders?.order?.userBoxMessageContactLabel || "Message Options"}
+                        </Text>
+                    </View>
+                    <View style={[styles.modalContent,{
+                        backgroundColor: colors.card
+                    }]}>
+                        <TouchableOpacity
+                            style={[styles.modalOption,{
+                                borderBottomColor: colors.border
+                            }]}
+                            onPress={() => {
+                                handleSMS();
+                                setShowMessageOptionsModal(false);
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer,{
+                                backgroundColor: colors.primary
+                            }]}>
+                                <Feather name="message-square" size={20} color={colors.textInverse} />
+                            </View>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }]}>
+                                {translations[language]?.tabs?.orders?.order?.contactPhone || "SMS"}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalOption,{
+                                borderBottomColor: colors.border
+                            }]}
+                            onPress={() => {
+                                handleWhatsApp972();
+                                setShowMessageOptionsModal(false);
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
+                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
+                            </View>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }]}>
+                                {translations[language]?.tabs?.orders?.order?.contactWhatsapp || "WhatsApp"} (+972)
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalOption, styles.withoutBorder]}
+                            onPress={() => {
+                                handleWhatsApp970();
+                                setShowMessageOptionsModal(false);
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
+                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
+                            </View>
+                            <Text style={[styles.modalOptionText,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                                color: colors.text
+                            }]}>
+                                {translations[language]?.tabs?.orders?.order?.contactWhatsapp || "WhatsApp"} (+970)
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -1756,10 +1890,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
     },
     modalOptionText: {
-        fontSize: 16,
-        color: '#333',
+        fontSize: 15,
+        color: '#333333',
     },
     cancelOption: {
         borderBottomWidth: 0,
@@ -1792,5 +1929,19 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         padding: 16,
         fontSize: 14,
+    },
+    modalIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#4361EE',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    whatsappIcon: {
+        backgroundColor: '#25D366',
+    },
+    withoutBorder: {
+        borderBottomWidth: 0,
     },
 });

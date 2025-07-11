@@ -276,6 +276,8 @@ export default function CameraScanner() {
     // Prevent duplicate scans by checking if we're already processing a barcode
     if (processingBarcode) return;
     
+    // Immediately set scanned to true to stop the scanner from reading additional codes
+    setScanned(true);
     setProcessingBarcode(true);
     
     try {
@@ -311,7 +313,6 @@ export default function CameraScanner() {
       
       if (orderDetails) {
         setScannedItems(prev => [...prev, orderDetails]);
-        setScanned(true);
         playSuccessSound();
       } else {
         playErrorSound();
@@ -382,6 +383,8 @@ export default function CameraScanner() {
               'upc-e',
               'codabar'
             ],
+            // Adjust settings to improve scan accuracy for a single code
+            interval: 1000, // milliseconds between scan attempts (higher = less frequent)
           }}
         >
           <View style={styles.overlay}>
@@ -428,7 +431,10 @@ export default function CameraScanner() {
               {(scanned && !showCreateDispatchedCollectionModal) && (
                 <TouchableOpacity
                   style={[styles.rescanButton, { backgroundColor: colors.primary }]}
-                  onPress={() => setScanned(false)}
+                  onPress={() => {
+                    setScanned(false);
+                    setProcessingBarcode(false);
+                  }}
                 >
                   <Feather name="refresh-cw" size={16} color={colors.buttonText} style={{marginRight: 8}} />
                   <Text style={[styles.rescanButtonText, { color: colors.buttonText }]}>

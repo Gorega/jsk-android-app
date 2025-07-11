@@ -6,12 +6,40 @@ import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import React from 'react';
+
+// Create a memoized CollectionItem component to prevent unnecessary re-renders
+const CollectionItem = React.memo(function CollectionItem({ item, type }) {
+    return (
+        <View style={styles.order}>
+            <Collection type={type} collection={item} />
+        </View>
+    );
+}, (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    // Only re-render if the collection_id or status changes
+    return prevProps.item.collection_id === nextProps.item.collection_id && 
+           prevProps.item.status_key === nextProps.item.status_key &&
+           prevProps.type === nextProps.type;
+});
 
 export default function CollectionsView({data, type, loadMoreData, loadingMore, refreshControl, isLoading}){
     const { language } = useLanguage();
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     const isRTL = ["he", "ar"].includes(language);
+
+    // Memoize the renderCollectionItem function to prevent recreating it on each render
+    const renderCollectionItem = React.useCallback(({ item }) => {
+        return <CollectionItem item={item} type={type} />;
+    }, [type]);
+
+    // Memoize the keyExtractor function with a more reliable unique key strategy
+    const keyExtractor = React.useCallback((item, index) => {
+        // Use a combination of collection_id and index to ensure uniqueness
+        // If collection_id is not available, use a fallback to index
+        return `collection-${item.collection_id || ''}-${index}`;
+    }, []);
 
     if (isLoading) {
         return (
@@ -35,12 +63,15 @@ export default function CollectionsView({data, type, loadMoreData, loadingMore, 
         list={data || []}
         loadMoreData={loadMoreData}
         loadingMore={loadingMore}
-        children={(item)=> (
-            <View style={styles.order}>
-                <Collection type={type} collection={item} />
-            </View>
-        )}
+        renderItem={renderCollectionItem}
+        keyExtractor={keyExtractor}
         refreshControl={refreshControl}
+        // Add these props to optimize FlatList performance
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        windowSize={7}
+        initialNumToRender={5}
     />
     :
     <View style={[styles.empty, { backgroundColor: colors.background }]}>

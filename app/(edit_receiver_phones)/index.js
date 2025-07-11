@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, TextInput, Platform } from "react-native";
 import { useEffect, useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../RootLayout";
@@ -22,6 +22,7 @@ export default function EditReceiverDetailsScreen() {
     const { orderId } = useLocalSearchParams();
     const { user } = useAuth();
     const [orderData, setOrderData] = useState(null);
+    const isRTL = ['ar', 'he'].includes(language);
     const [form, setForm] = useState({
         receiverFirstPhone: '',
         receiverSecondPhone: '',
@@ -476,12 +477,25 @@ export default function EditReceiverDetailsScreen() {
                         {/* COD Value Update Reason Form */}
                         {codValueChanged && showCodUpdateForm && (
                             <View style={[styles.reasonContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                                <Text style={[styles.reasonTitle, { color: colors.text }]}>
+                                <Text style={[styles.reasonTitle, { color: colors.text,
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                     {translations[language].tabs.orders.order.codUpdateReason || 'Reason for COD Value Update'}
                                 </Text>
                                 <TextInput
                                     style={[
                                         styles.reasonInput, 
+                                        {
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign:isRTL ? "right" : ""
+                                                }
+                                            }),
+                                        },
                                         { 
                                             backgroundColor: colors.background,
                                             borderColor: fieldErrors.cod_value_reason ? colors.error : colors.border,
@@ -501,7 +515,13 @@ export default function EditReceiverDetailsScreen() {
                                 {fieldErrors.cod_value_reason && (
                                     <Text style={styles.errorText}>{fieldErrors.cod_value_reason}</Text>
                                 )}
-                                <Text style={[styles.reasonNote, { color: colors.textSecondary }]}>
+                                <Text style={[styles.reasonNote,{
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }, { color: colors.textSecondary }]}>
                                     {translations[language].tabs.orders.order.codUpdateNote || 'Note: COD value update requires approval from the sender'}
                                 </Text>
                             </View>

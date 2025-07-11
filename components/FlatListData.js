@@ -19,8 +19,14 @@ const FlatListDataComponent = forwardRef(({
         [renderItem, children]
     );
     
+    // Improved key extractor with better fallback strategy
     const extractKey = React.useCallback(
-        keyExtractor || (item => String(item.id || Math.random())),
+        keyExtractor || ((item, index) => {
+            // Try multiple common ID fields
+            const id = item.id || item.collection_id || item.order_id || item._id;
+            // Include index to ensure uniqueness even if IDs are duplicated or missing
+            return `${id || 'item'}-${index}`;
+        }),
         [keyExtractor]
     );
 

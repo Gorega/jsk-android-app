@@ -1952,7 +1952,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
                         <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
                         <TextInput
-                            style={[styles.searchInput, { color: colors.text }]}
+                            style={[styles.searchInput, { color: colors.text,
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "right" : ""
+                                    }
+                                }),
+                            }]}
                             placeholder={translations[language].common?.search || "Search reasons..."}
                             placeholderTextColor={colors.textSecondary}
                             value={reasonSearchQuery}

@@ -6,11 +6,36 @@ import User from "./User";
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import React from 'react';
+
+// Create a memoized UserItem component to prevent unnecessary re-renders
+const UserItem = React.memo(function UserItem({ item }) {
+    return (
+        <View style={styles.orders}>
+            <User user={item} />
+        </View>
+    );
+}, (prevProps, nextProps) => {
+    // Only re-render if the user_id or active_status changes
+    return prevProps.item.user_id === nextProps.item.user_id &&
+           prevProps.item.active_status === nextProps.item.active_status;
+});
 
 export default function UsersView({data, loadMoreData, loadingMore, refreshControl, isLoading}) {
     const { language } = useLanguage();
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+
+    // Memoize the renderUserItem function to prevent recreating it on each render
+    const renderUserItem = React.useCallback(({ item }) => {
+        return <UserItem item={item} />;
+    }, []);
+
+    // Memoize the keyExtractor function with a more reliable unique key strategy
+    const keyExtractor = React.useCallback((item, index) => {
+        // Use a combination of user_id and index to ensure uniqueness
+        return `user-${item.user_id || ''}-${index}`;
+    }, []);
 
     if (isLoading) {
         return (
@@ -26,12 +51,15 @@ export default function UsersView({data, loadMoreData, loadingMore, refreshContr
         list={data || []}
         loadMoreData={loadMoreData}
         loadingMore={loadingMore}
-        children={(item)=> (
-            <View style={styles.orders}>
-                <User user={item} />
-            </View>
-        )}
+        renderItem={renderUserItem}
+        keyExtractor={keyExtractor}
         refreshControl={refreshControl}
+        // Add these props to optimize FlatList performance
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={8}
+        updateCellsBatchingPeriod={50}
+        windowSize={7}
+        initialNumToRender={5}
     />
     :
     <View style={[styles.empty, { backgroundColor: colors.background }]}>

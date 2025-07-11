@@ -14,8 +14,9 @@ import ModalPresentation from "../ModalPresentation";
 import { useState } from 'react';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import React from 'react';
 
-export default function Collection({ type, collection }) {
+function Collection({ type, collection }) {
     const { language } = useLanguage();
     const { user } = useAuth();
     const { isDark, colorScheme } = useTheme();
@@ -840,6 +841,15 @@ export default function Collection({ type, collection }) {
         </View>
     );
 }
+
+export default React.memo(Collection, (prevProps, nextProps) => {
+    // Only re-render if collection ID, status, or type changes
+    return (
+        prevProps.collection.collection_id === nextProps.collection.collection_id &&
+        prevProps.collection.status_key === nextProps.collection.status_key &&
+        prevProps.type === nextProps.type
+    );
+});
 
 const styles = StyleSheet.create({
     collectionCard: {

@@ -1,6 +1,6 @@
-import { View, StyleSheet, ActivityIndicator, Text, RefreshControl, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Text, RefreshControl, TouchableOpacity, Platform } from 'react-native';
 import Search from '../../components/search/Search';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { router } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -26,7 +26,8 @@ export default function HomeScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
-    const filterByGroup = [
+    // Memoize filter groups to prevent recreating on each render
+    const filterByGroup = useMemo(() => [
         {
             name: translations[language].users.filters.all,
             action: "",
@@ -39,9 +40,9 @@ export default function HomeScreen() {
             name: translations[language].users.filters.inactive,
             action: 0
         }
-    ];
+    ], [language]);
 
-    const searchByGroup = [
+    const searchByGroup = useMemo(() => [
         {
             name: translations[language].users.filters.userId,
             action: "user_id"
@@ -82,9 +83,9 @@ export default function HomeScreen() {
             name: translations[language].users.filters.address,
             action: "address"
         }
-    ];
+    ], [language]);
 
-    const searchByDateGroup = [
+    const searchByDateGroup = useMemo(() => [
         {
             name: translations[language].users.filters.today,
             action: "today"
@@ -109,13 +110,13 @@ export default function HomeScreen() {
             name: translations[language].users.filters.selectDate,
             action: "custom"
         }
-    ];
+    ], [language]);
 
-    const clearFilters = () => {
+    const clearFilters = useCallback(() => {
         router.setParams("");
-    };
+    }, []);
 
-    const fetchData = async (pageNumber = 1, isLoadMore = false) => {
+    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false) => {
         if (!isLoadMore) setIsLoading(true);
         try {
             // const token = await getToken("userToken");
@@ -150,14 +151,15 @@ export default function HomeScreen() {
                 setData(newData);
             }
         } catch (err) {
+            // Error handling
         } finally {
             setLoadingMore(false);
             setIsLoading(false);
             setRefreshing(false);
         }
-    };
+    }, [searchValue, activeFilter, activeSearchBy, activeDate, selectedDate, language]);
 
-    const loadMoreData = async () => {
+    const loadMoreData = useCallback(async () => {
         if (!loadingMore && data.data?.length > 0) {
             // Check if there's more data to load
             if (data.data.length >= data.metadata?.total_records) {
@@ -173,20 +175,35 @@ export default function HomeScreen() {
                 setLoadingMore(false);
             }
         }
-    };
+    }, [loadingMore, data, page, fetchData]);
 
     const onRefresh = useCallback(() => {
         setRefreshing(true);
         setPage(1);
         fetchData(1, false);
-    }, [language, searchValue, activeFilter, activeDate, selectedDate]);
+    }, [fetchData]);
+
+    // Clear all filters handler
+    const handleClearAllFilters = useCallback(() => {
+        setSearchValue("");
+        setActiveFilter("");
+        setActiveSearchBy("");
+        setActiveDate("");
+        setSelectedDate("");
+        clearFilters();
+    }, [clearFilters]);
+
+    // Set search value with memoization
+    const handleSetSearchValue = useCallback((input) => {
+        setSearchValue(input);
+    }, []);
 
     useEffect(() => {
         setPage(1);
         fetchData(1, false);
-    }, [searchValue, activeFilter, activeDate, selectedDate, language]);
+    }, [searchValue, activeFilter, activeDate, selectedDate, language, fetchData]);
 
-    const renderEmptyState = () => {
+    const renderEmptyState = useCallback(() => {
         if (isLoading) return null;
         
         return (
@@ -201,14 +218,7 @@ export default function HomeScreen() {
                 {(activeFilter || activeSearchBy || activeDate || searchValue) && (
                     <TouchableOpacity 
                         style={[styles.clearButton, { backgroundColor: colors.primary }]}
-                        onPress={() => {
-                            setSearchValue("");
-                            setActiveFilter("");
-                            setActiveSearchBy("");
-                            setActiveDate("");
-                            setSelectedDate("");
-                            clearFilters();
-                        }}
+                        onPress={handleClearAllFilters}
                     >
                         <Text style={[styles.clearButtonText, { color: colors.buttonText }]}>
                             {translations[language].users.clearFilters}
@@ -217,13 +227,23 @@ export default function HomeScreen() {
                 )}
             </View>
         );
-    };
+    }, [isLoading, colors, language, activeFilter, activeSearchBy, activeDate, searchValue, handleClearAllFilters]);
+
+    // Memoize the refresh control to prevent recreation on each render
+    const refreshControl = useMemo(() => (
+        <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+        />
+    ), [refreshing, onRefresh, colors.primary]);
 
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <Search
                 searchValue={searchValue}
-                setSearchValue={(input) => setSearchValue(input)}
+                setSearchValue={handleSetSearchValue}
                 filterByGroup={filterByGroup}
                 searchByGroup={searchByGroup}
                 activeFilter={activeFilter}
@@ -247,14 +267,7 @@ export default function HomeScreen() {
                         loadMoreData={loadMoreData}
                         loadingMore={loadingMore}
                         isLoading={isLoading}
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={onRefresh}
-                                colors={[colors.primary]}
-                                tintColor={colors.primary}
-                            />
-                        }
+                        refreshControl={refreshControl}
                     />
                 )}
             </View>
