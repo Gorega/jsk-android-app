@@ -1171,7 +1171,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
                                                 userName: order.receiver_name,
-                                                msg: ""
+                                                msg: "",
+                                                orderId: order.order_id,
+                                                businessName: order.sender || "طيار للتوصيل",
+                                                codValue: order.total_cod_value || "",
+                                                currency: order.currency || ""
                                             }}
                                             orderId={order.order_id}
                                         />
@@ -1181,7 +1185,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                 label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                                                 phone: order.receiver_mobile,
                                                 userName: order.receiver_name,
-                                                msg: ""
+                                                msg: "",
+                                                orderId: order.order_id,
+                                                businessName: order.sender || "طيار للتوصيل",
+                                                codValue: order.total_cod_value || "",
+                                                currency: order.currency || ""
                                             }}
                                             orderId={order.order_id}
                                         />

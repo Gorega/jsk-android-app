@@ -17,6 +17,9 @@ export default function Contact({ contact, orderId }) {
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    
+    // Check if user is driver or delivery company
+    const isDriverOrDeliveryCompany = user && ['driver', 'delivery_company'].includes(user.role?.toLowerCase());
 
     // Function to record contact history
     const recordContactHistory = async (contactType) => {
@@ -42,10 +45,36 @@ export default function Contact({ contact, orderId }) {
                 })
             });
             const data = await response.json();
-            console.log(data);
         } catch (error) {
             console.error('Error recording contact history:', error);
         }
+    };
+
+    // Generate WhatsApp message template with dynamic order data
+    const generateWhatsAppMessage = () => {
+        // Extract all available data with fallbacks
+        const receiverName = contact.userName || '';
+        const orderReference = contact.orderId || contact.reference || '';
+        const businessName = contact.businessName || user?.business?.name || 'طيار للتوصيل';
+        const codValue = contact.codValue || contact.cod_value || '';
+        const currency = contact.currency || '';
+        const deliveryDate = contact.deliveryDate || 'اليوم';
+        const senderName = contact.senderName || contact.sender?.name || '';
+        
+        // Create message based on language
+        if (language === 'ar' || language === 'he') {
+            return `مرحبا ${receiverName}، منحكي معك من شركة طيار للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
+        } else {
+            return `Hello ${receiverName}, this is Taiar delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+        }
+    };
+
+    // Get message content based on user role
+    const getMessageContent = () => {
+        if (isDriverOrDeliveryCompany) {
+            return contact.msg || generateWhatsAppMessage();
+        }
+        return contact.msg || '';
     };
 
     // Handle phone call
@@ -57,19 +86,19 @@ export default function Contact({ contact, orderId }) {
     // Handle SMS
     const handleSMS = () => {
         recordContactHistory('رسالة SMS');
-        Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(contact.msg)}`);
+        Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(getMessageContent())}`);
     };
 
     // Handle WhatsApp with 972 prefix
     const handleWhatsApp972 = () => {
         recordContactHistory('whatsapp_972');
-        Linking.openURL(`https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`);
+        Linking.openURL(`https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
     };
 
     // Handle WhatsApp with 970 prefix
     const handleWhatsApp970 = () => {
         recordContactHistory('whatsapp_970');
-        Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(contact.msg)}`);
+        Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
     };
 
     return (

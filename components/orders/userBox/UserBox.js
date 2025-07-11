@@ -6,12 +6,38 @@ import { useLanguage } from '../../../utils/languageContext';
 import { RTLWrapper } from '../../../utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import { useEffect, useState } from "react";
 
 export default function BusinessBox({ box, orderId }) {
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const [orderData, setOrderData] = useState(null);
+
+    // Fetch order data if orderId is available
+    useEffect(() => {
+        const fetchOrderData = async () => {
+            if (!orderId) return;
+            
+            try {
+                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/json"
+                    }
+                });
+                const data = await res.json();
+                setOrderData(data);
+            } catch (error) {
+                console.error("Error fetching order data:", error);
+            }
+        };
+        
+        fetchOrderData();
+    }, [orderId, language]);
 
     return (
         <RTLWrapper>
@@ -47,7 +73,11 @@ export default function BusinessBox({ box, orderId }) {
                             label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                             phone: box.phone,
                             userName: box.userName,
-                            msg: ""
+                            msg: "",
+                            orderId: orderId,
+                            businessName: orderData?.sender || "طيار للتوصيل",
+                            codValue: orderData?.cod_values?.[0]?.value || "",
+                            currency: orderData?.cod_values?.[0]?.currency || "₪"
                         }}
                         orderId={orderId}
                     />
@@ -57,7 +87,11 @@ export default function BusinessBox({ box, orderId }) {
                             label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                             phone: box.phone,
                             userName: box.userName,
-                            msg: ""
+                            msg: "",
+                            orderId: orderId,
+                            businessName: orderData?.sender || "طيار للتوصيل",
+                            codValue: orderData?.cod_values?.[0]?.value || "",
+                            currency: orderData?.cod_values?.[0]?.currency || "₪"
                         }}
                         orderId={orderId}
                     />

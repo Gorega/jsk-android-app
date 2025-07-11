@@ -1023,7 +1023,8 @@ export const translations = {
       routeNotFound: "Route not found",
       locationPermission: "Location Permission",
       locationNeeded: "Location permission is needed for navigation.",
-      dispatchTo: "Dispatch to"
+      dispatchTo: "Dispatch to",
+      message: "Message"
     },
 
     // Search
@@ -1332,7 +1333,8 @@ export const translations = {
       routeNotFound: "المسار غير موجود",
       locationPermission: "إذن الموقع",
       locationNeeded: "إذن الموقع مطلوب للتنقل.",
-      dispatchTo: "إرسال إلى"
+      dispatchTo: "إرسال إلى",
+      message: "رسالة"
     },
 
     common:{
@@ -2477,7 +2479,8 @@ export const translations = {
       routeNotFound: "המסלול לא נמצא",
       locationPermission: "הרשאת מיקום",
       locationNeeded: "נדרשת הרשאת מיקום לניווט.",
-      dispatchTo: "שלח אל"
+      dispatchTo: "שלח אל",
+      message: "הודעה"
     },
 
     common:{

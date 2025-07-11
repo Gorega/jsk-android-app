@@ -40,6 +40,7 @@ export default function RouteNavigate() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [showCallOptionsModal, setShowCallOptionsModal] = useState(false);
     const [currentPhoneNumber, setCurrentPhoneNumber] = useState(null);
+    const [currentOrderForContact, setCurrentOrderForContact] = useState(null);
     // Add search state for filtering reasons
     const [reasonSearchQuery, setReasonSearchQuery] = useState('');
     const [filteredReasons, setFilteredReasons] = useState([]);
@@ -346,13 +347,46 @@ export default function RouteNavigate() {
         // };
     }, [isAllowed, routeId, language]);
     
-    const handleCall = (phoneNumber) => {
+    // Generate WhatsApp message template with dynamic order data
+    const generateWhatsAppMessage = (order) => {
+        if (!order) return '';
+        
+        // Extract all available data with fallbacks
+        const receiverName = order.receiver_name || '';
+        const orderReference = order.order_id || order.reference || '';
+        const businessName = user?.business?.name || 'طيار للتوصيل';
+        const codValue = order.cod_value || '';
+        const currency = order.currency || '₪';
+        const deliveryDate = 'اليوم';
+        
+        // Create message based on language
+        if (language === 'ar' || language === 'he') {
+            return `مرحبا ${receiverName}، منحكي معك من شركة طيار للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
+        } else {
+            return `Hello ${receiverName}, this is Taiar delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+        }
+    };
+
+    const handleCall = (phoneNumber, order) => {
         if (!phoneNumber) return;
         
         setCurrentPhoneNumber(phoneNumber);
+        setCurrentOrderForContact(order);
         setShowCallOptionsModal(true);
     };
     
+    // Add function to handle message sending
+    const handleMessage = (phoneNumber, order) => {
+        if (!phoneNumber) return;
+        
+        // Record contact history
+        recordContactHistory('رسالة SMS');
+        
+        // Generate message and open SMS app
+        const message = generateWhatsAppMessage(order);
+        Linking.openURL(`sms:${phoneNumber}?body=${encodeURIComponent(message)}`);
+    };
+
     const handleStatusUpdate = (order) => {
         const currentStatus = orderStatus[order.id];
         
@@ -537,12 +571,12 @@ export default function RouteNavigate() {
     // Add this function to record contact history
     const recordContactHistory = async (contactType) => {
         // Only record if user is driver or delivery_company and orderId exists
-        if (!user || !['driver', 'delivery_company'].includes(user.role?.toLowerCase()) || !currentOrder?.order_id) {
+        if (!user || !['driver', 'delivery_company'].includes(user.role?.toLowerCase()) || !currentOrderForContact?.order_id) {
             return;
         }
 
         try {
-            await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${currentOrder.order_id}/history/record`, {
+            await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${currentOrderForContact.order_id}/history/record`, {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
@@ -551,10 +585,10 @@ export default function RouteNavigate() {
                     'Accept-Language': language
                 },
                 body: JSON.stringify({
-                    orderId: currentOrder.order_id,
+                    orderId: currentOrderForContact.order_id,
                     fieldName: contactType,
                     oldValue: '',
-                    newValue: `تواصل السائق مع ${currentOrder.receiver_name} عبر ${contactType}`
+                    newValue: `تواصل السائق مع ${currentOrderForContact.receiver_name} عبر ${contactType}`
                 })
             });
         } catch (error) {
@@ -847,11 +881,21 @@ export default function RouteNavigate() {
                                     <View style={styles.actionButtons}>
                                         <TouchableOpacity 
                                             style={[styles.actionButton, styles.callButton]}
-                                            onPress={() => handleCall(order.receiver_mobile)}
+                                            onPress={() => handleCall(order.receiver_mobile, order)}
                                         >
                                             <Feather name="phone" size={16} color={colors.success} />
                                             <Text style={[styles.callButtonText,{color: colors.success}]}>
                                                 {translations[language]?.routes?.call || "Call"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                        
+                                        <TouchableOpacity 
+                                            style={[styles.actionButton, styles.messageButton]}
+                                            onPress={() => handleMessage(order.receiver_mobile, order)}
+                                        >
+                                            <Feather name="message-square" size={16} color={colors.primary} />
+                                            <Text style={[styles.messageButtonText,{color: colors.primary}]}>
+                                                {translations[language]?.routes?.message || "Message"}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
@@ -1113,7 +1157,8 @@ export default function RouteNavigate() {
                                     currentPhoneNumber.substring(1) : currentPhoneNumber;
                                 // Record contact history for WhatsApp 972
                                 recordContactHistory('whatsapp_972');
-                                Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
+                                const message = generateWhatsAppMessage(currentOrderForContact);
+                                Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}&text=${encodeURIComponent(message)}`);
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
@@ -1134,7 +1179,8 @@ export default function RouteNavigate() {
                                     currentPhoneNumber.substring(1) : currentPhoneNumber;
                                 // Record contact history for WhatsApp 970
                                 recordContactHistory('whatsapp_970');
-                                Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
+                                const message = generateWhatsAppMessage(currentOrderForContact);
+                                Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}&text=${encodeURIComponent(message)}`);
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
@@ -1534,6 +1580,15 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(67, 97, 238, 0.1)',
     },
     callButtonText: {
+        marginLeft: 8,
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#4361EE',
+    },
+    messageButton: {
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+    },
+    messageButtonText: {
         marginLeft: 8,
         fontSize: 14,
         fontWeight: '600',
