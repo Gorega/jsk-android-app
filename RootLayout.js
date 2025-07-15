@@ -14,13 +14,13 @@ import { LanguageProvider } from './utils/languageContext';
 import { initializeNotifications } from './utils/notificationHelper';
 import { ThemeProvider, useTheme } from './utils/themeContext';
 import { Colors } from './constants/Colors';
+import { handleAppUpdates } from './utils/updateChecker';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync();
-
 
 // Component to handle theme-aware navigation
 function NavigationContainer({ children, isAuthenticated }) {
@@ -67,15 +67,53 @@ export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState(null);
   const { getRequest, data: user } = useFetch();
-  const { setLanguage } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const notificationListenerRef = useRef(null);
   
   // Add state for RTL initialization
   const [rtlInitialized, setRtlInitialized] = useState(false);
   
+  // Add state for update check
+  const [updateCheckComplete, setUpdateCheckComplete] = useState(false);
+  const [canContinue, setCanContinue] = useState(false);
+  
   // Initialize RTL on component mount - using the simplified flag
   useEffect(() => {
     setRtlInitialized(true);
+  }, []);
+
+  // Check for updates before initializing the app
+  useEffect(() => {
+    async function checkForUpdates() {
+      try {
+        // Get saved language for localized update messages
+        const savedLanguage = await getToken('language') || 'ar';
+        
+        // Add timeout to ensure we don't get stuck
+        const updateCheckPromise = handleAppUpdates(savedLanguage);
+        const timeoutPromise = new Promise(resolve => {
+          // Timeout after 10 seconds
+          setTimeout(() => {
+            console.log('Update check timed out, continuing with app');
+            resolve(true);
+          }, 10000);
+        });
+        
+        // Use Promise.race to either get the update check result or timeout
+        const shouldContinue = await Promise.race([updateCheckPromise, timeoutPromise]);
+        
+        // Set states based on update check result
+        setUpdateCheckComplete(true);
+        setCanContinue(shouldContinue);
+      } catch (error) {
+        console.error('Error during update check:', error);
+        // In case of error, allow the app to continue
+        setUpdateCheckComplete(true);
+        setCanContinue(true);
+      }
+    }
+    
+    checkForUpdates();
   }, []);
 
   useEffect(() => {
@@ -98,6 +136,11 @@ export default function RootLayout() {
 
   // Bootstrap everything in one effect
   useEffect(() => {
+    // Don't initialize the app if update is required
+    if (!canContinue && updateCheckComplete) {
+      return;
+    }
+    
     async function prepare() {
       try {
         // 1) Load saved language
@@ -174,15 +217,33 @@ export default function RootLayout() {
         setAppReady(true);
       }
     }
-    prepare();
-  }, [setLanguage]);
+    
+    if (updateCheckComplete && canContinue) {
+      prepare();
+    }
+  }, [setLanguage, updateCheckComplete, canContinue]);
 
   // Hide splash when ready
   useEffect(() => {
-    if (appReady && fontsLoaded) {
-      SplashScreen.hideAsync();
+    if (appReady && fontsLoaded && updateCheckComplete && canContinue) {
+      console.log('All conditions met, hiding splash screen:', {
+        appReady,
+        fontsLoaded,
+        updateCheckComplete,
+        canContinue
+      });
+      SplashScreen.hideAsync().catch(err => {
+        console.error('Error hiding splash screen:', err);
+      });
+    } else {
+      console.log('Waiting for conditions to hide splash screen:', {
+        appReady,
+        fontsLoaded,
+        updateCheckComplete,
+        canContinue
+      });
     }
-  }, [appReady, fontsLoaded]);
+  }, [appReady, fontsLoaded, updateCheckComplete, canContinue]);
 
   // Fetch user data
   useEffect(() => {
@@ -199,7 +260,8 @@ export default function RootLayout() {
     );
   }
 
-  if (!appReady || !fontsLoaded) {
+  // Keep splash screen visible if update check is not complete or update is required
+  if (!updateCheckComplete || !canContinue || !appReady || !fontsLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />

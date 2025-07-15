@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, DeviceEventEmitter } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -43,7 +43,7 @@ export default function CameraScanner() {
         try {
           // Try to parse as JSON first
           // const parsedData = JSON.parse(data);
-          orderId = data ;
+          orderId = data;
         } catch (parseError) {
           // If parsing fails, use the raw data as order ID
           orderId = data;
@@ -54,10 +54,21 @@ export default function CameraScanner() {
       }
       
       setScanned(true);
-      router.push({
-        pathname: "/(track)",
-        params: { orderId: orderId }
+      
+      // First navigate to orders tab without parameters to clear existing filters
+      router.replace({
+        pathname: "/(tabs)/orders"
       });
+      
+      // Then after a small delay, set only the multi_id parameter
+      // This avoids conflicts between different filter types
+      setTimeout(() => {
+        router.setParams({
+          multi_id: orderId,
+          reset: "true"
+        });
+      }, 50);
+      
     } catch (err) {
       setError(translations[language].camera.scanInvalidTextError || 'Invalid scan data');
       setTimeout(() => setError(null), 3000);
@@ -130,14 +141,14 @@ export default function CameraScanner() {
             <View 
               style={[
                 styles.corner, 
-                styles.topRight,
+                styles.topLeft,
                 { borderColor: colors.primary }
               ]} 
             />
             <View 
               style={[
                 styles.corner, 
-                styles.topLeft,
+                styles.topRight,
                 { borderColor: colors.primary }
               ]} 
             />
@@ -235,6 +246,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    direction: 'ltr',
   },
   corner: {
     position: 'absolute',

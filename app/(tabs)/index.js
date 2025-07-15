@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl,Platform, StatusBar, ActivityIndicator, Alert, Animated } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, Platform, StatusBar, ActivityIndicator, Alert, Animated } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -161,27 +161,43 @@ export default function HomeScreen() {
     numberOfOrders: data?.returned_orders?.count,
     money: formatMoney(data?.returned_orders?.cod_value),
     orderIds: data?.returned_orders?.order_ids
-  }, {
+  },{
     label: translations[language].tabs.index.boxes.rescheduled,
     icon: <MaterialCommunityIcons name="calendar-clock" size={22} color="white" />,
     gradientColors: ['#B5179E', '#7209B7'],
     numberOfOrders: data?.reschedule_orders?.count,
     money: formatMoney(data?.reschedule_orders?.cod_value),
     orderIds: data?.reschedule_orders?.order_ids
-  }, {
+  } , {
     label: translations[language].tabs.index.boxes.stuck,
     icon: <MaterialCommunityIcons name="alert-circle" size={22} color="white" />,
     gradientColors: ['#F72585', '#B5179E'],
     numberOfOrders: data?.stuck_orders?.count,
     money: formatMoney(data?.stuck_orders?.cod_value),
     orderIds: data?.stuck_orders?.order_ids
-  }, user.role === "driver" || user.role === "delivery_company" ? { visibility: "hidden" } : {
+  },{
     label: translations[language].tabs.index.boxes.rejected,
     icon: <MaterialCommunityIcons name="close-circle" size={22} color="white" />,
     gradientColors: ['#D00000', '#9D0208'],
     numberOfOrders: data?.rejected_orders?.count,
     money: formatMoney(data?.rejected_orders?.cod_value),
     orderIds: data?.rejected_orders?.order_ids
+  }, user.role === "business" ? {visibility: "hidden"} :{
+    label: translations[language]?.collections?.collection?.sentMoney || "Sent Money",
+    icon: <FontAwesome6 name="money-bill-transfer" size={22} color="white" />,
+    gradientColors: ['#4CC9F0', '#4361EE'],
+    numberOfOrders: data?.sent_money_collections?.numberOfOrders,
+    money: formatMoney(data?.sent_money_collections?.money),
+    collectionIds: data?.sent_money_collections?.collectionIds,
+    isCollection: true
+  }, user.role === "business" ? {visibility: "hidden"} :{
+    label: translations[language]?.collections?.collection?.sentPackages || "Sent Packages",
+    icon: <MaterialCommunityIcons name="package-variant-closed" size={22} color="white" />,
+    gradientColors: ['#8338EC', '#3A0CA3'],
+    numberOfOrders: data?.sent_packages_collections?.numberOfOrders,
+    money: formatMoney(data?.sent_packages_collections?.money),
+    collectionIds: data?.sent_packages_collections?.collectionIds,
+    isCollection: true
   }];
 
   useEffect(() => {
@@ -623,12 +639,50 @@ export default function HomeScreen() {
             <TouchableOpacity 
               key={index} 
               style={styles.cardTouchable}
-              onPress={() => router.push({
-                pathname: "/(tabs)/orders",
-                params: {
-                  orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
-                }
-              })}
+              onPress={() => {
+                // First reset all filters
+                // DeviceEventEmitter.emit('resetOrdersFilters');
+                
+                // Then navigate to orders with the specific filter
+                const statusKey = index === 0 ? "today" : 
+                                  index === 1 ? "money_in_branch" : 
+                                  index === 2 ? "returned_in_branch" : 
+                                  index === 3 ? "sent_money" :
+                                  index === 4 ? "sent_packages" : "";
+                
+                if (box.isCollection) {
+                  // Determine if it's sent money or sent packages based on statusKey
+                  const collectionType = statusKey === "sent_money" || statusKey === "sent_packages" ? "sent" : "";
+                  
+                  router.push({
+                    pathname: "/(collection)",
+                    params: { type: collectionType }
+                  });
+                } else {
+                    // Navigate to orders page with the specific filter
+                    if (statusKey === "today") {
+                      // For today filter, use date_range parameter instead of status_key
+                      router.push({
+                        pathname: "/(tabs)/orders",
+                        params: {
+                          orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                          date_range: "today",
+                          reset: "true" // Reset filters first, then apply the specific one
+                        }
+                      });
+                    } else {
+                      // For other filters, use status_key as before
+                      router.push({
+                        pathname: "/(tabs)/orders",
+                        params: {
+                          orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                          status_key: statusKey,
+                          reset: "true" // Reset filters first, then apply the specific one
+                        }
+                      });
+                    }
+                 }
+              }}
               onLongPress={() => {
                 // Handle long press based on which card it is
                 if (index === 1 && user.role === "business") {  // Money in branch card
@@ -1033,16 +1087,88 @@ export default function HomeScreen() {
               const totalOrders = data?.total_orders?.count || 100;
               const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
               
+              // Map box labels to status keys
+              const getStatusKey = () => {
+                switch (box.label) {
+                  case translations[language].tabs.index.boxes.todayOrders:
+                    return "today";
+                  case translations[language].tabs.index.boxes.inWaiting:
+                    return "waiting";
+                  case translations[language].tabs.index.boxes.inBranch:
+                    return "in_branch";
+                  case translations[language].tabs.index.boxes.onTheWay:
+                    return "on_the_way";
+                  case translations[language].tabs.index.boxes.withDriver:
+                    return "on_the_way";
+                  case translations[language].tabs.index.boxes.delivered:
+                    return "delivered";
+                  case translations[language].tabs.index.boxes.returned:
+                    return "return_after_delivered_initiated";
+                  case translations[language].tabs.index.boxes.returnedInBranch:
+                    return "returned_in_branch";
+                  case translations[language].tabs.index.boxes.rescheduled:
+                    return "reschedule";
+                  case translations[language].tabs.index.boxes.stuck:
+                    return "stuck";
+                  case translations[language].tabs.index.boxes.rejected:
+                    return "rejected";
+                  case translations[language]?.collections?.collection?.sentMoney:
+                    return "sent_money";
+                  case translations[language]?.collections?.collection?.sentPackages:
+                    return "sent_packages";
+                  default:
+                    return "";
+                }
+              };
+              
               return (
                 <TouchableOpacity 
                   key={index}
                   style={styles.statusCircleItem}
-                  onPress={() => router.push({
-                    pathname: "/(tabs)/orders",
-                    params: {
-                      orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {}
-                    }
-                  })}
+                  onPress={() => {
+                    // First reset all filters
+                    // DeviceEventEmitter.emit('resetOrdersFilters');
+                    
+                    // Then navigate to orders with the specific filter
+                    const statusKey = getStatusKey();
+                    
+                    if (box.isCollection) {
+                      // Check if it's sent money or sent packages
+                      const collectionType = box.label === translations[language]?.collections?.collection?.sentMoney 
+                        ? "sent" 
+                        : box.label === translations[language]?.collections?.collection?.sentPackages 
+                          ? "sent" 
+                          : "";
+                      
+                      router.push({
+                        pathname: "/(collection)",
+                        params: { type: collectionType }
+                      });
+                    } else {
+                        // Navigate to orders page with the specific filter
+                        if (statusKey === "today") {
+                          // For today filter, use date_range parameter instead of status_key
+                          router.push({
+                            pathname: "/(tabs)/orders",
+                            params: {
+                              orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                              date_range: "today",
+                              reset: "true" // Reset filters first, then apply the specific one
+                            }
+                          });
+                        } else {
+                          // For other filters, use status_key as before
+                          router.push({
+                            pathname: "/(tabs)/orders",
+                            params: {
+                              orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                              status_key: statusKey,
+                              reset: "true" // Reset filters first, then apply the specific one
+                            }
+                          });
+                        }
+                     }
+                    }}
                   activeOpacity={0.9}
                 >
                   <View style={styles.circleOuterContainer}>
@@ -1503,11 +1629,11 @@ const styles = StyleSheet.create({
   statusCirclesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: 15,
   },
   statusCircleItem: {
-    width: '33%',
+    width: '33.33%',
     alignItems: 'center',
     marginBottom: 18,
     padding: 5,

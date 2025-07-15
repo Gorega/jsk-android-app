@@ -35,13 +35,16 @@ export default function TabLayout() {
 
   // Shared navigation handler for orders tab
   const handleOrdersPress = useCallback(() => {
-    // Always navigate using replace to ensure a fresh state
+    // Clear all URL parameters by navigating without params first
     router.replace({
-      pathname: "/(tabs)/orders",
-      params: {
-        reset: Date.now() // Force a reset by adding a timestamp
-      }
+      pathname: "/(tabs)/orders"
     });
+    
+    // Then emit the refetch event to ensure data is refreshed and all filters are cleared
+    // Add a small delay to ensure navigation completes before emitting the event
+    setTimeout(() => {
+      DeviceEventEmitter.emit('resetOrdersFilters');
+    }, 100); // Increased from 50ms to 100ms for more reliable execution
   }, []);
 
   // Animation for the add button

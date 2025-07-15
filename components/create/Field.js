@@ -386,7 +386,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         styles.orderTypeButton,
                         { 
                             backgroundColor: isDark ? colors.surface : '#F8FAFC',
-                            borderColor: isDark ? colors.border : '#E2E8F0' 
+                            borderColor: isDark ? colors.border : '#E2E8F0' ,
                         },
                         field.isSelected && [
                             { 
@@ -406,7 +406,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         )}
                         <Text style={[
                             styles.orderTypeButtonText,
-                            field.isSelected && styles.orderTypeButtonTextSelected
+                            field.isSelected && styles.orderTypeButtonTextSelected,
+                            { color: colors.text }
                         ]}>
                             {field.label}
                         </Text>

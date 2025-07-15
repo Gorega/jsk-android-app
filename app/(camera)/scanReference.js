@@ -156,11 +156,11 @@ export default function ScanReference() {
           
           {/* Scanner frame with animated border */}
           <View style={styles.frameBorder}>
-          <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
-          <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
-          <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
-          <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
-        </View>
+            <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
+            <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+          </View>
           
           {/* Instructions text */}
           <View style={styles.instructionsContainer}>
@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'transparent',
+    direction: 'ltr',
   },
   corner: {
     position: 'absolute',

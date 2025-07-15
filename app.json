@@ -2,12 +2,18 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "2.2.0",
+    "version": "2.3.0",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/c1d54568-437f-4a8c-a692-8b8ac589ffb0",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
+    },
     "ios": {
       "workflow": "managed",
       "supportsTablet": true,
@@ -39,7 +45,6 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.WAKE_LOCK",
-        "android.permission.SCHEDULE_EXACT_ALARM",
         "NOTIFICATIONS"
       ],
       "userInterfaceStyle": "automatic",

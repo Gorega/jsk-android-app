@@ -159,7 +159,8 @@ export const translations = {
       loadingOrders:"Loading available orders...",
       retry:"Retry",
       loading:"Loading...",
-      loadingMore:"Loading more orders..."
+      loadingMore:"Loading more orders...",
+      pending:"Pending"
     },
 
     balance:{
@@ -192,6 +193,7 @@ export const translations = {
           onTheWay:"On the Way",
           delivered:"Delivered",
           returned:"Returned",
+          returnedInBranch:"Returned In Branch",
           rescheduled:"Rescheduled",
           stuck:"Stuck",
           rejected:"Rejected",
@@ -209,6 +211,7 @@ export const translations = {
         filters:{
           // filterByGroup
           all:"All",
+          todayOrders:"Today Orders",
           waiting:"Waiting",
           rejected:"Rejected",
           inBranch:"In Branch",
@@ -310,6 +313,7 @@ export const translations = {
             "rescheduled": "Rescheduled",
             "return_before_delivered_initiated": "Return before delivery initiated",
             "return_after_delivered_initiated": "Return after delivery initiated",
+            "return_after_delivered_fee_received": "Return after delivery and fee received",
             "delayed": "Delayed",
             "suspendReasons": {
               "closed": "Closed",
@@ -782,7 +786,9 @@ export const translations = {
         tryAgainLater:"Please try again later",
         deliveryType:"Delivery Type",
         orderCount:"Order Count",
-        whatsappOptions:"Whatsapp Options"
+        whatsappOptions:"Whatsapp Options",
+        sentMoney:"Sent Money",
+        sentPackages:"Sent Packages"
       }
     },
 
@@ -1130,7 +1136,7 @@ export const translations = {
 
     // track
     track:{
-      title:"Track Your Package",
+      title:"Track Your Order",
       desc:"Enter Order Number to Start Tracking",
       placeholder:"for ex:12321411",
     },
@@ -1355,7 +1361,8 @@ export const translations = {
       loadingOrders:"جارٍ التحميل...",
       retry:"حاول مرة أخرى",
       loading:"جارٍ التحميل...",
-      loadingMore:"جارٍ التحميل..."
+      loadingMore:"جارٍ التحميل...",
+      pending:"معلق"
     },
 
     balance:{
@@ -1389,6 +1396,7 @@ export const translations = {
           delivered: "تم التوصيل",
           returned: "مرتجع",
           rescheduled: "مؤجل",
+          returnedInBranch: "مرتجع في الفرع",
           stuck: "عالق",
           rejected: "مرفوض",
           ofOrders: "من الطرود",
@@ -1405,6 +1413,7 @@ export const translations = {
         filters: {
           // filterByGroup
           all: "الكل",
+          todayOrders: "طلبات اليوم",
           waiting: "في الانتظار",
           rejected: "مرفوض",
           inBranch: "في الفرع",
@@ -1413,8 +1422,8 @@ export const translations = {
           delayed: "متأخر",
           onTheWay: "في الطريق",
           rescheduled: "مؤجل",
-          returnBeforeDeliveredInitiated: "بدء الإرجاع قبل التسليم",
-          returnAfterDeliveredInitiated: "بدء الإرجاع بعد التسليم",
+          returnBeforeDeliveredInitiated: "مرتجع قبل التوصيل",
+          returnAfterDeliveredInitiated: "مرتجع بعد التوصيل",
           returned: "مرتجع",
           returnedInBranch: "مرتجع في الفرع",
           returnedOut: "جاري تسليم المرتجع / التبديل",
@@ -1425,7 +1434,7 @@ export const translations = {
           businessPaid: "مدفوع",
           completed: "مكتمل",
           received:"تم الاحضار",
-          "delivered/received":"تم التوصيل والاحضار",
+          "delivered/received":"تم التوصيل / تم التبديل",
           dispatched_to_branch:"نقل الى الفرع المرسل اليه",
           // searchByGroup
           orderId: "معرف الطرد",
@@ -1504,9 +1513,12 @@ export const translations = {
             "cancelled": "ملغي",
             "stuck": "عالق",
             "rescheduled": "مؤجل",
-            "return_before_delivered_initiated": "ارجاع قبل التسليم",
-            "return_after_delivered_initiated": "ارجاع بعد التسليم",
+            "return_before_delivered_initiated": "ارجاع قبل التوصيل",
+            "return_after_delivered_initiated": "ارجاع بعد التوصيل",
+            "return_after_delivered_fee_received": "ارجاع بعد التسليم وتم استلام اجرة التوصيل",
             "delayed": "متأخر",
+            "failedToUpdate": "فشل تحديث الحالة",
+            "forOrders": "للطرود",
             "suspendReasons": {
               "closed": "مغلق",
               "no_response": "لا يوجد رد",
@@ -1535,7 +1547,7 @@ export const translations = {
             "inProgress": "قيد التنفيذ",
             "delivered": "تم التوصيل",
             "received": "تم الاحضار",
-            "delivered_received": "تم التوصيل / تم الاحضار"
+            "delivered_received": "تم التوصيل / تم التبديل"
           },
           "editPhone": "تعديل",
           "receiverAddress": "عنوان المستلم",
@@ -1913,11 +1925,11 @@ export const translations = {
         all: "الكل",
         returnedInBranch: "مرتجع في الفرع",
         deleted: "محذوف",
-        returnedOut: "مرتجع خارجي",
+        returnedOut: "جاري تسليم المرتجع",
         returnedDelivered: "تم تسليم المرتجع",
         completed: "مكتمل",
-        moneyInBranch: "النقود في الفرع",
-        moneyOut: "النقود خارجة",
+        moneyInBranch: "المال في الفرع",
+        moneyOut: "جاري تسليم المال",
         paid: "مدفوع",
         pending: "معلق",
         inDispatchedToBranch: "في مرحلة الإرسال إلى الفرع",
@@ -1978,7 +1990,9 @@ export const translations = {
         tryAgainLater:"يرجى المحاولة مرة أخرى لاحقًا",
         deliveryType:"نوع التوصيل",
         orderCount:"عدد الطرود",
-        whatsappOptions:"خيارات واتساب"
+        whatsappOptions:"خيارات واتساب",
+        sentMoney:"تحصيلات مرسلة للتجار",
+        sentPackages:"تجميعات مرتجع / تبديل مرسلة للتجار "
       }
     },
 
@@ -2501,7 +2515,8 @@ export const translations = {
       loadingOrders:"טוען...",
       retry:"נסה שוב",
       loading:"טוען...",
-      loadingMore:"טוען עוד..."
+      loadingMore:"טוען עוד...",
+      pending:"ממתין"
     },
 
     balance:{
@@ -2534,6 +2549,7 @@ export const translations = {
           onTheWay: "בדרך",
           delivered: "נמסר",
           returned: "הוחזר",
+          returnedInBranch: "הוחזר בסניף",
           rescheduled: "נדחה",
           stuck: "תקוע",
           rejected: "נדחה",
@@ -2551,6 +2567,7 @@ export const translations = {
         filters: {
           // filterByGroup
           all: "הכל",
+          todayOrders: "הזמנות היום",
           waiting: "בהמתנה",
           rejected: "נדחה",
           inBranch: "בסניף",
@@ -2652,6 +2669,7 @@ export const translations = {
             "rescheduled": "נדחה",
             "return_before_delivered_initiated": "החזרה לפני מסירה",
             "return_after_delivered_initiated": "החזרה לאחר מסירה",
+            "return_after_delivered_fee_received": "החזרה לאחר מסירה וקבלת עמלת משלוח",
             "delayed": "איחור",
             "suspendReasons": {
               "closed": "סגור",
@@ -3124,7 +3142,9 @@ export const translations = {
         tryAgainLater:"אנא נסה שוב מאוחר יותר",
         deliveryType:"סוג משלוח",
         orderCount:"מספר משלוחים",
-        whatsappOptions:"אפשרויות וואטסאפ"
+        whatsappOptions:"אפשרויות וואטסאפ",
+        sentMoney:"כספים שנשלחו לטרנספורטים",
+        sentPackages:"גבייה שנשלחה לטרנספורטים"
       }
     },
 
@@ -3422,7 +3442,7 @@ export const translations = {
 
     // track
     track: {
-      title: "עקוב אחר משלוח שלך",
+      title: "עקוב משלוח",
       desc: "הזן מספר משלוח כדי להתחיל מעקב",
       placeholder: "לדוגמה: 12321411"
     },

@@ -411,7 +411,7 @@ export default function CameraScanner() {
               <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
               <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
               <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
-          </View>
+            </View>
           
             {/* Instructions text */}
             <View style={styles.instructionsContainer}>

@@ -92,131 +92,49 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         outputRange: ['0deg', '180deg']
     });
 
+    const suspendReasons =  [
+        { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+        { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+        { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+        { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+        { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+        { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+        { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+        { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+        { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+        { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+        { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+        { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+        { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+        { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+        { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+        { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+        { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+        { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+        { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+        { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+    ];
+
     const statusOptions = authUserRole === "driver" || authUserRole === "delivery_company" ? [{
         label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
+        reasons: suspendReasons
         },{
             label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
             requiresReason: true,
-            reasons: [
-                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-            ]
+            reasons: suspendReasons
         }, {
             label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
             requiresReason: true,
-            reasons: [
-                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-            ]
-        }, {
-        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
-        requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
-    }, {
+            reasons: suspendReasons
+        },{
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
+        reasons: suspendReasons
+    },{
+        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_fee_received, value: "return_after_delivered_fee_received",
+        requiresReason: true,
+        reasons: suspendReasons
     }, {
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }, {
@@ -233,78 +151,15 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     },{
         label: translations[language].tabs?.orders?.order?.states?.cancelled, value: "cancelled",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
-        ]
+        reasons: suspendReasons
     }, {
         label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
-        ]
+        reasons: suspendReasons
     }, {
         label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other},
-        ]
+        reasons: suspendReasons
     }];
 
     const [selectedReason, setSelectedReason] = useState(null);
@@ -314,6 +169,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [showBranchModal, setShowBranchModal] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
 
+    // Add this state to track which error messages have been shown
+    const [shownErrorOrderIds, setShownErrorOrderIds] = useState([]);
+    const [syncMessageShown, setSyncMessageShown] = useState(false);
+    
     const handleStatusUpdate = (newStatusOrUpdater) => {
         // First close any open modals
         setShowStatusUpdateModal(false);
@@ -449,19 +308,24 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }
     };
 
-    // Process any pending status updates when online - complete rewrite
+    // Process any pending status updates when online - complete rewrite with better performance
     const processPendingStatusUpdates = async (updates = pendingStatusUpdates, showSuccessMessage = true) => {
         if (!updates || updates.length === 0) {
-            return;
+            return { successCount: 0, failedUpdates: [] };
         }
                 
         // Make a copy of the updates to avoid any state mutation issues
         const updatesToProcess = [...updates];
         const failedUpdates = [];
         let successCount = 0;
+        let failedOrderIds = [];
         
         for (const update of updatesToProcess) {
             try {
+                // Skip if this order ID has already had an error shown
+                if (shownErrorOrderIds.includes(update.order_id)) {
+                    continue;
+                }
                 
                 // Attempt to send the update to the server
                 const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
@@ -483,7 +347,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 try {
                     data = JSON.parse(responseText);
                 } catch (parseError) {
+                    // Add to failed updates with order ID for error reporting
                     failedUpdates.push(update);
+                    failedOrderIds.push(update.order_id);
                     continue;
                 }
                 
@@ -507,6 +373,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         // It's a real error - store the error details with the update for better error reporting
                         update.errorDetails = data.details || data.error;
                         failedUpdates.push(update);
+                        failedOrderIds.push(update.order_id);
                     }
                 } else {
                     successCount++;
@@ -525,12 +392,49 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 // Store any error message with the update
                 update.errorDetails = error.message || "Unknown error occurred";
                 failedUpdates.push(update);
+                failedOrderIds.push(update.order_id);
+            }
+        }
+        
+        // Add shown error order IDs to the list
+        if (failedOrderIds.length > 0) {
+            setShownErrorOrderIds(prev => [...new Set([...prev, ...failedOrderIds])]);
+            
+            // Save shown error IDs to AsyncStorage to persist across app refreshes
+            try {
+                const userId = authUser?.id || authUser?.user_id || await getToken("userId");
+                if (userId) {
+                    const storageKey = `shown_error_order_ids_${userId}`;
+                    const existingIdsJson = await AsyncStorage.getItem(storageKey);
+                    const existingIds = existingIdsJson ? JSON.parse(existingIdsJson) : [];
+                    const updatedIds = [...new Set([...existingIds, ...failedOrderIds])];
+                    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedIds));
+                }
+            } catch (error) {
+                // Silent fail for AsyncStorage errors
             }
         }
                 
-        // Update the pending updates list with only the failed ones
-        setPendingStatusUpdates(failedUpdates);
-        await savePendingStatusUpdates(failedUpdates);
+        // Remove all successful updates from pending updates
+        // We need to keep only the updates that failed
+        const remainingUpdates = [];
+        
+        // Add each failed update to the remaining updates
+        for (const failedUpdate of failedUpdates) {
+            // Check if this update is already in remainingUpdates
+            const alreadyExists = remainingUpdates.some(
+                update => update.order_id === failedUpdate.order_id && update.status === failedUpdate.status
+            );
+            
+            // Only add if not already in the array
+            if (!alreadyExists) {
+                remainingUpdates.push(failedUpdate);
+            }
+        }
+                
+        // Update state and storage with remaining failed updates
+        setPendingStatusUpdates(remainingUpdates);
+        await savePendingStatusUpdates(remainingUpdates);
         
         // If there were successful updates and showSuccessMessage is true, show a success message
         if (successCount > 0 && showSuccessMessage) {
@@ -541,6 +445,22 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             );
             setShowSuccessModal(true);
             setTimeout(() => setShowSuccessModal(false), 2500);
+        }
+        
+        // If there were failed updates that haven't been shown before, show an error message with the order IDs
+        const newFailedOrderIds = failedOrderIds.filter(id => !shownErrorOrderIds.includes(id));
+        if (newFailedOrderIds.length > 0 && showSuccessMessage && !syncMessageShown) {
+            setSyncMessageShown(true);
+            const uniqueFailedIds = [...new Set(newFailedOrderIds)];
+            setErrorMessage(
+                `${translations[language]?.tabs?.orders?.order?.states?.failedToUpdate} ${uniqueFailedIds.length} ${translations[language]?.tabs?.orders?.order?.states?.forOrders}: ${uniqueFailedIds.join(', ')}`
+            );
+            setShowErrorModal(true);
+            
+            // Automatically clear error history after showing the error message
+            setTimeout(() => {
+                setShowErrorModal(false);
+            }, 5000);
         }
         
         return { successCount, failedUpdates };
@@ -595,46 +515,64 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const loadPendingStatusUpdates = async () => {
         try {
             // Get user ID from multiple possible sources
-            let userId = null;
-            
-            // Try from authUser first
-            if (authUser?.id) {
-                userId = authUser.id;
-            } else if (authUser?.user_id) {
-                userId = authUser.user_id;
-            }
-            
-            // If not found, try from secure storage
-            if (!userId) {
-                userId = await getToken("userId");
-            }
-            
-            if (!userId) {
-                return;
-            }
+            const userId = authUser?.id || authUser?.user_id || await getToken("userId");
+            if (!userId) return;
             
             // Try to get pending updates from storage
             const storageKey = `pending_status_updates_${userId}`;
-            
             const pendingUpdatesJson = await AsyncStorage.getItem(storageKey);
-            if (!pendingUpdatesJson) {
-                return;
-            }
+            if (!pendingUpdatesJson) return;
             
             try {
                 const pendingUpdates = JSON.parse(pendingUpdatesJson);
-                setPendingStatusUpdates(pendingUpdates);
                 
-                // If we're connected, try to process them
+                // Validate the structure of each update
+                const validUpdates = pendingUpdates.filter(update => 
+                    update && 
+                    update.order_id && 
+                    update.status && 
+                    typeof update.order_id === 'string' && 
+                    typeof update.status === 'string'
+                );
+                
+                if (validUpdates.length === 0) return;
+                
+                // Filter out updates for order IDs that have already had errors shown
+                // and sort by timestamp to ensure oldest updates are processed first
+                const filteredUpdates = validUpdates
+                    .filter(update => !shownErrorOrderIds.includes(update.order_id))
+                    .sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
+                
+                setPendingStatusUpdates(filteredUpdates);
+                
+                // Update UI for any pending updates for the current order
+                const currentOrderUpdates = filteredUpdates.filter(update => update.order_id === order.order_id);
+                if (currentOrderUpdates.length > 0 && typeof onStatusChange === 'function') {
+                    // Use the most recent update for this order
+                    const latestUpdate = currentOrderUpdates[currentOrderUpdates.length - 1];
+                    const statusOption = statusOptions.find(option => option.value === latestUpdate.status);
+                    if (statusOption) {
+                        onStatusChange(
+                            order.order_id, 
+                            `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`, 
+                            latestUpdate.status
+                        );
+                    }
+                }
+                
+                // If we're connected, try to process them with a delay to ensure network stability
                 const networkState = await NetInfo.fetch();
-                if (networkState.isConnected && networkState.isInternetReachable) {
-                    processPendingStatusUpdates(pendingUpdates);
+                if (networkState.isConnected && networkState.isInternetReachable && filteredUpdates.length > 0) {
+                    setTimeout(() => {
+                        processPendingStatusUpdates(filteredUpdates, false);
+                    }, 2000);
                 }
             } catch (parseError) {
                 // Clear corrupted data
                 await AsyncStorage.removeItem(storageKey);
             }
         } catch (error) {
+            // Silent fail for AsyncStorage errors
         }
     };
     
@@ -823,39 +761,49 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     
     // Handle status updates when offline
     const handleOfflineStatusUpdate = async (updates) => {
-        // Add to pending updates
-        const newPendingUpdates = [...pendingStatusUpdates, updates];
-        setPendingStatusUpdates(newPendingUpdates);
-        await savePendingStatusUpdates(newPendingUpdates);
-        
-        // Update the cached order with the new status (optimistic update)
-        const updatedOrder = {
-            ...order,
-            status: selectedValue.status?.label,
-            status_key: selectedValue.status?.value
-        };
-        await cacheOrder(updatedOrder);
-        
-        // Call the onStatusChange callback to update the parent component
-        if (typeof onStatusChange === 'function') {
-            onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
+        try {
+            // Add to pending updates with timestamp for ordering
+            const updatedPendingUpdates = [...pendingStatusUpdates, {
+                ...updates,
+                timestamp: new Date().toISOString()
+            }];
+            
+            // Sort by timestamp to ensure oldest updates are processed first
+            updatedPendingUpdates.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            // Update state and storage
+            setPendingStatusUpdates(updatedPendingUpdates);
+            await savePendingStatusUpdates(updatedPendingUpdates);
+            
+            // Reset state values
+            setSelectedReason(null);
+            setSelectedBranch(null);
+            setUpdatedStatusNote("");
+            
+            // Show offline pending message
+            setTimeout(() => {
+                setSuccessMessage(translations[language].tabs.orders.order.statusChangeOffline || "Status update saved for when you're back online");
+                setShowSuccessModal(true);
+                setTimeout(() => setShowSuccessModal(false), 2500);
+            }, 100);
+            
+            // Update local UI to show pending status
+            if (typeof onStatusChange === 'function') {
+                // Find the status label from the options
+                const statusOption = statusOptions.find(option => option.value === updates.status);
+                if (statusOption) {
+                    onStatusChange(
+                        order.order_id, 
+                        `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`, 
+                        updates.status
+                    );
+                }
+            }
+        } catch (error) {
+            // Show error if offline update fails
+            setErrorMessage(translations[language]?.common?.offlineUpdateError || "Failed to save update for later");
+            setShowErrorModal(true);
         }
-        
-        // Reset state values
-        setSelectedReason(null);
-        setSelectedBranch(null);
-        setUpdatedStatusNote("");
-        
-        // Show offline success message
-        setTimeout(() => {
-            setSuccessMessage(
-                isConnected 
-                    ? translations[language].tabs.orders.order.statusChangeSuccess 
-                    : (translations[language].tabs.orders.order.statusChangeOffline)
-            );
-            setShowSuccessModal(true);
-            setTimeout(() => setShowSuccessModal(false), 2500);
-        }, 100);
     };
 
     // Get status color based on status key
@@ -899,61 +847,134 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         );
     };
 
-    // Modify the auto-sync effect to not show success messages for automatic syncs
-    useEffect(() => {
-        // Set up an immediate sync check when component mounts or network state changes
-        const attemptSync = async () => {
-            if (isConnected && pendingStatusUpdates.length > 0) {
-                await processPendingStatusUpdates(pendingStatusUpdates, false); // Don't show success message for auto-sync
-            }
-        };
-        
-        attemptSync();
-        
-        // Set up a more frequent sync interval when online
-        let syncInterval;
-        if (isConnected) {
-            syncInterval = setInterval(attemptSync, 30000); // Check every 30 seconds when online
-        }
-        
-        return () => {
-            if (syncInterval) {
-                clearInterval(syncInterval);
-            }
-        };
-    }, [isConnected]);
-
-    // Modify the network state monitoring effect to not show success messages for auto-reconnect syncs
+    // Improved network state monitoring effect with better reconnection handling
     useEffect(() => {
         // If we're using global offline mode, update our local state
         if (globalOfflineMode !== undefined) {
             setIsConnected(!globalOfflineMode);
         }
         
-        // Set up network listener
+        // Track reconnection state
+        let reconnectionAttemptInProgress = false;
+        let lastConnectionState = isConnected;
+        
+        // Set up network listener with debounced reconnection handling
         const unsubscribe = NetInfo.addEventListener(async (state) => {
-            const wasConnected = isConnected;
+            const wasConnected = lastConnectionState;
             const nowConnected = state.isConnected && state.isInternetReachable;
+            
+            // Update last known connection state
+            lastConnectionState = nowConnected;
             
             // Update connection state
             setIsConnected(nowConnected);
             
-            // If we just came back online, try to sync immediately
-            if (!wasConnected && nowConnected && pendingStatusUpdates.length > 0) {
-                await processPendingStatusUpdates(pendingStatusUpdates, false); // Don't show success message for auto-reconnect
+            // If we just came back online and have pending updates, try to sync
+            if (!wasConnected && nowConnected && !reconnectionAttemptInProgress) {
+                // Force reload pending updates to ensure we have the latest data
+                try {
+                    const userId = authUser?.id || authUser?.user_id || await getToken("userId");
+                    if (userId) {
+                        const storageKey = `pending_status_updates_${userId}`;
+                        const pendingUpdatesJson = await AsyncStorage.getItem(storageKey);
+                        if (pendingUpdatesJson) {
+                            const storedUpdates = JSON.parse(pendingUpdatesJson);
+                            if (storedUpdates && storedUpdates.length > 0) {
+                                reconnectionAttemptInProgress = true;
+                                
+                                // Add a small delay to ensure network is stable before attempting sync
+                                setTimeout(async () => {
+                                    try {
+                                        // Process updates with showing messages enabled
+                                        await processPendingStatusUpdates(storedUpdates, true);
+                                    } catch (error) {
+                                    } finally {
+                                        reconnectionAttemptInProgress = false;
+                                    }
+                                }, 2000);
+                            }
+                        }
+                    }
+                } catch (error) {
+                }
             }
         });
         
         // Initial check
         NetInfo.fetch().then(state => {
-            setIsConnected(state.isConnected && state.isInternetReachable);
+            lastConnectionState = state.isConnected && state.isInternetReachable;
+            setIsConnected(lastConnectionState);
         });
         
         // Cleanup subscription
         return () => {
             unsubscribe();
         };
-    }, [globalOfflineMode, pendingStatusUpdates]);
+    }, [globalOfflineMode]);
+
+    // Optimized auto-sync effect with throttling
+    useEffect(() => {
+        let syncTimeout = null;
+        let syncInProgress = false;
+        
+        // Function to attempt sync with throttling
+        const attemptThrottledSync = async () => {
+            // Don't start a new sync if one is already in progress
+            if (syncInProgress) return;
+            
+            // Clear any existing timeout
+            if (syncTimeout) {
+                clearTimeout(syncTimeout);
+            }
+            
+            // Set a new timeout to prevent rapid successive syncs
+            syncTimeout = setTimeout(async () => {
+                try {
+                    // Check if we're online and have updates to process
+                    if (isConnected && pendingStatusUpdates.length > 0) {
+                        syncInProgress = true;
+                        
+                        // Force reload pending updates from storage to ensure we have the latest data
+                        const userId = authUser?.id || authUser?.user_id || await getToken("userId");
+                        if (userId) {
+                            const storageKey = `pending_status_updates_${userId}`;
+                            const pendingUpdatesJson = await AsyncStorage.getItem(storageKey);
+                            if (pendingUpdatesJson) {
+                                const storedUpdates = JSON.parse(pendingUpdatesJson);
+                                if (storedUpdates && storedUpdates.length > 0) {
+                                    await processPendingStatusUpdates(storedUpdates, false);
+                                }
+                            }
+                        }
+                    }
+                } catch (error) {
+                } finally {
+                    syncInProgress = false;
+                }
+            }, 2000); // 2-second throttle
+        };
+        
+        // Attempt sync when component mounts or dependencies change
+        if (isConnected && pendingStatusUpdates.length > 0) {
+            attemptThrottledSync();
+        }
+        
+        // Set up a sync interval when online
+        let syncInterval;
+        if (isConnected) {
+            syncInterval = setInterval(() => {
+                if (pendingStatusUpdates.length > 0) {
+                    attemptThrottledSync();
+                }
+            }, 30000); // Check every 30 seconds when online
+        }
+        
+        // Clean up
+        return () => {
+            if (syncTimeout) clearTimeout(syncTimeout);
+            if (syncInterval) clearInterval(syncInterval);
+        };
+    }, [isConnected, pendingStatusUpdates.length]);
 
     // Add this effect to handle network connectivity changes
     useEffect(() => {
@@ -1025,6 +1046,60 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             loadPendingStatusUpdates();
         }
     }, [pendingUpdates, order.order_id]);
+
+    // Add this function to render pending status indicator
+    const renderPendingStatusIndicator = () => {
+        // Only show the indicator if there are pending updates for this order
+        // AND they haven't been shown in an error message yet
+        const hasPendingUpdate = pendingStatusUpdates.some(update => 
+            update.order_id === order.order_id && 
+            !shownErrorOrderIds.includes(update.order_id)
+        );
+        
+        if (hasPendingUpdate) {
+            return (
+                <View style={styles.pendingStatusIndicator}>
+                    <MaterialIcons name="sync" size={14} color="#F59E0B" />
+                    <Text style={styles.pendingStatusText}>
+                        {translations[language]?.common?.pendingUpdate || "Pending"}
+                    </Text>
+                </View>
+            );
+        }
+        
+        return null;
+    };
+
+    // Load shown error order IDs from AsyncStorage
+    const loadShownErrorOrderIds = async () => {
+        try {
+            const userId = authUser?.id || authUser?.user_id || await getToken("userId");
+            if (userId) {
+                const storageKey = `shown_error_order_ids_${userId}`;
+                const shownIdsJson = await AsyncStorage.getItem(storageKey);
+                if (shownIdsJson) {
+                    const shownIds = JSON.parse(shownIdsJson);
+                    setShownErrorOrderIds(shownIds);
+                }
+            }
+        } catch (error) {
+        }
+    };
+
+    // Add this to the Error Modal to handle closing
+    const handleErrorModalClose = () => {
+        setShowErrorModal(false);
+    };
+
+    // Load shown error order IDs when component mounts
+    useEffect(() => {
+        loadShownErrorOrderIds();
+    }, []);
+
+    // Update loadPendingStatusUpdates to depend on shownErrorOrderIds
+    useEffect(() => {
+        loadPendingStatusUpdates();
+    }, [shownErrorOrderIds]);
 
     return (
         <RTLWrapper>
@@ -1106,6 +1181,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     />
                                 )}
                                 <Text style={styles.statusText}>{order.status}</Text>
+                                {renderPendingStatusIndicator()}
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -1351,7 +1427,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     orderId={order.order_id}
                                 />
                                 
-                                {!["driver","delivery_company", "business"].includes(authUserRole) && (
+                                {!["driver","delivery_company"].includes(authUserRole) && (
                                     <UserBox 
                                         box={{
                                             label: translations[language].tabs.orders.order.userDriverBoxLabel,
@@ -2209,7 +2285,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showErrorModal && (
                 <ModalPresentation
                     showModal={showErrorModal}
-                    setShowModal={setShowErrorModal}
+                    setShowModal={handleErrorModalClose}
                     position="center"
                 >
                     <View style={styles.errorModalContainer}>
@@ -2228,10 +2304,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         </Text>
                         <TouchableOpacity
                             style={styles.errorModalButton}
-                            onPress={() => setShowErrorModal(false)}
+                            onPress={handleErrorModalClose}
                         >
                             <Text style={[styles.errorModalButtonText,{
-                                color: isDark ?  colors.text : "#ffff"
+                                color: isDark ? colors.text : "#ffff"
                             }]}>
                                 {translations[language].tabs.orders.order.ok || "OK"}
                             </Text>
@@ -2929,6 +3005,45 @@ const styles = StyleSheet.create({
     },
     reasonContainer: {
         width: '100%',
+    },
+    pendingStatusIndicator: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+        borderRadius: 10,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        marginLeft: 6,
+    },
+    pendingStatusText: {
+        color: '#F59E0B',
+        fontSize: 10,
+        fontWeight: '600',
+        marginLeft: 2,
+    },
+    errorModalButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        marginTop: 20,
+    },
+    errorModalButton: {
+        backgroundColor: '#EF4444',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 10,
+        flex: 1,
+        marginHorizontal: 5,
+        alignItems: 'center',
+        shadowColor: '#EF4444',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    clearErrorsButton: {
+        backgroundColor: '#64748B',
+        shadowColor: '#64748B',
     },
 });
 

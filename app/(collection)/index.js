@@ -195,6 +195,18 @@ export default function HomeScreen() {
             }
             
             // if (collectionIds) queryParams.append('collection_ids', collectionIds)
+            if (collectionIds && collectionIds !== 'undefined') {
+                try {
+                    // Parse the JSON string of collection IDs
+                    const parsedCollectionIds = JSON.parse(collectionIds);
+                    if (Array.isArray(parsedCollectionIds) && parsedCollectionIds.length > 0) {
+                        queryParams.append('collection_ids', parsedCollectionIds.join(','));
+                    }
+                } catch (err) {
+                    console.error("Error parsing collection IDs:", err);
+                }
+            }
+            
             if (activeFilter) {
                 queryParams.append(type === "sent" ? "status" : "status_key", activeFilter);
             }
@@ -271,11 +283,14 @@ export default function HomeScreen() {
     useEffect(() => {
         setPage(1);
         fetchData(1, false);
-        if(collectionIds){
+        if(collectionIds && collectionIds !== 'undefined'){
             setActiveSearchBy(searchByGroup[0]);
-            type = "business_money"
+            // Set default type to sent if not already specified
+            if (!type) {
+                router.setParams({ type: "sent" });
+            }
         }
-    }, [type,searchValue, activeFilter,activeDate,collectionIds]);
+    }, [type, searchValue, activeFilter, activeDate, collectionIds]);
 
 
     const handleCollectionsUpdate = useCallback((notification) => {

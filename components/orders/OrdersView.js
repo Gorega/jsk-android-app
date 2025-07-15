@@ -7,7 +7,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 // Create a memoized OrderItem component to prevent unnecessary re-renders
 const OrderItem = React.memo(function OrderItem({ item, metadata, onStatusChange }) {
@@ -18,13 +18,23 @@ const OrderItem = React.memo(function OrderItem({ item, metadata, onStatusChange
     );
 }, (prevProps, nextProps) => {
     // Custom comparison function to prevent unnecessary re-renders
-    // Only re-render if the order ID changes or if metadata changes
+    // Only re-render if the order ID changes, status changes, or if metadata changes
     return prevProps.item.order_id === nextProps.item.order_id && 
            prevProps.item.status_key === nextProps.item.status_key &&
+           prevProps.item.status === nextProps.item.status &&
            JSON.stringify(prevProps.metadata) === JSON.stringify(nextProps.metadata);
 });
 
-export default function OrdersView({ data, metadata, loadMoreData, loadingMore, refreshControl, isLoading, onStatusChange }) {
+// Memoize the entire OrdersView component for better performance
+const OrdersView = React.memo(function OrdersView({ 
+    data, 
+    metadata, 
+    loadMoreData, 
+    loadingMore, 
+    refreshControl, 
+    isLoading, 
+    onStatusChange 
+}) {
     const { language } = useLanguage();
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
@@ -35,54 +45,75 @@ export default function OrdersView({ data, metadata, loadMoreData, loadingMore, 
     }, [metadata, onStatusChange]);
 
     // Memoize the keyExtractor function
-    const keyExtractor = React.useCallback((item) => item.order_id.toString(), []);
+    const keyExtractor = React.useCallback((item) => 
+        item?.order_id?.toString() || `item-${Math.random().toString(36).substr(2, 9)}`
+    , []);
 
+    // Memoize FlatList optimization props
+    const flatListProps = useMemo(() => ({
+        removeClippedSubviews: true,
+        maxToRenderPerBatch: 8,
+        updateCellsBatchingPeriod: 30,
+        windowSize: 7,
+        initialNumToRender: 6,
+        refreshing: refreshControl?.props?.refreshing || false,
+        onRefresh: refreshControl?.props?.onRefresh
+    }), [refreshControl?.props?.refreshing, refreshControl?.props?.onRefresh]);
+
+    // Loading state - show loading indicator when isLoading is true
     if (isLoading) {
         return (
-            <View style={[styles.overlay,{
+            <View style={[styles.overlay, {
                 backgroundColor: colors.background + 'E6'
             }]}>
-                <View style={[styles.spinnerContainer,{
+                <View style={[styles.spinnerContainer, {
                     backgroundColor: colors.card
                 }]}>
                     <ActivityIndicator size="large" color={colors.primary} />
+                    <Text style={[styles.loadingText, { color: colors.text }]}>
+                        {translations[language].common.loading || "Loading..."}
+                    </Text>
                 </View>
             </View>
         );
     }
 
-    return <RTLWrapper>
-         {data.length > 0 ? (
-        <FlatListData
-            list={data || []}
-            loadMoreData={loadMoreData}
-            loadingMore={loadingMore}
-            renderItem={renderOrderItem}
-            keyExtractor={keyExtractor}
-            refreshControl={refreshControl}
-            // Add these props to optimize FlatList performance
-            removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            updateCellsBatchingPeriod={50}
-            windowSize={10}
-            initialNumToRender={8}
-        />
-    ) : (
-        <View style={[styles.empty, { backgroundColor: colors.background }]}>
-            <View style={[styles.emptyIconContainer,{
-                backgroundColor: colors.primary + '1A'
-            }]}>
-                <MaterialCommunityIcons name="package-variant" size={40} color={colors.primary} />
+    // Empty state - only show when not loading and data is empty
+    if (!data || data.length === 0) {
+        return (
+            <View style={[styles.empty, { backgroundColor: colors.background }]}>
+                <View style={[styles.emptyIconContainer, {
+                    backgroundColor: colors.primary + '1A'
+                }]}>
+                    <MaterialCommunityIcons name="package-variant" size={40} color={colors.primary} />
+                </View>
+                <Text style={[styles.emptyText, {
+                    color: colors.text
+                }]}>
+                    {translations[language].tabs.orders.emptyArray}
+                </Text>
             </View>
-            <Text style={[styles.emptyText,{
-                color: colors.text
-            }]}>
-                {translations[language].tabs.orders.emptyArray}
-            </Text>
-        </View>
-    )}
-    </RTLWrapper>
-}
+        );
+    }
+
+    // Data state
+    return (
+        <RTLWrapper>
+            <FlatListData
+                list={data}
+                loadMoreData={loadMoreData}
+                loadingMore={loadingMore}
+                renderItem={renderOrderItem}
+                keyExtractor={keyExtractor}
+                refreshControl={refreshControl}
+                {...flatListProps}
+            />
+        </RTLWrapper>
+    );
+});
+
+// Add display name for better debugging
+OrdersView.displayName = 'OrdersView';
 
 const styles = StyleSheet.create({
     orderContainer: {
@@ -133,5 +164,15 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.15,
         shadowRadius: 8,
         elevation: 8,
+        alignItems: 'center',
+        minWidth: 150,
+    },
+    loadingText: {
+        marginTop: 10,
+        textAlign: 'center',
+        fontSize: 14,
+        fontWeight: '500',
     }
 });
+
+export default OrdersView;

@@ -2,7 +2,7 @@ import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
-import { useLocalSearchParams, usePathname } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
@@ -14,6 +14,7 @@ export default function Orders() {
     const socket = useSocket();
     const { language } = useLanguage();
     const pathname = usePathname();
+    const router = useRouter();
     const [data, setData] = useState([]);
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -25,11 +26,26 @@ export default function Orders() {
     const [selectedDate, setSelectedDate] = useState("");
     const params = useLocalSearchParams();
     const { user } = useAuth();
-    const { orderIds, reset } = params;
+    const { orderIds, reset, multi_id } = params;
     const [refreshing, setRefreshing] = useState(false);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     const isOnOrdersScreen = useRef(true);
+    const abortControllerRef = useRef(null);
+    const pendingFetchRef = useRef(null);
+    const isMountedRef = useRef(true);
+
+    // Track if component is mounted
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+            // Abort any pending requests when unmounting
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+        };
+    }, []);
 
     // Track if we're on the orders screen
     useEffect(() => {
@@ -38,7 +54,7 @@ export default function Orders() {
 
     // Reset filters when reset param changes
     useEffect(() => {
-        if (reset && !orderIds) {
+        if (reset) {
             setSearchValue("");
             setActiveFilter("");
             setActiveSearchBy("");
@@ -57,8 +73,15 @@ export default function Orders() {
         setActiveDate("");
         setSelectedDate("");
         setPage(1);
+        
+        // Clear orderIds param if it exists by navigating to orders tab without params
+        if (orderIds) {
+            router.replace("/(tabs)/orders");
+            return; // The navigation will trigger a re-render with new params
+        }
+        
         fetchData(1, false);
-    }, []);
+    }, [orderIds, router, fetchData]);
 
     // Listen for reset event
     useEffect(() => {
@@ -82,12 +105,41 @@ export default function Orders() {
             setActiveSearchBy("");
             setActiveDate("");
             setSelectedDate("");
+            
+            // Clear orderIds param by navigating to the orders tab without params
+            if (orderIds) {
+                router.replace("/(tabs)/orders");
+                return; // The navigation will trigger a re-render with new params
+            }
+            
             await fetchData(1, false);
         } catch (error) {
         } finally {
             setRefreshing(false);
         }
-    }, [language]);
+    }, [language, orderIds, router]);
+
+    // Apply multi_id param if provided (for barcode scanning)
+    useEffect(() => {
+        if (multi_id) {
+            if (multi_id.trim() !== "") {
+                // Set the search value to show the scanned code in the input
+                setSearchValue(multi_id);
+                
+                // Clear other filters but keep the multi_id for searching
+                setActiveFilter("");
+                setActiveSearchBy("");
+                setActiveDate("");
+                setSelectedDate("");
+                setPage(1);
+                fetchData(1, false);
+            } else {
+                // If multi_id is empty, just move the value to regular search
+                // without clearing other filters
+                setSearchValue(multi_id);
+            }
+        }
+    }, [multi_id]);
 
     // Memoize filter groups to prevent unnecessary re-renders
     const filterByGroup = useMemo(() => ["driver", "delivery_company"].includes(user.role) ? [{
@@ -228,47 +280,79 @@ export default function Orders() {
         action: "custom"
     }], [language, translations]);
 
-
-    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false) => {
-        if (!isLoadMore) setIsLoading(true);
+    const fetchOrdersData = async (queryParams, signal) => {
         try {
-            // const token = await getToken("userToken");
-            const queryParams = new URLSearchParams();
-            if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            if (orderIds) queryParams.append('order_id', orderIds)
-            if (activeFilter) queryParams.append('status_key', activeFilter);
-            if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue)
-            if (activeDate) queryParams.append("date_range", activeDate.action)
-            if (activeDate.action === "custom") queryParams.append("start_date", selectedDate)
-            if (activeDate.action === "custom") queryParams.append("end_date", selectedDate)
-            queryParams.append('page', pageNumber);
-            queryParams.append('language_code', language);
-
-
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    // "Cookie": token ? `token=${token}` : ""
-                }
+                },
+                signal // Support for aborting requests
             });
-            const newData = await res.json();
-            if (isLoadMore) {
-                setData(prevData => ({
-                    ...prevData,
-                    data: [...prevData.data, ...newData.data],
-                }));
-            } else {
-                setData(newData);
+            return await res.json();
+        } catch (err) {
+            if (err.name === 'AbortError') {
+                // Request was aborted, which is expected behavior
+                return null;
+            }
+            throw err;
+        }
+    };
+
+
+    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false) => {
+        // Cancel any ongoing fetch
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        
+        // Create a new abort controller for this request
+        abortControllerRef.current = new AbortController();
+        
+        if (!isLoadMore) setIsLoading(true);
+        
+        try {
+            const queryParams = new URLSearchParams();
+            if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
+            if (orderIds) queryParams.append('order_id', orderIds);
+            if (multi_id && multi_id.trim() !== "") queryParams.append('multi_id', multi_id);
+            if (activeFilter) queryParams.append('status_key', activeFilter);
+            if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue);
+            if (activeDate) queryParams.append("date_range", activeDate.action);
+            if (activeDate && activeDate.action === "custom") queryParams.append("start_date", selectedDate);
+            if (activeDate && activeDate.action === "custom") queryParams.append("end_date", selectedDate);
+            queryParams.append('page', pageNumber);
+            queryParams.append('language_code', language);
+            
+            // Store the fetch promise in the ref
+            pendingFetchRef.current = fetchOrdersData(queryParams, abortControllerRef.current.signal);
+            const newData = await pendingFetchRef.current;
+            
+            // Only update state if the component is still mounted and the request wasn't aborted
+            if (isMountedRef.current && newData) {
+                if (isLoadMore) {
+                    setData(prevData => ({
+                        ...prevData,
+                        data: [...prevData.data, ...newData.data],
+                    }));
+                } else {
+                    setData(newData);
+                }
+                setIsLoading(false);
             }
         } catch (err) {
+            // Handle errors silently
+            if (isMountedRef.current) {
+                setIsLoading(false);
+            }
         } finally {
-            setLoadingMore(false);
-            setIsLoading(false);
+            if (isMountedRef.current) {
+                setLoadingMore(false);
+            }
         }
-    }, [activeDate, activeFilter, activeSearchBy, language, orderIds, searchValue, selectedDate]);
+    }, [activeDate, activeFilter, activeSearchBy, language, orderIds, multi_id, searchValue, selectedDate]);
 
     const loadMoreData = useCallback(async () => {
         if (!loadingMore && data.data?.length > 0) {
@@ -437,8 +521,9 @@ export default function Orders() {
     // Reset all filters when re-entering the orders route or when params change
     useEffect(() => {
         if (pathname === "/(tabs)/orders") {
-            // Only reset if there are no orderIds in params
-            if (!orderIds) {
+            // Check if we're coming from a different screen or if reset flag is set
+            // The reset flag is set by other components when they want to clear filters
+            if (params.reset === "true") {
                 setSearchValue("");
                 setActiveFilter("");
                 setActiveSearchBy("");
@@ -447,8 +532,10 @@ export default function Orders() {
                 setPage(1);
                 fetchData(1, false);
             }
+            // If we have orderIds but no reset flag, keep the orderIds filter
+            // This allows specific order filtering from other screens
         }
-    }, [pathname, params, fetchData, orderIds]);
+    }, [pathname, params, fetchData]);
 
     // Memoize the refresh control to prevent unnecessary re-renders
     const refreshControl = useMemo(() => (
@@ -495,7 +582,7 @@ export default function Orders() {
             
             <View style={styles.ordersList}>
                 <OrdersView
-                    data={data.data || []}
+                    data={isLoading ? [] : (data.data || [])}
                     metadata={data.metadata}
                     loadMoreData={loadMoreData}
                     loadingMore={loadingMore}
