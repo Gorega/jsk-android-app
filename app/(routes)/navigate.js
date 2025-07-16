@@ -24,6 +24,9 @@ export default function RouteNavigate() {
     const { routeId } = params;
     const isRTL = ["ar","he"].includes(language);
     
+    // Add a ref to track if a modal transition is in progress
+    const modalTransitionInProgress = useRef(false);
+    
     const [loading, setLoading] = useState(true);
     const [route, setRoute] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,133 +55,51 @@ export default function RouteNavigate() {
     
     // Check if user has appropriate role
     const isAllowed = ["driver", "delivery_company"].includes(user.role);
+
+    const suspendedReasons = [
+        { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
+        { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
+        { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
+        { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
+        { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
+        { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
+        { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
+        { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
+        { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
+        { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
+        { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
+        { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
+        { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
+        { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
+        { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
+        { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
+        { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
+        { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
+        { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
+        { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+    ];
     
     // Add these status options
     const statusOptions = [{
         label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
+        reasons: suspendedReasons
         },{
             label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
             requiresReason: true,
-            reasons: [
-                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-            ]
+            reasons: suspendedReasons
         }, {
             label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
             requiresReason: true,
-            reasons: [
-                { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-                { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-                { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-                { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-                { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-                { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-                { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-                { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-                { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-                { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-                { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-                { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-                { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-                { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-                { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-                { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-                { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-                { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-                { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-                { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-            ]
+            reasons: suspendedReasons
         }, {
         label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
+        reasons: suspendedReasons
     }, {
-        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
+        label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_fee_received, value: "return_after_delivered_fee_received",
         requiresReason: true,
-        reasons: [
-            { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-            { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-            { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-            { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-            { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-            { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-            { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-            { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-            { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-            { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-            { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-            { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-            { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-            { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-            { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-            { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-            { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-            { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-            { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-            { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
-        ]
+        reasons: suspendedReasons
     }, {
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }, {
@@ -404,15 +325,25 @@ export default function RouteNavigate() {
     
     const handleStatusSelect = (status) => {
         setSelectedStatus(status);
+        modalTransitionInProgress.current = true;
         setShowStatusUpdateModal(false);
         
         if (status.requiresReason) {
             // Reset search query and set filtered reasons to all reasons
             setReasonSearchQuery('');
             setFilteredReasons(status.reasons || []);
-            setShowReasonModal(true);
+            
+            // Use delayed opening for iOS
+            setTimeout(() => {
+                setShowReasonModal(true);
+                modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 600 : 300);
         } else {
-            setShowConfirmModal(true);
+            // Use delayed opening for iOS
+            setTimeout(() => {
+                setShowConfirmModal(true);
+                modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 600 : 300);
         }
     };
 
@@ -433,8 +364,13 @@ export default function RouteNavigate() {
 
     const handleReasonSelect = (reason) => {
         setSelectedReason(reason);
+        modalTransitionInProgress.current = true;
         setShowReasonModal(false);
-        setShowConfirmModal(true);
+        
+        setTimeout(() => {
+            setShowConfirmModal(true);
+            modalTransitionInProgress.current = false;
+        }, Platform.OS === 'ios' ? 600 : 300);
     };
     
     const confirmStatusUpdate = async () => {
@@ -526,13 +462,16 @@ export default function RouteNavigate() {
             );
         } finally {
             // Reset all states
-            setIsUpdating(false);
-            setShowStatusUpdateModal(false);
-            setShowReasonModal(false);
+            modalTransitionInProgress.current = true;
             setShowConfirmModal(false);
-            setSelectedStatus(null);
-            setSelectedReason(null);
-            setPendingRescheduleOrder(null);
+            
+            setTimeout(() => {
+                setIsUpdating(false);
+                setSelectedStatus(null);
+                setSelectedReason(null);
+                setPendingRescheduleOrder(null);
+                modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 500 : 300);
         }
     };
     
@@ -956,7 +895,13 @@ export default function RouteNavigate() {
             {showStatusUpdateModal && (
                 <ModalPresentation
                     showModal={showStatusUpdateModal}
-                    setShowModal={setShowStatusUpdateModal}
+                    setShowModal={(value) => {
+                        modalTransitionInProgress.current = true;
+                        setShowStatusUpdateModal(value);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -999,7 +944,13 @@ export default function RouteNavigate() {
             {showReasonModal && (
                 <ModalPresentation
                     showModal={showReasonModal}
-                    setShowModal={setShowReasonModal}
+                    setShowModal={(value) => {
+                        modalTransitionInProgress.current = true;
+                        setShowReasonModal(value);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -1031,7 +982,10 @@ export default function RouteNavigate() {
                             onChangeText={handleReasonSearch}
                         />
                         {reasonSearchQuery ? (
-                            <TouchableOpacity onPress={() => handleReasonSearch('')}>
+                            <TouchableOpacity onPress={() => {
+                                if (modalTransitionInProgress.current) return;
+                                handleReasonSearch('');
+                            }}>
                                 <Feather name="x" size={18} color={colors.textSecondary} />
                             </TouchableOpacity>
                         ) : null}
@@ -1050,7 +1004,10 @@ export default function RouteNavigate() {
                                     style={[
                                         styles.reasonOption,{backgroundColor: colors.surface,borderColor: colors.border}
                                     ]}
-                                    onPress={() => handleReasonSelect(reason)}
+                                    onPress={() => {
+                                        if (modalTransitionInProgress.current) return;
+                                        handleReasonSelect(reason);
+                                    }}
                                 >
                                     <Text style={[styles.reasonText,{
                                         color: colors.text,
@@ -1076,7 +1033,13 @@ export default function RouteNavigate() {
             {showConfirmModal && (
                 <ModalPresentation
                     showModal={showConfirmModal}
-                    setShowModal={setShowConfirmModal}
+                    setShowModal={(value) => {
+                        modalTransitionInProgress.current = true;
+                        setShowConfirmModal(value);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -1118,10 +1081,14 @@ export default function RouteNavigate() {
                             <TouchableOpacity
                                 style={[styles.confirmButton, styles.cancelButton]}
                                 onPress={() => {
+                                    modalTransitionInProgress.current = true;
                                     setShowConfirmModal(false);
-                                    setSelectedStatus(null);
-                                    setSelectedReason(null);
-                                    setPendingRescheduleOrder(null);
+                                    setTimeout(() => {
+                                        setSelectedStatus(null);
+                                        setSelectedReason(null);
+                                        setPendingRescheduleOrder(null);
+                                        modalTransitionInProgress.current = false;
+                                    }, Platform.OS === 'ios' ? 500 : 300);
                                 }}
                             >
                                 <Text style={styles.cancelButtonText}>
@@ -1149,7 +1116,13 @@ export default function RouteNavigate() {
             {showCallOptionsModal && (
                 <ModalPresentation
                     showModal={showCallOptionsModal}
-                    setShowModal={setShowCallOptionsModal}
+                    setShowModal={(value) => {
+                        modalTransitionInProgress.current = true;
+                        setShowCallOptionsModal(value);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -1168,10 +1141,16 @@ export default function RouteNavigate() {
                         <TouchableOpacity
                             style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowCallOptionsModal(false);
-                                // Record contact history for phone call
-                                recordContactHistory('اتصال هاتفي');
-                                Linking.openURL(`tel:${currentPhoneNumber}`);
+                                
+                                setTimeout(() => {
+                                    // Record contact history for phone call
+                                    recordContactHistory('اتصال هاتفي');
+                                    Linking.openURL(`tel:${currentPhoneNumber}`);
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
@@ -1189,13 +1168,20 @@ export default function RouteNavigate() {
                         <TouchableOpacity
                             style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowCallOptionsModal(false);
-                                const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
-                                    currentPhoneNumber.substring(1) : currentPhoneNumber;
-                                // Record contact history for WhatsApp 972
-                                recordContactHistory('whatsapp_972');
-                                const message = generateWhatsAppMessage(currentOrderForContact);
-                                Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}&text=${encodeURIComponent(message)}`);
+                                
+                                setTimeout(() => {
+                                    const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+                                        currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                    
+                                    // Record contact history for WhatsApp 972
+                                    recordContactHistory('whatsapp_972');
+                                    const message = generateWhatsAppMessage(currentOrderForContact);
+                                    Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}&text=${encodeURIComponent(message)}`);
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
@@ -1211,13 +1197,20 @@ export default function RouteNavigate() {
                         <TouchableOpacity
                             style={[styles.modalOption,{borderColor: colors.border}]}
                             onPress={() => {
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowCallOptionsModal(false);
-                                const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
-                                    currentPhoneNumber.substring(1) : currentPhoneNumber;
-                                // Record contact history for WhatsApp 970
-                                recordContactHistory('whatsapp_970');
-                                const message = generateWhatsAppMessage(currentOrderForContact);
-                                Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}&text=${encodeURIComponent(message)}`);
+                                
+                                setTimeout(() => {
+                                    const whatsappNumber = currentPhoneNumber.startsWith('0') ? 
+                                        currentPhoneNumber.substring(1) : currentPhoneNumber;
+                                    
+                                    // Record contact history for WhatsApp 970
+                                    recordContactHistory('whatsapp_970');
+                                    const message = generateWhatsAppMessage(currentOrderForContact);
+                                    Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}&text=${encodeURIComponent(message)}`);
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <Text style={[styles.modalOptionText,{
@@ -1233,8 +1226,14 @@ export default function RouteNavigate() {
                         <TouchableOpacity
                             style={[styles.modalOption, styles.cancelOption]}
                             onPress={() => {
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowCallOptionsModal(false);
-                                setCurrentPhoneNumber(null);
+                                
+                                setTimeout(() => {
+                                    setCurrentPhoneNumber(null);
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <Text style={[styles.cancelOptionText,{
@@ -1256,7 +1255,13 @@ export default function RouteNavigate() {
             {showMessageOptionsModal && (
                 <ModalPresentation
                     showModal={showMessageOptionsModal}
-                    setShowModal={setShowMessageOptionsModal}
+                    setShowModal={(value) => {
+                        modalTransitionInProgress.current = true;
+                        setShowMessageOptionsModal(value);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -1279,8 +1284,14 @@ export default function RouteNavigate() {
                                 borderBottomColor: colors.border
                             }]}
                             onPress={() => {
-                                handleSMS();
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowMessageOptionsModal(false);
+                                
+                                setTimeout(() => {
+                                    handleSMS();
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <View style={[styles.modalIconContainer,{
@@ -1305,8 +1316,14 @@ export default function RouteNavigate() {
                                 borderBottomColor: colors.border
                             }]}
                             onPress={() => {
-                                handleWhatsApp972();
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowMessageOptionsModal(false);
+                                
+                                setTimeout(() => {
+                                    handleWhatsApp972();
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
@@ -1327,8 +1344,14 @@ export default function RouteNavigate() {
                         <TouchableOpacity
                             style={[styles.modalOption, styles.withoutBorder]}
                             onPress={() => {
-                                handleWhatsApp970();
+                                if (modalTransitionInProgress.current) return;
+                                modalTransitionInProgress.current = true;
                                 setShowMessageOptionsModal(false);
+                                
+                                setTimeout(() => {
+                                    handleWhatsApp970();
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             }}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>

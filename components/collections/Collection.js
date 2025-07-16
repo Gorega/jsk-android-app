@@ -468,7 +468,12 @@ function Collection({ type, collection }) {
                         ]}>
                             <Text style={[
                                 styles.modalHeaderText,
-                                { color: colors.text }
+                                { color: colors.text },
+                                { ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }) }
                             ]}>
                                 {translations[language]?.collections?.collection?.collections || "Collections"}
                             </Text>
@@ -483,7 +488,12 @@ function Collection({ type, collection }) {
                                     <View style={styles.senderHeader}>
                                         <Text style={[
                                             styles.senderName,
-                                            { color: colors.text }
+                                            { color: colors.text },
+                                            { ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }) }
                                         ]}>{subCollection.business_name}</Text>
                                         <View style={[
                                             styles.senderStatusBadge, 
@@ -502,7 +512,12 @@ function Collection({ type, collection }) {
                                         </View>
                                         <Text style={[
                                             styles.senderInfoText,
-                                            { color: colors.textSecondary }
+                                            { color: colors.textSecondary },
+                                            { ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }) }
                                         ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.business_phone 
@@ -543,7 +558,12 @@ function Collection({ type, collection }) {
                                         </View>
                                         <Text style={[
                                             styles.senderInfoText,
-                                            { color: colors.textSecondary }
+                                            { color: colors.textSecondary },
+                                            { ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }) }
                                         ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.business_city 
@@ -563,7 +583,12 @@ function Collection({ type, collection }) {
                                             </View>
                                             <Text style={[
                                                 styles.senderInfoText,
-                                                { color: colors.textSecondary }
+                                                { color: colors.textSecondary },
+                                                { ...Platform.select({
+                                                    ios: {
+                                                        textAlign: isRTL ? "left" : ""
+                                                    }
+                                                }) }
                                             ]}>
                                                 {collection.delivery_type === "package" 
                                                     ? subCollection.business_address 
@@ -581,7 +606,12 @@ function Collection({ type, collection }) {
                                         </View>
                                         <Text style={[
                                             styles.senderInfoText,
-                                            { color: colors.textSecondary }
+                                            { color: colors.textSecondary },
+                                            { ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }) }
                                         ]}>
                                             {collection.delivery_type === "package" 
                                                 ? subCollection.total_cod_value 
@@ -598,7 +628,12 @@ function Collection({ type, collection }) {
                                         </View>
                                         <Text style={[
                                             styles.senderInfoText,
-                                            { color: colors.textSecondary }
+                                            { color: colors.textSecondary },
+                                            { ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }) }
                                         ]}>
                                             {translations[language]?.collections?.collection?.orderCount || "Order Count"}: {subCollection.order_count}
                                         </Text>

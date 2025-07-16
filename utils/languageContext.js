@@ -1515,7 +1515,7 @@ export const translations = {
             "rescheduled": "مؤجل",
             "return_before_delivered_initiated": "ارجاع قبل التوصيل",
             "return_after_delivered_initiated": "ارجاع بعد التوصيل",
-            "return_after_delivered_fee_received": "ارجاع بعد التسليم وتم استلام اجرة التوصيل",
+            "return_after_delivered_fee_received": "ارجاع بعد التوصيل وتم استلام اجرة التوصيل",
             "delayed": "متأخر",
             "failedToUpdate": "فشل تحديث الحالة",
             "forOrders": "للطرود",

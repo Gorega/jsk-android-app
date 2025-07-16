@@ -101,6 +101,18 @@ export default function Contact({ contact, orderId }) {
         Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
     };
 
+    // Handle transition to WhatsApp options modal
+    const handleOpenWhatsappOptions = () => {
+        // First close the contact modal, then open WhatsApp options modal
+        setShowContactModal(false);
+        
+        // Add a small delay before showing the WhatsApp options modal
+        // This ensures the first modal has time to close properly
+        setTimeout(() => {
+            setShowWhatsappOptions(true);
+        }, 300);
+    };
+
     return (
         <>
             <TouchableOpacity 
@@ -167,10 +179,7 @@ export default function Contact({ contact, orderId }) {
                             style={[styles.modalOption, styles.withoutBorder,{
                                 borderBottomColor: colors.border
                             }]}
-                            onPress={() => {
-                                setShowContactModal(false);
-                                setShowWhatsappOptions(true);
-                            }}
+                            onPress={handleOpenWhatsappOptions}
                         >
                             <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
                                 <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
@@ -191,7 +200,9 @@ export default function Contact({ contact, orderId }) {
                     setShowModal={setShowWhatsappOptions}
                     customStyles={{ bottom: 15 }}
                 >
-                    <View style={styles.modalContent}>
+                    <View style={[styles.modalContent, {
+                        backgroundColor: colors.card
+                    }]}>
                         <Text style={[styles.modalTitle,{
                             color: colors.text,
                         ...Platform.select({

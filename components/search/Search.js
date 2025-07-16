@@ -47,6 +47,9 @@ export default function Search({
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     
+    // Add a ref to track if a modal transition is in progress
+    const modalTransitionInProgress = useRef(false);
+    
     // Animation when focus changes
     useEffect(() => {
       Animated.timing(scaleAnim, {
@@ -114,6 +117,109 @@ export default function Search({
       } else {
         requestPermission();
       }
+    };
+    
+    // Handle opening the specific filters modal
+    const handleOpenSpecificFilters = () => {
+      // Prevent opening modal if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      setShowSpecificFilters(true);
+    };
+    
+    // Handle opening the date filters modal
+    const handleOpenDateFilters = () => {
+      // Prevent opening modal if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      setShowDateFilters(true);
+    };
+    
+    // Handle opening the filters modal
+    const handleOpenFiltersModal = () => {
+      // Prevent opening modal if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      setShowFiltersModal(true);
+    };
+    
+    // Handle opening the calendar modal
+    const handleOpenCalendar = () => {
+      // Prevent opening modal if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      modalTransitionInProgress.current = true;
+      setShowDateFilters(false);
+      
+      // Wait for first modal to close before opening the calendar
+      setTimeout(() => {
+        setShowCalendar(true);
+        modalTransitionInProgress.current = false;
+      }, Platform.OS === 'ios' ? 500 : 300);
+    };
+    
+    // Handle selecting a search by filter
+    const handleSelectSearchBy = (item) => {
+      // Prevent action if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      modalTransitionInProgress.current = true;
+      setActiveSearchBy(item);
+      setShowSpecificFilters(false);
+      
+      // Reset the transition flag after the modal is closed
+      setTimeout(() => {
+        modalTransitionInProgress.current = false;
+      }, Platform.OS === 'ios' ? 500 : 300);
+    };
+    
+    // Handle selecting a date filter
+    const handleSelectDateFilter = (item) => {
+      // Prevent action if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      if (item.action === "custom") {
+        handleOpenCalendar();
+      } else {
+        modalTransitionInProgress.current = true;
+        setActiveDate(item);
+        setShowDateFilters(false);
+        
+        // Reset the transition flag after the modal is closed
+        setTimeout(() => {
+          modalTransitionInProgress.current = false;
+        }, Platform.OS === 'ios' ? 500 : 300);
+      }
+    };
+    
+    // Handle selecting a filter
+    const handleSelectFilter = (filter) => {
+      // Prevent action if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      modalTransitionInProgress.current = true;
+      setActiveFilter(filter.action);
+      setShowFiltersModal(false);
+      
+      // Reset the transition flag after the modal is closed
+      setTimeout(() => {
+        modalTransitionInProgress.current = false;
+      }, Platform.OS === 'ios' ? 500 : 300);
+    };
+    
+    // Handle confirming the selected date
+    const handleConfirmDate = () => {
+      // Prevent action if transition is in progress
+      if (modalTransitionInProgress.current) return;
+      
+      modalTransitionInProgress.current = true;
+      setShowCalendar(false);
+      
+      // Wait for the calendar modal to close before updating the date
+      setTimeout(() => {
+        setActiveDate({action: "custom", name: selectedDate});
+        modalTransitionInProgress.current = false;
+      }, Platform.OS === 'ios' ? 500 : 300);
     };
 
     return <>
@@ -188,14 +294,14 @@ export default function Search({
             
             <TouchableOpacity 
               style={[styles.iconButton, styles.actionIconButton, activeSearchBy && styles.activeIconButton]}
-              onPress={()=> setShowSpecificFilters(true)}
+              onPress={handleOpenSpecificFilters}
             >
               <AntDesign name="filter" size={20} color={activeSearchBy ? "#FFFFFF" : "#4361EE"} />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.iconButton, styles.actionIconButton, activeDate && styles.activeIconButton]}
-              onPress={()=> setShowDateFilters(true)}
+              onPress={handleOpenDateFilters}
             >
               <Ionicons name="calendar-number-outline" size={22} color={activeDate ? "#FFFFFF" : "#4361EE"} />
             </TouchableOpacity>
@@ -231,7 +337,7 @@ export default function Search({
         <View style={styles.filter}>
           <TouchableOpacity 
             style={[styles.selectBox, activeFilter && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
-            onPress={() => setShowFiltersModal(true)}
+            onPress={handleOpenFiltersModal}
             activeOpacity={0.7}
           >
             <View style={styles.selectBoxContent}>
@@ -268,6 +374,13 @@ export default function Search({
         <ModalPresentation
           showModal={showSpecificFilters}
           setShowModal={setShowSpecificFilters}
+          onDismiss={() => {
+            modalTransitionInProgress.current = true;
+            setShowSpecificFilters(false);
+            setTimeout(() => {
+              modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 500 : 300);
+          }}
         >
           <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
             <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
@@ -283,10 +396,7 @@ export default function Search({
                   activeSearchBy?.action === item.action && styles.modalItemActive,
                   {borderBottomColor: isDark ? colors.border : '#E2E8F0', backgroundColor: activeSearchBy?.action === item.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)') : 'transparent'}
                 ]} 
-                onPress={()=> {
-                  setActiveSearchBy(item)
-                  setShowSpecificFilters()
-                }}
+                onPress={() => handleSelectSearchBy(item)}
               >
                 <Text style={[
                   styles.modalItemText,
@@ -305,7 +415,13 @@ export default function Search({
           <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : 'white', borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
             <TouchableOpacity 
               style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]} 
-              onPress={() => setShowSpecificFilters(false)}
+              onPress={() => {
+                modalTransitionInProgress.current = true;
+                setShowSpecificFilters(false);
+                setTimeout(() => {
+                  modalTransitionInProgress.current = false;
+                }, Platform.OS === 'ios' ? 500 : 300);
+              }}
             >
               <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
             </TouchableOpacity>
@@ -317,6 +433,13 @@ export default function Search({
         <ModalPresentation
           showModal={showDateFilters}
           setShowModal={setShowDateFilters}
+          onDismiss={() => {
+            modalTransitionInProgress.current = true;
+            setShowDateFilters(false);
+            setTimeout(() => {
+              modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 500 : 300);
+          }}
         >
           <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
             <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
@@ -332,14 +455,7 @@ export default function Search({
                   activeDate?.action === item.action && styles.modalItemActive,
                   {borderBottomColor: isDark ? colors.border : '#E2E8F0', backgroundColor: activeDate?.action === item.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)') : 'transparent'}
                 ]}
-                onPress={()=> {
-                  if(item.action === "custom"){
-                    setShowCalendar(true)
-                  } else {
-                    setActiveDate(item)
-                    setShowDateFilters()
-                  }
-                }}
+                onPress={() => handleSelectDateFilter(item)}
               >
                 <Text style={[
                   styles.modalItemText,
@@ -358,7 +474,13 @@ export default function Search({
           <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : 'white', borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
             <TouchableOpacity 
               style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]} 
-              onPress={() => setShowDateFilters(false)}
+              onPress={() => {
+                modalTransitionInProgress.current = true;
+                setShowDateFilters(false);
+                setTimeout(() => {
+                  modalTransitionInProgress.current = false;
+                }, Platform.OS === 'ios' ? 500 : 300);
+              }}
             >
               <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
             </TouchableOpacity>
@@ -370,6 +492,13 @@ export default function Search({
         <ModalPresentation
           showModal={showCalendar}
           setShowModal={setShowCalendar}
+          onDismiss={() => {
+            modalTransitionInProgress.current = true;
+            setShowCalendar(false);
+            setTimeout(() => {
+              modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 500 : 300);
+          }}
         >
           <View style={[styles.calendarContainer, {backgroundColor: isDark ? colors.card : 'white'}]}>
             <View style={[styles.calendarHeader, {borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
@@ -412,18 +541,20 @@ export default function Search({
             <View style={[styles.calendarActions, {borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
               <TouchableOpacity 
                 style={[styles.calendarButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]}
-                onPress={() => setShowCalendar(false)}
+                onPress={() => {
+                  modalTransitionInProgress.current = true;
+                  setShowCalendar(false);
+                  setTimeout(() => {
+                    modalTransitionInProgress.current = false;
+                  }, Platform.OS === 'ios' ? 500 : 300);
+                }}
               >
                 <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={[styles.calendarButton, styles.primaryButton]}
-                onPress={() => {
-                  setShowCalendar(false);
-                  setShowDateFilters(false);
-                  setActiveDate({action: "custom", name: selectedDate});
-                }}
+                onPress={handleConfirmDate}
               >
                 <Text style={styles.primaryButtonText}>{translations[language].search.confirm}</Text>
               </TouchableOpacity>
@@ -438,6 +569,13 @@ export default function Search({
           setShowModal={setShowFiltersModal}
           position="bottom"
           backdropOpacity={0.7}
+          onDismiss={() => {
+            modalTransitionInProgress.current = true;
+            setShowFiltersModal(false);
+            setTimeout(() => {
+              modalTransitionInProgress.current = false;
+            }, Platform.OS === 'ios' ? 500 : 300);
+          }}
         >
           <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
             <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
@@ -445,7 +583,13 @@ export default function Search({
               <Text style={[styles.modalH2, {color: colors.text}]}>{translations[language].search.selectFilter || "Select Filter"}</Text>
               <TouchableOpacity 
                 style={styles.modalCloseButton}
-                onPress={() => setShowFiltersModal(false)}
+                onPress={() => {
+                  modalTransitionInProgress.current = true;
+                  setShowFiltersModal(false);
+                  setTimeout(() => {
+                    modalTransitionInProgress.current = false;
+                  }, Platform.OS === 'ios' ? 500 : 300);
+                }}
               >
                 <MaterialIcons name="close" size={24} color={isDark ? colors.textSecondary : "#64748B"} />
               </TouchableOpacity>
@@ -461,10 +605,7 @@ export default function Search({
                   activeFilter === filter.action && styles.filterOptionActive,
                   {borderBottomColor: isDark ? colors.border : '#F1F5F9', backgroundColor: activeFilter === filter.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : '#F0F9FF') : 'transparent'}
                 ]}
-                onPress={() => {
-                  setActiveFilter(filter.action);
-                  setShowFiltersModal(false);
-                }}
+                onPress={() => handleSelectFilter(filter)}
               >
                 <Text style={[
                   styles.filterOptionText,

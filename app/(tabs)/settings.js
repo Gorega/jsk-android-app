@@ -9,7 +9,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from "expo-router";
 import ModalPresentation from "../../components/ModalPresentation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   deleteToken, 
   saveToken, 
@@ -41,6 +41,9 @@ export default function Settings() {
     const [loading, setLoading] = useState(false);
     const [masterAccountId, setMasterAccountId] = useState(null);
     const isRTL = ["he", "ar"].includes(language);
+    
+    // Add a ref to track if a modal transition is in progress
+    const modalTransitionInProgress = useRef(false);
     
     // Login form state for adding new account
     const [loginForm, setLoginForm] = useState({
@@ -142,78 +145,105 @@ export default function Settings() {
         }
     ];
 
-    const settings = [
-        (["admin", "manager"].includes(user?.role)) ? {
-            label: translations[language].tabs.settings.options.users,
-            onPress: () => router.push("(users)"),
-            icon: <FontAwesome name="user-o" size={22} color="#4361EE" />
-        } : null,
-        (["manager", "admin", "business"].includes(user?.role)) ? {
-            label: translations[language].tabs.settings.options.complaints,
-            onPress: () => router.push("(complaints)"),
-            icon: <MaterialIcons name="fmd-bad" size={22} color="#4361EE" />
-        } : null,
-        {
-            label: translations[language].tabs.settings.options.language.title,
-            onPress: () => setShowLanguageModal(true),
-            icon: <MaterialIcons name="language" size={22} color="#4361EE" />,
-            value: language.toUpperCase()
-        },
-        {
-            label: translations[language].tabs.settings.options.theme?.title || 'Theme',
-            onPress: () => setShowThemeModal(true),
-            icon: <MaterialCommunityIcons 
-                    name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
-                    size={22} 
-                    color="#4361EE" 
-                  />,
-            value: theme === 'system' 
-                ? (translations[language].tabs.settings.options.theme?.options?.system || 'System') 
-                : (theme === 'dark' 
-                    ? (translations[language].tabs.settings.options.theme?.options?.dark || 'Dark') 
-                    : (translations[language].tabs.settings.options.theme?.options?.light || 'Light'))
-        },
-        {
-            label: translations[language].tabs.settings.options.changePassword,
-            onPress: () => router.push("(change_password)"),
-            icon: <AntDesign name="lock" size={22} color="#4361EE" />
-        },
-        {
-            label: translations[language].tabs.settings.options.contactUs,
-            onPress: () => router.push("(contact_us)"),
-            icon: <Entypo name="phone" size={22} color="#4361EE" />
-        },
-        {
-            label: translations[language].tabs.settings.options.aboutUs,
-            onPress: () => router.push("(info)"),
-            icon: <MaterialCommunityIcons name="information-outline" size={22} color="#4361EE" />
-        },
-        // Add switch account option
-        {
-            label: translations[language].tabs.settings.options.switchAccount,
-            onPress: () => setShowAccountsModal(true),
-            icon: <MaterialIcons name="switch-account" size={22} color="#4361EE" />
-        },
-        {
-            label: translations[language].tabs.settings.options.deleteAccount,
-            onPress: ()=>handleDeleteAccount(),
-            icon: <MaterialIcons name="delete-outline" size={22} color="#EF4444" />,
-            danger: true
-        },
-        {
-            label: translations[language].tabs.settings.options.logout,
-            onPress: ()=>handleLogout(),
-            icon: <MaterialIcons name="logout" size={22} color="#EF4444" />,
-            danger: true
-        }
-    ].filter(Boolean); // Remove null values (future-proof if options become conditional)
-    
+    // First, modify the settings array to organize options by section and remove the duplicate
+    const settings = {
+        preferences: [
+            (["admin", "manager"].includes(user?.role)) ? {
+                label: translations[language].tabs.settings.options.users,
+                onPress: () => router.push("(users)"),
+                icon: <FontAwesome name="user-o" size={22} color="#4361EE" />
+            } : null,
+            (["manager", "admin", "business"].includes(user?.role)) ? {
+                label: translations[language].tabs.settings.options.complaints,
+                onPress: () => router.push("(complaints)"),
+                icon: <MaterialIcons name="fmd-bad" size={22} color="#4361EE" />
+            } : null,
+            {
+                label: translations[language].tabs.settings.options.language.title,
+                onPress: () => {
+                    // Prevent opening modal if transition is in progress
+                    if (modalTransitionInProgress.current) return;
+                    setShowLanguageModal(true);
+                },
+                icon: <MaterialIcons name="language" size={22} color="#4361EE" />,
+                value: language.toUpperCase()
+            },
+            {
+                label: translations[language].tabs.settings.options.theme?.title || 'Theme',
+                onPress: () => {
+                    // Prevent opening modal if transition is in progress
+                    if (modalTransitionInProgress.current) return;
+                    setShowThemeModal(true);
+                },
+                icon: <MaterialCommunityIcons 
+                        name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
+                        size={22} 
+                        color="#4361EE" 
+                      />,
+                value: theme === 'system' 
+                    ? (translations[language].tabs.settings.options.theme?.options?.system || 'System') 
+                    : (theme === 'dark' 
+                        ? (translations[language].tabs.settings.options.theme?.options?.dark || 'Dark') 
+                        : (translations[language].tabs.settings.options.theme?.options?.light || 'Light'))
+            }
+        ].filter(Boolean),
+        
+        support: [
+            {
+                label: translations[language].tabs.settings.options.changePassword,
+                onPress: () => router.push("(change_password)"),
+                icon: <AntDesign name="lock" size={22} color="#4361EE" />
+            },
+            {
+                label: translations[language].tabs.settings.options.contactUs,
+                onPress: () => router.push("(contact_us)"),
+                icon: <Entypo name="phone" size={22} color="#4361EE" />
+            },
+            {
+                label: translations[language].tabs.settings.options.aboutUs,
+                onPress: () => router.push("(info)"),
+                icon: <MaterialCommunityIcons name="information-outline" size={22} color="#4361EE" />
+            }
+        ],
+        
+        account: [
+            // Switch account option - available for all roles
+            {
+                label: translations[language].tabs.settings.options.switchAccount,
+                onPress: () => {
+                    // Prevent opening modal if transition is in progress
+                    if (modalTransitionInProgress.current) return;
+                    setShowAccountsModal(true);
+                },
+                icon: <MaterialIcons name="switch-account" size={22} color="#4361EE" />
+            },
+            {
+                label: translations[language].tabs.settings.options.deleteAccount,
+                onPress: ()=>handleDeleteAccount(),
+                icon: <MaterialIcons name="delete-outline" size={22} color="#EF4444" />,
+                danger: true
+            },
+            {
+                label: translations[language].tabs.settings.options.logout,
+                onPress: ()=>handleLogout(),
+                icon: <MaterialIcons name="logout" size={22} color="#EF4444" />,
+                danger: true
+            }
+        ]
+    };
+
     // Language Change Handler
     const handleLanguageChange = async (newLang) => {
         // Close modal first to avoid visual glitches during restart
+        modalTransitionInProgress.current = true;
         setShowLanguageModal(false);
-        // Change language (this will trigger restart if RTL changes)
-        await setLanguage(newLang);
+        
+        // Add delay for iOS to ensure modal is fully closed before changing language
+        setTimeout(async () => {
+            // Change language (this will trigger restart if RTL changes)
+            await setLanguage(newLang);
+            modalTransitionInProgress.current = false;
+        }, Platform.OS === 'ios' ? 500 : 300);
     };
     
     // Logout Handler
@@ -238,6 +268,9 @@ export default function Settings() {
     
     // Delete Account Flow
     const handleDeleteAccount = () => {
+        // Prevent action if modal transition is in progress
+        if (modalTransitionInProgress.current) return;
+        
         Alert.alert(
             translations[language].tabs.settings.options.deleteAccount,
             translations[language].tabs.settings.options.deleteAccountHint,
@@ -286,8 +319,12 @@ export default function Settings() {
     
     // Switch Account Handler
     const handleSwitchAccount = async (account) => {
+        // Prevent switching if transition is already in progress
+        if (modalTransitionInProgress.current) return;
+        
+        modalTransitionInProgress.current = true;
+        
         try {
-            
             // Get the master account ID
             const masterId = await getMasterAccountId();
             
@@ -356,17 +393,22 @@ export default function Settings() {
                         // Set authenticated state
                         setIsAuthenticated(true);
                         
-                        // Close modal
+                        // Close modal with delay to ensure proper transition
                         setShowAccountsModal(false);
                         
-                        // Show success message
-                        Alert.alert(
-                            translations[language].tabs.settings.options.accountSwitched,
-                            translations[language].tabs.settings.options.accountSwitchedMessage
-                        );
-                        
-                        // Refresh app by redirecting to tabs
-                        router.replace("/(tabs)");
+                        setTimeout(() => {
+                            // Show success message
+                            Alert.alert(
+                                translations[language].tabs.settings.options.accountSwitched,
+                                translations[language].tabs.settings.options.accountSwitchedMessage
+                            );
+                            
+                            // Refresh app by redirecting to tabs
+                            router.replace("/(tabs)");
+                            
+                            // Reset modal transition flag
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 600 : 300);
                     } else {
                         throw new Error('No token received');
                     }
@@ -381,16 +423,22 @@ export default function Settings() {
                     // Close modal
                     setShowAccountsModal(false);
                     
-                    // Show success message
-                    Alert.alert(
-                        translations[language].tabs.settings.options.accountSwitched,
-                        translations[language].tabs.settings.options.accountSwitchedMessage
-                    );
-                    
-                    // Refresh app by redirecting to tabs
-                    router.replace("/(tabs)");
+                    setTimeout(() => {
+                        // Show success message
+                        Alert.alert(
+                            translations[language].tabs.settings.options.accountSwitched,
+                            translations[language].tabs.settings.options.accountSwitchedMessage
+                        );
+                        
+                        // Refresh app by redirecting to tabs
+                        router.replace("/(tabs)");
+                        
+                        // Reset modal transition flag
+                        modalTransitionInProgress.current = false;
+                    }, Platform.OS === 'ios' ? 600 : 300);
                 }
             } catch (loginError) {
+                modalTransitionInProgress.current = false;
                 Alert.alert(
                     translations[language].auth.loginFailed,
                     translations[language].tabs.settings.options.accountSwitchFailed || "Failed to switch account. Please log in again."
@@ -398,28 +446,42 @@ export default function Settings() {
                 router.replace("(auth)");
             }
         } catch (error) {
+            modalTransitionInProgress.current = false;
             Alert.alert("Error", "Failed to switch account. Please try again.");
         }
     };
     
     // Add New Account Handler
     const handleAddNewAccount = () => {
-        setShowAccountsModal(false);
-        setShowAddAccountModal(true);
+        // Prevent action if modal transition is in progress
+        if (modalTransitionInProgress.current) return;
         
-        // Reset login form
-        setLoginForm({
-            phone: "",
-            password: ""
-        });
-        setFormErrors({
-            phone: "",
-            password: ""
-        });
+        modalTransitionInProgress.current = true;
+        setShowAccountsModal(false);
+        
+        // Wait for first modal to close before opening the next one
+        setTimeout(() => {
+            setShowAddAccountModal(true);
+            
+            // Reset login form
+            setLoginForm({
+                phone: "",
+                password: ""
+            });
+            setFormErrors({
+                phone: "",
+                password: ""
+            });
+            
+            modalTransitionInProgress.current = false;
+        }, Platform.OS === 'ios' ? 500 : 300);
     };
     
     // Login Handler for adding new account
     const handleAddAccountLogin = async () => {
+        // Prevent action if modal transition is in progress
+        if (modalTransitionInProgress.current) return;
+        
         try {
             setFormErrors({});
             setLoading(true);
@@ -504,18 +566,28 @@ export default function Settings() {
             // Add to global accounts registry
             await addAccount(newAccount);
             
+            // Start modal transition
+            modalTransitionInProgress.current = true;
+            
             // Close modal
             setShowAddAccountModal(false);
             
-            // Refresh the accounts list
-            setShowAccountsModal(false);
-            setTimeout(() => setShowAccountsModal(true), 100);
-            
-            // Show success message
-            Alert.alert(
-                translations[language].tabs.settings.options.accountAdded,
-                translations[language].tabs.settings.options.accountAddedMessage
-            );
+            // Wait for modal to close before showing the accounts modal
+            setTimeout(() => {
+                // Refresh the accounts list
+                setShowAccountsModal(true);
+                
+                // Reset modal transition flag
+                modalTransitionInProgress.current = false;
+                
+                // Show success message
+                setTimeout(() => {
+                    Alert.alert(
+                        translations[language].tabs.settings.options.accountAdded,
+                        translations[language].tabs.settings.options.accountAddedMessage
+                    );
+                }, 100);
+            }, Platform.OS === 'ios' ? 500 : 300);
             
         } catch (err) {
             Alert.alert(
@@ -529,6 +601,9 @@ export default function Settings() {
     
     // Remove Account Handler
     const handleRemoveAccount = async (accountToRemove) => {
+        // Prevent action if modal transition is in progress
+        if (modalTransitionInProgress.current) return;
+        
         try {
             // Confirm before removing
             Alert.alert(
@@ -541,6 +616,8 @@ export default function Settings() {
                         style: "destructive",
                         onPress: async () => {
                             try {
+                                modalTransitionInProgress.current = true;
+                                
                                 // Remove the account from global registry
                                 await removeAccount(accountToRemove.userId);
                                 
@@ -553,8 +630,13 @@ export default function Settings() {
                                 
                                 // Refresh the accounts list
                                 setShowAccountsModal(false);
-                                setTimeout(() => setShowAccountsModal(true), 100);
+                                
+                                setTimeout(() => {
+                                    setShowAccountsModal(true);
+                                    modalTransitionInProgress.current = false;
+                                }, Platform.OS === 'ios' ? 500 : 300);
                             } catch (error) {
+                                modalTransitionInProgress.current = false;
                                 Alert.alert("Error", "Failed to remove account. Please try again.");
                             }
                         }
@@ -567,8 +649,17 @@ export default function Settings() {
     };
 
     const handleThemeChange = async (newTheme) => {
-        await setTheme(newTheme);
+        // Prevent action if modal transition is in progress
+        if (modalTransitionInProgress.current) return;
+        
+        modalTransitionInProgress.current = true;
         setShowThemeModal(false);
+        
+        // Wait for modal to close before changing theme
+        setTimeout(async () => {
+            await setTheme(newTheme);
+            modalTransitionInProgress.current = false;
+        }, Platform.OS === 'ios' ? 500 : 300);
     };
 
     return (
@@ -602,7 +693,7 @@ export default function Settings() {
                     </Text>
                 </View>
 
-                {settings.slice(0, 3).map((item, index) => (
+                {settings.preferences.map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         style={[
@@ -648,7 +739,7 @@ export default function Settings() {
                     </Text>
                 </View>
 
-                {settings.slice(3, 6).map((item, index) => (
+                {settings.support.map((item, index) => (
                     <TouchableOpacity
                         key={index}
                         style={[
@@ -686,27 +777,27 @@ export default function Settings() {
                     </Text>
                 </View>
                 
-                {/* Switch Account Option */}
+                {/* Account options - Switch Account */}
                 <TouchableOpacity
                     style={[
                         styles.item,
                         { backgroundColor: colors.card, borderBottomColor: colors.border }
                     ]}
-                    onPress={settings[settings.length - 3]?.onPress}
+                    onPress={settings.account[0]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
                         { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
                     ]}>
-                        {settings[settings.length - 3]?.icon}
+                        {settings.account[0]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
                             { color: colors.text }
                         ]}>
-                            {settings[settings.length - 3]?.label}
+                            {settings.account[0]?.label}
                         </Text>
                     </View>
                     <MaterialIcons 
@@ -722,21 +813,21 @@ export default function Settings() {
                         styles.item,
                         { backgroundColor: colors.card, borderBottomColor: colors.border }
                     ]}
-                    onPress={settings[settings.length - 2]?.onPress}
+                    onPress={settings.account[1]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
                         styles.dangerIconContainer
                     ]}>
-                        {settings[settings.length - 2]?.icon}
+                        {settings.account[1]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
                             styles.dangerLabel
                         ]}>
-                            {settings[settings.length - 2]?.label}
+                            {settings.account[1]?.label}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -748,21 +839,21 @@ export default function Settings() {
                         styles.dangerItem,
                         { backgroundColor: colors.card, borderBottomColor: colors.border }
                     ]}
-                    onPress={settings[settings.length - 1]?.onPress}
+                    onPress={settings.account[2]?.onPress}
                     activeOpacity={0.7}
                 >
                     <View style={[
                         styles.iconContainer,
                         styles.dangerIconContainer
                     ]}>
-                        {settings[settings.length - 1]?.icon}
+                        {settings.account[2]?.icon}
                     </View>
                     <View style={styles.itemTextContainer}>
                         <Text style={[
                             styles.itemLabel,
                             styles.dangerLabel
                         ]}>
-                            {settings[settings.length - 1]?.label}
+                            {settings.account[2]?.label}
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -773,7 +864,13 @@ export default function Settings() {
                 <ModalPresentation 
                     showModal={showLanguageModal} 
                     setShowModal={setShowLanguageModal}
-                    onDismiss={() => setShowLanguageModal(false)}
+                    onDismiss={() => {
+                        modalTransitionInProgress.current = true;
+                        setShowLanguageModal(false);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                 >
                     <View style={[styles.modalHeader, { 
                         borderBottomColor: colors.border,
@@ -878,7 +975,13 @@ export default function Settings() {
                 <ModalPresentation 
                     showModal={showAccountsModal} 
                     setShowModal={setShowAccountsModal}
-                    onDismiss={() => setShowAccountsModal(false)}
+                    onDismiss={() => {
+                        modalTransitionInProgress.current = true;
+                        setShowAccountsModal(false);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                 >
                     <View style={[styles.modalHeader, { 
                         backgroundColor: colors.card,
@@ -1020,7 +1123,13 @@ export default function Settings() {
                 <ModalPresentation 
                     showModal={showAddAccountModal} 
                     setShowModal={setShowAddAccountModal}
-                    onDismiss={() => setShowAddAccountModal(false)}
+                    onDismiss={() => {
+                        modalTransitionInProgress.current = true;
+                        setShowAddAccountModal(false);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                 >
                     <View style={[
                         styles.modalHeader, 
@@ -1087,7 +1196,13 @@ export default function Settings() {
                 <ModalPresentation 
                     showModal={showThemeModal} 
                     setShowModal={setShowThemeModal}
-                    onDismiss={() => setShowThemeModal(false)}
+                    onDismiss={() => {
+                        modalTransitionInProgress.current = true;
+                        setShowThemeModal(false);
+                        setTimeout(() => {
+                            modalTransitionInProgress.current = false;
+                        }, Platform.OS === 'ios' ? 500 : 300);
+                    }}
                 >
                     <View style={[
                         styles.modalHeader, 
