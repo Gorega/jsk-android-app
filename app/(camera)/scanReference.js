@@ -6,10 +6,12 @@ import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRTLStyles } from '../../utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import Animated from 'react-native-reanimated';
 
 export default function ScanReference() {
   const { language } = useLanguage();
@@ -146,20 +148,36 @@ export default function ScanReference() {
             onPress={() => router.back()}
           >
             <View style={styles.backButtonCircle}>
-              <Feather 
-                name={isRTL ? "chevron-right" : "chevron-left"} 
-                size={24} 
-                color="#FFFFFF" 
-              />
+              <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
             </View>
           </TouchableOpacity>
           
           {/* Scanner frame with animated border */}
-          <View style={styles.frameBorder}>
-            <View style={[styles.corner, styles.topLeft, { borderColor: colors.primary }]} />
-            <View style={[styles.corner, styles.topRight, { borderColor: colors.primary }]} />
-            <View style={[styles.corner, styles.bottomLeft, { borderColor: colors.primary }]} />
-            <View style={[styles.corner, styles.bottomRight, { borderColor: colors.primary }]} />
+          <View style={[
+            styles.scannerFocusArea,
+            { 
+              borderColor: colors.primary,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 10,
+              elevation: 5,
+            }
+          ]}>
+            <Animated.View 
+              style={[
+                styles.scanLine,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                  transform: [
+                    {
+                      translateY: 0 // Replace with animation if needed
+                    }
+                  ]
+                }
+              ]} 
+            />
           </View>
           
           {/* Instructions text */}
@@ -216,47 +234,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  frameBorder: {
-    width: 250,
-    height: 250,
-    position: 'relative',
+  scannerFocusArea: {
+    width: 280,
+    height: 280,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#4361EE',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    direction: 'ltr',
+    overflow: 'hidden',
   },
-  corner: {
+  scanLine: {
+    width: '100%',
+    height: 3,
+    backgroundColor: '#4361EE',
     position: 'absolute',
-    width: 40,
-    height: 40,
-  },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 12,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 12,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 12,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 12,
+    opacity: 0.8,
+    shadowColor: '#4361EE',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 5,
   },
   instructionsContainer: {
     position: 'absolute',

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, DeviceEventEmitter } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, DeviceEventEmitter, Animated } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from "expo-router";
 import Feather from '@expo/vector-icons/Feather';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRTLStyles } from '../../utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
@@ -19,6 +20,27 @@ export default function CameraScanner() {
   const [loading, setLoading] = useState(false);
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+  
+  // Add animation value for scan line
+  const scanLineAnim = React.useRef(new Animated.Value(0)).current;
+  
+  // Start scan line animation
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanLineAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scanLineAnim, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -136,34 +158,33 @@ export default function CameraScanner() {
         }}
       >
         <View style={styles.overlay}>
-          {/* Scanner frame with animated border */}
-          <View style={styles.frameBorder}>
-            <View 
+          {/* Scanner focus area with modern design */}
+          <View style={[
+            styles.scannerFocusArea,
+            { 
+              borderColor: colors.primary,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 10,
+              elevation: 5,
+            }
+          ]}>
+            <Animated.View 
               style={[
-                styles.corner, 
-                styles.topLeft,
-                { borderColor: colors.primary }
-              ]} 
-            />
-            <View 
-              style={[
-                styles.corner, 
-                styles.topRight,
-                { borderColor: colors.primary }
-              ]} 
-            />
-            <View 
-              style={[
-                styles.corner, 
-                styles.bottomLeft,
-                { borderColor: colors.primary }
-              ]} 
-            />
-            <View 
-              style={[
-                styles.corner, 
-                styles.bottomRight,
-                { borderColor: colors.primary }
+                styles.scanLine,
+                {
+                  backgroundColor: colors.primary,
+                  shadowColor: colors.primary,
+                  transform: [
+                    {
+                      translateY: scanLineAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [-120, 120]
+                      })
+                    }
+                  ]
+                }
               ]} 
             />
           </View>
@@ -215,11 +236,7 @@ export default function CameraScanner() {
             onPress={() => router.back()}
           >
             <View style={styles.backButtonCircle}>
-              <Feather 
-                name={isRTL ? "chevron-right" : "chevron-left"} 
-                size={24} 
-                color="#FFFFFF" 
-              />
+            <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
             </View>
           </TouchableOpacity>
         </View>
@@ -238,48 +255,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
-  frameBorder: {
-    width: 250,
-    height: 250,
-    position: 'relative',
+  scannerFocusArea: {
+    width: 280,
+    height: 280,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#4361EE',
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
-    direction: 'ltr',
+    overflow: 'hidden',
   },
-  corner: {
+  scanLine: {
+    width: '100%',
+    height: 3,
+    backgroundColor: '#4361EE',
     position: 'absolute',
-    width: 40,
-    height: 40,
-  },
-  topLeft: {
-    top: 0,
-    left: 0,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderTopLeftRadius: 12,
-  },
-  topRight: {
-    top: 0,
-    right: 0,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderTopRightRadius: 12,
-  },
-  bottomLeft: {
-    bottom: 0,
-    left: 0,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderBottomLeftRadius: 12,
-  },
-  bottomRight: {
-    bottom: 0,
-    right: 0,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderBottomRightRadius: 12,
+    opacity: 0.8,
+    shadowColor: '#4361EE',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 5,
+    elevation: 5,
   },
   instructionsContainer: {
     position: 'absolute',

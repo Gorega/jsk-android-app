@@ -9,6 +9,7 @@ import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Orders() {
     const socket = useSocket();
@@ -34,6 +35,28 @@ export default function Orders() {
     const abortControllerRef = useRef(null);
     const pendingFetchRef = useRef(null);
     const isMountedRef = useRef(true);
+
+    // Extract URL parameters when component mounts
+    useEffect(() => {
+        // Handle status_key parameter
+        if (params.status_key) {
+            setActiveFilter(params.status_key);
+        } else if (params.status_key === undefined && activeFilter !== '') {
+            // If status_key was removed from URL, clear the filter
+            setActiveFilter('');
+        }
+        
+        // Handle date_range parameter
+        if (params.date_range) {
+            const dateFilter = searchByDateGroup.find(date => date.action === params.date_range);
+            if (dateFilter) {
+                setActiveDate(dateFilter);
+            }
+        } else if (params.date_range === undefined && activeDate) {
+            // If date_range was removed from URL, clear the date filter
+            setActiveDate('');
+        }
+    }, [params.status_key, params.date_range, searchByDateGroup, activeFilter, activeDate]);
 
     // Track if component is mounted
     useEffect(() => {
@@ -74,14 +97,11 @@ export default function Orders() {
         setSelectedDate("");
         setPage(1);
         
-        // Clear orderIds param if it exists by navigating to orders tab without params
-        if (orderIds) {
-            router.replace("/(tabs)/orders");
-            return; // The navigation will trigger a re-render with new params
-        }
+        // Clear all URL params by navigating to orders tab without params
+        router.replace("/(tabs)/orders");
         
         fetchData(1, false);
-    }, [orderIds, router, fetchData]);
+    }, [router, fetchData]);
 
     // Listen for reset event
     useEffect(() => {
@@ -193,6 +213,9 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.onTheWay,
         action: "on_the_way"
+    },{
+        name: translations[language].tabs.orders.filters.driverResponsibilityOrders,
+        action: "driver_responsibility"
     }, {
         name: translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
         action: "return_before_delivered_initiated"
@@ -315,17 +338,38 @@ export default function Orders() {
         
         try {
             const queryParams = new URLSearchParams();
+            
+            // Clear orderIds and use a clean request if:
+            // 1. User explicitly selected "All" filter (activeFilter is "") or any other filter
+            // 2. User is using search or other filtering methods
+            const isFilterSelected = activeFilter !== undefined && activeFilter !== null;
+            const isUsingSearch = activeSearchBy || activeDate || (searchValue && searchValue.trim() !== '');
+            
+            // If user has selected a filter (including "All") or is using search, don't use orderIds
+            const shouldUseOrderIds = !isFilterSelected && !isUsingSearch;
+            
+            
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            if (orderIds) queryParams.append('order_id', orderIds);
+            
+            // Only include orderIds if no explicit filter is selected (including "All")
+            if (shouldUseOrderIds && orderIds) {
+                queryParams.append('order_id', orderIds);
+            }
+            
             if (multi_id && multi_id.trim() !== "") queryParams.append('multi_id', multi_id);
-            if (activeFilter) queryParams.append('status_key', activeFilter);
+            
+            // Only include status_key if activeFilter is not empty
+            if (activeFilter && activeFilter !== '') {
+                queryParams.append('status_key', activeFilter);
+            }
+            
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue);
             if (activeDate) queryParams.append("date_range", activeDate.action);
             if (activeDate && activeDate.action === "custom") queryParams.append("start_date", selectedDate);
             if (activeDate && activeDate.action === "custom") queryParams.append("end_date", selectedDate);
             queryParams.append('page', pageNumber);
             queryParams.append('language_code', language);
-            
+                        
             // Store the fetch promise in the ref
             pendingFetchRef.current = fetchOrdersData(queryParams, abortControllerRef.current.signal);
             const newData = await pendingFetchRef.current;
@@ -367,7 +411,6 @@ export default function Orders() {
             try {
                 await fetchData(nextPage, true);
             } catch (error) {
-                console.error("Error loading more data:", error);
             } finally {
                 setLoadingMore(false);
             }
@@ -531,11 +574,117 @@ export default function Orders() {
                 setSelectedDate("");
                 setPage(1);
                 fetchData(1, false);
+            } 
+            // If we have status_key param, set it as the active filter
+            else if (params.status_key) {
+                setActiveFilter(params.status_key);
+                // Keep other filters as they are, just update the status filter
+                setPage(1);
+                // No need to call fetchData here as the dependency array will trigger it
+            }
+            // If we have date_range param, set it as the active date filter
+            else if (params.date_range) {
+                // Find the date filter object that matches the date_range param
+                const dateFilter = searchByDateGroup.find(date => date.action === params.date_range);
+                if (dateFilter) {
+                    setActiveDate(dateFilter);
+                    setPage(1);
+                    // No need to call fetchData here as the dependency array will trigger it
+                }
             }
             // If we have orderIds but no reset flag, keep the orderIds filter
             // This allows specific order filtering from other screens
         }
-    }, [pathname, params, fetchData]);
+    }, [pathname, params, fetchData, searchByDateGroup]);
+
+    // Handle filter changes from user interaction
+    const handleFilterChange = useCallback((filter) => {
+        
+        // When selecting "All" filter, ensure it's an empty string, not undefined
+        const newFilter = filter === undefined ? '' : filter;
+        
+        // Clear orderIds when filter is manually changed
+        setActiveFilter(newFilter);
+        
+        // When selecting a filter (including "All"), clear orderIds from URL
+        router.replace({
+            pathname: "/(tabs)/orders",
+            params: newFilter ? { status_key: newFilter } : {}
+        });
+        
+    }, [router]);
+
+    // Handle date filter changes from user interaction
+    const handleDateChange = useCallback((date) => {
+        
+        // Clear orderIds when date filter is manually changed
+        setActiveDate(date);
+        
+        // When changing date filter, clear orderIds from URL
+        if (date && date.action) {
+            router.replace({
+                pathname: "/(tabs)/orders", 
+                params: { date_range: date.action }
+            });
+        } else {
+            router.replace({
+                pathname: "/(tabs)/orders",
+                params: {}
+            });
+        }
+        
+    }, [router]);
+
+    // Handle search by changes from user interaction
+    const handleSearchByChange = useCallback((searchBy) => {
+        
+        // Clear orderIds when search by is manually changed
+        setActiveSearchBy(searchBy);
+        
+        // Clear URL parameters by replacing with empty params
+        router.replace({
+            pathname: "/(tabs)/orders",
+            params: {}
+        });
+        
+    }, [router]);
+
+    // Handle search value changes from user interaction
+    const handleSearchValueChange = useCallback((input) => {        
+        // Clear orderIds when search value is manually changed
+        setSearchValue(input);
+        
+        // Only clear URL parameters if typing a search query
+        if (input.trim() !== '') {
+            // Clear URL parameters by replacing with empty params
+            router.replace({
+                pathname: "/(tabs)/orders",
+                params: {}
+            });
+            
+        }
+    }, [router]);
+
+    // Function to clear all filters and params
+    const clearAllFilters = useCallback(() => {
+        
+        // Clear all state
+        setSearchValue("");
+        setActiveFilter("");
+        setActiveSearchBy("");
+        setActiveDate("");
+        setSelectedDate("");
+        setPage(1);
+        
+        // Clear all URL params by completely replacing them
+        router.replace({
+            pathname: "/(tabs)/orders",
+            params: {}
+        });
+        
+        // Fetch data with no filters
+        fetchData(1, false);
+    }, [router, fetchData]);
 
     // Memoize the refresh control to prevent unnecessary re-renders
     const refreshControl = useMemo(() => (
@@ -547,22 +696,23 @@ export default function Orders() {
         />
     ), [refreshing, onRefresh, colors.primary]);
 
-    // Memoize the search component props to prevent unnecessary re-renders
+    // Update search props with our custom handlers
     const searchProps = useMemo(() => ({
         searchValue,
-        setSearchValue: (input) => setSearchValue(input),
+        setSearchValue: handleSearchValueChange, // Replace with our custom handler
         filterByGroup,
         searchByGroup,
         activeFilter,
-        setActiveFilter,
+        setActiveFilter: handleFilterChange, // Replace with our custom handler
         activeSearchBy,
-        setActiveSearchBy,
+        setActiveSearchBy: handleSearchByChange, // Replace with our custom handler
         searchByDateGroup,
         selectedDate,
         setSelectedDate,
         activeDate,
-        setActiveDate,
-        addPaddingSpace: true
+        setActiveDate: handleDateChange, // Replace with our custom handler
+        addPaddingSpace: true,
+        onClearFilters: clearAllFilters // Add clear all filters function
     }), [
         searchValue, 
         filterByGroup, 
@@ -571,7 +721,12 @@ export default function Orders() {
         activeSearchBy, 
         searchByDateGroup, 
         selectedDate, 
-        activeDate
+        activeDate,
+        handleFilterChange,
+        handleDateChange,
+        handleSearchByChange,
+        handleSearchValueChange,
+        clearAllFilters
     ]);
 
     return (

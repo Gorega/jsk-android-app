@@ -1,4 +1,4 @@
-import { Tabs, router, usePathname } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import React, { useState, useCallback } from 'react';
@@ -18,16 +18,16 @@ import AddOptionsModal from '../../components/AddOptionsModal';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '@/constants/Colors';
-
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const { language } = useLanguage();
-  const pathname = usePathname();
   const [showModal, setShowModal] = useState(false);
   const [showAddOptionsModal, setShowAddOptionsModal] = useState(false);
   const { user } = useAuth();
   const addButtonScale = new Animated.Value(1);
   const rtl = useRTLStyles();
+  const insets = useSafeAreaInsets();
   
   // Add theme context
   const { isDark, colorScheme } = useTheme();
@@ -234,24 +234,19 @@ export default function TabLayout() {
   // Use RTL-aware styles for the tab bar
   const tabBarStyles = rtl.createStyles({
     tabBar: {
-      backgroundColor: colors.tabBarBg,
+      backgroundColor: "transparent",
+      shadowColor: "transparent",
       flexDirection: 'row',
-      height: Platform.OS === 'ios' ? 88 : 72,
-      paddingTop: Platform.OS === 'ios' ? 10 : 8,
-      paddingBottom: Platform.OS === 'ios' ? 28 : 16,
       borderTopColor: colors.tabBarBorder,
-      shadowColor: isDark ? '#000' : '#000',
-      shadowOffset: { width: 0, height: -2 },
-      shadowOpacity: isDark ? 0.2 : 0.07,
-      shadowRadius: 3,
-      elevation: 10,
+      height: 60 + (Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0),
+      paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0,
     }
   });
   
   // Move the styles inside the component
   const styles = {
     addButtonContainer: {
-      top: 0,
+      top: -4,
       justifyContent: 'center',
       alignItems: 'center',
       height: 50,
@@ -281,6 +276,7 @@ export default function TabLayout() {
   
   return (
     <RTLWrapper>
+      <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <Tabs
         screenOptions={{
           tabBarStyle: tabBarStyles.tabBar,
@@ -307,6 +303,7 @@ export default function TabLayout() {
           />
         ))}
       </Tabs>
+      </SafeAreaView>
       {showModal && <Collections showModal={showModal} setShowModal={setShowModal} />}
       <AddOptionsModal 
         visible={showAddOptionsModal} 

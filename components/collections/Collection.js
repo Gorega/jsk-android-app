@@ -183,7 +183,7 @@ function Collection({ type, collection }) {
                         ]}>
                             <Text style={[
                                 styles.sectionTitle,
-                                { color: colors.textSecondary }
+                                { color: colors.textSecondary, textAlign: isRTL ? "left" : "" }
                             ]}>
                                 {type === "sent" 
                                     ? translations[language].collections.collection.numberOfCollections 
@@ -272,7 +272,7 @@ function Collection({ type, collection }) {
                                 </Text>
                                 <Text style={[
                                     styles.sectionValue,
-                                    { color: colors.text }
+                                    { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
                                     {user.role === "business" ? collection.total_net_value : collection.total_cod_value}
                                     {type === "sent" && collection.total_net_value}
@@ -313,7 +313,7 @@ function Collection({ type, collection }) {
                                 </Text>
                                 <Text style={[
                                     styles.sectionValue,
-                                    { color: colors.text }
+                                    { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
                                     {collection.total_checks}
                                 </Text>
@@ -606,6 +606,7 @@ function Collection({ type, collection }) {
                                         </View>
                                         <Text style={[
                                             styles.senderInfoText,
+                                            { textAlign: isRTL ? "left" : "" },
                                             { color: colors.textSecondary },
                                             { ...Platform.select({
                                                 ios: {

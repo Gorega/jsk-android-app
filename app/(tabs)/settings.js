@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Alert, Platform, ActivityIndicator } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ScrollView, View, Alert, Platform, ActivityIndicator, Keyboard, Animated } from "react-native";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -44,6 +44,50 @@ export default function Settings() {
     
     // Add a ref to track if a modal transition is in progress
     const modalTransitionInProgress = useRef(false);
+    
+    // Add state to track keyboard visibility
+    const [isKeyboardVisible, setKeyboardVisible] = useState(false);
+    
+    // Animation values
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const scaleAnim = useRef(new Animated.Value(0.95)).current;
+    
+    useEffect(() => {
+        // Start entrance animation
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnim, {
+                toValue: 1,
+                duration: 400,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+    
+    // Add effect to listen for keyboard events
+    useEffect(() => {
+        const keyboardDidShowListener = Keyboard.addListener(
+            'keyboardDidShow',
+            () => {
+                setKeyboardVisible(true);
+            }
+        );
+        const keyboardDidHideListener = Keyboard.addListener(
+            'keyboardDidHide',
+            () => {
+                setKeyboardVisible(false);
+            }
+        );
+
+        return () => {
+            keyboardDidShowListener.remove();
+            keyboardDidHideListener.remove();
+        };
+    }, []);
     
     // Login form state for adding new account
     const [loginForm, setLoginForm] = useState({
@@ -157,6 +201,11 @@ export default function Settings() {
                 label: translations[language].tabs.settings.options.complaints,
                 onPress: () => router.push("(complaints)"),
                 icon: <MaterialIcons name="fmd-bad" size={22} color="#4361EE" />
+            } : null,
+            (["driver", "delivery_company"].includes(user?.role)) ? {
+                label: translations[language]?.tabs.settings.options.driverStats || "Driver Statistics",
+                onPress: () => router.push("(driver_stats)"),
+                icon: <MaterialCommunityIcons name="chart-bar" size={22} color="#4361EE" />
             } : null,
             {
                 label: translations[language].tabs.settings.options.language.title,
@@ -665,8 +714,24 @@ export default function Settings() {
     return (
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             {/* User Info Card */}
-            <View style={[styles.userCard, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-                <View style={[styles.avatarContainer, { backgroundColor: colors.primary }]}>
+            <Animated.View 
+                style={[
+                    styles.userCard, 
+                    { 
+                        backgroundColor: colors.card, 
+                        borderBottomColor: colors.border 
+                    },
+                    {
+                        opacity: fadeAnim,
+                        transform: [{ scale: scaleAnim }]
+                    }
+                ]}
+            >
+                <View style={[
+                    styles.avatarContainer, 
+                    { backgroundColor: colors.primary },
+                    isDark && { shadowOpacity: 0.3 }
+                ]}>
                     <Text style={styles.avatarText}>
                         {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
                     </Text>
@@ -683,84 +748,174 @@ export default function Settings() {
                         {translations[language].roles[user?.role]}
                     </Text>
                 </View>
-            </View>
+            </Animated.View>
 
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {/* Settings Categories */}
-                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                <Animated.View 
+                    style={[
+                        styles.sectionHeader, 
+                        { backgroundColor: colors.background },
+                        { opacity: fadeAnim }
+                    ]}
+                >
                     <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
                         {translations[language].tabs.settings?.preferences}
                     </Text>
-                </View>
+                </Animated.View>
 
                 {settings.preferences.map((item, index) => (
-                    <TouchableOpacity
+                    <Animated.View 
                         key={index}
-                        style={[
-                            styles.item,
-                            { backgroundColor: colors.card, borderBottomColor: colors.border }
-                        ]}
-                        onPress={item?.onPress}
-                        activeOpacity={0.7}
+                        style={{
+                            opacity: fadeAnim,
+                            transform: [{ 
+                                translateY: fadeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [20, 0]
+                                }) 
+                            }]
+                        }}
                     >
-                        <View style={[
-                            styles.iconContainer,
-                            { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
-                        ]}>
-                            {item?.icon}
-                        </View>
-                        <View style={styles.itemTextContainer}>
-                            <Text style={[
-                                styles.itemLabel,
-                                { color: colors.text }
-                            ]}>
-                                {item?.label}
-                            </Text>
-                        </View>
-                        {item.value && (
+                        <TouchableOpacity
+                            style={[
+                                styles.item,
+                                { backgroundColor: colors.card, borderBottomColor: colors.border }
+                            ]}
+                            onPress={item?.onPress}
+                            activeOpacity={0.7}
+                        >
                             <View style={[
-                                styles.valueContainer,
-                                { backgroundColor: isDark ? colors.cardDark : '#E2E8F0' }
+                                styles.iconContainer,
+                                { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
                             ]}>
-                                <Text style={[styles.valueText, { color: colors.textSecondary }]}>{item.value}</Text>
+                                {item?.icon}
                             </View>
-                        )}
-                        <MaterialIcons 
-                            name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
-                            size={24} 
-                            color={colors.textSecondary} 
-                        />
-                    </TouchableOpacity>
+                            <View style={styles.itemTextContainer}>
+                                <Text style={[
+                                    styles.itemLabel,
+                                    { color: colors.text }
+                                ]}>
+                                    {item?.label}
+                                </Text>
+                            </View>
+                            {item.value && (
+                                <View style={[
+                                    styles.valueContainer,
+                                    { backgroundColor: isDark ? colors.cardDark : '#E2E8F0' }
+                                ]}>
+                                    <Text style={[styles.valueText, { color: colors.textSecondary }]}>{item.value}</Text>
+                                </View>
+                            )}
+                            <MaterialIcons 
+                                name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
+                                size={24} 
+                                color={colors.textSecondary} 
+                            />
+                        </TouchableOpacity>
+                    </Animated.View>
                 ))}
 
-                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
+                <Animated.View 
+                    style={[
+                        styles.sectionHeader, 
+                        { backgroundColor: colors.background },
+                        { opacity: fadeAnim }
+                    ]}
+                >
                     <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
                         {translations[language].tabs.settings.support}
                     </Text>
-                </View>
+                </Animated.View>
 
                 {settings.support.map((item, index) => (
-                    <TouchableOpacity
+                    <Animated.View 
                         key={index}
+                        style={{
+                            opacity: fadeAnim,
+                            transform: [{ 
+                                translateY: fadeAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [20, 0]
+                                }) 
+                            }]
+                        }}
+                    >
+                        <TouchableOpacity
+                            style={[
+                                styles.item,
+                                { backgroundColor: colors.card, borderBottomColor: colors.border }
+                            ]}
+                            onPress={item?.onPress}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.iconContainer,
+                                { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
+                            ]}>
+                                {item?.icon}
+                            </View>
+                            <View style={styles.itemTextContainer}>
+                                <Text style={[
+                                    styles.itemLabel,
+                                    { color: colors.text }
+                                ]}>
+                                    {item?.label}
+                                </Text>
+                            </View>
+                            <MaterialIcons 
+                                name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
+                                size={24} 
+                                color={colors.textSecondary} 
+                            />
+                        </TouchableOpacity>
+                    </Animated.View>
+                ))}
+
+                <Animated.View 
+                    style={[
+                        styles.sectionHeader, 
+                        { backgroundColor: colors.background },
+                        { opacity: fadeAnim }
+                    ]}
+                >
+                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                        {translations[language].tabs.settings.account}
+                    </Text>
+                </Animated.View>
+                
+                {/* Account options - Switch Account */}
+                <Animated.View 
+                    style={{
+                        opacity: fadeAnim,
+                        transform: [{ 
+                            translateY: fadeAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [20, 0]
+                            }) 
+                        }]
+                    }}
+                >
+                    <TouchableOpacity
                         style={[
                             styles.item,
                             { backgroundColor: colors.card, borderBottomColor: colors.border }
                         ]}
-                        onPress={item?.onPress}
+                        onPress={settings.account[0]?.onPress}
                         activeOpacity={0.7}
                     >
                         <View style={[
                             styles.iconContainer,
                             { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
                         ]}>
-                            {item?.icon}
+                            {settings.account[0]?.icon}
                         </View>
                         <View style={styles.itemTextContainer}>
                             <Text style={[
                                 styles.itemLabel,
                                 { color: colors.text }
                             ]}>
-                                {item?.label}
+                                {settings.account[0]?.label}
                             </Text>
                         </View>
                         <MaterialIcons 
@@ -769,94 +924,82 @@ export default function Settings() {
                             color={colors.textSecondary} 
                         />
                     </TouchableOpacity>
-                ))}
-
-                <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
-                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-                        {translations[language].tabs.settings.account}
-                    </Text>
-                </View>
-                
-                {/* Account options - Switch Account */}
-                <TouchableOpacity
-                    style={[
-                        styles.item,
-                        { backgroundColor: colors.card, borderBottomColor: colors.border }
-                    ]}
-                    onPress={settings.account[0]?.onPress}
-                    activeOpacity={0.7}
-                >
-                    <View style={[
-                        styles.iconContainer,
-                        { backgroundColor: isDark ? colors.cardDark : '#EEF2FF' }
-                    ]}>
-                        {settings.account[0]?.icon}
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                        <Text style={[
-                            styles.itemLabel,
-                            { color: colors.text }
-                        ]}>
-                            {settings.account[0]?.label}
-                        </Text>
-                    </View>
-                    <MaterialIcons 
-                        name={rtl.isRTL ? "chevron-left" : "chevron-right"} 
-                        size={24} 
-                        color={colors.textSecondary} 
-                    />
-                </TouchableOpacity>
+                </Animated.View>
                 
                 {/* Delete Account Option */}
-                <TouchableOpacity
-                    style={[
-                        styles.item,
-                        { backgroundColor: colors.card, borderBottomColor: colors.border }
-                    ]}
-                    onPress={settings.account[1]?.onPress}
-                    activeOpacity={0.7}
+                <Animated.View 
+                    style={{
+                        opacity: fadeAnim,
+                        transform: [{ 
+                            translateY: fadeAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [20, 0]
+                            }) 
+                        }]
+                    }}
                 >
-                    <View style={[
-                        styles.iconContainer,
-                        styles.dangerIconContainer
-                    ]}>
-                        {settings.account[1]?.icon}
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                        <Text style={[
-                            styles.itemLabel,
-                            styles.dangerLabel
+                    <TouchableOpacity
+                        style={[
+                            styles.item,
+                            { backgroundColor: colors.card, borderBottomColor: colors.border }
+                        ]}
+                        onPress={settings.account[1]?.onPress}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[
+                            styles.iconContainer,
+                            styles.dangerIconContainer
                         ]}>
-                            {settings.account[1]?.label}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
+                            {settings.account[1]?.icon}
+                        </View>
+                        <View style={styles.itemTextContainer}>
+                            <Text style={[
+                                styles.itemLabel,
+                                styles.dangerLabel
+                            ]}>
+                                {settings.account[1]?.label}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
                 
                 {/* Logout Option */}
-                <TouchableOpacity
-                    style={[
-                        styles.item,
-                        styles.dangerItem,
-                        { backgroundColor: colors.card, borderBottomColor: colors.border }
-                    ]}
-                    onPress={settings.account[2]?.onPress}
-                    activeOpacity={0.7}
+                <Animated.View 
+                    style={{
+                        opacity: fadeAnim,
+                        transform: [{ 
+                            translateY: fadeAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [20, 0]
+                            }) 
+                        }]
+                    }}
                 >
-                    <View style={[
-                        styles.iconContainer,
-                        styles.dangerIconContainer
-                    ]}>
-                        {settings.account[2]?.icon}
-                    </View>
-                    <View style={styles.itemTextContainer}>
-                        <Text style={[
-                            styles.itemLabel,
-                            styles.dangerLabel
+                    <TouchableOpacity
+                        style={[
+                            styles.item,
+                            styles.dangerItem,
+                            { backgroundColor: colors.card, borderBottomColor: colors.border }
+                        ]}
+                        onPress={settings.account[2]?.onPress}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[
+                            styles.iconContainer,
+                            styles.dangerIconContainer
                         ]}>
-                            {settings.account[2]?.label}
-                        </Text>
-                    </View>
-                </TouchableOpacity>
+                            {settings.account[2]?.icon}
+                        </View>
+                        <View style={styles.itemTextContainer}>
+                            <Text style={[
+                                styles.itemLabel,
+                                styles.dangerLabel
+                            ]}>
+                                {settings.account[2]?.label}
+                            </Text>
+                        </View>
+                    </TouchableOpacity>
+                </Animated.View>
             </ScrollView>
 
             {/* Language Modal */}
@@ -1024,7 +1167,7 @@ export default function Settings() {
                                 </Text>
                             </View>
                             <View style={styles.accountInfo}>
-                                <Text style={[styles.accountName, { color: colors.text },{
+                                <Text style={[styles.accountName, { color: colors.text, textAlign: rtl.isRTL ? "left" : "" },{
                                     ...Platform.select({
                                         ios: {
                                             textAlign:rtl.isRTL ? "left" : ""
@@ -1087,7 +1230,7 @@ export default function Settings() {
                                                     }
                                                 }),
                                             }]}>
-                                                {account.phone}
+                                                {account.name || account.phone}
                                             </Text>
                                         </View>
                                     </TouchableOpacity>
@@ -1143,7 +1286,11 @@ export default function Settings() {
                         </Text>
                     </View>
                     
-                    <View style={[styles.loginFormContainer, { backgroundColor: colors.background }]}>
+                    <View style={[
+                        styles.loginFormContainer, 
+                        { backgroundColor: colors.background },
+                        isKeyboardVisible && styles.loginFormContainerWithKeyboard
+                    ]}>
                         {/* Error display */}
                         {(formErrors.general) && (
                             <View style={styles.errorAlert}>
@@ -1173,7 +1320,8 @@ export default function Settings() {
                                 loading && [
                                     styles.loginButtonDisabled,
                                     { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
-                                ]
+                                ],
+                                isKeyboardVisible && styles.loginButtonWithKeyboard
                             ]}
                             onPress={handleAddAccountLogin}
                             disabled={loading}
@@ -1338,32 +1486,54 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'white',
-        padding: 20,
+        padding: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
-        gap: 12
+        gap: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     avatarContainer: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         backgroundColor: '#4361EE',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#4361EE',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.2,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
     avatarText: {
         color: 'white',
-        fontSize: 20,
+        fontSize: 24,
         fontWeight: '600',
     },
     userName: {
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
         color: '#1E293B',
-        marginBottom: 4,
+        marginBottom: 6,
     },
     userRole: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#64748B',
         textTransform: 'capitalize',
     },
@@ -1371,8 +1541,8 @@ const styles = StyleSheet.create({
         paddingBottom: 20,
     },
     sectionHeader: {
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingHorizontal: 20,
+        paddingVertical: 16,
         backgroundColor: '#F8FAFC',
     },
     sectionTitle: {
@@ -1387,21 +1557,51 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'white',
         paddingVertical: 16,
-        paddingHorizontal: 16,
+        paddingHorizontal: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
-        gap: 12
+        gap: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.03,
+                shadowRadius: 3,
+            },
+            android: {
+                elevation: 1,
+            },
+        }),
     },
     iconContainer: {
-        width: 36,
-        height: 36,
-        borderRadius: 8,
+        width: 42,
+        height: 42,
+        borderRadius: 12,
         backgroundColor: '#EEF2FF',
         justifyContent: 'center',
         alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#4361EE',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     dangerIconContainer: {
         backgroundColor: '#FEE2E2',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#EF4444',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+            },
+        }),
     },
     itemTextContainer: {
         flex: 1,
@@ -1424,22 +1624,22 @@ const styles = StyleSheet.create({
     },
     valueContainer: {
         backgroundColor: '#E2E8F0',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8
     },
     valueText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '600',
         color: '#64748B',
     },
     modalHeader: {
-        padding: 16,
+        padding: 20,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
     },
     modalTitle: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: '600',
         color: '#1E293B',
         textAlign: 'center',
@@ -1448,8 +1648,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 16,
-        paddingHorizontal: 20,
+        paddingVertical: 18,
+        paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
     },
@@ -1457,7 +1657,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F9FF',
     },
     languageText: {
-        fontSize: 16,
+        fontSize: 17,
         color: '#334155',
     },
     activeLanguageText: {
@@ -1466,24 +1666,24 @@ const styles = StyleSheet.create({
     },
     // Account switching styles
     accountsSection: {
-        marginBottom: 16,
+        marginBottom: 20,
     },
     accountsSectionTitle: {
-        fontSize: 14,
+        fontSize: 15,
         fontWeight: '600',
         color: '#64748B',
-        paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingHorizontal: 24,
+        paddingVertical: 16,
     },
     accountItem: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: 'white',
-        paddingVertical: 12,
-        paddingHorizontal: 20,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
         borderBottomWidth: 1,
         borderBottomColor: '#E2E8F0',
-        gap:12
+        gap: 16
     },
     currentAccountItem: {
         backgroundColor: '#F0F9FF',
@@ -1492,54 +1692,75 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         flex: 1,
-        gap:12,
-        
+        gap: 16,
     },
     accountAvatarContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 46,
+        height: 46,
+        borderRadius: 23,
         backgroundColor: '#4361EE',
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#4361EE',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.2,
+                shadowRadius: 3,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     accountAvatarText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
     },
     accountInfo: {
         flex: 1,
     },
     accountName: {
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '500',
         color: '#1E293B',
     },
     accountPhone: {
-        fontSize: 14,
+        fontSize: 15,
         color: '#64748B',
     },
     accountRole: {
-        fontSize: 12,
+        fontSize: 14,
         color: '#94A3B8',
         textTransform: 'capitalize',
     },
     activeTag: {
         backgroundColor: '#DCFCE7',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#22C55E',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 1,
+            },
+        }),
     },
     activeTagText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '600',
         color: '#22C55E',
     },
     removeAccountButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#F1F5F9',
         justifyContent: 'center',
         alignItems: 'center',
@@ -1548,40 +1769,46 @@ const styles = StyleSheet.create({
     addAccountButton: {
         flexDirection: 'row',
         backgroundColor: '#4361EE',
-        borderRadius: 8,
-        paddingVertical: 14,
-        paddingHorizontal: 20,
+        borderRadius: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 20,
-        marginBottom: 16,
+        marginHorizontal: 24,
+        marginBottom: 20,
+        marginTop: 8,
         ...Platform.select({
             ios: {
                 shadowColor: '#4361EE',
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.2,
-                shadowRadius: 4,
+                shadowOpacity: 0.25,
+                shadowRadius: 6,
             },
             android: {
-                elevation: 4,
+                elevation: 5,
             },
         }),
     },
     addAccountButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '600',
-        marginLeft: 8,
+        marginLeft: 10,
     },
     // Login form styles
     loginFormContainer: {
-        padding: 20,
+        padding: 24,
     },
+    
+    loginFormContainerWithKeyboard: {
+        paddingBottom: Platform.OS === 'ios' ? 80 : 20, // Add extra padding at bottom on iOS
+    },
+    
     formFields: {
-        marginBottom: 20,
+        marginBottom: 24,
     },
     fieldContainer: {
-        marginBottom: 10,
+        marginBottom: 16,
     },
     errorAlert: {
         flexDirection: 'row',
@@ -1589,14 +1816,14 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(254, 226, 226, 0.5)',
         borderRadius: 12,
         padding: 16,
-        marginBottom: 20,
+        marginBottom: 24,
         borderLeftWidth: 4,
         borderLeftColor: '#EF4444',
     },
     errorText: {
         marginLeft: 10,
         color: '#B91C1C',
-        fontSize: 14,
+        fontSize: 15,
         flex: 1,
     },
     loginButton: {
@@ -1621,25 +1848,39 @@ const styles = StyleSheet.create({
     loginButtonDisabled: {
         backgroundColor: '#A5B4FC',
     },
+    loginButtonWithKeyboard: {
+        marginBottom: Platform.OS === 'ios' ? 0 : 8, // Adjust margin when keyboard is visible
+    },
     loginButtonText: {
         color: '#FFFFFF',
-        fontSize: 16,
+        fontSize: 17,
         fontWeight: '600',
     },
     masterAccountTag: {
         backgroundColor: '#DCFCE7',
-        paddingHorizontal: 8,
-        paddingVertical: 2,
-        borderRadius: 4,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#22C55E',
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.1,
+                shadowRadius: 2,
+            },
+            android: {
+                elevation: 1,
+            },
+        }),
     },
     masterAccountTagText: {
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: '600',
         color: '#22C55E',
     },
     themeOptionContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12
+        gap: 14
     },
 });

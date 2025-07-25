@@ -238,6 +238,9 @@ export default function ReceiverSearchModal({
                                     <View style={styles.receiverInfo}>
                                         <Text style={[styles.receiverName,
                                             {
+                                                textAlign: isRTL ? "left" : "left"
+                                            },
+                                            {
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "left" : ""
@@ -252,6 +255,7 @@ export default function ReceiverSearchModal({
                                                         textAlign:isRTL ? "left" : ""
                                                     },
                                                 }),
+                                                textAlign: isRTL ? "left" : "left",
                                                 color: colors.success
                                             }]}>{receiver.phone || receiver.mobile}</Text>
                                         <Text style={[styles.receiverAddress,{

@@ -41,6 +41,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     const [reasonSearchQuery, setReasonSearchQuery] = useState('');
+    const [showExpandHint, setShowExpandHint] = useState(false);
     
     // Safely access authUser role with a default value
     const authUserRole = authUser?.role || "user";
@@ -48,25 +49,45 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     // Animation value for smooth transition
     const heightAnim = useRef(new Animated.Value(1)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
-    
-    // Add a ref to track if a modal transition is in progress
-    const modalTransitionInProgress = useRef(false);
-    
-    // Enhanced modal transition handler
-    const handleModalTransition = (closeModal, openModal, delay = 500) => {
-        if (modalTransitionInProgress.current) return;
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+
+    // Check if this is the first time the user is viewing orders
+    useEffect(() => {
+        const checkFirstTimeUser = async () => {
+            try {
+                const hasSeenOnboarding = await AsyncStorage.getItem('orders_onboarding_seen');
+                // If onboarding hasn't been seen, show the expand hint
+                if (!hasSeenOnboarding) {
+                    setShowExpandHint(true);
+                    
+                    // Create a pulsing animation for the expand button
+                    Animated.loop(
+                        Animated.sequence([
+                            Animated.timing(pulseAnim, {
+                                toValue: 1.2,
+                                duration: 800,
+                                useNativeDriver: true
+                            }),
+                            Animated.timing(pulseAnim, {
+                                toValue: 1,
+                                duration: 800,
+                                useNativeDriver: true
+                            })
+                        ])
+                    ).start();
+                    
+                    // Auto-hide the hint after 5 seconds
+                    setTimeout(() => {
+                        setShowExpandHint(false);
+                    }, 5000);
+                }
+            } catch (error) {
+                // Silent fail for AsyncStorage errors
+            }
+        };
         
-        modalTransitionInProgress.current = true;
-        
-        // Close the current modal
-        closeModal(false);
-        
-        // Wait for the animation to complete before opening the next modal
-        setTimeout(() => {
-            openModal(true);
-            modalTransitionInProgress.current = false;
-        }, delay);
-    };
+        checkFirstTimeUser();
+    }, []);
 
     // Helper function to format currency values
     const formatCurrencyValue = (value, currency) => {
@@ -77,14 +98,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             return (
                 <View style={[styles.currencyContainer]}>
                     {currencies.map((curr, idx) => (
-                        <Text key={idx} style={[styles.currencyText,{color:colors.text}]}>{curr}</Text>
+                        <Text key={idx} style={[styles.currencyText,{color:colors.text},isRTL && {textAlign: 'left'}]}>{curr}</Text>
                     ))}
                 </View>
             );
         }
         
         // Regular display for simple values
-        return <Text style={[styles.costText,{color:colors.text}]}>{value} {currency}</Text>;
+        return <Text style={[styles.costText,{color:colors.text},isRTL && {textAlign: 'left'}]}>{value} {currency}</Text>;
     };
 
     // Toggle minimize/expand state with animation
@@ -103,6 +124,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         ]).start();
         
         setIsMinimized(!isMinimized);
+        
+        // Hide the expand hint after first use
+        if (showExpandHint) {
+            setShowExpandHint(false);
+        }
     };
 
     // Interpolate rotation for chevron icon
@@ -215,26 +241,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             if (statusOption?.requiresBranch) {
                 // Fetch branches and show branch selection modal
                 fetchBranches();
-                // Use enhanced modal transition handler with iOS-friendly delay
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowBranchModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
             } else if (statusOption?.requiresReason) {
-                // Show reason selection modal with proper delay
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowReasonModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                // Show reason selection modal
+                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
             } else {
                 // Directly show confirmation modal if no branch or reason needed
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowConfirmStatusChangeUpdateModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
             }
         } else {
             // Direct value (not a function updater)
@@ -252,23 +265,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             
             if (statusOption?.requiresBranch) {
                 fetchBranches();
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowBranchModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
             } else if (statusOption?.requiresReason) {
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowReasonModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
             } else {
-                setTimeout(() => {
-                    if (!modalTransitionInProgress.current) {
-                        setShowConfirmStatusChangeUpdateModal(true);
-                    }
-                }, Platform.OS === 'ios' ? 600 : 300);
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
             }
         }
     };
@@ -300,26 +301,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     const handleReasonSelect = (reasonOption) => {
         setSelectedReason(reasonOption);
-        // Close current modal first, then open the next one with a longer delay
-        modalTransitionInProgress.current = true;
+        // Close current modal first, then open the next one with a slight delay
         setShowReasonModal(false);
-        
-        setTimeout(() => {
-            setShowConfirmStatusChangeUpdateModal(true);
-            modalTransitionInProgress.current = false;
-        }, Platform.OS === 'ios' ? 700 : 400);
+        setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
     const handleBranchSelect = (branchOption) => {
         setSelectedBranch(branchOption);
-        // Close current modal first, then open the next one with a longer delay
-        modalTransitionInProgress.current = true;
+        // Close current modal first, then open the next one with a slight delay
         setShowBranchModal(false);
-        
-        setTimeout(() => {
-            setShowConfirmStatusChangeUpdateModal(true);
-            modalTransitionInProgress.current = false;
-        }, Platform.OS === 'ios' ? 700 : 400);
+        setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
     // Add this function to manually retry pending updates
@@ -705,16 +696,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             };
             
             if (!updates.status) {
-                // Close current modal first, then show error with delay
-                modalTransitionInProgress.current = true;
+                // Close current modal first, then show error
                 setShowConfirmStatusChangeUpdateModal(false);
-                
                 setTimeout(() => {
                     setErrorMessage(translations[language].tabs.orders.order.missingStatus);
                     setShowErrorModal(true);
-                    modalTransitionInProgress.current = false;
-                }, Platform.OS === 'ios' ? 700 : 400);
-                
+                }, 300);
                 setIsUpdating(false);
                 return;
             }
@@ -728,104 +715,92 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             }
             
             // Close current modal first
-            modalTransitionInProgress.current = true;
             setShowConfirmStatusChangeUpdateModal(false);
             
-            // Add a delay before proceeding with the API call
-            setTimeout(async () => {
-                modalTransitionInProgress.current = false;
-                
-                // Check if we're online
-                const networkState = await NetInfo.fetch();
-                const isOnline = networkState.isConnected && networkState.isInternetReachable;
-                
-                if (isOnline) {
-                    // We're online, send the update directly
+            // Check if we're online
+            const networkState = await NetInfo.fetch();
+            const isOnline = networkState.isConnected && networkState.isInternetReachable;
+            
+            if (isOnline) {
+                // We're online, send the update directly
+                try {
+                    
+                    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+                        method: "PUT",
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept-Language': language,
+                        },
+                        credentials: "include",
+                        body: JSON.stringify({ updates }) // This is the expected format by the API
+                    });
+                    
+                    // Log the raw response for debugging
+                    const responseText = await res.text();
+                    
+                    // Try to parse the response
+                    let data;
                     try {
-                        
-                        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
-                            method: "PUT",
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'Accept-Language': language,
-                            },
-                            credentials: "include",
-                            body: JSON.stringify({ updates }) // This is the expected format by the API
-                        });
-                        
-                        // Log the raw response for debugging
-                        const responseText = await res.text();
-                        
-                        // Try to parse the response
-                        let data;
-                        try {
-                            data = JSON.parse(responseText);
-                        } catch (parseError) {
-                            throw new Error('Invalid server response');
-                        }
-                        
-                        if (!data.error) {
-                            // Update was successful
-                            
-                            // Update the cached order with the new status
-                            const updatedOrder = {
-                                ...order,
-                                status: selectedValue.status?.label,
-                                status_key: selectedValue.status?.value
-                            };
-                            await cacheOrder(updatedOrder);
-                            
-                            // Call the onStatusChange callback to update the parent component
-                            if (typeof onStatusChange === 'function') {
-                                onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
-                            }
-                            
-                            // Reset state values
-                            setSelectedReason(null);
-                            setSelectedBranch(null);
-                            setUpdatedStatusNote("");
-                            
-                            // Show success message with delay
-                            setTimeout(() => {
-                                if (!modalTransitionInProgress.current) {
-                                    setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess);
-                                    setShowSuccessModal(true);
-                                    setTimeout(() => setShowSuccessModal(false), 2500);
-                                }
-                            }, Platform.OS === 'ios' ? 600 : 300);
-                        } else {
-                            // Show error message with the actual error details from backend
-                            setTimeout(() => {
-                                if (!modalTransitionInProgress.current) {
-                                    // Use data.details if available, otherwise fallback to data.error or generic message
-                                    setErrorMessage(data.details || data.error || translations[language].tabs.orders.order.statusChangeError);
-                                    setShowErrorModal(true);
-                                }
-                            }, Platform.OS === 'ios' ? 600 : 300);
-                        }
-                    } catch (error) {
-                        // Network error while trying to update - fall back to offline mode
-                        handleOfflineStatusUpdate(updates);
+                        data = JSON.parse(responseText);
+                    } catch (parseError) {
+                        throw new Error('Invalid server response');
                     }
-                } else {
-                    // We're offline, store the update for later
+                    
+                    if (!data.error) {
+                        // Update was successful
+                        
+                        // Update the cached order with the new status
+                        const updatedOrder = {
+                            ...order,
+                            status: selectedValue.status?.label,
+                            status_key: selectedValue.status?.value
+                        };
+                        await cacheOrder(updatedOrder);
+                        
+                        // Call the onStatusChange callback to update the parent component
+                        if (typeof onStatusChange === 'function') {
+                            onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
+                        }
+                        
+                        // Reset state values
+                        setSelectedReason(null);
+                        setSelectedBranch(null);
+                        setUpdatedStatusNote("");
+                        
+                        // Show success message
+                        setTimeout(() => {
+                            setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess);
+                            setShowSuccessModal(true);
+                            setTimeout(() => setShowSuccessModal(false), 2500);
+                        }, 100);
+                    } else {
+                        // Show error message with the actual error details from backend
+                        setTimeout(() => {
+                            // Use data.details if available, otherwise fallback to data.error or generic message
+                            setErrorMessage(data.details || data.error || translations[language].tabs.orders.order.statusChangeError);
+                            setShowErrorModal(true);
+                        }, 100);
+                    }
+                } catch (error) {
+                    // Network error while trying to update - fall back to offline mode
                     handleOfflineStatusUpdate(updates);
                 }
-                setIsUpdating(false);
-            }, Platform.OS === 'ios' ? 700 : 300);
+            } else {
+                // We're offline, store the update for later
+                handleOfflineStatusUpdate(updates);
+            }
         } catch (error) {
             // Close current modal first
-            modalTransitionInProgress.current = true;
             setShowConfirmStatusChangeUpdateModal(false);
             
-            // Show error modal with delay
+            // Show error modal
             setTimeout(() => {
                 setErrorMessage(translations[language].tabs.orders.order.statusChangeError);
                 setShowErrorModal(true);
-                setIsUpdating(false);
-                modalTransitionInProgress.current = false;
-            }, Platform.OS === 'ios' ? 700 : 300);
+            }, 100);
+        } finally {
+            setIsUpdating(false);
         }
     };
     
@@ -886,6 +861,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             "stuck": "#F59E0B",
             "delayed": "#F59E0B",
             "on_the_way": "#6366F1",
+            "driver_responsibility": "#6366F1",
             "reschedule": "#F59E0B",
             "return_before_delivered_initiated": "#EF4444",
             "return_after_delivered_initiated": "#F97316",
@@ -1158,11 +1134,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     // Add this to the Error Modal to handle closing
     const handleErrorModalClose = () => {
-        modalTransitionInProgress.current = true;
         setShowErrorModal(false);
-        setTimeout(() => {
-            modalTransitionInProgress.current = false;
-        }, Platform.OS === 'ios' ? 500 : 300);
     };
 
     // Load shown error order IDs when component mounts
@@ -1196,26 +1168,45 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         backgroundColor: isDark ? colors.card : 'rgba(67, 97, 238, 0.05)',
                         borderBottomColor: colors.border,
                     }]}>
-                        {/* Minimize/Expand toggle button */}
-                        <TouchableOpacity 
-                            onPress={() => {
-                                // Prevent toggling if a modal transition is in progress
-                                if (modalTransitionInProgress.current) return;
-                                toggleMinimize();
-                            }}
-                            style={styles.toggleButton}
-                            activeOpacity={0.7}
+                        {/* Minimize/Expand toggle button with hint animation */}
+                        <Animated.View 
+                            style={[
+                                styles.toggleButtonContainer,
+                                showExpandHint && {
+                                    transform: [{ scale: pulseAnim }],
+                                    zIndex: 10
+                                }
+                            ]}
                         >
-                            <Animated.View style={{ 
-                                transform: [{ rotate: rotateInterpolation }],
-                            }}>
-                                <MaterialIcons 
-                                    name="expand-more" 
-                                    size={24} 
-                                    color="#4361EE" 
-                                />
-                            </Animated.View>
-                        </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={toggleMinimize}
+                                style={[
+                                    styles.toggleButton,
+                                    showExpandHint && styles.toggleButtonHighlight
+                                ]}
+                                activeOpacity={0.7}
+                            >
+                                <Animated.View style={{ 
+                                    transform: [{ rotate: rotateInterpolation }],
+                                }}>
+                                    <MaterialIcons 
+                                        name="expand-more" 
+                                        size={24} 
+                                        color={showExpandHint ? "#FFFFFF" : "#4361EE"} 
+                                    />
+                                </Animated.View>
+                            </TouchableOpacity>
+                            
+                            {/* Hint tooltip */}
+                            {showExpandHint && (
+                                <View style={styles.expandHintTooltip}>
+                                    <Text style={styles.expandHintText}>
+                                        {translations[language]?.onboarding?.orders?.tapToExpand || "Tap to expand"}
+                                    </Text>
+                                </View>
+                            )}
+                        </Animated.View>
+                        
                         <View style={[styles.orderIdSection]}>
                             <View style={[styles.orderIdContainer]}>
                              <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
@@ -1226,7 +1217,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 )}
                             </View>
                             {order.reference_id && !isMinimized && (
-                               <Text style={[styles.referenceId, { color: colors.textSecondary },{
+                               <Text style={[styles.referenceId, { color: colors.textSecondary, textAlign: isRTL ? "left" : "left" },{
+                                
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "left" : ""
@@ -1241,21 +1233,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         <View style={{alignItems: 'center', flexDirection: 'row' }}>
                             {renderConnectivityStatus()}
                             <TouchableOpacity 
-                                onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    if (!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole)) {
-                                        setShowStatusUpdateModal(true);
-                                    }
-                                }} 
+                                onPress={() => !["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && setShowStatusUpdateModal(true)} 
                                 style={[
                                     styles.statusBadge, 
                                     { 
                                         backgroundColor: getStatusColor(order.status_key)
                                     }
                                 ]}
-                                activeOpacity={!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) ? 0.7 : 1}
+                                activeOpacity={!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) ? 0.7 : 1}
                             >
-                                {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
+                                {!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
                                     <MaterialIcons 
                                         name="published-with-changes" 
                                         size={18} 
@@ -1710,7 +1697,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                     {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
                                                 </Text>
                                                 <Text style={[styles.costText,{
-                                                    color: colors.text
+                                                    color: colors.text,
+                                                    textAlign: isRTL ? "left" : "left"
                                                 }]}>
                                                     {order.delivery_fee} {order.currency}
                                                 </Text>
@@ -1849,13 +1837,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showControl && (
                 <ModalPresentation
                     showModal={showControl}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowControl(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowControl}
                     customStyles={{ bottom: 15 }}
                 > 
                     <View style={styles.modalHeader}>
@@ -1889,16 +1871,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     styles.controlOption
                                 ]} 
                                 onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    modalTransitionInProgress.current = true;
                                     setShowControl(false);
-                                    setTimeout(() => {
-                                        router.push({
-                                            pathname: "(create)",
-                                            params: { orderId: order.order_id }
-                                        });
-                                        modalTransitionInProgress.current = false;
-                                    }, Platform.OS === 'ios' ? 300 : 150);
+                                    router.push({
+                                        pathname: "(create)",
+                                        params: { orderId: order.order_id }
+                                    });
                                 }}
                             >
                                 <View style={[
@@ -1936,16 +1913,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     styles.controlOption
                                 ]} 
                                 onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    modalTransitionInProgress.current = true;
                                     setShowControl(false);
-                                    setTimeout(() => {
-                                        router.push({
-                                            pathname: "(edit_receiver_phones)",
-                                            params: { orderId: order.order_id, editPhoneOnly: true }
-                                        });
-                                        modalTransitionInProgress.current = false;
-                                    }, Platform.OS === 'ios' ? 300 : 150);
+                                    router.push({
+                                        pathname: "(edit_receiver_phones)",
+                                        params: { orderId: order.order_id, editPhoneOnly: true }
+                                    });
                                 }}
                             >
                                 <View style={[
@@ -1967,20 +1939,15 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </TouchableOpacity>
                         )}
                         
-                        {!["business","accountant","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
+                        {!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
                                     styles.noBorder
                                 ]} 
                                 onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    modalTransitionInProgress.current = true;
                                     setShowControl(false);
-                                    setTimeout(() => {
-                                        setShowStatusUpdateModal(true);
-                                        modalTransitionInProgress.current = false;
-                                    }, Platform.OS === 'ios' ? 500 : 300);
+                                    setShowStatusUpdateModal(true);
                                 }}
                             >
                                 <View style={[
@@ -2008,16 +1975,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 styles.noBorder
                             ]} 
                             onPress={() => {
-                                if (modalTransitionInProgress.current) return;
-                                modalTransitionInProgress.current = true;
                                 setShowControl(false);
-                                setTimeout(() => {
-                                    router.push({
-                                        pathname: "(track)",
-                                        params: { orderId: order.order_id }
-                                    });
-                                    modalTransitionInProgress.current = false;
-                                }, Platform.OS === 'ios' ? 300 : 150);
+                                router.push({
+                                    pathname: "(track)",
+                                    params: { orderId: order.order_id }
+                                });
                             }}
                         >
                             <View style={[
@@ -2044,16 +2006,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 styles.noBorder
                             ]} 
                             onPress={() => {
-                                if (modalTransitionInProgress.current) return;
-                                modalTransitionInProgress.current = true;
                                 setShowControl(false);
-                                setTimeout(() => {
-                                    router.push({
-                                        pathname: "/(complaints)/open_complaint",
-                                        params: { orderId: order.order_id }
-                                    });
-                                    modalTransitionInProgress.current = false;
-                                }, Platform.OS === 'ios' ? 300 : 150);
+                                router.push({
+                                    pathname: "/(complaints)/open_complaint",
+                                    params: { orderId: order.order_id }
+                                });
                             }}
                         >
                             <View style={[
@@ -2081,10 +2038,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     styles.noBorder,
                                     { backgroundColor: isConnected ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
                                 ]} 
-                                onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    retryPendingUpdates();
-                                }}
+                                onPress={retryPendingUpdates}
                             >
                                 <View style={[
                                     styles.controlIconContainer, 
@@ -2112,13 +2066,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     list={statusOptions}
                     setSelectedValue={handleStatusUpdate}
                     showPickerModal={showStatusUpdateModal}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowStatusUpdateModal(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowStatusUpdateModal}
                     field={{
                         name: 'status',
                         label: translations[language].tabs.orders.order.status,
@@ -2131,13 +2079,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showReasonModal && (
                 <ModalPresentation
                     showModal={showReasonModal}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowReasonModal(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowReasonModal}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -2170,10 +2112,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             onChangeText={setReasonSearchQuery}
                         />
                         {reasonSearchQuery ? (
-                            <TouchableOpacity onPress={() => {
-                                if (modalTransitionInProgress.current) return;
-                                setReasonSearchQuery('');
-                            }}>
+                            <TouchableOpacity onPress={() => setReasonSearchQuery('')}>
                                 <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
                             </TouchableOpacity>
                         ) : null}
@@ -2197,10 +2136,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 style={[
                                     styles.reasonOption
                                 ]}
-                                onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    handleReasonSelect(reason);
-                                }}
+                                onPress={() => handleReasonSelect(reason)}
                             >
                                 <Text style={[styles.reasonText,{
                                     color: colors.text,
@@ -2221,13 +2157,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showBranchModal && (
                 <ModalPresentation
                     showModal={showBranchModal}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowBranchModal(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowBranchModal}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
@@ -2249,10 +2179,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 style={[
                                     styles.branchOption
                                 ]}
-                                onPress={() => {
-                                    if (modalTransitionInProgress.current) return;
-                                    handleBranchSelect(branch);
-                                }}
+                                onPress={() => handleBranchSelect(branch)}
                             >
                                 <Text style={[styles.branchText,{
                                     color: colors.text,
@@ -2274,13 +2201,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showConfirmStatusChangeUpdateModal && (
                 <ModalPresentation
                     showModal={showConfirmStatusChangeUpdateModal}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowConfirmStatusChangeUpdateModal(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowConfirmStatusChangeUpdateModal}
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.confirmModalContent}>
@@ -2312,11 +2233,6 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 </Text>
                                 <Text style={[styles.selectedDetailValue,{
                                     color: colors.text,
-                                    ...Platform.select({
-                                        ios: {
-                                            textAlign:isRTL ? "left" : ""
-                                        }
-                                    }),
                                 }]}>{selectedBranch.label}</Text>
                             </View>
                         )}
@@ -2392,13 +2308,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             <TouchableOpacity 
                                 style={styles.cancelButton}
                                 onPress={() => {
-                                    modalTransitionInProgress.current = true;
                                     setShowConfirmStatusChangeUpdateModal(false);
                                     setSelectedReason(null);
                                     setSelectedBranch(null);
-                                    setTimeout(() => {
-                                        modalTransitionInProgress.current = false;
-                                    }, Platform.OS === 'ios' ? 500 : 300);
                                 }}
                             >
                                 <Text style={[styles.cancelButtonText]}>
@@ -2414,13 +2326,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             {showSuccessModal && (
                 <ModalPresentation
                     showModal={showSuccessModal}
-                    setShowModal={(value) => {
-                        modalTransitionInProgress.current = true;
-                        setShowSuccessModal(value);
-                        setTimeout(() => {
-                            modalTransitionInProgress.current = false;
-                        }, Platform.OS === 'ios' ? 500 : 300);
-                    }}
+                    setShowModal={setShowSuccessModal}
                     position="center"
                 >
                     <View style={styles.successModalContainer}>
@@ -2848,6 +2754,9 @@ const styles = StyleSheet.create({
     },
 
     // New styles for minimize/expand functionality
+    toggleButtonContainer: {
+        position: 'relative',
+    },
     toggleButton: {
         width: 36,
         height: 36,
@@ -2856,6 +2765,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'rgba(67, 97, 238, 0.1)',
         marginRight: 10,
+    },
+    toggleButtonHighlight: {
+        backgroundColor: '#4361EE',
+    },
+    expandHintTooltip: {
+        position: 'absolute',
+        top: -40,
+        left: -20,
+        backgroundColor: '#4361EE',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 8,
+        width: 120,
+    },
+    expandHintText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     minimizedContainer: {
         padding: 16,

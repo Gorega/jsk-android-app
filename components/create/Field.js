@@ -146,6 +146,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
             {field.type !== "message" && field.type !== "button" && field.type !== "orderTypeButton" && (
                 <Text style={[
                     styles.label,
+                    {
+                        textAlign: isRTL ? "left" : "left"
+                    },
                     { 
                         backgroundColor: colors.card,
                         color: field.name === "net_value" ? colors.success : colors.textSecondary
@@ -176,6 +179,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         style={[
                                             styles.input,
                                             {
+                                                textAlign: isRTL ? "right" : ""
+                                            },
+                                            {
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "right" : ""
@@ -184,6 +190,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                 color: colors.success
                                             }
                                         ]}
+                                        multiline={true}
                                         value={field.value || ""}
                                         editable={false}
                                         pointerEvents="none"
@@ -191,8 +198,12 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             ) : (
                                 <TextInput 
+                                    multiline={true}
                                     style={[
                                         styles.input,
+                                        {
+                                            textAlign: isRTL ? "right" : ""
+                                        },
                                         field.name === "reference_id" && styles.scanInput,
                                         {
                                             ...Platform.select({
@@ -203,7 +214,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             color: colors.text
                                         }
                                     ]}
-                                    value={field.value || ""}
+                                    value={field.value ? field.value.toString() : ""}
                                     onFocus={() => {
                                         if (field.onFocus === null) {
                                             return;
@@ -253,6 +264,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             )}
                         </View>
                         {error && <Text style={[styles.errorText,{
+                            textAlign: isRTL ? "left" : "left",
                             ...Platform.select({
                                 ios: {
                                     textAlign:isRTL ? "right" : ""
@@ -269,8 +281,12 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
                     ]}>
                         <TextInput 
+                            multiline={true}
                             style={[
                                 styles.currencyInput,
+                                {
+                                    textAlign: isRTL ? "right" : ""
+                                },
                                 { color: colors.text },
                                 {
                                     ...Platform.select({
@@ -311,7 +327,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 }
                             }}
                         >
-                            <Text style={[styles.currencyText, { color: colors.primary }]}>
+                            <Text style={[styles.currencyText, { color: colors.primary },{
+                                textAlign: isRTL ? "left" : ""
+                            }]}>
                                 {getCurrencySymbol(field.currency)} {field.currency}
                             </Text>
                             {field.showCurrencyPicker && (
@@ -358,7 +376,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         ]}>
                             <Text style={[
                                 styles.selectText,
-                                { color: colors.text },
+                                { color: colors.text, textAlign: isRTL ? "left" : "left" },
                                 {
                                 ...Platform.select({
                                     ios: {
@@ -453,7 +471,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         <View style={styles.messageTextContainer}>
                             <Text style={[
                                 styles.messageTitle,
-                                { color: colors.text },
+                                { color: colors.text, textAlign: isRTL ? "left" : "left" },
                                 {
                                     ...Platform.select({
                                         ios: {
@@ -467,7 +485,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             </Text>
                             <Text style={[
                                 styles.messageText,
-                                { color: colors.text },
+                                { color: colors.text, textAlign: isRTL ? "left" : "left" },
                                 {
                                     ...Platform.select({
                                         ios: {
@@ -495,7 +513,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }
                                 ]}>
                                     <View style={styles.checkHeader}>
-                                        <Text style={[styles.checkTitle, { color: colors.text },{
+                                        <Text style={[styles.checkTitle, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "right" : ""
@@ -525,6 +543,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                 color: colors.text
                                             }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
                                         <TextInput
+                                            multiline={true}
                                             style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
                                                 ...Platform.select({
                                                     ios: {
@@ -546,7 +565,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     
                                     <View style={styles.checkRow}>
                                         <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text },{
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "left" : ""
@@ -555,6 +574,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                 color: colors.text
                                             }]}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
                                             <TextInput
+                                                multiline={true}
                                                 style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
                                                     ...Platform.select({
                                                         ios: {
@@ -576,7 +596,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         </View>
                                         
                                         <View style={[styles.checkField, { flex: 1 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text },{
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
                                                 ...Platform.select({
                                                     ios: {
                                                         textAlign:isRTL ? "left" : ""
@@ -624,7 +644,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </View>
                             ))
                         ) : (
-                            <Text style={[styles.noChecksText, { color: colors.text },{
+                            <Text style={[styles.noChecksText, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
                                 ...Platform.select({
                                     ios: {
                                         textAlign:isRTL ? "right" : ""
@@ -692,9 +712,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             
                             <View style={styles.phoneSearchInputContainer}>
                                 <TextInput
+                                    multiline={true}
                                     style={[
                                         styles.phoneSearchInput,
-                                        { color: colors.text }
+                                        { color: colors.text, textAlign: isRTL ? "right" : "" }
                                     ]}
                                     value={phoneSearchValue}
                                     onChangeText={(text) => {

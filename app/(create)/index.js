@@ -1,9 +1,11 @@
-import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, Platform, StatusBar, Animated, Dimensions, Modal } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Section from "../../components/create/Section";
 import { useEffect, useState, useRef, React, useCallback } from "react";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { FontAwesome,FontAwesome5,Octicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../RootLayout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
@@ -16,6 +18,7 @@ import Field from "../../components/create/Field";
 import ReceiverSearchModal from "../../components/create/ReceiverSearchModal";
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import * as SecureStore from 'expo-secure-store';
 
 export default function HomeScreen() {
     const { language } = useLanguage();
@@ -31,17 +34,48 @@ export default function HomeScreen() {
     const [cities, setCities] = useState([]);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    
+    // Onboarding system
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(100)).current;
+    const { width, height } = Dimensions.get('window');
+    
+    // Onboarding setup
+    
+    // Swipe gesture handling
+    const panResponder = useRef(
+      Platform.OS === 'web' 
+        ? {} 
+        : require('react-native').PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderMove: (evt, gestureState) => {
+              if (gestureState.dx < -50) {
+                // Swiped left - next step
+                if (currentStep < onboardingSteps.length - 1) {
+                  goToNextStep();
+                }
+              } else if (gestureState.dx > 50) {
+                // Swiped right - previous step
+                if (currentStep > 0) {
+                  goToPrevStep();
+                }
+              }
+            },
+          })
+    ).current;
     const [orderTypes, setOrderTypes] = useState([{
-        name: translations[language].tabs.orders.create.sections.orderTypes?.delivery,
+        name: translations[language].tabs.orders.create.sections.orderTypes.delivery,
         value: "delivery"
     }, {
-        name: translations[language].tabs.orders.create.sections.orderTypes?.receive,
+        name: translations[language].tabs.orders.create.sections.orderTypes.receive,
         value: "receive"
     }, {
         name: translations[language].tabs.orders.create.sections.orderTypes["delivery/receive"],
         value: "delivery/receive"
     }, {
-        name: translations[language].tabs.orders.create.sections.orderTypes?.payment,
+        name: translations[language].tabs.orders.create.sections.orderTypes.payment,
         value: "payment"
     }]);
     const [paymentTypes, setPaymentTypes] = useState([{
@@ -87,11 +121,11 @@ export default function HomeScreen() {
     const [form, setForm] = useState({})
     const [selectedValue, setSelectedValue] = useState({
         sender: "",
-        city: "",
-        orderType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.orderTypes?.delivery, value: "delivery" },
-        paymentType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.paymentType?.cash, value: "cash" },
-        currency: orderId ? "" : { name: translations[language].tabs.orders.create.sections.currencyList?.ILS, value: "ILS" },
-        itemsType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.itemsCotnentType?.normal, value: "normal" },
+        city: null,
+        orderType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.orderTypes.delivery, value: "delivery" },
+        paymentType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.paymentType.cash, value: "cash" },
+        currency: orderId ? "" : { name: translations[language].tabs.orders.create.sections.currencyList.ILS, value: "ILS" },
+        itemsType: orderId ? "" : { name: translations[language].tabs.orders.create.sections.itemsCotnentType.normal, value: "normal" },
     });
     const scrollViewRef = useRef(null);
     const [showAlert, setShowAlert] = useState({
@@ -107,6 +141,19 @@ export default function HomeScreen() {
     const [withMoneyReceive, setWithMoneyReceive] = useState(false);
     const [exceedBusinessBalance, setExceedBusinessBalance] = useState(false);
     const [showReceiverModal, setShowReceiverModal] = useState(false);
+    const [shouldUpdateDeliveryFee, setShouldUpdateDeliveryFee] = useState(true);
+
+    const handleSelectedValueChange = (fieldName, value) => {
+        // Enable delivery fee updates for sender and city changes
+        if (fieldName === 'sender' || fieldName === 'city') {
+            setShouldUpdateDeliveryFee(true);
+        }
+        
+        setSelectedValue(prev => ({
+            ...prev,
+            [fieldName]: value
+        }));
+    };
 
     const sections = [{
         isHeader: true,
@@ -195,7 +242,7 @@ export default function HomeScreen() {
         )
     }, {
         label: translations[language].tabs.orders.create.sections?.referenceId?.title,
-        icon: <AntDesign name="qrcode" size={22} color="#4361EE" />,
+        icon: <AntDesign name="qrcode" size={22} color= '#8B5CF6' />,
         fields: [{
             label: translations[language].tabs.orders.create.sections?.referenceId?.explain,
             type: "input",
@@ -212,11 +259,15 @@ export default function HomeScreen() {
             name: "sender",
             value: selectedValue.sender.name,
             list: senders.data,
-            showSearchBar: true
+            showSearchBar: true,
+            onSelect: () => {
+                // Enable delivery fee update when sender changes
+                setShouldUpdateDeliveryFee(true);
+            }
         }]
     } : { visibility: "hidden" },{
         label: translations[language].tabs.orders.create.sections.client.title,
-        icon: <Ionicons name="person-outline" size={22} color="#4361EE" />,
+        icon: <Ionicons name="person-outline" size={22} color= '#EC4899' />,
         fields: [returnedOrdersMessage ? {
             label: translations[language].tabs.orders.create.sections.client.fields.found,
             type: "message",
@@ -276,6 +327,10 @@ export default function HomeScreen() {
                     city.name.toLowerCase().includes(prickerSearchValue.toLowerCase())
                 ),
             showSearchBar: true,
+            onSelect: (city) => {
+                // When city changes, enable delivery fee update
+                setShouldUpdateDeliveryFee(true);
+            }
         },{
             label: translations[language].tabs.orders.create.sections.client.fields.address,
             type: "input",
@@ -285,7 +340,7 @@ export default function HomeScreen() {
         }]
     }, {
         label: translations[language].tabs.orders.create.sections.cost.title,
-        icon: <MaterialIcons name="attach-money" size={22} color="#4361EE" />,
+        icon: <FontAwesome name="money" size={24} color='#10B981' />,
         fields: [
             {
                 label: translations[language].tabs.orders.create.sections.paymentType.title,
@@ -382,9 +437,19 @@ export default function HomeScreen() {
                 label: translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
                 type: "input",
                 name: "delivery_fee",
-                value: deliveryFee || form.deliveryFee,
-                readOnly: true,
-                editable: ["admin", "manager","entery"].includes(user.role) ? true : false
+                value: deliveryFee !== undefined ? deliveryFee : form.deliveryFee,
+                readOnly: !["admin", "manager", "entery"].includes(user.role),
+                editable: ["admin", "manager", "entery"].includes(user.role),
+                onChange: (input) => {
+                    // When manually changing delivery fee, prevent auto-updates
+                    setShouldUpdateDeliveryFee(false);
+                    setDeliveryFee(input);
+                    setForm(prevForm => ({
+                        ...prevForm,
+                        deliveryFee: input
+                    }));
+                },
+                keyboardType: "numeric"
             },
             {
                 label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
@@ -418,7 +483,7 @@ export default function HomeScreen() {
                     });
                     
                     // Get delivery fee
-                    const deliveryFeeValue = parseFloat(deliveryFee || form.deliveryFee || 0);
+                    const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
                     const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
                     
                     // Calculate ILS fees (currently only delivery fee)
@@ -437,8 +502,8 @@ export default function HomeScreen() {
                         // If ILS COD exists
                         if (codByCurrency.ILS > 0) {
                             if (isPaymentOrReceiveWithoutMoney) {
-                                // Add fees for payment or receive without money receive
-                                ilsNetValue = codByCurrency.ILS + ilsFees;
+                                // For payment or receive without money receive, make it negative
+                                ilsNetValue = -(codByCurrency.ILS + ilsFees);
                             } else {
                                 // Check if ILS COD is sufficient (normal case - subtract fees)
                                 if (codByCurrency.ILS >= ilsFees) {
@@ -461,8 +526,8 @@ export default function HomeScreen() {
                         // No ILS COD value exists
                         else {
                             if (isPaymentOrReceiveWithoutMoney) {
-                                // Add fees for payment or receive without money receive
-                                ilsNetValue = ilsFees;
+                                // For payment or receive without money receive, make it negative
+                                ilsNetValue = -ilsFees;
                             } else {
                                 // Check if JOD can cover ILS deficit
                                 if ((codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= ilsFees) {
@@ -481,7 +546,12 @@ export default function HomeScreen() {
                     }
                     // If no ILS fees but ILS COD exists
                     else if (codByCurrency.ILS > 0) {
-                        ilsNetValue = codByCurrency.ILS;
+                        if (isPaymentOrReceiveWithoutMoney) {
+                            // For payment or receive without money receive, make it negative
+                            ilsNetValue = -codByCurrency.ILS;
+                        } else {
+                            ilsNetValue = codByCurrency.ILS;
+                        }
                     }
                     // No ILS fees and no ILS COD
                     else {
@@ -494,8 +564,8 @@ export default function HomeScreen() {
                     // Only calculate if JOD COD exists
                     if (codByCurrency.JOD > 0) {
                         if (isPaymentOrReceiveWithoutMoney) {
-                            // Add fees for payment or receive without money receive
-                            jodNetValue = codByCurrency.JOD;
+                            // For payment or receive without money receive, make it negative
+                            jodNetValue = -codByCurrency.JOD;
                         } else {
                             // Start with JOD COD
                             jodNetValue = codByCurrency.JOD;
@@ -517,8 +587,8 @@ export default function HomeScreen() {
                     // Only calculate if USD COD exists
                     if (codByCurrency.USD > 0) {
                         if (isPaymentOrReceiveWithoutMoney) {
-                            // Add fees for payment or receive without money receive
-                            usdNetValue = codByCurrency.USD;
+                            // For payment or receive without money receive, make it negative
+                            usdNetValue = -codByCurrency.USD;
                         } else {
                             // Start with USD COD
                             usdNetValue = codByCurrency.USD;
@@ -563,7 +633,7 @@ export default function HomeScreen() {
         ].filter(Boolean)
     },!["payment"].includes(selectedValue.orderType?.value) ? {
         label: translations[language].tabs.orders.create.sections.details.title,
-        icon: <Feather name="box" size={22} color="#4361EE" />,
+        icon: <Feather name="box" size={22} color='#EF4444' />,
         fields: [{
             label: translations[language].tabs.orders.create.sections.details.fields.product,
             type: "input",
@@ -618,7 +688,7 @@ export default function HomeScreen() {
         }]
     }, {
         label: translations[language].tabs.orders.create.sections.notes.title,
-        icon: <Feather name="file-text" size={22} color="#4361EE" />,
+        icon: <Feather name="file-text" size={22} color='#6366F1' />,
         fields: [{
             label: translations[language].tabs.orders.create.sections.notes.note,
             type: "input",
@@ -642,10 +712,8 @@ export default function HomeScreen() {
         if (receiver.city_id) {
             const city = cities.find(c => c.city_id === receiver.city_id);
             if (city) {
-                setSelectedValue(prev => ({
-                    ...prev,
-                    city: { name: city.name, city_id: city.city_id }
-                }));
+                // Use our custom handler to ensure delivery fee updates
+                handleSelectedValueChange('city', { name: city.name, city_id: city.city_id });
             }
         }
 
@@ -993,14 +1061,15 @@ export default function HomeScreen() {
 
     const fetchOrderData = async () => {
         try {
-            // const token = await getToken("userToken");
+            // When fetching order data, we don't want to auto-update the delivery fee
+            setShouldUpdateDeliveryFee(false);
+            
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const orderData = await res.json();
@@ -1037,8 +1106,17 @@ export default function HomeScreen() {
             }));
             
             // Handle delivery fee - parse from format like "20.00 ILS"
-            const deliveryFeeMatch = orderData.delivery_fee?.match(/([0-9.]+)/);
-            const extractedDeliveryFee = deliveryFeeMatch ? deliveryFeeMatch[1] : "0";
+            let extractedDeliveryFee;
+            if (typeof orderData.delivery_fee === 'string') {
+                const deliveryFeeMatch = orderData.delivery_fee.match(/([0-9.]+)/);
+                extractedDeliveryFee = deliveryFeeMatch ? deliveryFeeMatch[1] : "0";
+            } else if (typeof orderData.delivery_fee === 'number') {
+                extractedDeliveryFee = orderData.delivery_fee.toString();
+            } else {
+                extractedDeliveryFee = "0";
+            }
+            
+            // Set delivery fee from the order data
             setDeliveryFee(extractedDeliveryFee);
             
             // Handle COD values
@@ -1072,7 +1150,7 @@ export default function HomeScreen() {
                 receivedQuantity: orderData.received_quantity || 0,
                 noteContent: orderData.note_content || "",
                 fromBusinessBalance: orderData.from_business_balance ? true : false,
-                withMoneyReceive: orderData.with_money_receive ? true : false, // Add this line
+                withMoneyReceive: orderData.with_money_receive ? true : false,
                 originalFromBusinessBalance: orderData.from_business_balance ? true : false,
                 balanceDeduction: orderData.balance_deduction || null,
                 originalBalanceDeduction: orderData.balance_deduction || null,
@@ -1085,8 +1163,9 @@ export default function HomeScreen() {
             } else {
                 setChecks([]);
             }
-        } catch (err) {
             
+        } catch (err) {
+            console.error("Error fetching order data:", err);
         }
     };
 
@@ -1128,21 +1207,38 @@ export default function HomeScreen() {
         }
     }
 
+
     const fetchDeliveryFee = async () => {
+        // Skip if we shouldn't update the delivery fee
+        if (!shouldUpdateDeliveryFee) return;
+        
         try {
-            // const token = await getToken("userToken");
+            // Only attempt to fetch if we have both sender city and receiver city
+            if (!(selectedValue.sender?.city_id || form.senderCityId || user.city_id) || 
+                !(selectedValue.city?.city_id || form.receiverCityId)) {
+                return;
+            }
+            
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
-                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             const data = await res.json();
-            setDeliveryFee(data.data)
+            
+            if (data.data) {
+                setDeliveryFee(data.data.toString());
+                // Also update the form state to ensure consistency
+                setForm(prevForm => ({
+                    ...prevForm,
+                    deliveryFee: data.data.toString()
+                }));
+            }
         } catch (err) {
+            console.error("Error fetching delivery fee:", err);
         }
     }
 
@@ -1168,6 +1264,7 @@ export default function HomeScreen() {
             }
         };
     
+    // Update the useEffect hooks for delivery fee
     useEffect(() => {
         if (orderId) {
             fetchOrderData();
@@ -1176,13 +1273,29 @@ export default function HomeScreen() {
     
     useEffect(() => {
         fetchCities();
-    }, [])
+    }, []);
     
+    // This effect handles delivery fee updates when sender or city changes
     useEffect(() => {
-        if(selectedValue?.city){
+        // Only fetch if shouldUpdateDeliveryFee is true and we have both sender and city
+        if (shouldUpdateDeliveryFee && selectedValue.sender && selectedValue.city) {
             fetchDeliveryFee();
         }
-    }, [selectedValue]);
+    }, [selectedValue.sender, selectedValue.city, shouldUpdateDeliveryFee]);
+
+    // This effect handles delivery fee updates when item type changes (only for new orders)
+    useEffect(() => {
+        if (!orderId && shouldUpdateDeliveryFee && selectedValue.itemsType && selectedValue.sender && selectedValue.city) {
+            fetchDeliveryFee();
+        }
+    }, [selectedValue.itemsType, orderId, shouldUpdateDeliveryFee]);
+
+    // This effect handles delivery fee updates when order type changes (only for new orders)
+    useEffect(() => {
+        if (!orderId && shouldUpdateDeliveryFee && selectedValue.orderType && selectedValue.sender && selectedValue.city) {
+            fetchDeliveryFee();
+        }
+    }, [selectedValue.orderType, orderId, shouldUpdateDeliveryFee]);
     
     useEffect(() => {
         // Check if we have a scanned reference ID from the camera
@@ -1286,257 +1399,719 @@ export default function HomeScreen() {
         }
     }, [prickerSearchValue, user.role, language]);
 
-    return (
-        <View style={[styles.pageContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
-                <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
-                <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
-                    {orderTypes.map((type, index) => (
-                        <Field
-                            key={index}
-                            field={{
-                                type: "orderTypeButton",
-                                label: type.name,
-                                isSelected: selectedValue.orderType?.value === type.value,
-                                icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={colors.text} /> :
-                                      type.value === "receive" ? <MaterialIcons name="store" size={18} color={colors.text} /> :
-                                      type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={colors.text} /> :
-                                      <MaterialIcons name="payments" size={18} color={colors.text} />,
-                                onPress: () => {
-                                    // Reset toggle states when switching order types
-                                    setFromBusinessBalance(false);
-                                    setWithMoneyReceive(false);
-                                    setForm(prevForm => ({
-                                        ...prevForm,
-                                        fromBusinessBalance: false,
-                                        withMoneyReceive: false,
-                                        balanceDeduction: null
-                                    }));
-                                    
-                                    setSelectedValue(prev => ({
-                                        ...prev,
-                                        orderType: type
-                                    }));
-                                
-                                    // Show alert for business users when selecting receive or payment order types
-                                    if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
-                                        Alert.alert(
-                                            translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
-                                            translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message,
-                                            [{ 
-                                                text: translations[language].ok || "OK",
-                                                style: "default"
-                                            }],
-                                            { 
-                                                cancelable: false,
-                                                icon: type.value === "receive" ? <MaterialIcons name="store" size={24} color="#4361EE" /> : 
-                                                      <MaterialIcons name="payments" size={24} color="#4361EE" />
-                                            }
-                                        );
-                                    }
-                                }
-                            }}
-                        />
-                    ))}
-                </View>
+    // Add a separate effect for item type changes
+    useEffect(() => {
+        if (!orderId && selectedValue.itemsType && selectedValue.sender && selectedValue.city) {
+            // Only update delivery fee based on item type for new orders
+            setShouldUpdateDeliveryFee(true);
+            fetchDeliveryFee();
+        }
+    }, [selectedValue.itemsType]);
+
+    // Add a separate effect for order type changes
+    useEffect(() => {
+        if (!orderId && selectedValue.orderType && selectedValue.sender && selectedValue.city) {
+            // Only update delivery fee based on order type for new orders
+            setShouldUpdateDeliveryFee(true);
+            fetchDeliveryFee();
+        }
+    }, [selectedValue.orderType]);
+
+    // Set status bar style based on theme
+    useEffect(() => {
+        StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content');
+        if (Platform.OS === 'android') {
+            StatusBar.setBackgroundColor('transparent');
+            StatusBar.setTranslucent(true);
+        }
+    }, [isDark]);
+    
+    // Check if user has seen onboarding
+    useEffect(() => {
+        const checkOnboardingStatus = async () => {
+            try {
+                // // Check if test mode is enabled
+                // const testModeEnabled = await SecureStore.getItemAsync(`create_onboarding_test_mode`);
+                // if (testModeEnabled === 'enabled') {
+                //     // Always show onboarding in test mode
+                //     setShowOnboarding(true);
+                //     animateOnboarding(true);
+                //     return;
+                // }
                 
-                {/* Add with_money_receive toggle directly in the header */}
-                {selectedValue.orderType?.value === "receive" && (
-                    <View style={styles.businessBalanceToggleContainer}>
-                        <Field
-                            field={{
-                                type: "toggle",
-                                label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
-                                name: "with_money_receive",
-                                value: form.withMoneyReceive || false,
-                                onChange: (value) => {
-                                    setWithMoneyReceive(value);
-                                    setForm(prevForm => ({
-                                        ...prevForm,
-                                        withMoneyReceive: value
-                                    }));
-                                    
-                                    // For business users, auto-set from_business_balance based on with_money_receive
-                                    if (user.role === "business" && !value) {
-                                        setFromBusinessBalance(true);
+                const hasSeenOnboarding = await SecureStore.getItemAsync(`create_onboarding_${user.userId}`);
+                if (!hasSeenOnboarding && user?.userId && !orderId) {
+                    // Show onboarding for new users creating orders
+                    setShowOnboarding(true);
+                    animateOnboarding(true);
+                }
+            } catch (error) {
+                console.log('Error checking onboarding status:', error);
+            }
+        };
+        
+        checkOnboardingStatus();
+    }, [user]);
+    
+    // Animation functions
+    const animateOnboarding = (show) => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: show ? 1 : 0,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: show ? 0 : 100,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+    
+    const goToNextStep = () => {
+        if (currentStep < onboardingSteps.length - 1) {
+            Animated.sequence([
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: -100,
+                    duration: 0,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => {
+                setCurrentStep(currentStep + 1);
+                slideAnim.setValue(100);
+                Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                        toValue: 1,
+                        duration: 150,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(slideAnim, {
+                        toValue: 0,
+                        duration: 150,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            });
+        }
+    };
+    
+    const goToPrevStep = () => {
+        if (currentStep > 0) {
+            Animated.sequence([
+                Animated.timing(fadeAnim, {
+                    toValue: 0,
+                    duration: 150,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(slideAnim, {
+                    toValue: 100,
+                    duration: 0,
+                    useNativeDriver: true,
+                }),
+            ]).start(() => {
+                setCurrentStep(currentStep - 1);
+                slideAnim.setValue(-100);
+                Animated.parallel([
+                    Animated.timing(fadeAnim, {
+                        toValue: 1,
+                        duration: 150,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(slideAnim, {
+                        toValue: 0,
+                        duration: 150,
+                        useNativeDriver: true,
+                    }),
+                ]).start();
+            });
+        }
+    };
+    
+    const completeOnboarding = async () => {
+        try {
+            await SecureStore.setItemAsync(`create_onboarding_${user.userId}`, 'completed');
+            animateOnboarding(false);
+            setTimeout(() => setShowOnboarding(false), 300);
+        } catch (error) {
+            console.log('Error saving onboarding status:', error);
+            setShowOnboarding(false);
+        }
+    };
+    
+    // Onboarding steps content with icons matching section icons
+    const onboardingSteps = [
+        {
+            key: 'welcome',
+            title: translations[language]?.createOnboarding?.welcome?.title,
+            message: translations[language]?.createOnboarding?.welcome?.message,
+            icon: <SimpleLineIcons name="control-start" size={24} color="#ffffff" />,
+            color: '#4361EE'
+        },
+        {
+            key: 'orderTypes',
+            title: translations[language]?.createOnboarding?.orderTypes?.title,
+            message: translations[language]?.createOnboarding?.orderTypes?.message,
+            icon: <Feather name="package" size={24} color="#ffffff" />,
+            color: '#3B82F6',
+            highlightType: 'header'
+        },
+        {
+            key: 'reference',
+            title: translations[language]?.createOnboarding?.reference?.title,
+            message: translations[language]?.createOnboarding?.reference?.message,
+            icon: <AntDesign name="qrcode" size={24} color="#ffffff" />,
+            color: '#8B5CF6'
+        },
+        {
+            key: 'client',
+            title: translations[language]?.createOnboarding?.client?.title,
+            message: translations[language]?.createOnboarding?.client?.message,
+            icon:<AntDesign name="user" size={24} color="#ffffff"/>,
+            color: '#EC4899'
+        },
+        {
+            key: 'cost',
+            title: translations[language]?.createOnboarding?.cost?.title ,
+            message: translations[language]?.createOnboarding?.cost?.message,
+            icon: <FontAwesome name="money" size={24} color="#ffffff" />,
+            color: '#10B981'
+        },
+        {
+            key: 'details',
+            title: translations[language]?.createOnboarding?.details?.title ,
+            message: translations[language]?.createOnboarding?.details?.message,
+            icon:<Octicons name="package" size={24} color="#ffffff" />,
+            color: '#EF4444'
+        },
+        {
+            key: 'notes',
+            title: translations[language]?.createOnboarding?.notes?.title,
+            message: translations[language]?.createOnboarding?.notes?.message,
+            icon: <FontAwesome5 name="sticky-note" size={24} color="#ffffff" />,
+            color: '#6366F1'
+        },
+        {
+            key: 'ready',
+            title: translations[language]?.createOnboarding?.ready?.title ,
+            message: translations[language]?.createOnboarding?.ready?.message,
+            icon: <MaterialIcons name="done" size={24} color="#ffffff" />,
+            color: '#059669'
+        }
+    ];
+
+
+    return (
+        <SafeAreaView 
+            style={[styles.safeArea, { backgroundColor: colors.background }]}
+            edges={['right', 'left']}
+        >
+            <StatusBar
+                barStyle={isDark ? 'light-content' : 'dark-content'}
+                backgroundColor="transparent"
+                translucent={true}
+            />
+            
+            <View style={[styles.pageContainer, { backgroundColor: colors.background }]}>
+                <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
+                    <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
+                    <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
+                        {orderTypes.map((type, index) => (
+                            <Field
+                                key={index}
+                                field={{
+                                    type: "orderTypeButton",
+                                    label: type.name,
+                                    isSelected: selectedValue.orderType?.value === type.value,
+                                    icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={colors.text} /> :
+                                          type.value === "receive" ? <MaterialIcons name="store" size={18} color={colors.text} /> :
+                                          type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={colors.text} /> :
+                                          <MaterialIcons name="payments" size={18} color={colors.text} />,
+                                    onPress: () => {
+                                        // Reset toggle states when switching order types
+                                        setFromBusinessBalance(false);
+                                        setWithMoneyReceive(false);
                                         setForm(prevForm => ({
                                             ...prevForm,
-                                            fromBusinessBalance: true
+                                            fromBusinessBalance: false,
+                                            withMoneyReceive: false,
+                                            balanceDeduction: null
                                         }));
+                                        
+                                        setSelectedValue(prev => ({
+                                            ...prev,
+                                            orderType: type
+                                        }));
+                                    
+                                        // Show alert for business users when selecting receive or payment order types
+                                        if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
+                                            Alert.alert(
+                                                translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
+                                                type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
+                                                [{ 
+                                                    text: translations[language].ok || "OK",
+                                                    style: "default"
+                                                }],
+                                                { 
+                                                    cancelable: false,
+                                                    icon: type.value === "receive" ? <MaterialIcons name="store" size={24} color="#4361EE" /> : 
+                                                          <MaterialIcons name="payments" size={24} color="#4361EE" />
+                                                }
+                                            );
+                                        }
                                     }
-                                }
-                            }}
-                        />
+                                }}
+                            />
+                        ))}
                     </View>
-                )}
-            </View>
-            <ScrollView 
-                ref={scrollViewRef}
-                style={[styles.container]}
-                contentContainerStyle={styles.contentContainer}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={true}
-            >
-                <View style={styles.main}>
-                    {sections.slice(1).map((section, index) => (
-                        <Section
-                            key={index}
-                            section={section}
-                            setSelectedValue={setSelectedValue}
-                            loadMoreData={loadMoreData}
-                            loadingMore={loadingMore}
-                            prickerSearchValue={prickerSearchValue}
-                            setPickerSearchValue={setPickerSearchValue}
-                            fieldErrors={fieldErrors}
-                            setFieldErrors={setFieldErrors}
-                        />
-                    ))}
+                    
+                    {/* Add with_money_receive toggle directly in the header */}
+                    {selectedValue.orderType?.value === "receive" && (
+                        <View style={styles.businessBalanceToggleContainer}>
+                            <Field
+                                field={{
+                                    type: "toggle",
+                                    label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
+                                    name: "with_money_receive",
+                                    value: form.withMoneyReceive || false,
+                                    onChange: (value) => {
+                                        setWithMoneyReceive(value);
+                                        setForm(prevForm => ({
+                                            ...prevForm,
+                                            withMoneyReceive: value
+                                        }));
+                                        
+                                        // For business users, auto-set from_business_balance based on with_money_receive
+                                        if (user.role === "business" && !value) {
+                                            setFromBusinessBalance(true);
+                                            setForm(prevForm => ({
+                                                ...prevForm,
+                                                fromBusinessBalance: true
+                                            }));
+                                        }
+                                    }
+                                }}
+                            />
+                        </View>
+                    )}
                 </View>
-            </ScrollView>
-            <TouchableOpacity 
-                style={[styles.submitButton,{
-                    ...Platform.select({
-                        ios: {
-                            marginVertical:20
+                <ScrollView 
+                    ref={scrollViewRef}
+                    style={[styles.container]}
+                    contentContainerStyle={styles.contentContainer}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={true}
+                >
+                    <View style={styles.main}>
+                        {sections.slice(1).map((section, index) => (
+                            <Section
+                                key={index}
+                                section={section}
+                                loadMoreData={loadMoreData}
+                                loadingMore={loadingMore}
+                                setSelectedValue={handleSelectedValueChange}
+                                fieldErrors={fieldErrors}
+                                setFieldErrors={setFieldErrors}
+                                prickerSearchValue={prickerSearchValue}
+                                setPickerSearchValue={setPickerSearchValue}
+                            />
+                        ))}
+                    </View>
+                </ScrollView>
+                <SafeAreaView edges={['bottom']}>
+                    <TouchableOpacity 
+                        style={[styles.submitButton, {
+                            marginHorizontal: 40,
+                            marginVertical: Platform.OS === 'ios' ? 20 : 0,
+                        }]}
+                        onPress={() => orderId 
+                            ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
+                            : handleCreateOrder('/api/orders', "POST")
                         }
-                    }),
-                }]}
-                onPress={() => orderId 
-                    ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
-                    : handleCreateOrder('/api/orders', "POST")
-                }
-                disabled={formSpinner.status}
-                activeOpacity={0.8}
-            >
-                {formSpinner.status ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                    <Text style={[styles.submitButtonText]}>
-                        {translations[language].tabs.orders.create.submit}
-                    </Text>
+                        disabled={formSpinner.status}xxx
+                        activeOpacity={0.8}
+                    >
+                        {formSpinner.status ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                        ) : (
+                            <Text style={[styles.submitButtonText]}>
+                                {translations[language].tabs.orders.create.submit}
+                            </Text>
+                        )}
+                    </TouchableOpacity>
+                </SafeAreaView>
+            
+                {/* Loading Spinner */}
+                {formSpinner.status && (
+                    <View style={styles.overlay}>
+                        <View style={styles.spinnerContainer}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={[styles.spinnerText, { color: colors.text }]}>
+                                {translations[language].tabs.orders.create.loading}
+                            </Text>
+                        </View>
+                    </View>
                 )}
-            </TouchableOpacity>
-    
-            {/* Loading Spinner */}
-            {formSpinner.status && (
-                <View style={styles.overlay}>
-                    <View style={styles.spinnerContainer}>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={[styles.spinnerText, { color: colors.text }]}>
-                            {translations[language].tabs.orders.create.loading}
-                        </Text>
+            
+                {/* Success Message */}
+                {success && (
+                    <View style={styles.successOverlay}>
+                        <View style={styles.successContainer}>
+                            <Ionicons name="checkmark-circle" size={60} color={colors.primary} />
+                            <Text style={[styles.successText, { color: colors.text }]}>
+                                {translations[language].tabs.orders.create.successMsg}
+                            </Text>
+                        </View>
                     </View>
-                </View>
-            )}
-    
-            {/* Success Message */}
-            {success && (
-                <View style={styles.successOverlay}>
-                    <View style={styles.successContainer}>
-                        <Ionicons name="checkmark-circle" size={60} color={colors.primary} />
-                        <Text style={[styles.successText, { color: colors.text }]}>
-                            {translations[language].tabs.orders.create.successMsg}
-                        </Text>
-                    </View>
-                </View>
-            )}
-    
-            {/* Custom Alert */}
-            {showAlert.visible && (
-                <CustomAlert
-                    visible={showAlert.visible}
-                    type={showAlert.type}
-                    title={showAlert.title}
-                    message={showAlert.message}
-                    onClose={() => {
-                        setShowAlert(prev => ({ ...prev, visible: false }));
-                        showAlert.onClose && showAlert.onClose();
+                )}
+            
+                {/* Custom Alert */}
+                {showAlert.visible && (
+                    <CustomAlert
+                        visible={showAlert.visible}
+                        type={showAlert.type}
+                        title={showAlert.title}
+                        message={showAlert.message}
+                        onClose={() => {
+                            setShowAlert(prev => ({ ...prev, visible: false }));
+                            showAlert.onClose && showAlert.onClose();
+                        }}
+                    />
+                )}
+
+                {activeCurrencyPicker !== null && (
+                    <ModalPresentation
+                        showModal={activeCurrencyPicker !== null}
+                        setShowModal={() => setActiveCurrencyPicker(null)}
+                    >
+                        <View style={styles.currencyPickerContainer}>
+                            <Text style={[styles.currencyPickerTitle, { color: colors.text }]}>
+                                {translations[language].tabs.orders.create.sections.currencyList.title}
+                            </Text>
+                            <View style={styles.currencyList}>
+                                {currencyList
+                                    .filter(c => 
+                                        // Show only currencies not used in other inputs
+                                        !codAmounts.some((item, i) => 
+                                            i !== activeCurrencyPicker && item.currency === c.value
+                                        )
+                                    )
+                                    .map((currency, index) => (
+                                        <TouchableOpacity
+                                            key={index}
+                                            style={[
+                                                styles.currencyOption,
+                                                codAmounts[activeCurrencyPicker]?.currency === currency.value && 
+                                                    styles.selectedCurrencyOption
+                                            ]}
+                                            onPress={() => {
+                                                const newAmounts = [...codAmounts];
+                                                newAmounts[activeCurrencyPicker].currency = currency.value;
+                                                setCodAmounts(newAmounts);
+                                                setActiveCurrencyPicker(null);
+                                            }}
+                                        >
+                                            <Text style={[
+                                                styles.currencyOptionText,
+                                                codAmounts[activeCurrencyPicker]?.currency === currency.value && 
+                                                    styles.selectedCurrencyOptionText
+                                            ]}>
+                                                {currency.name}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))
+                                }
+                            </View>
+                            <TouchableOpacity
+                                style={styles.cancelCurrencyButton}
+                                onPress={() => setActiveCurrencyPicker(null)}
+                            >
+                                <Text style={[styles.cancelCurrencyText, { color: colors.text }]}>
+                                    {translations[language]?.cancel || 'Cancel'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </ModalPresentation>
+                )}
+                {/* Receiver Search Modal */}
+                <ReceiverSearchModal
+                    showModal={showReceiverModal}
+                    setShowModal={setShowReceiverModal}
+                    onReceiverSelect={(receiver) => {
+                        handleReceiverSelect(receiver);
+                        setShowReceiverModal(false);
+                    }}
+                    onAddNewReceiver={(phone) => {
+                        // Set the phone number in the form
+                        setForm(prev => ({
+                            ...prev,
+                            receiverFirstPhone: phone
+                        }));
+                        setShowReceiverModal(false);
                     }}
                 />
-            )}
-
-            {activeCurrencyPicker !== null && (
-                <ModalPresentation
-                    showModal={activeCurrencyPicker !== null}
-                    setShowModal={() => setActiveCurrencyPicker(null)}
-                >
-                    <View style={styles.currencyPickerContainer}>
-                        <Text style={[styles.currencyPickerTitle, { color: colors.text }]}>
-                            {translations[language].tabs.orders.create.sections.currencyList.title}
-                        </Text>
-                        <View style={styles.currencyList}>
-                            {currencyList
-                                .filter(c => 
-                                    // Show only currencies not used in other inputs
-                                    !codAmounts.some((item, i) => 
-                                        i !== activeCurrencyPicker && item.currency === c.value
-                                    )
-                                )
-                                .map((currency, index) => (
-                                    <TouchableOpacity
-                                        key={index}
-                                        style={[
-                                            styles.currencyOption,
-                                            codAmounts[activeCurrencyPicker]?.currency === currency.value && 
-                                                styles.selectedCurrencyOption
-                                        ]}
-                                        onPress={() => {
-                                            const newAmounts = [...codAmounts];
-                                            newAmounts[activeCurrencyPicker].currency = currency.value;
-                                            setCodAmounts(newAmounts);
-                                            setActiveCurrencyPicker(null);
-                                        }}
-                                    >
-                                        <Text style={[
-                                            styles.currencyOptionText,
-                                            codAmounts[activeCurrencyPicker]?.currency === currency.value && 
-                                                styles.selectedCurrencyOptionText
-                                        ]}>
-                                            {currency.name}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))
-                            }
+                
+                {/* Onboarding Modal */}
+                {showOnboarding && (
+                    <Modal
+                        transparent={true}
+                        visible={showOnboarding}
+                        animationType="fade"
+                        statusBarTranslucent={true}
+                    >
+                        <View style={styles.onboardingOverlay}>
+                            <View style={[styles.onboardingContainer, { backgroundColor: colors.card }]}>
+                                {/* Onboarding Content */}
+                                <Animated.View
+                                    {...(Platform.OS !== 'web' ? panResponder.panHandlers : {})}
+                                    style={[
+                                        styles.onboardingContent,
+                                        {
+                                            opacity: fadeAnim,
+                                            transform: [{ translateY: slideAnim }],
+                                        },
+                                    ]}
+                                >
+                                    <View style={[styles.onboardingIconContainer, { backgroundColor: onboardingSteps[currentStep].color }]}>
+                                        {onboardingSteps[currentStep].icon}
+                                    </View>
+                                    
+                                    <Text style={[styles.onboardingTitle, { color: colors.text }]}>
+                                        {onboardingSteps[currentStep].title}
+                                    </Text>
+                                    
+                                    <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
+                                        {onboardingSteps[currentStep].message}
+                                    </Text>
+                                    
+                                    {/* Progress Indicators */}
+                                    <View style={styles.progressIndicators}>
+                                        {onboardingSteps.map((_, index) => (
+                                            <View
+                                                key={index}
+                                                style={[
+                                                    styles.progressDot,
+                                                    {
+                                                        backgroundColor: index === currentStep ? onboardingSteps[currentStep].color : colors.border,
+                                                        width: index === currentStep ? 20 : 8,
+                                                    }
+                                                ]}
+                                            />
+                                        ))}
+                                    </View>
+                                    
+                                    {/* Navigation Buttons */}
+                                    <View style={styles.onboardingNavigation}>
+                                        {currentStep > 0 ? (
+                                            <TouchableOpacity
+                                                style={[styles.onboardingButton, styles.onboardingBackButton, { borderColor: colors.border }]}
+                                                onPress={goToPrevStep}
+                                            >
+                                                <Text style={[styles.onboardingButtonText, { color: colors.text }]}>
+                                                    {translations[language]?.createOnboarding?.back || 'Back'}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <View style={{ flex: 1 }} />
+                                        )}
+                                        
+                                        <TouchableOpacity
+                                            style={[
+                                                styles.onboardingButton, 
+                                                styles.onboardingNextButton,
+                                                { backgroundColor: onboardingSteps[currentStep].color }
+                                            ]}
+                                            onPress={currentStep < onboardingSteps.length - 1 ? goToNextStep : completeOnboarding}
+                                        >
+                                            <Text style={styles.onboardingNextButtonText}>
+                                                {currentStep < onboardingSteps.length - 1 ? 
+                                                    (translations[language]?.createOnboarding?.next || 'Next') : 
+                                                    (translations[language]?.createOnboarding?.finish || 'Get Started')}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                    
+                                    {/* Skip Button */}
+                                    {currentStep < onboardingSteps.length - 1 && (
+                                        <TouchableOpacity
+                                            style={styles.skipButton}
+                                            onPress={completeOnboarding}
+                                        >
+                                            <Text style={[styles.skipButtonText, { color: colors.textTertiary }]}>
+                                                {translations[language]?.createOnboarding?.skip || 'Skip Tutorial'}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </Animated.View>
+                            </View>
                         </View>
-                        <TouchableOpacity
-                            style={styles.cancelCurrencyButton}
-                            onPress={() => setActiveCurrencyPicker(null)}
-                        >
-                            <Text style={[styles.cancelCurrencyText, { color: colors.text }]}>
-                                {translations[language]?.cancel || 'Cancel'}
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </ModalPresentation>
-            )}
-            {/* Receiver Search Modal */}
-            <ReceiverSearchModal
-                showModal={showReceiverModal}
-                setShowModal={setShowReceiverModal}
-                onReceiverSelect={(receiver) => {
-                    handleReceiverSelect(receiver);
-                    setShowReceiverModal(false);
-                }}
-                onAddNewReceiver={(phone) => {
-                    // Set the phone number in the form
-                    setForm(prev => ({
-                        ...prev,
-                        receiverFirstPhone: phone
-                    }));
-                    setShowReceiverModal(false);
-                }}
-            />
-        </View>
+                    </Modal>
+                )}
+            </View>
+        </SafeAreaView>
     );
 }
     
 const styles = StyleSheet.create({
+    safeArea: {
+        flex: 1,
+    },
+    testButtonsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        padding: 8,
+        backgroundColor: 'rgba(0, 0, 0, 0.05)',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    },
+    testButton: {
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 6,
+        marginHorizontal: 4,
+        elevation: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+    },
+    testButtonText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 12,
+    },
+    // Onboarding styles
+    onboardingOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.75)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    onboardingContainer: {
+        width: '90%',
+        maxWidth: 500,
+        borderRadius: 24,
+        overflow: 'hidden',
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 10,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        elevation: 10,
+    },
+    onboardingContent: {
+        width: '100%',
+    },
+    onboardingIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginBottom: 24,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 8,
+    },
+    onboardingHighlight: {
+        position: 'absolute',
+        borderWidth: 2,
+        borderColor: '#4361EE',
+        borderRadius: 8,
+        zIndex: 999,
+    },
+    onboardingTitle: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginBottom: 16,
+    },
+    onboardingMessage: {
+        fontSize: 16,
+        lineHeight: 24,
+        textAlign: 'center',
+        marginBottom: 32,
+        paddingHorizontal: 8,
+    },
+    progressIndicators: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 24,
+        gap: 6,
+    },
+    progressDot: {
+        height: 8,
+        width: 8,
+        borderRadius: 4,
+        marginHorizontal: 2,
+    },
+    onboardingNavigation: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    onboardingButton: {
+        flex: 1,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 8,
+    },
+    onboardingBackButton: {
+        backgroundColor: 'transparent',
+        borderWidth: 1,
+    },
+    onboardingNextButton: {
+        flex: 2,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 4,
+        },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    onboardingButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    onboardingNextButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    skipButton: {
+        paddingVertical: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    skipButtonText: {
+        fontSize: 14,
+    },
     pageContainer: {
         flex: 1,
         backgroundColor: '#f8f9fa',
     },
     headerContainer: {
-        paddingTop:5,
         backgroundColor: 'white',
         paddingHorizontal: 12,
         borderBottomWidth: 1,
@@ -1546,6 +2121,7 @@ const styles = StyleSheet.create({
             width: 0,
             height: 1,
         },
+        paddingTop: 10,
         shadowOpacity: 0.08,
         shadowRadius: 2,
         elevation: 2,
@@ -1811,7 +2387,6 @@ const styles = StyleSheet.create({
     },
     businessBalanceToggleContainer: {
         borderRadius: 8,
-        marginTop: 0,
     },
     togglesRowContainer: {
         flexDirection: 'row',

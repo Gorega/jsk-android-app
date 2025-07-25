@@ -1,6 +1,6 @@
 import FixedHeader from "@/components/FixedHeader";
 import { Stack } from "expo-router";
-import { TouchableOpacity, Text, StyleSheet, View } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, View, Platform } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useState } from "react";
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -9,6 +9,7 @@ import ModalPresentation from "@/components/ModalPresentation";
 import { useLanguage, translations } from '../../utils/languageContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function RootLayout(){
   const { language, setLanguage } = useLanguage();
@@ -16,6 +17,7 @@ export default function RootLayout(){
   const [showThemeModal, setShowThemeModal] = useState(false);
   const { theme, setTheme, isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
 
   const handleLanguageChange = async (newLang) => {
     // Close modal first to avoid visual glitches during restart
@@ -30,52 +32,60 @@ export default function RootLayout(){
   };
 
   return <>
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          title: translations[language]?.auth.login,
-          header: () => {
-            return <FixedHeader title={translations[language]?.auth.login} showBackButton={false}>
-              <View style={styles.headerButtons}>
-                <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
-                  <MaterialCommunityIcons 
-                    name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
-                    size={24} 
-                    color={colors.primary} 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
-                  <MaterialIcons name="language" size={24} color={colors.primary} />
-                </TouchableOpacity>
-              </View>
-            </FixedHeader>
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+      <Stack
+        screenOptions={{
+          contentStyle: {
+            paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0,
           }
         }}
-      />
-      <Stack.Screen
-        name="sign-up"
-        options={{
-          title: translations[language]?.auth.register,
-          header: () => {
-            return <FixedHeader title={translations[language]?.auth.register} showBackButton={true}>
-              <View style={styles.headerButtons}>
-                <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
-                  <MaterialCommunityIcons 
-                    name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
-                    size={24} 
-                    color={colors.primary} 
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
-                  <MaterialIcons name="language" size={24} color={colors.primary} />
-                </TouchableOpacity>
-              </View>
-            </FixedHeader>
-          }
-        }}
-      />
-    </Stack>
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            title: translations[language]?.auth.login,
+            header: () => {
+              return <FixedHeader title={translations[language]?.auth.login} showBackButton={false}>
+                <View style={styles.headerButtons}>
+                  <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
+                    <MaterialCommunityIcons 
+                      name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
+                      size={24} 
+                      color={colors.primary} 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
+                    <MaterialIcons name="language" size={24} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              </FixedHeader>
+            }
+          }}
+        />
+        <Stack.Screen
+          name="sign-up"
+          options={{
+            title: translations[language]?.auth.register,
+            header: () => {
+              return <FixedHeader title={translations[language]?.auth.register} showBackButton={true}>
+                <View style={styles.headerButtons}>
+                  <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
+                    <MaterialCommunityIcons 
+                      name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
+                      size={24} 
+                      color={colors.primary} 
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
+                    <MaterialIcons name="language" size={24} color={colors.primary} />
+                  </TouchableOpacity>
+                </View>
+              </FixedHeader>
+            }
+          }}
+        />
+      </Stack>
+    </SafeAreaView>
     {showLanguageModal &&
       <ModalPresentation 
         showModal={showLanguageModal} 

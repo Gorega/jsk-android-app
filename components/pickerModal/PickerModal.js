@@ -7,7 +7,7 @@ import { Colors } from '../../constants/Colors';
 import FlatListData from "../FlatListData";
 import { useState, useMemo } from 'react';
 
-export default function PickerModal({list, showPickerModal, setShowModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue: externalSearchValue, setPickerSearchValue: setExternalSearchValue, setFieldErrors, searchLoading}) {
+export default function PickerModal({list, showPickerModal, setShowModal, setSelectedValue, field, loading, loadMoreData, loadingMore, prickerSearchValue: externalSearchValue, setPickerSearchValue: setExternalSearchValue, setFieldErrors, searchLoading, allowClear = false}) {
     const { language } = useLanguage();
     const { colorScheme, isDark } = useTheme();
     const colors = Colors[colorScheme];
@@ -35,6 +35,21 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
 
     // Function to handle modal close with filter clearing
     const handleCloseModal = () => {
+        setSearchValue('');
+        setShowModal(false);
+    };
+
+    // Function to clear the selection
+    const handleClearSelection = () => {
+        if (typeof setSelectedValue === 'function') {
+            // If the function has 2 or more parameters, pass name and null separately
+            if (setSelectedValue.length >= 2) {
+                setSelectedValue(name, null);
+            } else {
+                // Otherwise use the old behavior
+                setSelectedValue((selectedValue) => ({...selectedValue, [name]: null}));
+            }
+        }
         setSearchValue('');
         setShowModal(false);
     };
@@ -133,7 +148,16 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
                                             { borderBottomColor: colors.border }
                                         ]}
                                         onPress={() => {
-                                            setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
+                                            // Check if setSelectedValue expects two parameters (field name and value)
+                                            if (typeof setSelectedValue === 'function') {
+                                                // If the function has 2 or more parameters, pass name and item separately
+                                                if (setSelectedValue.length >= 2) {
+                                                    setSelectedValue(name, item);
+                                                } else {
+                                                    // Otherwise use the old behavior
+                                                    setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
+                                                }
+                                            }
                                             
                                             // Clear any error for this field
                                             const fieldNameMap = {
@@ -186,6 +210,20 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
                         <View style={[styles.footer, {
                             borderTopColor: colors.border
                         }]}>
+                            {allowClear && (
+                                <TouchableOpacity 
+                                    style={[styles.clearButton, {
+                                        backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)'
+                                    }]}
+                                    onPress={handleClearSelection}
+                                >
+                                    <Text style={[styles.clearButtonText, {
+                                        color: colors.error
+                                    }]}>
+                                        {translations[language]?.picker?.clear}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
                             <TouchableOpacity 
                                 style={[styles.cancelButton, {
                                     backgroundColor: colors.buttonSecondary
@@ -287,13 +325,27 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 16,
         borderTopWidth: 1,
+        gap: 12
     },
     cancelButton: {
-        paddingVertical: 10,
+        paddingVertical: 12,
         paddingHorizontal: 20,
         borderRadius: 10,
+        minWidth: 120,
+        alignItems: 'center',
+    },
+    clearButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        minWidth: 120,
+        alignItems: 'center',
     },
     cancelButtonText: {
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    clearButtonText: {
         fontSize: 16,
         fontWeight: '500',
     },

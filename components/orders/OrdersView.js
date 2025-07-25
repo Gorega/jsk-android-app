@@ -1,13 +1,193 @@
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Animated, TouchableOpacity } from 'react-native';
 import FlatListData from '../FlatListData';
 import Order from './Order';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from "../../RootLayout";
+
+// Create an Onboarding component for first-time users
+const OrdersOnboarding = ({ isVisible, onClose, userRole }) => {
+    const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    const [currentStep, setCurrentStep] = useState(0);
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    
+    // Define tutorial steps based on user role
+    const tutorialSteps = useMemo(() => {
+        const commonSteps = [
+            {
+                title: translations[language]?.onboarding?.orders?.welcome?.title,
+                description: translations[language]?.onboarding?.orders?.welcome?.description,
+                icon: "package-variant"
+            },
+            {
+                title: translations[language]?.onboarding?.orders?.expand?.title,
+                description: translations[language]?.onboarding?.orders?.expand?.description,
+                icon: "arrow-expand-vertical"
+            },
+            {
+                title: translations[language]?.onboarding?.orders?.track?.title,
+                description: translations[language]?.onboarding?.orders?.track?.description,
+                icon: "map-marker-path"
+            }
+        ];
+
+        // Business users can't change status but can open complaints
+        if (userRole === "business") {
+            return [
+                ...commonSteps,
+                {
+                    title: translations[language]?.onboarding?.orders?.edit?.title,
+                    description: translations[language]?.onboarding?.orders?.edit?.description,
+                    icon: "pencil"
+                },
+                {
+                    title: translations[language]?.onboarding?.orders?.complaint?.title,
+                    description: translations[language]?.onboarding?.orders?.complaint?.description,
+                    icon: "alert-circle"
+                }
+            ];
+        } 
+        // Driver and delivery company roles
+        else if (["driver", "delivery_company"].includes(userRole)) {
+            return [
+                ...commonSteps,
+                {
+                    title: translations[language]?.onboarding?.orders?.status?.title,
+                    description: translations[language]?.onboarding?.orders?.status?.description,
+                    icon: "refresh"
+                },
+                {
+                    title: translations[language]?.onboarding?.orders?.phone?.title,
+                    description: translations[language]?.onboarding?.orders?.phone?.description,
+                    icon: "phone-edit"
+                }
+            ];
+        } 
+        // Admin and other roles
+        else {
+            return [
+                ...commonSteps,
+                {
+                    title: translations[language]?.onboarding?.orders?.status?.title,
+                    description: translations[language]?.onboarding?.orders?.status?.description,
+                    icon: "refresh"
+                },
+                {
+                    title: translations[language]?.onboarding?.orders?.edit?.title,
+                    description: translations[language]?.onboarding?.orders?.edit?.description,
+                    icon: "pencil"
+                }
+            ];
+        }
+    }, [language, userRole]);
+
+    useEffect(() => {
+        if (isVisible) {
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true
+            }).start();
+        } else {
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true
+            }).start();
+        }
+    }, [isVisible, fadeAnim]);
+
+    const handleNext = () => {
+        if (currentStep < tutorialSteps.length - 1) {
+            setCurrentStep(currentStep + 1);
+        } else {
+            onClose();
+        }
+    };
+
+    const handleSkip = () => {
+        onClose();
+    };
+
+    if (!isVisible) return null;
+
+    return (
+        <Animated.View 
+            style={[
+                styles.onboardingOverlay, 
+                { opacity: fadeAnim, backgroundColor: colors.background + 'E6' }
+            ]}
+        >
+            <View style={[styles.onboardingCard, { backgroundColor: colors.card }]}>
+                <View style={styles.onboardingIconContainer}>
+                    <MaterialCommunityIcons 
+                        name={tutorialSteps[currentStep].icon} 
+                        size={40} 
+                        color={colors.primary} 
+                    />
+                </View>
+                <Text style={[styles.onboardingTitle, { color: colors.text }]}>
+                    {tutorialSteps[currentStep].title}
+                </Text>
+                <Text style={[styles.onboardingDescription, { color: colors.textSecondary }]}>
+                    {tutorialSteps[currentStep].description}
+                </Text>
+                
+                <View style={styles.onboardingStepIndicators}>
+                    {tutorialSteps.map((_, index) => (
+                        <View 
+                            key={index} 
+                            style={[
+                                styles.stepIndicator, 
+                                { 
+                                    backgroundColor: index === currentStep 
+                                        ? colors.primary 
+                                        : colors.border 
+                                }
+                            ]} 
+                        />
+                    ))}
+                </View>
+                
+                <View style={styles.onboardingButtons}>
+                    <TouchableOpacity 
+                        style={[styles.onboardingButton, styles.skipButton]} 
+                        onPress={handleSkip}
+                    >
+                        <Text style={[styles.buttonText, { color: colors.textSecondary }]}>
+                            {translations[language]?.common?.skip || "Skip"}
+                        </Text>
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                        style={[
+                            styles.onboardingButton, 
+                            styles.nextButton,
+                            { backgroundColor: colors.primary }
+                        ]} 
+                        onPress={handleNext}
+                    >
+                        <Text style={[styles.buttonText, { color: '#FFFFFF' }]}>
+                            {currentStep < tutorialSteps.length - 1 
+                                ? (translations[language]?.common?.next || "Next") 
+                                : (translations[language]?.common?.finish || "Finish")}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </Animated.View>
+    );
+};
 
 // Create a memoized OrderItem component to prevent unnecessary re-renders
 const OrderItem = React.memo(function OrderItem({ item, metadata, onStatusChange }) {
@@ -38,6 +218,48 @@ const OrdersView = React.memo(function OrdersView({
     const { language } = useLanguage();
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const { user: authUser } = useAuth(); // Get user directly from auth context
+    const userRole = authUser?.role || "user"; // Use authUser role instead of metadata
+
+
+    // Check if this is the user's first time viewing orders
+    useEffect(() => {
+        const checkFirstTimeUser = async () => {
+            try {
+                const hasSeenOnboarding = await AsyncStorage.getItem('orders_onboarding_seen');
+                if (!hasSeenOnboarding) {
+                    setShowOnboarding(true);
+                }
+            } catch (error) {
+                // If there's an error reading from storage, default to showing onboarding
+                setShowOnboarding(true);
+            }
+        };
+        
+        checkFirstTimeUser();
+    }, []);
+
+    // Handle onboarding completion
+    const handleOnboardingClose = async () => {
+        setShowOnboarding(false);
+        try {
+            await AsyncStorage.setItem('orders_onboarding_seen', 'true');
+        } catch (error) {
+            // Silent fail for AsyncStorage errors
+        }
+    };
+    
+    // Function to reset onboarding tutorial (for testing or if user wants to see it again)
+    // This can be exposed through a developer menu or settings screen
+    const resetOnboardingTutorial = async () => {
+        try {
+            await AsyncStorage.removeItem('orders_onboarding_seen');
+            setShowOnboarding(true);
+        } catch (error) {
+            // Silent fail for AsyncStorage errors
+        }
+    };
 
     // Memoize the renderOrderItem function to prevent recreating it on each render
     const renderOrderItem = React.useCallback(({ item }) => {
@@ -108,6 +330,13 @@ const OrdersView = React.memo(function OrdersView({
                 refreshControl={refreshControl}
                 {...flatListProps}
             />
+            
+            {/* Onboarding overlay */}
+            <OrdersOnboarding 
+                isVisible={showOnboarding} 
+                onClose={handleOnboardingClose}
+                userRole={userRole}
+            />
         </RTLWrapper>
     );
 });
@@ -172,6 +401,88 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontSize: 14,
         fontWeight: '500',
+    },
+    // Onboarding styles
+    onboardingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 2000,
+    },
+    onboardingCard: {
+        width: '85%',
+        maxWidth: 400,
+        backgroundColor: 'white',
+        borderRadius: 16,
+        padding: 24,
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 5,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 10,
+    },
+    onboardingIconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    onboardingTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        marginBottom: 12,
+        textAlign: 'center',
+    },
+    onboardingDescription: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    onboardingStepIndicators: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        marginBottom: 24,
+    },
+    stepIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        marginHorizontal: 4,
+    },
+    onboardingButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    onboardingButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        minWidth: 100,
+        alignItems: 'center',
+    },
+    skipButton: {
+        backgroundColor: 'transparent',
+    },
+    nextButton: {
+        backgroundColor: '#4361EE',
+    },
+    buttonText: {
+        fontSize: 16,
+        fontWeight: '600',
     }
 });
 

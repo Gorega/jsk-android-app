@@ -12,12 +12,14 @@ import { getToken } from "../../utils/secureStore";
 import { useAuth } from "../../RootLayout";
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
     const { userId } = useLocalSearchParams();
     const { language } = useLanguage();
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const insets = useSafeAreaInsets();
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const [cities, setCities] = useState([]);
@@ -376,7 +378,13 @@ export default function HomeScreen() {
     };
 
     return (
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[
+            styles.container, 
+            { 
+                backgroundColor: colors.background,
+                paddingTop: insets.top
+            }
+        ]}>
             <ScrollView
                 ref={scrollViewRef}
                 style={styles.scrollView}
@@ -386,7 +394,6 @@ export default function HomeScreen() {
                 ]}
                 keyboardShouldPersistTaps="handled"
             >
-
                 <View style={styles.main}>
                     {sections?.map((section, index) => {
                         return <Section
@@ -402,34 +409,46 @@ export default function HomeScreen() {
                         />
                     })}
 
-                    <TouchableOpacity
-                        style={styles.submitButton}
-                        onPress={() => userId ? 
-                            createSender(`/api/users/${userId}`, "PUT") : 
-                            createSender('/api/users', "POST")}
-                        disabled={formSpinner.status}
-                    >
-                        <LinearGradient
-                            colors={['#4361EE', '#3A0CA3']}
-                            style={styles.gradientButton}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
+                    <View style={[
+                        styles.buttonContainer,
+                        { paddingBottom: Math.max(insets.bottom, Platform.OS === 'ios' ? 20 : 12) }
+                    ]}>
+                        <TouchableOpacity
+                            style={styles.submitButton}
+                            onPress={() => userId ? 
+                                createSender(`/api/users/${userId}`, "PUT") : 
+                                createSender('/api/users', "POST")}
+                            disabled={formSpinner.status}
                         >
-                            {formSpinner.status ? (
-                                <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                                <Text style={styles.submitButtonText}>
-                                    {translations[language].users.create.submit}
-                                </Text>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
+                            <LinearGradient
+                                colors={['#4361EE', '#3A0CA3']}
+                                style={styles.gradientButton}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                            >
+                                {formSpinner.status ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.submitButtonText}>
+                                        {translations[language].users.create.submit}
+                                    </Text>
+                                )}
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </ScrollView>
 
             {/* Loading Spinner */}
             {formSpinner.status && (
-                <View style={[styles.overlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.8)' }]}>
+                <View style={[
+                    styles.overlay, 
+                    { 
+                        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.8)',
+                        paddingTop: insets.top,
+                        paddingBottom: insets.bottom
+                    }
+                ]}>
                     <View style={[styles.spinnerContainer, { backgroundColor: colors.card }]}>
                         <ActivityIndicator size="large" color="#4361EE" />
                     </View>
@@ -438,7 +457,14 @@ export default function HomeScreen() {
 
             {/* Success Message */}
             {success && (
-                <View style={[styles.successOverlay, { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)' }]}>
+                <View style={[
+                    styles.successOverlay, 
+                    { 
+                        backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+                        paddingTop: insets.top,
+                        paddingBottom: insets.bottom
+                    }
+                ]}>
                     <View style={[styles.successContainer, { backgroundColor: colors.card }]}>
                         <View style={styles.successIconContainer}>
                             <Feather name="check-circle" size={50} color="#FFFFFF" />
@@ -484,12 +510,18 @@ const styles = StyleSheet.create({
     scrollView: {
         flex: 1,
     },
+    contentContainer: {
+        flexGrow: 1,
+    },
     main: {
         width: '100%',
         padding: 16,
     },
-    submitButton: {
+    buttonContainer: {
         marginTop: 24,
+        width: '100%',
+    },
+    submitButton: {
         borderRadius: 8,
         overflow: 'hidden',
         elevation: 2,

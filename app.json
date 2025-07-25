@@ -2,7 +2,7 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "2.3.0",
+    "version": "2.4.1",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
@@ -30,32 +30,32 @@
       "supportsRTL": true
     },
     "android": {
-      "package": "com.taiar",
-      "googleServicesFile": "./google-services.json",
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/tayar_logo.png",
-        "backgroundColor": "#ffffff"
-      },
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT",
-        "android.permission.RESTART_PACKAGES",
-        "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.VIBRATE",
-        "android.permission.WAKE_LOCK",
-        "NOTIFICATIONS"
-      ],
-      "userInterfaceStyle": "automatic",
-      "allowBackup": false,
-      "config": {
-        "isRTL": true
-      },
-      "supportsRTL": true,
-      "jsEngine": "hermes",
-      "useNextNotificationsApi": true
-    },
+  "package": "com.taiar",
+  "googleServicesFile": "./google-services.json",
+  "adaptiveIcon": {
+    "foregroundImage": "./assets/images/tayar_logo.png",
+    "backgroundColor": "#ffffff"
+  },
+  "permissions": [
+    "android.permission.CAMERA",
+    "android.permission.RECORD_AUDIO",
+    "android.permission.USE_BIOMETRIC",
+    "android.permission.USE_FINGERPRINT",
+    "android.permission.RESTART_PACKAGES",
+    "android.permission.RECEIVE_BOOT_COMPLETED",
+    "android.permission.VIBRATE",
+    "android.permission.WAKE_LOCK",
+    "NOTIFICATIONS"
+  ],
+  "userInterfaceStyle": "automatic",
+  "allowBackup": false,
+  "config": {
+    "isRTL": true
+  },
+  "supportsRTL": true,
+  "jsEngine": "hermes",
+  "useNextNotificationsApi": true
+},
     "web": {
       "bundler": "metro",
       "output": "static",

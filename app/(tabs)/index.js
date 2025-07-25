@@ -1,4 +1,4 @@
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, Platform, StatusBar, ActivityIndicator, Alert, Animated } from "react-native";
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, RefreshControl, Platform, StatusBar, ActivityIndicator, Alert, Animated, findNodeHandle, Dimensions } from "react-native";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import TrackOrder from "../../components/TrackOrder";
@@ -21,6 +21,7 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import * as SecureStore from 'expo-secure-store';
 
 
 export default function HomeScreen() {
@@ -49,10 +50,188 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const [activeTab, setActiveTab] = useState('track');
   
+  // Modern onboarding system
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+  const scrollViewRef = useRef(null);
+  
   // Animation value for percentage badge
   const pulseAnim = useRef(new Animated.Value(1)).current;
   
   const rtl = useRTLStyles();
+
+  // Define onboarding steps based on user role
+  const getOnboardingSteps = () => {
+    const baseSteps = [
+      {
+        id: 'track_order',
+        title: translations[language]?.homeHints?.trackOrder?.title,
+        message: translations[language]?.homeHints?.trackOrder?.[`${user.role}Message`] || translations[language]?.homeHints?.trackOrder?.businessMessage,
+        action: () => setActiveTab('track'),
+        scrollTo: 0
+      },
+      {
+        id: 'check_receiver',
+        title: translations[language]?.homeHints?.checkReceiver?.title,
+        message: translations[language]?.homeHints?.checkReceiver?.[`${user.role}Message`] || translations[language]?.homeHints?.checkReceiver?.businessMessage,
+        action: () => setActiveTab('check'),
+        scrollTo: 0
+      },
+      {
+        id: 'order_summary',
+        title: translations[language]?.homeHints?.orderSummary?.title,
+        message: translations[language]?.homeHints?.orderSummary?.[`${user.role}Message`] || translations[language]?.homeHints?.orderSummary?.businessMessage,
+        action: () => setActiveTab('track'),
+        scrollTo: 250
+      },
+      {
+        id: 'balance',
+        title: translations[language]?.homeHints?.balance?.title,
+        message: translations[language]?.homeHints?.balance?.[`${user.role}Message`] || translations[language]?.homeHints?.balance?.businessMessage,
+        scrollTo: 500
+      }
+    ];
+    
+    // Add collections step for business users
+    if (user.role === 'business') {
+      baseSteps.push({
+        id: 'collections',
+        title: translations[language]?.homeHints?.collections?.title,
+        message: translations[language]?.homeHints?.collections?.businessMessage,
+        scrollTo: 750
+      });
+    }
+    
+    // Add status overview step for all users
+    baseSteps.push({
+      id: 'status_overview',
+      title: translations[language]?.homeHints?.statusOverview?.title,
+      message: translations[language]?.homeHints?.statusOverview?.[`${user.role}Message`] || translations[language]?.homeHints?.statusOverview?.businessMessage,
+      scrollTo: 1000
+    });
+    
+    return baseSteps;
+  };
+  
+  // Check if user has seen home screen hints
+  useEffect(() => {
+    const checkHomeHints = async () => {
+      try {
+        const hasSeenHomeHints = await SecureStore.getItemAsync(`home_hints_${user.userId}`);
+        if (!hasSeenHomeHints && user?.userId) {
+          // Show onboarding after a short delay
+          setTimeout(() => {
+            setShowOnboarding(true);
+            animateOnboardingIn();
+            
+            // Execute the first step's action if exists
+            const steps = getOnboardingSteps();
+            if (steps[0]?.action) {
+              steps[0].action();
+            }
+            
+            // Scroll to the appropriate position
+            if (scrollViewRef.current && steps[0]?.scrollTo !== undefined) {
+              scrollViewRef.current.scrollTo({
+                y: steps[0].scrollTo,
+                animated: true
+              });
+            }
+          }, 1000);
+        }
+      } catch (error) {
+      }
+    };
+    
+    checkHomeHints();
+  }, [user]);
+
+  // Animation functions for onboarding
+  const animateOnboardingIn = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateOnboardingOut = (callback) => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      if (callback) callback();
+    });
+  };
+
+  // Handle navigation between onboarding steps
+  const nextStep = () => {
+    const steps = getOnboardingSteps();
+    
+    animateOnboardingOut(() => {
+      // Reset animation values
+      fadeAnim.setValue(0);
+      scaleAnim.setValue(0.9);
+      
+      // Move to next step or complete onboarding
+      if (currentStep < steps.length - 1) {
+        const nextStepIndex = currentStep + 1;
+        setCurrentStep(nextStepIndex);
+        
+        // Execute the next step's action if exists
+        if (steps[nextStepIndex]?.action) {
+          steps[nextStepIndex].action();
+        }
+        
+        // Scroll to the appropriate position
+        if (scrollViewRef.current && steps[nextStepIndex]?.scrollTo !== undefined) {
+          scrollViewRef.current.scrollTo({
+            y: steps[nextStepIndex].scrollTo,
+            animated: true
+          });
+        }
+        
+        // Animate in the next step
+        setTimeout(() => {
+          animateOnboardingIn();
+        }, 100);
+      } else {
+        // Last step, complete onboarding
+        completeOnboarding();
+      }
+    });
+  };
+
+  const completeOnboarding = async () => {
+    try {
+      // Mark onboarding as completed
+      await SecureStore.setItemAsync(`home_hints_${user.userId}`, 'completed');
+      setShowOnboarding(false);
+      setCurrentStep(0);
+    } catch (error) {
+    }
+  };
+
+  const skipOnboarding = () => {
+    animateOnboardingOut(completeOnboarding);
+  };
 
   const fetchUserBalance = async () => {
     try {
@@ -551,8 +730,10 @@ export default function HomeScreen() {
        <StatusBar barStyle={colors.statusBarStyle === 'light' ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
       
       <ScrollView
+        ref={scrollViewRef}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -562,8 +743,11 @@ export default function HomeScreen() {
           />
         }
       >
+
         {/* Tabs for TrackOrder and CheckReceiver */}
-        <View style={styles.tabsContainer}>
+        <View 
+          style={styles.tabsContainer}
+        >
           <TouchableOpacity
             style={[
               styles.tab,
@@ -600,7 +784,9 @@ export default function HomeScreen() {
         </View>
 
         {/* Track Order or Check Receiver Component based on active tab */}
-        <View style={styles.trackOrderContainer}>
+        <View 
+          style={styles.trackOrderContainer}
+        >
           {activeTab === 'track' ? <TrackOrder /> : <CheckReceiver />}
         </View>
 
@@ -628,7 +814,10 @@ export default function HomeScreen() {
         )}
 
         {/* Summary Section */}
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && 
+        <View 
+          style={[styles.sectionHeader]}
+        >
           <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
           </Text>
@@ -666,8 +855,7 @@ export default function HomeScreen() {
                         pathname: "/(tabs)/orders",
                         params: {
                           orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
-                          date_range: "today",
-                          reset: "true" // Reset filters first, then apply the specific one
+                          date_range: "today"
                         }
                       });
                     } else {
@@ -676,8 +864,7 @@ export default function HomeScreen() {
                         pathname: "/(tabs)/orders",
                         params: {
                           orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
-                          status_key: statusKey,
-                          reset: "true" // Reset filters first, then apply the specific one
+                          status_key: statusKey
                         }
                       });
                     }
@@ -721,6 +908,7 @@ export default function HomeScreen() {
                   <View style={[styles.statsContainer]}>
                     <View style={styles.statItem}>
                       <Text style={[styles.statNumber,{
+                        textAlign: rtl.isRTL ? "left" : "left",
                         ...Platform.select({
                           ios: {
                               textAlign:rtl.isRTL ? "left" : ""
@@ -747,8 +935,10 @@ export default function HomeScreen() {
         </View>}
 
         {/* Balance Section */}
-        <View style={[styles.sectionHeader]}>
-        <Text style={[styles.sectionTitle,{color:colors.text}]}>
+        <View 
+          style={[styles.sectionHeader]}
+        >
+          <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.balanceTitle || 'Your Balance'}
           </Text>
         </View>
@@ -860,15 +1050,17 @@ export default function HomeScreen() {
         {/* Collections Section */}
         {user.role === "business" && (
           <>
-            <View style={[styles.sectionHeader]}>
-            <Text style={[styles.sectionTitle,{color:colors.text},
-              {
-                ...Platform.select({
-                  ios: {
-                    textAlign:rtl.isRTL ? "left" : ""
-                  }
-                }),
-              }]}>
+            <View 
+              style={[styles.sectionHeader]}
+            >
+              <Text style={[styles.sectionTitle,{color:colors.text},
+                {
+                  ...Platform.select({
+                    ios: {
+                      textAlign:rtl.isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
                 {translations[language]?.collections?.collection?.confirmTitle}
               </Text>
             </View>
@@ -1072,8 +1264,11 @@ export default function HomeScreen() {
         )}
 
         {/* Status Section */}
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={[styles.sectionHeader]}>
-        <Text style={[styles.sectionTitle,{color:colors.text}]}>
+        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && 
+        <View 
+          style={[styles.sectionHeader]}
+        >
+          <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
           </Text>
         </View>}
@@ -1099,11 +1294,11 @@ export default function HomeScreen() {
                   case translations[language].tabs.index.boxes.onTheWay:
                     return "on_the_way";
                   case translations[language].tabs.index.boxes.withDriver:
-                    return "on_the_way";
+                    return "driver_responsibility";
                   case translations[language].tabs.index.boxes.delivered:
                     return "delivered";
                   case translations[language].tabs.index.boxes.returned:
-                    return "return_after_delivered_initiated";
+                    return "returned";
                   case translations[language].tabs.index.boxes.returnedInBranch:
                     return "returned_in_branch";
                   case translations[language].tabs.index.boxes.rescheduled:
@@ -1152,8 +1347,7 @@ export default function HomeScreen() {
                             pathname: "/(tabs)/orders",
                             params: {
                               orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
-                              date_range: "today",
-                              reset: "true" // Reset filters first, then apply the specific one
+                              date_range: "today"
                             }
                           });
                         } else {
@@ -1162,8 +1356,7 @@ export default function HomeScreen() {
                             pathname: "/(tabs)/orders",
                             params: {
                               orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
-                              status_key: statusKey,
-                              reset: "true" // Reset filters first, then apply the specific one
+                              status_key: statusKey
                             }
                           });
                         }
@@ -1240,6 +1433,68 @@ export default function HomeScreen() {
           </View>
         )}
       </ScrollView>
+      
+      {/* Modern Onboarding System */}
+      {showOnboarding && (
+        <Animated.View
+          style={[
+            styles.onboardingModal,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+              backgroundColor: colors.card,
+            }
+          ]}
+        >
+          <View style={styles.onboardingContent}>
+            <View style={styles.onboardingHeader}>
+              <View style={styles.stepIndicators}>
+                {getOnboardingSteps().map((step, index) => (
+                  <View 
+                    key={index} 
+                    style={[
+                      styles.stepDot,
+                      currentStep === index ? 
+                        { backgroundColor: colors.primary, width: 24 } : 
+                        { backgroundColor: colors.border }
+                    ]} 
+                  />
+                ))}
+              </View>
+            </View>
+            
+            <Text style={[styles.onboardingTitle, { color: colors.text }]}>
+              {getOnboardingSteps()[currentStep]?.title}
+            </Text>
+            
+            <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
+              {getOnboardingSteps()[currentStep]?.message}
+            </Text>
+            
+            <View style={styles.onboardingActions}>
+              <TouchableOpacity
+                style={styles.skipButton}
+                onPress={skipOnboarding}
+              >
+                <Text style={[styles.skipButtonText, { color: colors.textTertiary }]}>
+                  {translations[language]?.homeHints?.skip || 'Skip All'}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.nextButton, { backgroundColor: colors.primary }]}
+                onPress={nextStep}
+              >
+                <Text style={styles.nextButtonText}>
+                  {currentStep === getOnboardingSteps().length - 1
+                    ? (translations[language]?.homeHints?.finish || 'Got It') 
+                    : (translations[language]?.homeHints?.next || 'Next')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      )}
       
       {/* Money Request Modal */}
       <ModalPresentation 
@@ -1806,7 +2061,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   modalOptionText: {
     fontSize: 16,
@@ -1843,6 +2097,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
+    gap: 12,
   },
   checkboxContainer: {
     width: 24,
@@ -1876,6 +2131,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.06)',
+    gap:10
   },
   modalButton: {
     flex: 1,
@@ -2135,6 +2391,76 @@ const styles = StyleSheet.create({
   },
   percentageSymbol: {
     fontSize: 9,
+    fontWeight: '600',
+  },
+  // Modern onboarding styles
+  onboardingModal: {
+    position: 'absolute',
+    width: '90%',
+    left: '5%',
+    bottom: 40,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+    zIndex: 1000,
+  },
+  onboardingContent: {
+    width: '100%',
+  },
+  onboardingHeader: {
+    marginBottom: 16,
+    alignItems: 'center',
+  },
+  stepIndicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepDot: {
+    height: 8,
+    width: 8,
+    borderRadius: 4,
+    marginHorizontal: 2,
+  },
+  onboardingTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  onboardingMessage: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  onboardingActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  skipButton: {
+    padding: 10,
+  },
+  skipButtonText: {
+    fontSize: 16,
+  },
+  nextButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  nextButtonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: '600',
   },
 });

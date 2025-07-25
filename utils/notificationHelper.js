@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import { getToken } from './secureStore';
 import * as TaskManager from 'expo-task-manager';
 
@@ -68,6 +68,20 @@ export async function registerBackgroundNotificationTask() {
 export async function registerForPushNotificationsAsync() {
   let token;
   
+  // Check if running in Expo Go vs development build
+  const isExpoGo = Constants.appOwnership === 'expo';
+  const isDevelopmentBuild = !isExpoGo;
+  
+  if (isExpoGo && Platform.OS === 'android') {
+    console.warn('Push notifications are not supported in Expo Go on Android with SDK 53+. Use a development build instead.');
+    return null;
+  }
+  
+  if (Platform.OS === 'android' && !isDevelopmentBuild) {
+    console.warn('Android Push notifications functionality requires a development build with SDK 53+');
+    return null;
+  }
+  
   if (Platform.OS === 'android') {
     // Create a channel for Android notifications with higher importance
     await Notifications.setNotificationChannelAsync('default', {
@@ -114,8 +128,21 @@ export async function registerForPushNotificationsAsync() {
     }
     
     try {
-      // Get the native device token instead of Expo Push Token
-      token = (await Notifications.getDevicePushTokenAsync()).data;
+      // Get the push token
+      if (Platform.OS === 'android') {
+        if (isDevelopmentBuild) {
+          // Use device push token for Android
+          token = (await Notifications.getDevicePushTokenAsync()).data;
+        } else {
+          console.warn('Push notifications require a development build on Android with SDK 53+');
+          return null;
+        }
+      } else {
+        // For iOS, we can still use Expo push tokens
+        token = (await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig.extra?.eas?.projectId
+        })).data;
+      }
       
       // Register background task for handling notifications when app is closed
       await registerBackgroundNotificationTask();
@@ -128,11 +155,14 @@ export async function registerForPushNotificationsAsync() {
         if (userToken && userId) {
           await sendPushTokenToServer(token);
         } else {
+          console.log('User not authenticated, skipping token registration with server');
         }
       }
     } catch (error) {
+      console.error('Error getting push token:', error);
     }
   } else {
+    console.log('Must use physical device for push notifications');
   }
 
   return token;

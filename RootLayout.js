@@ -1,6 +1,6 @@
 // RootLayout.js
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet, I18nManager } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -10,9 +10,8 @@ import { getToken, deleteToken, getMasterAccountId, setMasterAccountId, addAccou
 import useFetch from '@/utils/useFetch';
 import { SocketProvider } from '@/utils/socketContext';
 import { RTLWrapper } from './utils/RTLWrapper';
-import { LanguageProvider } from './utils/languageContext';
 import { initializeNotifications } from './utils/notificationHelper';
-import { ThemeProvider, useTheme } from './utils/themeContext';
+import { useTheme } from './utils/themeContext';
 import { Colors } from './constants/Colors';
 import { handleAppUpdates } from './utils/updateChecker';
 
@@ -23,10 +22,7 @@ export const useAuth = () => useContext(AuthContext);
 SplashScreen.preventAutoHideAsync();
 
 // Component to handle theme-aware navigation
-function NavigationContainer({ children, isAuthenticated }) {
-  const { isDark, colorScheme } = useTheme();
-  const colors = Colors[colorScheme];
-  
+function AppNavigationStack({ isAuthenticated, colors }) {
   return (
     <Stack
       screenOptions={{
@@ -77,10 +73,15 @@ export default function RootLayout() {
   const [updateCheckComplete, setUpdateCheckComplete] = useState(false);
   const [canContinue, setCanContinue] = useState(false);
   
+  // Use theme from context - moved up here to ensure consistent hook order
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+  
   // Initialize RTL on component mount - using the simplified flag
   useEffect(() => {
     setRtlInitialized(true);
   }, []);
+
 
   // Check for updates before initializing the app
   useEffect(() => {
@@ -94,7 +95,6 @@ export default function RootLayout() {
         const timeoutPromise = new Promise(resolve => {
           // Timeout after 10 seconds
           setTimeout(() => {
-            console.log('Update check timed out, continuing with app');
             resolve(true);
           }, 10000);
         });
@@ -106,7 +106,6 @@ export default function RootLayout() {
         setUpdateCheckComplete(true);
         setCanContinue(shouldContinue);
       } catch (error) {
-        console.error('Error during update check:', error);
         // In case of error, allow the app to continue
         setUpdateCheckComplete(true);
         setCanContinue(true);
@@ -226,22 +225,9 @@ export default function RootLayout() {
   // Hide splash when ready
   useEffect(() => {
     if (appReady && fontsLoaded && updateCheckComplete && canContinue) {
-      console.log('All conditions met, hiding splash screen:', {
-        appReady,
-        fontsLoaded,
-        updateCheckComplete,
-        canContinue
-      });
       SplashScreen.hideAsync().catch(err => {
-        console.error('Error hiding splash screen:', err);
       });
     } else {
-      console.log('Waiting for conditions to hide splash screen:', {
-        appReady,
-        fontsLoaded,
-        updateCheckComplete,
-        canContinue
-      });
     }
   }, [appReady, fontsLoaded, updateCheckComplete, canContinue]);
 
@@ -270,33 +256,13 @@ export default function RootLayout() {
   }
 
   return (
-    <LanguageProvider>
-      <ThemeProvider>
-        <ThemedApp 
-          isAuthenticated={isAuthenticated} 
-          setIsAuthenticated={setIsAuthenticated} 
-          user={user} 
-          userId={userId} 
-          setUserId={setUserId} 
-        />
-      </ThemeProvider>
-    </LanguageProvider>
-  );
-}
-
-// Separate component to access theme context
-function ThemedApp({ isAuthenticated, setIsAuthenticated, user, userId, setUserId }) {
-  const { isDark, colorScheme } = useTheme();
-  const colors = Colors[colorScheme];
-  
-  return (
-    <RTLWrapper style={[styles.container, { backgroundColor: colors.background }]}>
-      <AuthContext.Provider
-        value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}
-      >
+    <RTLWrapper>
+      <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}>
         <SocketProvider isAuthenticated={isAuthenticated}>
-          <NavigationContainer isAuthenticated={isAuthenticated} />
-          <StatusBar style={isDark ? "light" : "dark"} />
+          <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <StatusBar style={colors.statusBarStyle} />
+            <AppNavigationStack isAuthenticated={isAuthenticated} colors={colors} />
+          </View>
         </SocketProvider>
       </AuthContext.Provider>
     </RTLWrapper>

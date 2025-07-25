@@ -17,7 +17,7 @@ const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.taiar.org';
 export default {
   name: 'Taiar',
   slug: 'taiar',
-  version: '2.3.0',
+  version: '2.4.1',
   orientation: 'portrait',
   icon: './assets/images/tayar_logo.png',
   scheme: 'myapp',
@@ -36,18 +36,48 @@ export default {
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.expresstaiar.taiar'
+    bundleIdentifier: 'com.expresstaiar.taiar',
+    // Enable edge-to-edge display
+    config: {
+      usesNonExemptEncryption: false
+    }
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/images/tayar_logo.png',
       backgroundColor: '#FFFFFF'
     },
-    package: 'com.taiar'
+    package: 'com.taiar',
+    // Enable edge-to-edge display
+    softwareKeyboardLayoutMode: 'pan',
+    // Enable system UI adjustments
+    windowSoftInputMode: 'adjustResize',
+    googleServicesFile: './google-services.json'
   },
   web: {
     favicon: './assets/images/tayar_logo.png'
   },
+  plugins: [
+    './app.plugin.js',
+    [
+      'expo-build-properties',
+      {
+        android: {
+          compileSdkVersion: 35,
+          targetSdkVersion: 35,
+          buildToolsVersion: '35.0.0'
+        }
+      }
+    ],
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/tayar_logo.png',
+        color: '#ffffff',
+        sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3']
+      }
+    ]
+  ],
   extra: {
     apiUrl,
     eas: {

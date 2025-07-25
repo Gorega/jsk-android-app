@@ -37,6 +37,116 @@ const LanguageContext = createContext();
 
 export const translations = {
   en: {
+    // Driver and delivery company onboarding
+    onboarding: {
+      assignOrdersTitle: "Assign Orders",
+      assignOrdersMessage: "Use this option to scan order QR codes and assign them to your route. This helps you organize deliveries efficiently and track packages throughout the delivery process.",
+      routesTitle: "Manage Routes",
+      routesMessage: "Create and manage delivery routes to optimize your deliveries. Plan your journey, track progress as you complete orders, and navigate efficiently between delivery locations.",
+      
+      // Orders onboarding tutorial
+      orders: {
+        welcome: {
+          title: "Welcome to Orders!",
+          description: "Let's explore how to manage your orders efficiently."
+        },
+        expand: {
+          title: "Expand & Collapse",
+          description: "Tap the arrow button to expand or collapse an order to see more or less details."
+        },
+        track: {
+          title: "Track Orders",
+          description: "Tap on any order to see its detailed tracking information and history."
+        },
+        status: {
+          title: "Change Status",
+          description: "Long press on an order or tap the status badge to update the order status."
+        },
+        edit: {
+          title: "Edit Orders",
+          description: "Long press on an order to access edit options for order details."
+        },
+        phone: {
+          title: "Edit Phone",
+          description: "Long press on an order to access the option to edit receiver phone numbers."
+        },
+        complaint: {
+          title: "Open Complaints",
+          description: "Long press on an order and select 'Open Case' to report issues with your order."
+        },
+        tapToExpand: "Tap to expand"
+      }
+    },
+    
+    // Add driver statistics translations
+    driverStats: {
+      title: "Driver Statistics",
+      count: "Count",
+      deliveryFee: "Delivery Fee",
+      codValue: "COD Value",
+      ordersChart: "Orders Distribution",
+      dateRange: "Date Range",
+      selectPeriod: "Select Period",
+      periods: {
+        day: "Day",
+        week: "Week",
+        month: "Month",
+        half_year: "6 Months",
+        year: "Year"
+      },
+      statuses: {
+        delivered: "Delivered",
+        returned: "Returned",
+        on_the_way: "On The Way",
+        total: "Total"
+      }
+    },
+    
+    // Create order onboarding
+    createOnboarding: {
+      welcome: {
+        title: "Welcome to Order Creation!",
+        message: "Let's walk through the process of creating a new order. Swipe left to continue or use the navigation buttons."
+      },
+      orderTypes: {
+        title: "Order Types",
+        message: "Choose the type of order you need:\n\n• Delivery: Send packages to customers\n• Receive: Get items from suppliers\n• Delivery/Receive: Exchange items\n• Payment: Financial transactions only"
+      },
+      reference: {
+        title: "Reference Number",
+        message: "Add a unique reference ID to easily track this order in your system. You can scan a barcode or enter it manually."
+      },
+      client: {
+        title: "Client Information",
+        message: "Enter the receiver's contact details including name, phone numbers, city, and address. You can search for existing clients or add new ones."
+      },
+      cost: {
+        title: "Cost Details",
+        message: "Set payment method (cash, check, or both), COD amount, and delivery fees. You can add multiple currencies if needed. Toggle \"Deduct from balance\" for business accounts."
+      },
+      netValue: {
+        title: "Net Value Calculation",
+        message: "The system automatically calculates the net value based on COD amounts and delivery fees. Different currencies are shown separately."
+      },
+      details: {
+        title: "Package Details",
+        message: "Describe what's being shipped, quantity, weight, and package type. For receive orders, specify what items you expect to receive."
+      },
+      notes: {
+        title: "Additional Notes",
+        message: "Add any special instructions or information that may help with delivery or handling of this order."
+      },
+      ready: {
+        title: "Ready to Go!",
+        message: "You're all set! Click the submit button when you've filled in all the required information to create your order."
+      },
+      back: "Back",
+      next: "Next",
+      skip: "Skip Tutorial",
+      finish: "Get Started"
+    },
+    
+    
     // (auth)
     auth:{
       login:"Login",
@@ -160,7 +270,12 @@ export const translations = {
       retry:"Retry",
       loading:"Loading...",
       loadingMore:"Loading more orders...",
-      pending:"Pending"
+      pending:"Pending",
+      gotIt:"Got it!",
+      skip:"Skip",
+      next:"Next",
+      refresh:"Refresh",
+      finish:"Finish"
     },
 
     balance:{
@@ -219,6 +334,7 @@ export const translations = {
           stuck:"Stuck",
           delayed:"Delayed",
           onTheWay:"On The Way",
+          driverResponsibilityOrders:"Driver Responsibility Orders",
           rescheduled:"Rescheduled",
           returnBeforeDeliveredInitiated:"Return Before Delivered Initiated",
           returnAfterDeliveredInitiated:"Return After Delivered Initiated",
@@ -513,7 +629,8 @@ export const translations = {
                 deduction_amounts: "Amounts to deduct",
                 balance_after: "Balance after",
                 auto_deduction_notice: "Automatic Deduction Notice",
-                auto_deduction_message: "This order type will be automatically deducted from your balance upon submission."
+                auto_deduction_message: "This order type will be automatically deducted from your balance upon submission.",
+                auto_deduction_message_payment: "This order type will be automatically deducted from your balance upon submission."
               }
             },
             client:{
@@ -692,6 +809,7 @@ export const translations = {
           account:"Account",
           deleteAccount:"Delete Account",
           deleteAccountHint:"This action will delete your account and all your data will be lost.",
+          driverStats:"Driver Statistics",
           switchAccount:"Switch Account",
           otherAccounts:"Other Accounts",
           addNewAccount:"Add New Account",
@@ -707,7 +825,8 @@ export const translations = {
           removeAccount:"Remove Account",
           removeAccountMessage:"Are you sure you want to remove this account? You can add it again later.",
           cancel:"Cancel",
-          remove:"Remove"
+          remove:"Remove",
+          driverStats: "Driver Statistics"
         }
       }
     },
@@ -1048,7 +1167,8 @@ export const translations = {
     picker:{
       choose:"Choose a",
       cancel:"Cancel",
-      searchPlaceholder:"Search"
+      searchPlaceholder:"Search",
+      clear:"Clear"
     },
 
     // (camera)
@@ -1070,6 +1190,7 @@ export const translations = {
       enterOrderId:"Ebter order ID",
       toDriver:"To Driver",
       add:"Add",
+      scanOrEnterOrderId:"Scan a barcode or enter an order ID above"
     },
 
     // (change_password)
@@ -1153,9 +1274,186 @@ export const translations = {
       delivery_company: "Delivery Company",
       support_agent: "Support Agent",
       sales_representative: "Sales Representative"
+    },
+    
+     // Add options onboarding
+     assignOrdersTitle: "Assign Orders",
+     assignOrdersMessage: "Use this option to scan QR codes for orders and assign them to your vehicle. This helps you organize deliveries efficiently.",
+     routesTitle: "Manage Routes",
+     routesMessage: "Create and manage delivery routes to improve your delivery operations. Plan your route, track progress as you complete orders, and move efficiently between delivery locations.",
+    
+    // Home screen hints
+    homeHints: {
+      trackOrder: {
+        title: "Track Orders",
+        businessMessage: "Quickly track any order by entering its reference number. Get real-time status updates and delivery information.",
+        driverMessage: "Quickly look up any order by scanning or entering its reference number to verify delivery details.",
+        deliveryCompanyMessage: "Quickly track any order in your system by entering its reference number for real-time status information."
+      },
+      checkReceiver: {
+        title: "Check Receiver",
+        businessMessage: "Verify receiver information and see their order history before creating new shipments.",
+        driverMessage: "Verify receiver information and check their previous delivery history before attempting delivery.",
+        deliveryCompanyMessage: "Verify receiver information and view their order history to better manage your delivery operations."
+      },
+      orderSummary: {
+        title: "Order Summary",
+        businessMessage: "Get a quick overview of all your orders. Tap any card to see detailed information about orders in that status.",
+        driverMessage: "See a summary of orders assigned to you. Tap any card to view orders in that specific status.",
+        deliveryCompanyMessage: "Get a comprehensive overview of all orders in your system. Monitor performance across different status categories."
+      },
+      balance: {
+        title: "Financial Balance",
+        businessMessage: "Monitor your available balance in different currencies. Tap to see transaction history and manage your funds.",
+        driverMessage: "Check your current balance from collections. Tap to see detailed transaction history.",
+        deliveryCompanyMessage: "Track your company's financial balance across multiple currencies. Tap to view detailed transaction records."
+      },
+      collections: {
+        title: "Collections Management",
+        businessMessage: "Confirm money and package collections. Long-press on summary cards to request money or package collection services.",
+        driverMessage: "Manage money and package collections from customers and businesses.",
+        deliveryCompanyMessage: "Manage money collections and returned packages across your delivery network."
+      },
+      statusOverview: {
+        title: "Status Overview",
+        businessMessage: "Visual representation of your order statuses. The percentage shows the proportion of orders in each status.",
+        driverMessage: "Visual breakdown of your delivery statuses. Keep track of your progress throughout the day.",
+        deliveryCompanyMessage: "Visual analytics of order statuses across your delivery network. Monitor efficiency and identify bottlenecks."
+      },
+      skip: "Skip All",
+      next: "Next",
+      finish: "Got It"
     }
   },
   ar: {
+    // Common translations
+    common: {
+      loading: "جاري التحميل...",
+      retry: "إعادة المحاولة",
+      cancel: "إلغاء",
+      save: "حفظ",
+      delete: "حذف",
+      edit: "تعديل",
+      add: "إضافة",
+      search: "بحث",
+      noResults: "لا توجد نتائج",
+      error: "خطأ",
+      success: "نجاح",
+      ok: "موافق",
+      next: "التالي",
+      skip: "تخطي",
+      finish: "إنهاء",
+    },
+    
+    // Driver and delivery company onboarding
+    onboarding: {
+      assignOrdersTitle: "تعيين الطلبات",
+      assignOrdersMessage: "استخدم هذا الخيار لمسح رموز QR للطلبات وتعيينها إلى مسارك. يساعدك ذلك على تنظيم عمليات التوصيل بكفاءة وتتبع الطرود طوال عملية التوصيل.",
+      routesTitle: "إدارة المسارات",
+      routesMessage: "إنشاء وإدارة مسارات التوصيل لتحسين عمليات التوصيل الخاصة بك. خطط لرحلتك، وتتبع التقدم أثناء إكمال الطلبات، وتنقل بكفاءة بين مواقع التوصيل.",
+      
+      // Orders onboarding tutorial
+      orders: {
+        welcome: {
+          title: "مرحبًا بك في شاشة الطرود!",
+          description: "دعنا نوضح كيفية إدارة طرودك بكفاءة."
+        },
+        expand: {
+          title: "توسيع وطي",
+          description: "اضغط على زر السهم لتوسيع أو طي الطرد لرؤية المزيد أو أقل من التفاصيل."
+        },
+        track: {
+          title: "تتبع الطرود",
+          description: "اضغط على أي طلب لرؤية معلومات التتبع التفصيلية وتاريخه."
+        },
+        status: {
+          title: "تغيير الحالة",
+          description: "اضغط مطولاً على الطرد أو اضغط على شارة الحالة لتحديث حالة الطرد."
+        },
+        edit: {
+          title: "تعديل الطرود",
+          description: "اضغط مطولاً على الطرد للوصول إلى خيارات تعديل تفاصيل الطرد."
+        },
+        phone: {
+          title: "تعديل رقم الهاتف",
+          description: "اضغط مطولاً على الطرد للوصول إلى خيار تعديل أرقام هواتف المستلم."
+        },
+        complaint: {
+          title: "فتح شكوى",
+          description: "اضغط مطولاً على الطرد واختر 'تقديم شكوى' للإبلاغ عن مشكلات في طردك."
+        },
+        tapToExpand: "اضغط للتوسيع"
+      }
+    },
+    
+    // Add driver statistics translations
+    driverStats: {
+      title: "إحصائيات السائق",
+      count: "العدد",
+      deliveryFee: "رسوم التوصيل",
+      codValue: "قيمة الدفع عند الاستلام",
+      ordersChart: "توزيع الطلبات",
+      dateRange: "نطاق التاريخ",
+      selectPeriod: "اختر الفترة",
+      periods: {
+        day: "يوم",
+        week: "أسبوع",
+        month: "شهر",
+        half_year: "٦ أشهر",
+        year: "سنة"
+      },
+      statuses: {
+        delivered: "تم التسليم",
+        returned: "مرتجع",
+        on_the_way: "قيد التوصيل",
+        total: "المجموع"
+      }
+    },
+    
+    // Create order onboarding
+    createOnboarding: {
+      welcome: {
+        title: "مرحبًا بك في واجهة انشاء طردك!",
+        message: "دعنا نشرح لك سريعا على عملية إنشاء طرد جديد. استخدم أزرار التنقل."
+      },
+      orderTypes: {
+        title: "اختر نوع طردك",
+        message: "اختر نوع الطرد الذي تحتاجه:\n\n• توصيل: إرسال الطرود إلى زبائنك.\n• احضار: استلام طرد من الزبون وتسليمه لك. يرجى ملاحظة أن هذا النوع يتطلب وجود رصيد في حسابك لدينا، أو دفع قيمة الطرد في أحد فروعنا قبل تنفيذ الطلب.\n• توصيل / تبديل: توصيل طرد إلى الزبون مع استلام طرد آخر منه في نفس الوقت.\n• دفع: تسليم مبلغ مالي لزبونك. هذا النوع يتطلب وجود رصيد كافٍ في حسابك أو إيداع المبلغ في أحد فروعنا قبل تنفيذ العملية. "
+      },
+      reference: {
+        title: "الرقم المرجعي",
+        message: "قمنا باعتماد طريقة جديدة للتبع طردك بكل سهولة, حيث نقوم بتوفير اكواد QR جاهزة لك لتضعها على الطرد لتتمكن من التتبع بسهولة"
+      },
+      client: {
+        title: "معلومات الزبون",
+        message: "أدخل تفاصيل الاتصال بالمستلم بما في ذلك الاسم وأرقام الهاتف والمدينة والعنوان. عند كتابة رقم هاتف المستلم في حال وجود ذلك المستلم مسبقا في قاعدة البيانات لدينا فسيتم اظهاره لك لتتمكن من اختياره بسهولة"
+      },
+      cost: {
+        title: "تكلفة الطرد",
+        message: "يمكنك اختيار طريقة الدفع التي سيستخدمها زبونك عند توصيل أو استلام الطرد، سواء كانت نقدًا (كاش) أو شيكًا، أو كليهما معًا إذا كنت ترغب في ذلك. كما يمكنك إضافة أكثر من عملة إذا كنت تفضل استلام المدفوعات بعملة مختلفة أو بأكثر من عملة."
+      },
+      netValue: {
+        title: "حساب القيمة الصافية",
+        message: "سيتم عرض القيمة الصافية باللون الأخضر، وهي تمثل المبلغ المستحق لك بعد خصم رسوم التوصيل."
+      },
+      details: {
+        title: "تفاصيل الطرد",
+        message: "قم بكتابة تفاصيل الطرد لاحظ ان هذه الحقول اختيارية ويمكنك تركها فارغة"
+      },
+      notes: {
+        title: "ملاحظات إضافية",
+        message: "أضف أي تعليمات خاصة أو معلومات قد تساعد في التوصيل أو التعامل مع هذا الطلب."
+      },
+      ready: {
+        title: "جاهز للانطلاق!",
+        message: "أنت جاهز الآن! انقر على زر ارسال عندما تكمل جميع المعلومات المطلوبة لإنشاء طردك."
+      },
+      back: "السابق",
+      next: "التالي",
+      skip: "تخطي الشرح",
+      finish: "ابدأ الآن"
+    },
+    
     // (auth)
     auth: {
       login: "تسجيل الدخول",
@@ -1362,7 +1660,12 @@ export const translations = {
       retry:"حاول مرة أخرى",
       loading:"جارٍ التحميل...",
       loadingMore:"جارٍ التحميل...",
-      pending:"معلق"
+      pending:"معلق",
+      gotIt:"فهمت",
+      skip:"تخطي",
+      next:"التالي",
+      refresh:"تحديث",
+      finish:"إنهاء",
     },
 
     balance:{
@@ -1421,6 +1724,7 @@ export const translations = {
           stuck: "عالق",
           delayed: "متأخر",
           onTheWay: "في الطريق",
+          driverResponsibilityOrders: "بعهدة السائق",
           rescheduled: "مؤجل",
           returnBeforeDeliveredInitiated: "مرتجع قبل التوصيل",
           returnAfterDeliveredInitiated: "مرتجع بعد التوصيل",
@@ -1719,7 +2023,8 @@ export const translations = {
                 "deduction_amounts": "المبالغ المطلوب خصمها",
                 "balance_after": "الرصيد بعد",
                 "auto_deduction_notice": "ملاحظة خصم تلقائي",
-                "auto_deduction_message": "سيتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال."
+                "auto_deduction_message": "طرد احضار سوف يتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال.",
+                "auto_deduction_message_payment": "طرد دفع سوف يتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال."
               }
             },
             client: {
@@ -1896,12 +2201,14 @@ export const translations = {
           logout: "تسجيل الخروج",
           deleteAccount: "حذف الحساب",
           deleteAccountHint: "هل أنت متأكد من حذف الحساب؟",
+          driverStats: "إحصائيات السائق",
           switchAccount:"تبديل الحساب",
           otherAccounts:"حسابات أخرى",
           addNewAccount:"إضافة حساب جديد",
           currentAccount:"الحساب الحالي",
           active:"نشط",
           addNewAccount: "إضافة حساب جديد",
+          addAccount:"إضافة حساب",
           addAccount:"إضافة حساب",
           accountSwitched:"تم تبديل الحساب",
           accountSwitchedMessage:"تم تبديل الحساب بنجاح",
@@ -1911,7 +2218,8 @@ export const translations = {
           removeAccount:"حذف الحساب",
           removeAccountMessage:"هل أنت متأكد من حذف الحساب؟ يمكنك إضافته مرة أخرى لاحقًا.",
           cancel:"إلغاء",
-          remove:"حذف"
+          remove:"حذف",
+          driverStats: "إحصائيات السائق"
         }
       }
     },
@@ -2101,27 +2409,27 @@ export const translations = {
       selectDate: "اختر تاريخًا",
       status: {
         title: "الحالة",
-        all: "الكل",
-        open: "قيد المعالجة",
-        closed: "مغلق"
+        all:"الكل",
+        open:"مفتوح",
+        closed:"مغلق"
       },
       ok:"موافق",
-      order:"طرد",
-      subjectPlaceholder:"أدخل عنوان الشكوى",
-      describePlaceholder:"أدخل وصف مشكلتك",
-      "noComplaints": "لا توجد شكاوى",
-      "noComplaintsDesc": "لا توجد شكاوى تطابق الفلاتر الخاصة بك.",
+      order:"طلب",
+      subjectPlaceholder:"ادخل الموضوع",
+      describePlaceholder:"صف المشكلة",
+      "noComplaints": "لا يوجد شكاوى",
+      "noComplaintsDesc": "لا يوجد شكاوى تطابق الفلتر",
       "newComplaint": "شكوى جديدة",
-      "actions": "الإجراءات",
-      "markAsResolved": "تمييز كمحلولة",
+      "actions": "الاجراءات",
+      "markAsResolved": "تم حل الشكوى",
       "respond": "الرد على الشكوى",
       "viewDetails": "عرض التفاصيل",
       "loading": "جارٍ التحميل...",
-      "notFoundTitle": "غير موجود",
-      "goBack": "العودة",
-      "issue": "المشكلة",
-      "conversation": "المحادثة",
-      "noMessages": "لا توجد رسائل بعد",
+      "notFoundTitle": "لم يتم العثور عليه",
+      "goBack": "الرجوع",
+      "issue": "مشكلة",
+      "conversation": "محادثة",
+      "noMessages": "لا يوجد رسائل",
       "startConversation": "ابدأ المحادثة بإرسال رسالة",
       "you": "أنت",
       "supportAgent": "وكيل الدعم"
@@ -2202,7 +2510,8 @@ export const translations = {
     picker: {
       choose: "اختر",
       cancel: "إلغاء",
-      searchPlaceholder: "بحث"
+      searchPlaceholder: "بحث",
+      clear: "مسح"
     },
 
     // (camera)
@@ -2224,6 +2533,7 @@ export const translations = {
       enterOrderId:"ادخل الرقم التسلسلي للطرد",
       add:"اضافة",
       toDriver:"الى السائق",
+      scanOrEnterOrderId:"ادخل رقم الطرد او ضع الباركود داخل الإطار"
     },
 
     // (change_password)
@@ -2307,9 +2617,187 @@ export const translations = {
       delivery_company: "شركة توصيل",
       support_agent: "وكيل دعم",
       sales_representative: "مندوب مبيعات"
+    },
+
+    // Add options onboarding
+    assignOrdersTitle: "تعيين الطلبات",
+    assignOrdersMessage: "استخدم هذا الخيار لمسح رموز QR للطلبات وتعيينها إلى سيارتك. يساعدك هذا في تنظيم التسليمات بكفاءة.",
+    routesTitle: "إدارة المسارات",
+    routesMessage: "إنشاء وإدارة مسارات التوصيل لتحسين عمليات التوصيل. قم بتخطيط رحلتك وتتبع التقدم كلما أنجزت طلبات.",
+
+    
+    
+    // Home screen hints
+    homeHints: {
+      trackOrder: {
+        title: "تتبع طرودك",
+        businessMessage: "تتبع أي طرد بسرعة عن طريق إدخال الرقم التسلسلي او المرجعي. احصل على تحديثات الحالة ومعلومات التوصيل في الوقت الفعلي.",
+        driverMessage: "ابحث عن أي طلب بسرعة عن طريق المسح أو إدخال رقم المرجع للتحقق من تفاصيل التوصيل.",
+        deliveryCompanyMessage: "تتبع أي طلب في نظامك بسرعة عن طريق إدخال رقم المرجع للحصول على معلومات الحالة في الوقت الفعلي."
+      },
+      checkReceiver: {
+        title: "التحقق من المستلم",
+        businessMessage: "تحقق من معلومات المستلم واطلع على سجل طلباته قبل ارسال طردك اليه.",
+        driverMessage: "تحقق من معلومات المستلم وتاريخ التوصيل السابق قبل محاولة التوصيل.",
+        deliveryCompanyMessage: "تحقق من معلومات المستلم وعرض سجل طلباته لإدارة عمليات التوصيل بشكل أفضل."
+      },
+      orderSummary: {
+        title: "ملخص الطرود",
+        businessMessage: "احصل على نظرة سريعة لجميع طرودك. انقر على أي بطاقة لمشاهدة معلومات مفصلة حول الطرود في تلك الحالة. اضغط كبسة مطولة لطلب تحصيل اموالك او طرودك المستلمة / المرتجعة.",
+        driverMessage: "شاهد ملخصًا للطلبات المخصصة لك. انقر على أي بطاقة لعرض الطلبات في حالة معينة.",
+        deliveryCompanyMessage: "احصل على نظرة شاملة لجميع الطلبات في نظامك. مراقبة الأداء عبر فئات الحالة المختلفة."
+      },
+      balance: {
+        title: "الرصيد المالي",
+        businessMessage: "مراقبة رصيدك المتاح بعملات مختلفة. انقر لمشاهدة سجلك المالي .",
+        driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
+        driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
+      },
+      collections: {
+        title: "نأكيد الاستلام",
+        businessMessage: "من هنا، يمكنك تأكيد أنك استلمت المبالغ المالية أو الطرود المستلمة / المرتجعة التي تم تسليمها إليك من قبل السائق او موظف الفرع، وذلك لضمان توثيق العملية وتحديث حالة الطلب في النظام.",
+        driverMessage: "إدارة تحصيلات الأموال والطرود من العملاء والشركات.",
+        deliveryCompanyMessage: "إدارة تحصيلات الأموال والطرود المرتجعة عبر شبكة التوصيل الخاصة بك."
+      },
+      statusOverview: {
+        title: "نظرة عامة على الحالة",
+        businessMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
+        driverMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
+        deliveryCompanyMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم."
+      },
+      skip: "تخطي الكل",
+      next: "التالي",
+      finish: "فهمت"
     }
   },
   he: {
+    // Driver and delivery company onboarding
+    onboarding: {
+      assignOrdersTitle: "הקצאת הזמנות",
+      assignOrdersMessage: "השתמש באפשרות זו לסריקת קודי QR של הזמנות והקצאתם למסלול שלך. זה עוזר לך לארגן משלוחים ביעילות ולעקוב אחר חבילות לאורך תהליך המשלוח.",
+      routesTitle: "ניהול מסלולים",
+      routesMessage: "צור ונהל מסלולי משלוח לייעול המשלוחים שלך. תכנן את המסע שלך, עקוב אחר התקדמות בהשלמת הזמנות, ונווט ביעילות בין מיקומי המשלוח.",
+    },
+    
+    // Add driver statistics translations
+    driverStats: {
+      title: "סטטיסטיקות נהג",
+      count: "כמות",
+      deliveryFee: "דמי משלוח",
+      codValue: "ערך תשלום במסירה",
+      ordersChart: "התפלגות הזמנות",
+      dateRange: "טווח תאריכים",
+      selectPeriod: "בחר תקופה",
+      periods: {
+        day: "יום",
+        week: "שבוע",
+        month: "חודש",
+        half_year: "חצי שנה",
+        year: "שנה"
+      },
+      statuses: {
+        delivered: "נמסר",
+        returned: "הוחזר",
+        on_the_way: "בדרך",
+        total: "סה״כ"
+      }
+    },
+    
+    // Create order onboarding
+    createOnboarding: {
+      welcome: {
+        title: "ברוך הבא ליצירת הזמנות!",
+        message: "בואו נעבור על תהליך יצירת הזמנה חדשה. החלק שמאלה להמשיך או השתמש בכפתורי הניווט."
+      },
+      orderTypes: {
+        title: "סוגי הזמנות",
+        message: "בחר את סוג ההזמנה שאתה צריך:\n\n• משלוח: שליחת חבילות ללקוחות\n• איסוף: קבלת פריטים מספקים\n• משלוח/החלפה: החלפת פריטים\n• תשלום: עסקאות כספיות בלבד"
+      },
+      reference: {
+        title: "מספר סימוכין",
+        message: "הוסף מזהה סימוכין ייחודי כדי לעקוב אחר הזמנה זו בקלות במערכת שלך. אתה יכול לסרוק ברקוד או להזין אותו ידנית."
+      },
+      client: {
+        title: "פרטי לקוח",
+        message: "הזן את פרטי הקשר של המקבל כולל שם, מספרי טלפון, עיר וכתובת. אתה יכול לחפש לקוחות קיימים או להוסיף חדשים."
+      },
+      cost: {
+        title: "פרטי עלות",
+        message: "הגדר שיטת תשלום (מזומן, צ'ק או שניהם), סכום תשלום במסירה ועמלות משלוח. אתה יכול להוסיף מטבעות נוספים במידת הצורך. הפעל \"חיוב מהיתרה\" לחשבונות עסקיים."
+      },
+      netValue: {
+        title: "חישוב ערך נטו",
+        message: "המערכת מחשבת אוטומטית את הערך הנטו על בסיס סכומי תשלום במסירה ועמלות משלוח. מטבעות שונים מוצגים בנפרד."
+      },
+      details: {
+        title: "פרטי חבילה",
+        message: "תאר מה נשלח, כמות, משקל וסוג חבילה. עבור הזמנות איסוף, פרט אילו פריטים אתה מצפה לקבל."
+      },
+      notes: {
+        title: "הערות נוספות",
+        message: "הוסף הוראות מיוחדות או מידע שעשוי לעזור במשלוח או בטיפול בהזמנה זו."
+      },
+      ready: {
+        title: "מוכן לדרך!",
+        message: "הכל מוכן! לחץ על כפתור השליחה כאשר מילאת את כל המידע הנדרש ליצירת ההזמנה שלך."
+      },
+      back: "חזרה",
+      next: "הבא",
+      skip: "דלג על המדריך",
+      finish: "התחל"
+    },
+
+     // Add options onboarding
+     assignOrdersTitle: "تعيين الطلبات",
+     assignOrdersMessage: "استخدم هذا الخيار لمسح رموز QR للطلبات وتعيينها إلى سيارتك. يساعدك هذا في تنظيم التسليمات بكفاءة.",
+     routesTitle: "إدارة المسارات",
+     routesMessage: "إنشاء وإدارة مسارات التوصيل لتحسين عمليات التوصيل. قم بتخطيط رحلتك وتتبع التقدم كلما أنجزت طلبات.",
+ 
+     
+     
+     // Home screen hints
+     homeHints: {
+       trackOrder: {
+         title: "تتبع طرودك",
+         businessMessage: "تتبع أي طرد بسرعة عن طريق إدخال الرقم التسلسلي او المرجعي. احصل على تحديثات الحالة ومعلومات التوصيل في الوقت الفعلي.",
+         driverMessage: "ابحث عن أي طلب بسرعة عن طريق المسح أو إدخال رقم المرجع للتحقق من تفاصيل التوصيل.",
+         deliveryCompanyMessage: "تتبع أي طلب في نظامك بسرعة عن طريق إدخال رقم المرجع للحصول على معلومات الحالة في الوقت الفعلي."
+       },
+       checkReceiver: {
+         title: "التحقق من المستلم",
+         businessMessage: "تحقق من معلومات المستلم واطلع على سجل طلباته قبل ارسال طردك اليه.",
+         driverMessage: "تحقق من معلومات المستلم وتاريخ التوصيل السابق قبل محاولة التوصيل.",
+         deliveryCompanyMessage: "تحقق من معلومات المستلم وعرض سجل طلباته لإدارة عمليات التوصيل بشكل أفضل."
+       },
+       orderSummary: {
+         title: "ملخص الطرود",
+         businessMessage: "احصل على نظرة سريعة لجميع طرودك. انقر على أي بطاقة لمشاهدة معلومات مفصلة حول الطرود في تلك الحالة. اضغط كبسة مطولة لطلب تحصيل اموالك او طرودك المستلمة / المرتجعة.",
+         driverMessage: "شاهد ملخصًا للطلبات المخصصة لك. انقر على أي بطاقة لعرض الطلبات في حالة معينة.",
+         deliveryCompanyMessage: "احصل على نظرة شاملة لجميع الطلبات في نظامك. مراقبة الأداء عبر فئات الحالة المختلفة."
+       },
+       balance: {
+         title: "الرصيد المالي",
+         businessMessage: "مراقبة رصيدك المتاح بعملات مختلفة. انقر لمشاهدة سجلك المالي .",
+         driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
+         driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
+       },
+       collections: {
+         title: "نأكيد الاستلام",
+         businessMessage: "من هنا، يمكنك تأكيد أنك استلمت المبالغ المالية أو الطرود المستلمة / المرتجعة التي تم تسليمها إليك من قبل السائق او موظف الفرع، وذلك لضمان توثيق العملية وتحديث حالة الطلب في النظام.",
+         driverMessage: "إدارة تحصيلات الأموال والطرود من العملاء والشركات.",
+         deliveryCompanyMessage: "إدارة تحصيلات الأموال والطرود المرتجعة عبر شبكة التوصيل الخاصة بك."
+       },
+       statusOverview: {
+         title: "نظرة عامة على الحالة",
+         businessMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
+         driverMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
+         deliveryCompanyMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم."
+       },
+       skip: "تخطي الكل",
+       next: "التالي",
+       finish: "فهمت"
+     },
+    
     // (auth)
     auth: {
       login: "התחברות",
@@ -2516,7 +3004,12 @@ export const translations = {
       retry:"נסה שוב",
       loading:"טוען...",
       loadingMore:"טוען עוד...",
-      pending:"ממתין"
+      pending:"ממתין",
+      gotIt:"סיום",
+      skip:"דלג",
+      next:"הבא",
+      refresh:"הפעל מחדש",
+      finish:"סיום",
     },
 
     balance:{
@@ -2575,6 +3068,7 @@ export const translations = {
           stuck: "תקוע",
           delayed: "איחור",
           onTheWay: "בדרך",
+          driverResponsibilityOrders: "בעבודת נהג",
           rescheduled: "נדחה",
           returnBeforeDeliveredInitiated: "החזרה לפני מסירה החלה",
           returnAfterDeliveredInitiated: "החזרה לאחר מסירה החלה",
@@ -2818,87 +3312,88 @@ export const translations = {
                 "my_balance_deduct": "חיוב מהיתרה שלי",
                 "sender_deduct": "חיוב מהיתרת השולח",
                 "processing_return": "בתהליך החזרה",
-                "please_wait": "אנא המתן...",
-                "return_success": "החזרה בוצעה בהצלחה",
-                "balance_returned": "היתרה הוחזרה בהצלחה",
-                "return_error": "שגיאה בהחזרה",
-                "return_failed": "החזרת היתרה נכשלה",
-                "deduction_error": "שגיאה בחיוב",
-                "deduction_failed": "עיבוד החיוב נכשל",
-                "updating_deductions": "מעדכן חיובים",
-                "update_deduction_failed": "עדכון חיובים נכשל",
-                "deduction_success": "חיוב בוצע בהצלחה",
-                "deduction_processed": "חיוב בוצע בהצלחה",
-                "processing_deduction": "מעבד חיוב",
-                "select_deduction_method": "בחר שיטת חיוב",
-                "choose_deduction_method": "בחר כיצד לחייב את היתרה",
-                "manual_deduction": "חיוב ידני",
-                "auto_deduction": "חיוב אוטומטי",
-                "checking_balance": "בודק יתרה",
-                "select_deduction_currency": "בחר מטבע חיוב",
-                "choose_currency": "בחר מטבע",
-                "available": "זמין",
-                "needed": "נדרש",
-                "deduct_amount": "סכום לחיוב",
-                "current_balance": "יתרה נוכחית",
-                "new_balance": "יתרה חדשה",
-                "deduction_ready": "חיוב מוכן",
-                "deduction_on_submit": "החיוב יבוצע בעת השליחה",
-                "insufficient_balance_for": "היתרה לא מספיקה עבור",
-                "confirm_auto_deductions": "אשר חיובים אוטומטיים",
-                "system_will_deduct": "המערכת תחייב",
-                "from_available_balances": "מהיתרות הזמינות",
-                "deductions_ready": "חיובים מוכנים",
-                "deductions_on_submit": "חיובים יבוצעו בעת השליחה",
-                "sender_required": "נדרש שולח",
-                "cod_required": "נדרש ערך משלוח",
-                "no_cod_values": "לא נמצאו ערכי תשלום במסירה",
-                "cancel": "ביטול",
-                "confirm": "אשר",
-                "confirm_deduction": "אשר חיוב",
-                "confirm_return": "אשר החזרה",
-                "confirm_balance_return": "אשר החזרת יתרה",
-                "return_balance_confirmation": "האם ברצונך להחזיר את הסכומים שחויבו קודם ליתרת השולח?",
-                "yes": "כן",
-                "no": "לא",
-                "ok": "אישור",
-                "currency_mismatch": "שגיאת התאמת מטבע",
-                "exceed_balance": "חרג מהיתרה",
-                "exceed_balance_desc": "אפשר חריגה מהיתרה",
-                "balance_confirmation": "אישור יתרה",
-                "balance_change_confirmation": "פעולה זו תשפיע על יתרת השולח. האם ברצונך להמשיך?",
-                "return_balance": "החזר יתרה",
-                "deduction_amounts": "סכומים לחיוב",
-                "balance_after": "יתרה לאחר",
-                "auto_deduction_notice": "הערת חיוב אוטומטי",
-                "auto_deduction_message": "החיוב יתבצע אוטומטית מהיתרה שלך בעת האישור, אם אין לך יתרה מספקת אנא פנה לסניף הקרוב כדי לשלם עבור פעולה זו אצל פקיד הקבלה."
+                "please_wait": "يرجى الانتظار...",
+                "return_success": "تم الإرجاع بنجاح",
+                "balance_returned": "تم إعادة الرصيد بنجاح",
+                "return_error": "خطأ في الإرجاع",
+                "return_failed": "فشل في إرجاع الرصيد",
+                "deduction_error": "خطأ في الخصم",
+                "deduction_failed": "فشل في معالجة الخصم",
+                "updating_deductions": "جاري تحديث الخصومات",
+                "update_deduction_failed": "فشل في تحديث الخصومات",
+                "deduction_success": "تم الخصم بنجاح",
+                "deduction_processed": "تم تنفيذ الخصم بنجاح",
+                "processing_deduction": "جاري معالجة الخصم",
+                "select_deduction_method": "اختر طريقة الخصم",
+                "choose_deduction_method": "اختر كيفية خصم الرصيد",
+                "manual_deduction": "خصم يدوي",
+                "auto_deduction": "خصم تلقائي",
+                "checking_balance": "جاري التحقق من الرصيد",
+                "select_deduction_currency": "اختر عملة الخصم",
+                "choose_currency": "اختر العملة",
+                "available": "متوفر",
+                "needed": "مطلوب",
+                "deduct_amount": "المبلغ المراد خصمه",
+                "current_balance": "الرصيد الحالي",
+                "new_balance": "الرصيد الجديد",
+                "deduction_ready": "الخصم جاهز",
+                "deduction_on_submit": "سيتم تطبيق الخصم عند الإرسال",
+                "insufficient_balance_for": "الرصيد غير كافٍ لـ",
+                "confirm_auto_deductions": "تأكيد الخصومات التلقائية",
+                "system_will_deduct": "سيقوم النظام بخصم",
+                "from_available_balances": "من الأرصدة المتوفرة",
+                "deductions_ready": "الخصومات جاهزة",
+                "deductions_on_submit": "سيتم تطبيق الخصومات عند الإرسال",
+                "sender_required": "مطلوب إدخال المرسل",
+                "cod_required": "مطلوب ادخال سعر الطرد",
+                "no_cod_values": "لم يتم العثور على قيم الدفع عند الاستلام",
+                "cancel": "إلغاء",
+                "confirm": "تأكيد",
+                "confirm_deduction": "تأكيد الخصم",
+                "confirm_return": "تأكيد الإرجاع",
+                "confirm_balance_return": "تأكيد إعادة الرصيد",
+                "return_balance_confirmation": "هل تريد إعادة المبالغ المخصومة سابقًا إلى رصيد المرسل؟",
+                "yes": "نعم",
+                "no": "لا",
+                "ok": "موافق",
+                "currency_mismatch": "خطأ في تطابق العملة",
+                "exceed_balance": "تجاوز حد الرصيد",
+                "exceed_balance_desc": "السماح بتجاوز حد الرصيد",
+                "balance_confirmation": "تأكيد الرصيد",
+                "balance_change_confirmation": "سيؤثر هذا الإجراء على رصيد المرسل. هل ترغب في المتابعة؟",
+                "return_balance": "إعادة الرصيد",
+                "deduction_amounts": "المبالغ المطلوب خصمها",
+                "balance_after": "الرصيد بعد",
+                "auto_deduction_notice": "ملاحظة خصم تلقائي",
+                "auto_deduction_message": "طرد احضار سوف يتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال.",
+                "auto_deduction_message_payment": "طرد دفع سوف يتم الخصم تلقائيا من رصيدك عند التأكيد, في حال لم يكن لديك رصيد كافي الرجاء التوجه الى أفرب فرع لدفع قيمة هذه العملية لدى موظف الاستقبال."
               }
             },
             client: {
-              title: "לקוח",
+              title: "الزبون",
               fields: {
                 found:"נמצא אוטומטית",
-                name:"שם",
-                client: "לקוח",
-                firstPhone: "מספר טלפון",
-                secondPhone: "מספר טלפון שני",
-                city: "עיר",
-                area: "אזור",
-                address: "כתובת",
-                searchReceiver:"חפש לקוח",
-                enterPhone:"הזן מספר טלפון",
-                noReceivers:"אין לקוחות",
+                name:"الاسم",
+                client: "الزبون",
+                firstPhone: "رقم الهاتف",
+                secondPhone: "رقم الهاتف الثاني",
+                city: "المدينة",
+                area: "المنطقة",
+                address: "العنوان",
+                searchReceiver:"ابحث عن الزبون",
+                enterPhone:"ادخل رقم الهاتف",
+                noReceivers:"لا يوجد زبائن",
                 found:"נמצא",
-                receivers:"לקוחות",
-                search_error:"יש להזין מספר טלפון תקין",
-                no_results:"אין לקוחות",
-                enter_more:"הזן לפחות 3 ספרות לחיפוש",
-                add_new:"הוסף לקוח חדש",
-                enter_valid_phone:"הזן מספר טלפון תקין",
-                add_new_receiver:"הוסף לקוח חדש",
-                unnamed:"לא ידוע",
-                search_receiver:"הזן טלפון לקוח",
-                search_placeholder:"הזן מספר טלפון"
+                receivers:"زبائن",
+                search_error:"يجب ادخال رقم هاتف صالح",
+                no_results:"لا يوجد زبائن",
+                enter_more:"ادخل 3 ارقام على الأقل للبحث",
+                add_new:"اضافة زبون جديد",
+                enter_valid_phone:"ادخل رقم هاتف صالح",
+                add_new_receiver:"اضافة زبون جديد",
+                unnamed:"غير معروف",
+                search_receiver:"أدخل هاتف الزبون",
+                search_placeholder:"ادخل رقم الهاتف"
               }
             },
             cost: {
@@ -3048,6 +3543,7 @@ export const translations = {
           logout: "התנתק",
           deleteAccount: "מחק חשבון",
           deleteAccountHint: "האם אתה בטוח שברצונך למחוק את החשבון?",
+          driverStats: "סטטיסטיקות נהג",
           switchAccount:"החלף חשבון",
           otherAccounts:"חשבונות נוספים",
           addNewAccount:"הוסף חשבון חדש",
@@ -3055,6 +3551,7 @@ export const translations = {
           active:"פעיל",
           addNewAccount: "הוסף חשבון חדש",
           addAccount:"הוסף חשבון",
+          addAccount:"إضافة حساب",
           accountSwitched:"החשבון הוחלף",
           accountSwitchedMessage:"החלפת החשבון בוצעה בהצלחה",
           accountAlreadyExists:"החשבון כבר קיים",
@@ -3063,7 +3560,8 @@ export const translations = {
           removeAccount:"מחק חשבון",
           removeAccountMessage:"האם אתה בטוח שברצונך למחוק חשבון זה? תוכל להוסיף אותו שוב מאוחר יותר.",
           cancel:"ביטול",
-          remove:"מחק"
+          remove:"מחק",
+          driverStats: "إحصائيات السائق"
         }
       }
     },
@@ -3354,7 +3852,8 @@ export const translations = {
     picker: {
       choose: "בחר",
       cancel: "ביטול",
-      searchPlaceholder: "חיפוש"
+      searchPlaceholder: "חיפוש",
+      clear: "מחק"
     },
 
     // (camera)
@@ -3376,13 +3875,14 @@ export const translations = {
       enterOrderId:"הזן מספר סידורי של משלוח",
       add:"הוסף",
       toDriver:"לנהג",
+      scanOrEnterOrderId:"סרוק ברקוד או הזן מספר סידורי של משלוח"
     },
 
     // (change_password)
     chnagePassword: {
       title: "שנה סיסמה",
       currentPass: "סיסמה נוכחית",
-      currentPassHint: "הזן את הסיסמה הנוכחית המשמשת להתחברות",
+      currentPassHint: "הזן את הסיסמה الحالية المستخدمة لتسجيل الدخول",
       newPass: "סיסמה חדשה",
       changePass: "שנה סיסמה"
     },

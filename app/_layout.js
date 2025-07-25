@@ -1,13 +1,20 @@
-// App.js
+// app/_layout.js
 import React from 'react';
+import { Stack } from 'expo-router';
 import { LanguageProvider } from '@/utils/languageContext';
+import { ThemeProvider } from '@/utils/themeContext';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import RootLayout from '../RootLayout';
 
-
-export default function App() {
+// This layout wraps all routes
+export default function Layout() {
   return (
-    <LanguageProvider>
-      <RootLayout />
-    </LanguageProvider>
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <ThemeProvider>
+          <RootLayout />
+        </ThemeProvider>
+      </LanguageProvider>
+    </SafeAreaProvider>
   );
 }

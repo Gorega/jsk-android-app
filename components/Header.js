@@ -12,6 +12,7 @@ import { RTLWrapper } from '@/utils/RTLWrapper';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function Header({ showGreeting = true, title }) {
     const socket = useSocket();
@@ -25,6 +26,7 @@ export default function Header({ showGreeting = true, title }) {
     const isRTL = language === 'ar' || language === 'he';
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
+    const insets = useSafeAreaInsets();
 
 
     useEffect(() => {
@@ -178,15 +180,18 @@ export default function Header({ showGreeting = true, title }) {
     return (
         <RTLWrapper>
             <StatusBar style={colors.statusBarStyle} />
-            <Animated.View style={{ opacity: headerAnimation, transform: [{ translateY: headerAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [-20, 0]
-            }) }] }}>
+            <Animated.View style={{ 
+                opacity: headerAnimation, 
+                transform: [{ translateY: headerAnimation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0]
+                }) }] 
+            }}>
                 <LinearGradient
                     colors={[colors.background, isDark ? colors.card : '#f8f9fa']}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
-                    style={styles.container}
+                    style={[styles.container, { paddingTop: insets.top }]}
                 >
                     <SafeAreaView style={styles.safeArea}>
                         {/* Main Header Row */}
@@ -230,7 +235,7 @@ export default function Header({ showGreeting = true, title }) {
                                     <Text style={[styles.greeting, { color: colors.text }]}>
                                     {greetingMsg}
                                     </Text>
-                                    <Text style={[styles.subGreeting, { color: colors.textSecondary }]}>
+                                    <Text style={[styles.subGreeting, { color: colors.textSecondary, textAlign: isRTL ? "left" : "left" }]}>
                                         {user.name}
                                     </Text>
                                 </View>
@@ -287,11 +292,8 @@ export default function Header({ showGreeting = true, title }) {
 const styles = StyleSheet.create({
     container: {
         ...Platform.select({
-            ios: {
-                paddingTop: 50,
-            },
             android: {
-                paddingTop: 25,
+                paddingTop: 0, // Will be handled by insets
             },
         }),
         ...Platform.select({

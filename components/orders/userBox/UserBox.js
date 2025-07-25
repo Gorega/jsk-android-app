@@ -62,6 +62,7 @@ export default function BusinessBox({ box, orderId }) {
                             color: colors.textSecondary
                         }]}>{box.label}</Text>
                         <Text style={[styles.valueText,{
+                            textAlign: isRTL ? "left" : "left",
                             color: colors.text
                         }]}>{box.userName}</Text>
                     </View>

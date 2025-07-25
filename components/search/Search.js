@@ -67,9 +67,15 @@ export default function Search({
     }, [activeFilter]);
     
     const clearAll = () => {
-      setActiveSearchBy("");
-      setSearchValue("");
-      setActiveDate("");
+      if (onClearFilters) {
+        // Use the provided clear all filters function if available
+        onClearFilters();
+      } else {
+        // Default behavior if no custom handler provided
+        setActiveSearchBy("");
+        setSearchValue("");
+        setActiveDate("");
+      }
       Keyboard.dismiss();
     };
 

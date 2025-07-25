@@ -961,10 +961,11 @@ const TrackingOrder = () => {
                         }),
                       }]}>
                         {item.new_status} {item?.status_reason ? ` | ${item?.status_reason}` : ''}
+                        {item.note_content ? ` | ${item.note_content}` : ''}
                       </Text>
                       
                       <View style={[styles.timelineDetailsContainer]}>
-                        <Feather name="map-pin" size={14} color="#6366F1" style={styles.timelineDetailIcon} />
+                        <Feather name="map-pin" size={14} color="#6366F1" />
                         <Text style={[styles.timelineDetails, { color: colors.textSecondary }]}>
                           {item.branch}
                         </Text>
