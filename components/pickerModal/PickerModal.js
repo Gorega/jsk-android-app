@@ -42,13 +42,13 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
     // Function to clear the selection
     const handleClearSelection = () => {
         if (typeof setSelectedValue === 'function') {
-            // If the function has 2 or more parameters, pass name and null separately
-            if (setSelectedValue.length >= 2) {
-                setSelectedValue(name, null);
-            } else {
-                // Otherwise use the old behavior
-                setSelectedValue((selectedValue) => ({...selectedValue, [name]: null}));
-            }
+            // Use the same consistent approach as item selection
+            setSelectedValue((prevValue) => {
+                // Create a new object with the cleared value
+                const newValue = {...prevValue};
+                newValue[name] = null;
+                return newValue;
+            });
         }
         setSearchValue('');
         setShowModal(false);
@@ -148,15 +148,14 @@ export default function PickerModal({list, showPickerModal, setShowModal, setSel
                                             { borderBottomColor: colors.border }
                                         ]}
                                         onPress={() => {
-                                            // Check if setSelectedValue expects two parameters (field name and value)
+                                            // Always use the object spread approach for consistency
                                             if (typeof setSelectedValue === 'function') {
-                                                // If the function has 2 or more parameters, pass name and item separately
-                                                if (setSelectedValue.length >= 2) {
-                                                    setSelectedValue(name, item);
-                                                } else {
-                                                    // Otherwise use the old behavior
-                                                    setSelectedValue((selectedValue) => ({...selectedValue, [name]: item}));
-                                                }
+                                                setSelectedValue((prevValue) => {
+                                                    // Create a new object with the updated value
+                                                    const newValue = {...prevValue};
+                                                    newValue[name] = item;
+                                                    return newValue;
+                                                });
                                             }
                                             
                                             // Clear any error for this field

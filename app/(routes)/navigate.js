@@ -8,8 +8,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import FixedHeader from "../../components/FixedHeader";
 import { router, useLocalSearchParams, Stack } from 'expo-router';
-// import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-// import * as Location from 'expo-location';
 import { Linking } from 'react-native';
 import ModalPresentation from "../../components/ModalPresentation";
 import { useTheme } from '../../utils/themeContext';
@@ -232,43 +230,9 @@ export default function RouteNavigate() {
             return;
         }
         
-        // // Get location permission and start tracking
-        // (async () => {
-        //     let { status } = await Location.requestForegroundPermissionsAsync();
-        //     if (status !== 'granted') {
-        //         Alert.alert(
-        //             translations[language].routes?.locationPermission || "Location Permission",
-        //             translations[language].routes?.locationNeeded || "Location permission is needed for navigation."
-        //         );
-        //         return;
-        //     }
-            
-        //     let currentLocation = await Location.getCurrentPositionAsync({});
-        //     setLocation(currentLocation);
-            
-        //     // Subscribe to location updates
-        //     const subscription = await Location.watchPositionAsync(
-        //         {
-        //             accuracy: Location.Accuracy.High,
-        //             distanceInterval: 10, // Update every 10 meters
-        //         },
-        //         (newLocation) => {
-        //             setLocation(newLocation);
-        //         }
-        //     );
-            
-        //     setLocationSubscription(subscription);
-        // })();
-        
         // Fetch route data
         fetchRouteDetails();
         
-        // // Cleanup location subscription
-        // return () => {
-        //     if (locationSubscription) {
-        //         locationSubscription.remove();
-        //     }
-        // };
     }, [isAllowed, routeId, language]);
     
     // Generate WhatsApp message template with dynamic order data

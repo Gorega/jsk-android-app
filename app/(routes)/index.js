@@ -9,7 +9,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-// import * as Location from 'expo-location';
 import { useSocket } from '../../utils/socketContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
@@ -29,7 +28,6 @@ export default function Routes() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedRoute, setSelectedRoute] = useState(null);
     const [routeName, setRouteName] = useState('');
-    const [location, setLocation] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     // Check if user has appropriate role
@@ -66,16 +64,6 @@ export default function Routes() {
             return;
         }
         
-        // // Get location permission
-        // (async () => {
-        //     let { status } = await Location.requestForegroundPermissionsAsync();
-        //     if (status !== 'granted') {
-        //         return;
-        //     }
-            
-        //     let currentLocation = await Location.getCurrentPositionAsync({});
-        //     setLocation(currentLocation);
-        // })();
         
         // Load routes
         fetchRoutes();

@@ -839,6 +839,13 @@ export default function CameraScanner() {
                   <TextInput
                     style={[
                       styles.manualInput, 
+                      {
+                        ...Platform.select({
+                          ios: {
+                            textAlign:isRTL ? "right" : ""
+                          }
+                        }),
+                      },
                       { 
                         color: colors.text,
                         fontSize: 16,
@@ -936,15 +943,33 @@ export default function CameraScanner() {
                           }),
                         }
                       ]}>
-                        <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' }]}>
+                        <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' },{
+                      ...Platform.select({
+                        ios: {
+                          textAlign:isRTL ? "left" : ""
+                        }
+                      }),
+                    }]}>
                           {typeof item === 'object' ? item.order_id : item}
                         </Text>
                         {typeof item === 'object' && (
                           <>
-                            <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 }]}>
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 },{
+                              ...Platform.select({
+                                ios: {
+                                  textAlign:isRTL ? "left" : ""
+                                }
+                              }),
+                            }]}>
                               {item.receiver_name}
                             </Text>
-                            <Text style={[styles.itemDetailText, { color: colors.textSecondary }]}>
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary },{
+                                ...Platform.select({
+                                  ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                  }
+                                }),
+                              }]}>
                               {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
                             </Text>
                           </>

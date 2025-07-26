@@ -238,8 +238,8 @@ export default function TabLayout() {
       shadowColor: "transparent",
       flexDirection: 'row',
       borderTopColor: colors.tabBarBorder,
-      height: 60 + (Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0),
-      paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0,
+      height: 60 + (Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 0),
+      paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 0) : 0,
     }
   });
   
@@ -276,7 +276,7 @@ export default function TabLayout() {
   
   return (
     <RTLWrapper>
-      <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+      <SafeAreaView style={{ flex: 1 }} edges={[]}>
       <Tabs
         screenOptions={{
           tabBarStyle: tabBarStyles.tabBar,

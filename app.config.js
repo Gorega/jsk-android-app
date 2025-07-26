@@ -11,8 +11,18 @@ try {
   console.log(`No ${envPath} file found, using default environment variables`);
 }
 
+// Load environment variables from env.js if available
+let envVars = {};
+try {
+  envVars = require('./env.js');
+} catch (e) {
+  console.log('No env.js file found, using environment variables');
+}
+
 // Default API URL if not defined in environment
-const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.taiar.org';
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || envVars.EXPO_PUBLIC_API_URL || 'https://api.taiar.org';
+const googleMapsIosApiKey = process.env.GOOGLE_MAPS_IOS_API_KEY || envVars.GOOGLE_MAPS_IOS_API_KEY || '';
+const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVars.GOOGLE_MAPS_ANDROID_API_KEY || '';
 
 export default {
   name: 'Taiar',
@@ -39,7 +49,8 @@ export default {
     bundleIdentifier: 'com.expresstaiar.taiar',
     // Enable edge-to-edge display
     config: {
-      usesNonExemptEncryption: false
+      usesNonExemptEncryption: false,
+      googleMapsApiKey: googleMapsIosApiKey
     }
   },
   android: {
@@ -52,7 +63,12 @@ export default {
     softwareKeyboardLayoutMode: 'pan',
     // Enable system UI adjustments
     windowSoftInputMode: 'adjustResize',
-    googleServicesFile: './google-services.json'
+    googleServicesFile: './google-services.json',
+    config: {
+      googleMaps: {
+        apiKey: googleMapsAndroidApiKey
+      }
+    }
   },
   web: {
     favicon: './assets/images/tayar_logo.png'
@@ -66,6 +82,10 @@ export default {
           compileSdkVersion: 35,
           targetSdkVersion: 35,
           buildToolsVersion: '35.0.0'
+        },
+        ios: {
+          useFrameworks: 'static',
+          deploymentTarget: '15.1'
         }
       }
     ],
@@ -74,12 +94,20 @@ export default {
       {
         icon: './assets/images/tayar_logo.png',
         color: '#ffffff',
-        sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3']
+        sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3'],
+        enableBackgroundRemoteNotifications: true,
+        androidMode: 'default',
+        androidCollapsedTitle: 'Taiar',
+        androidBadgeIconType: 'large',
+        androidImportance: 'max',
+        iosDisplayInForeground: true
       }
     ]
   ],
   extra: {
     apiUrl,
+    googleMapsIosApiKey,
+    googleMapsAndroidApiKey,
     eas: {
       projectId: 'c1d54568-437f-4a8c-a692-8b8ac589ffb0'
     }

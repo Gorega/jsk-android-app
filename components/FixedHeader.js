@@ -14,7 +14,7 @@ export default function FixedHeader({children, title, showBackButton=true}){
 
     return (
         <View style={{
-            height: Platform.OS === 'ios' ? 100 + insets.top : 100,
+            height: Platform.OS === 'ios' ? 60 + insets.top : 100,
             backgroundColor: colors.card,
             ...Platform.select({
                 ios: {

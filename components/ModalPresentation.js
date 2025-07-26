@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { StyleSheet, Modal, View, Pressable, Animated, Dimensions, Platform } from "react-native";
+import { StyleSheet, Modal, Keyboard, Pressable, Animated, TouchableWithoutFeedback, Platform } from "react-native";
 import { useLanguage } from '../utils/languageContext';
 import { RTLWrapper } from '../utils/RTLWrapper';
 import { useTheme } from '../utils/themeContext';
@@ -124,7 +124,8 @@ export default function ModalPresentation({
           style={[StyleSheet.absoluteFill]}
           onPress={handleBackdropPress}
         />
-        <Animated.View 
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <Animated.View 
           style={[
             styles.main,
             getAnimationStyle(),
@@ -136,6 +137,7 @@ export default function ModalPresentation({
         >
           {children}
         </Animated.View>
+          </TouchableWithoutFeedback>
       </Animated.View>
       </RTLWrapper>
     </Modal>

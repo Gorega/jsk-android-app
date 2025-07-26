@@ -93,7 +93,8 @@
           "sounds": [],
           "androidMode": "default",
           "androidCollapsedTitle": "Updates from Taiar",
-          "iosDisplayInForeground": true
+          "iosDisplayInForeground": true,
+          "enableBackgroundRemoteNotifications": true
         }
       ],
       [

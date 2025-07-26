@@ -34,11 +34,6 @@ export default function RootLayout(){
   return <>
     <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <Stack
-        screenOptions={{
-          contentStyle: {
-            paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 20) : 0,
-          }
-        }}
       >
         <Stack.Screen
           name="index"
@@ -47,14 +42,14 @@ export default function RootLayout(){
             header: () => {
               return <FixedHeader title={translations[language]?.auth.login} showBackButton={false}>
                 <View style={styles.headerButtons}>
-                  <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
+                  <TouchableOpacity onPress={() => setShowThemeModal(true)}>
                     <MaterialCommunityIcons 
                       name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
                       size={24} 
                       color={colors.primary} 
                     />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
+                  <TouchableOpacity onPress={() => setShowLanguageModal(true)}>
                     <MaterialIcons name="language" size={24} color={colors.primary} />
                   </TouchableOpacity>
                 </View>
@@ -69,14 +64,14 @@ export default function RootLayout(){
             header: () => {
               return <FixedHeader title={translations[language]?.auth.register} showBackButton={true}>
                 <View style={styles.headerButtons}>
-                  <TouchableOpacity onPress={() => setShowThemeModal(true)} style={styles.headerButton}>
+                  <TouchableOpacity onPress={() => setShowThemeModal(true)}>
                     <MaterialCommunityIcons 
                       name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
                       size={24} 
                       color={colors.primary} 
                     />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowLanguageModal(true)} style={styles.headerButton}>
+                  <TouchableOpacity onPress={() => setShowLanguageModal(true)}>
                     <MaterialIcons name="language" size={24} color={colors.primary} />
                   </TouchableOpacity>
                 </View>

@@ -10,8 +10,6 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams, Stack } from 'expo-router';
 import DraggableFlatList from 'react-native-draggable-flatlist';
-// import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
-// import * as Location from 'expo-location';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Modal from 'react-native-modal';
 import { useSocket } from '../../utils/socketContext';
@@ -34,11 +32,7 @@ export default function RouteDetail() {
     const [loading, setLoading] = useState(true);
     const [route, setRoute] = useState(null);
     const [orders, setOrders] = useState([]);
-    const [routeName, setRouteName] = useState('');
-    const [userLocation, setUserLocation] = useState(null);
-    
-    // UI state
-    const [showMap, setShowMap] = useState(false);
+    const [routeName, setRouteName] = useState('');    
     
     // Operation state
     const [optimizing, setOptimizing] = useState(false);
@@ -84,18 +78,6 @@ export default function RouteDetail() {
             );
             return;
         }
-        
-        // // Get location permission and location
-        // (async () => {
-        //     let { status } = await Location.requestForegroundPermissionsAsync();
-        //     if (status !== 'granted') {
-        //         console.log('Location permission denied');
-        //         return;
-        //     }
-            
-        //     let currentLocation = await Location.getCurrentPositionAsync({});
-        //     setUserLocation(currentLocation);
-        // })();
         
         // Fetch route data
         fetchRouteDetails();
@@ -145,19 +127,6 @@ export default function RouteDetail() {
                     setRouteName(routeData.name || '');
                     setOrders(routeData.orders || []);
                     
-                    // // Focus map on first order if in map view and orders exist
-                    // if (routeData.orders.length > 0 && showMap) {
-                    //     setTimeout(() => {
-                    //         if (mapRef.current) {
-                    //             mapRef.current.animateToRegion({
-                    //                 latitude: routeData.orders[0].latitude || 0,
-                    //                 longitude: routeData.orders[0].longitude || 0,
-                    //                 latitudeDelta: 0.05,
-                    //                 longitudeDelta: 0.05,
-                    //             }, 1000);
-                    //         }
-                    //     }, 500);
-                    // }
                 } else {
                     throw new Error(data.message || 'Failed to load route');
                 }
@@ -325,77 +294,6 @@ export default function RouteDetail() {
         }
     };
     
-    // const optimizeRoute = async () => {
-    //     if (orders.length < 2) {
-    //         Alert.alert(
-    //             translations[language]?.common?.error || "Error",
-    //             translations[language]?.routes?.needMoreOrders || "You need at least 2 orders to optimize a route"
-    //         );
-    //         return;
-    //     }
-        
-    //     if (isCompleted) {
-    //         Alert.alert(
-    //             translations[language]?.common?.error || "Error",
-    //             translations[language]?.routes?.cannotModifyCompleted || "Cannot modify a completed route"
-    //         );
-    //         return;
-    //     }
-        
-    //     setOptimizing(true);
-        
-    //     try {
-    //         const token = await getToken("userToken");
-    //         // Send user's current location as starting point for optimization
-    //         const requestBody = {};
-            
-    //         if (userLocation) {
-    //             requestBody.startLat = userLocation.coords.latitude;
-    //             requestBody.startLng = userLocation.coords.longitude;
-    //         }
-            
-    //         const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/driver/routes/${routeId}/optimize`, {
-    //             method: "POST",
-    //             credentials: "include",
-    //             headers: {
-    //                 'Accept': 'application/json',
-    //                 "Content-Type": "application/json",
-    //                 "Cookie": token ? `token=${token}` : "",
-    //                 "Accept-Language": language
-    //             },
-    //             body: JSON.stringify(requestBody)
-    //         });
-            
-    //         const data = await res.json();
-            
-    //         if (res.ok && data.success) {
-    //             // Update route with optimized data from server
-    //             if (data.route) {
-    //                 setRoute(data.route);
-    //                 setOrders(Array.isArray(data.route.orders) ? data.route.orders : []);
-                    
-    //                 Alert.alert(
-    //                     translations[language]?.routes?.optimized || "Route Optimized",
-    //                     translations[language]?.routes?.routeOptimizedMessage || "Your route has been optimized for the most efficient delivery sequence."
-    //                 );
-    //             } else {
-    //                 throw new Error('Optimization response missing route data');
-    //             }
-    //         } else {
-    //             Alert.alert(
-    //                 translations[language]?.common?.error || "Error",
-    //                 data.message || translations[language]?.routes?.optimizationFailed || "Failed to optimize route"
-    //             );
-    //         }
-    //     } catch (error) {
-    //         Alert.alert(
-    //             translations[language]?.common?.error || "Error",
-    //             translations[language]?.routes?.optimizationFailed || "Failed to optimize route"
-    //         );
-    //     } finally {
-    //         setOptimizing(false);
-    //     }
-    // };
     
     const completeRoute = async () => {
         if (isCompleted) {
@@ -1187,9 +1085,9 @@ function OrderSelectionModal({ routeId, language, onClose, onOrdersAdded, colors
             onSwipeComplete={onClose}
             propagateSwipe={true}
             avoidKeyboard={true}
-            useNativeDriver={true}
+            useNativeDriver={false}
             statusBarTranslucent={true}
-            useNativeDriverForBackdrop={true}
+            useNativeDriverForBackdrop={false}
             hideModalContentWhileAnimating={true}
             backdropTransitionOutTiming={0}
         >

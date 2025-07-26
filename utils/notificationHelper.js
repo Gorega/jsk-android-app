@@ -77,11 +77,6 @@ export async function registerForPushNotificationsAsync() {
     return null;
   }
   
-  if (Platform.OS === 'android' && !isDevelopmentBuild) {
-    console.warn('Android Push notifications functionality requires a development build with SDK 53+');
-    return null;
-  }
-  
   if (Platform.OS === 'android') {
     // Create a channel for Android notifications with higher importance
     await Notifications.setNotificationChannelAsync('default', {
@@ -117,6 +112,8 @@ export async function registerForPushNotificationsAsync() {
           allowBadge: true,
           allowSound: true,
           allowAnnouncements: true,
+          providesAppNotificationSettings: true,
+          allowProvisional: true, // Allow provisional delivery for iOS
         },
       });
       finalStatus = status;
@@ -130,18 +127,12 @@ export async function registerForPushNotificationsAsync() {
     try {
       // Get the push token
       if (Platform.OS === 'android') {
-        if (isDevelopmentBuild) {
-          // Use device push token for Android
-          token = (await Notifications.getDevicePushTokenAsync()).data;
-        } else {
-          console.warn('Push notifications require a development build on Android with SDK 53+');
-          return null;
-        }
+        // Use device push token for Android
+        token = (await Notifications.getDevicePushTokenAsync()).data;
       } else {
-        // For iOS, we can still use Expo push tokens
-        token = (await Notifications.getExpoPushTokenAsync({
-          projectId: Constants.expoConfig.extra?.eas?.projectId
-        })).data;
+        // For iOS, always use device push token (APNs) for production builds
+        // This is critical for background notifications to work in production
+        token = (await Notifications.getDevicePushTokenAsync()).data;
       }
       
       // Register background task for handling notifications when app is closed
