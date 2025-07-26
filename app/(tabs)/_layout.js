@@ -276,7 +276,7 @@ export default function TabLayout() {
   
   return (
     <RTLWrapper>
-      <SafeAreaView style={{ flex: 1 }} edges={[]}>
+      <SafeAreaView style={{ flex: 1 }} edges={['']}>
       <Tabs
         screenOptions={{
           tabBarStyle: tabBarStyles.tabBar,

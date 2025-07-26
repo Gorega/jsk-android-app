@@ -32,7 +32,7 @@ export default function RootLayout(){
   };
 
   return <>
-    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1 }} edges={['']}>
       <Stack
       >
         <Stack.Screen

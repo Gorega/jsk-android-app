@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '@/utils/languageContext';
 import { getToken, deleteToken, getMasterAccountId, setMasterAccountId, addAccountToMaster, isDirectLogin } from '@/utils/secureStore';
 import useFetch from '@/utils/useFetch';
@@ -259,10 +260,13 @@ export default function RootLayout() {
     <RTLWrapper>
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}>
         <SocketProvider isAuthenticated={isAuthenticated}>
-          <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <SafeAreaView 
+            style={{ flex: 1, backgroundColor: colors.background }}
+            edges={['right', 'left', 'bottom']} // Handle top, left, and right edges
+          >
             <StatusBar style={colors.statusBarStyle} />
             <AppNavigationStack isAuthenticated={isAuthenticated} colors={colors} />
-          </View>
+          </SafeAreaView>
         </SocketProvider>
       </AuthContext.Provider>
     </RTLWrapper>

@@ -328,8 +328,25 @@ export default function HomeScreen() {
                 ),
             showSearchBar: true,
             onSelect: (city) => {
-                // When city changes, enable delivery fee update
-                setShouldUpdateDeliveryFee(true);
+                
+                // Update the selectedValue.city with the selected city
+                setSelectedValue(prev => {
+                    const newValue = {
+                        ...prev,
+                        city: city
+                    };
+                    
+                    // Force delivery fee calculation immediately, but only if not in edit mode
+                    // or if in edit mode and the city has changed from the original
+                    setTimeout(() => {
+                        if (!orderId || (orderId && city.city_id !== form.receiverCityId)) {
+                            fetchDeliveryFee();
+                        } else {
+                        }
+                    }, 0);
+                    
+                    return newValue;
+                });
             }
         },{
             label: translations[language].tabs.orders.create.sections.client.fields.address,
@@ -878,7 +895,7 @@ export default function HomeScreen() {
                 type: 'success',
                 title: translations[language].tabs.orders.create.success,
                 message: translations[language].tabs.orders.create.successMsg,
-                onClose: () => router.push("(tabs)/orders")
+                onClose: () => router.push("/(tabs)")
             });
 
         } catch (err) {
@@ -1061,8 +1078,6 @@ export default function HomeScreen() {
 
     const fetchOrderData = async () => {
         try {
-            // When fetching order data, we don't want to auto-update the delivery fee
-            setShouldUpdateDeliveryFee(false);
             
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
                 method: "GET",
@@ -1073,7 +1088,7 @@ export default function HomeScreen() {
                 }
             });
             const orderData = await res.json();
-            
+                        
             // Update selectedValue state with the order data
             setSelectedValue((selectedValue) => ({
                 ...selectedValue,
@@ -1127,18 +1142,19 @@ export default function HomeScreen() {
                 })));
             }
             
-            // Set form data
+            // Set form data - store original values for comparison
             setForm({
                 receiverName: orderData.receiver_name,
                 receiverFirstPhone: orderData.receiver_mobile,
                 receiverSecondPhone: orderData.receiver_second_mobile,
                 receiverCity: orderData.receiver_city,
+                receiverCityId: orderData.receiver_city_id, // Store original city ID for comparison
                 receiverAddress: orderData.receiver_address,
                 sender: orderData.sender,
                 senderId: orderData.sender_id,
                 senderCityId: orderData.sender_city_id,
-                receiverCityId: orderData.receiver_city_id,
                 deliveryFee: extractedDeliveryFee,
+                originalDeliveryFee: extractedDeliveryFee, // Store original delivery fee
                 paymentTypeId: orderData.payment_type_id,
                 orderTypeId: orderData.order_type_id,
                 codValue: orderData.cod_values?.[0]?.value?.toString() || "0",
@@ -1154,7 +1170,8 @@ export default function HomeScreen() {
                 originalFromBusinessBalance: orderData.from_business_balance ? true : false,
                 balanceDeduction: orderData.balance_deduction || null,
                 originalBalanceDeduction: orderData.balance_deduction || null,
-                referenceId: orderData.reference_id || null
+                referenceId: orderData.reference_id || null,
+                itemsType: orderData.items_type // Store original items type for comparison
             });
             
             // Set checks
@@ -1163,7 +1180,7 @@ export default function HomeScreen() {
             } else {
                 setChecks([]);
             }
-            
+                        
         } catch (err) {
             console.error("Error fetching order data:", err);
         }
@@ -1209,17 +1226,26 @@ export default function HomeScreen() {
 
 
     const fetchDeliveryFee = async () => {
-        // Skip if we shouldn't update the delivery fee
-        if (!shouldUpdateDeliveryFee) return;
+        
+        // If we're in edit mode and the original data is loaded, don't recalculate
+        if (orderId && form.deliveryFee && 
+            selectedValue.city?.city_id === form.receiverCityId &&
+            selectedValue.itemsType?.value === form.itemsType) {
+            return;
+        }
         
         try {
+            // For business users, use their ID directly if sender is not set
+            const senderId = user.role === "business" ? user.userId : (selectedValue.sender?.user_id || form.senderId);
+            const senderCityId = user.role === "business" ? user.city_id : (selectedValue.sender?.city_id || form.senderCityId);
+            
             // Only attempt to fetch if we have both sender city and receiver city
-            if (!(selectedValue.sender?.city_id || form.senderCityId || user.city_id) || 
-                !(selectedValue.city?.city_id || form.receiverCityId)) {
+            if (!senderCityId || !selectedValue.city?.city_id) {
                 return;
             }
             
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${selectedValue.sender.city_id || form.senderCityId || user.city_id}&receiverCityId=${selectedValue.city.city_id || form.receiverCityId}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${selectedValue.sender.user_id || form.senderId || user.userId}`, {
+            
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${senderCityId}&receiverCityId=${selectedValue.city.city_id}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${senderId}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -1228,6 +1254,7 @@ export default function HomeScreen() {
                 }
             });
             const data = await res.json();
+            
             
             if (data.data) {
                 setDeliveryFee(data.data.toString());
@@ -1277,11 +1304,12 @@ export default function HomeScreen() {
     
     // This effect handles delivery fee updates when sender or city changes
     useEffect(() => {
-        // Only fetch if shouldUpdateDeliveryFee is true and we have both sender and city
-        if (shouldUpdateDeliveryFee && selectedValue.sender && selectedValue.city) {
+        
+        // Only fetch if we have both sender and city
+        if (selectedValue.sender && selectedValue.city) {
             fetchDeliveryFee();
         }
-    }, [selectedValue.sender, selectedValue.city, shouldUpdateDeliveryFee]);
+    }, [selectedValue.sender, selectedValue.city]);
 
     // This effect handles delivery fee updates when item type changes (only for new orders)
     useEffect(() => {
@@ -1292,10 +1320,16 @@ export default function HomeScreen() {
 
     // This effect handles delivery fee updates when order type changes (only for new orders)
     useEffect(() => {
-        if (!orderId && shouldUpdateDeliveryFee && selectedValue.orderType && selectedValue.sender && selectedValue.city) {
-            fetchDeliveryFee();
+        
+        // Only update delivery fee if:
+        // 1. Not in edit mode (no orderId), or
+        // 2. In edit mode but order type has changed from original
+        if (selectedValue.orderType && selectedValue.sender && selectedValue.city) {
+            if (!orderId || (orderId && selectedValue.orderType.value !== form.orderTypeId)) {
+                fetchDeliveryFee();
+            }
         }
-    }, [selectedValue.orderType, orderId, shouldUpdateDeliveryFee]);
+    }, [selectedValue.orderType]);
     
     useEffect(() => {
         // Check if we have a scanned reference ID from the camera
@@ -1398,13 +1432,33 @@ export default function HomeScreen() {
             fetchSenders();
         }
     }, [prickerSearchValue, user.role, language]);
+    
+    // Initialize sender for business users
+    useEffect(() => {
+        if (user.role === "business" && !orderId) {
+            // Set the business user as the sender
+            setSelectedValue(prev => ({
+                ...prev,
+                sender: {
+                    name: user.name || user.username,
+                    value: user.userId,
+                    user_id: user.userId,
+                    city_id: user.city_id
+                }
+            }));
+        }
+    }, [user.role, user.userId, orderId]);
 
     // Add a separate effect for item type changes
     useEffect(() => {
-        if (!orderId && selectedValue.itemsType && selectedValue.sender && selectedValue.city) {
-            // Only update delivery fee based on item type for new orders
-            setShouldUpdateDeliveryFee(true);
-            fetchDeliveryFee();
+        
+        // Only update delivery fee if:
+        // 1. Not in edit mode (no orderId), or
+        // 2. In edit mode but item type has changed from original
+        if (selectedValue.itemsType && selectedValue.sender && selectedValue.city) {
+            if (!orderId || (orderId && selectedValue.itemsType.value !== form.itemsType)) {
+                fetchDeliveryFee();
+            }
         }
     }, [selectedValue.itemsType]);
 
@@ -1446,7 +1500,6 @@ export default function HomeScreen() {
                     animateOnboarding(true);
                 }
             } catch (error) {
-                console.log('Error checking onboarding status:', error);
             }
         };
         
@@ -1539,7 +1592,6 @@ export default function HomeScreen() {
             animateOnboarding(false);
             setTimeout(() => setShowOnboarding(false), 300);
         } catch (error) {
-            console.log('Error saving onboarding status:', error);
             setShowOnboarding(false);
         }
     };
@@ -1652,7 +1704,7 @@ export default function HomeScreen() {
                                         if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
                                             Alert.alert(
                                                 translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
-                                                type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
+                                                translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message,
                                                 [{ 
                                                     text: translations[language].ok || "OK",
                                                     style: "default"
@@ -1708,22 +1760,22 @@ export default function HomeScreen() {
                     showsVerticalScrollIndicator={true}
                 >
                     <View style={styles.main}>
-                        {sections.slice(1).map((section, index) => (
-                            <Section
-                                key={index}
-                                section={section}
-                                loadMoreData={loadMoreData}
-                                loadingMore={loadingMore}
-                                setSelectedValue={handleSelectedValueChange}
-                                fieldErrors={fieldErrors}
-                                setFieldErrors={setFieldErrors}
-                                prickerSearchValue={prickerSearchValue}
-                                setPickerSearchValue={setPickerSearchValue}
-                            />
-                        ))}
+                    {sections.slice(1).map((section, index) => (
+                        <Section
+                            key={index}
+                            section={section}
+                            setSelectedValue={setSelectedValue}
+                            loadMoreData={loadMoreData}
+                            loadingMore={loadingMore}
+                            prickerSearchValue={prickerSearchValue}
+                            setPickerSearchValue={setPickerSearchValue}
+                            fieldErrors={fieldErrors}
+                            setFieldErrors={setFieldErrors}
+                        />
+                    ))}
                     </View>
                 </ScrollView>
-                <SafeAreaView edges={['bottom']}>
+                <SafeAreaView edges={['']}>
                     <TouchableOpacity 
                         style={[styles.submitButton, {
                             marginHorizontal: 40,
@@ -1789,7 +1841,7 @@ export default function HomeScreen() {
                         showModal={activeCurrencyPicker !== null}
                         setShowModal={() => setActiveCurrencyPicker(null)}
                     >
-                        <View style={styles.currencyPickerContainer}>
+                        <View style={[styles.currencyPickerContainer, { backgroundColor: colors.card }]}>
                             <Text style={[styles.currencyPickerTitle, { color: colors.text }]}>
                                 {translations[language].tabs.orders.create.sections.currencyList.title}
                             </Text>
@@ -1818,6 +1870,7 @@ export default function HomeScreen() {
                                         >
                                             <Text style={[
                                                 styles.currencyOptionText,
+                                                { color: colors.text },
                                                 codAmounts[activeCurrencyPicker]?.currency === currency.value && 
                                                     styles.selectedCurrencyOptionText
                                             ]}>
@@ -1832,7 +1885,7 @@ export default function HomeScreen() {
                                 onPress={() => setActiveCurrencyPicker(null)}
                             >
                                 <Text style={[styles.cancelCurrencyText, { color: colors.text }]}>
-                                    {translations[language]?.cancel || 'Cancel'}
+                                    {translations[language]?.common.cancel}
                                 </Text>
                             </TouchableOpacity>
                         </View>
