@@ -137,88 +137,87 @@ export default function ScanReference() {
             'codabar'
           ],
         }}
-      >
-        <View style={styles.overlay}>
-          {/* Back button */}
-          <TouchableOpacity 
+      />
+      <View style={[styles.overlay, StyleSheet.absoluteFillObject]} pointerEvents="box-none">
+        {/* Back button */}
+        <TouchableOpacity 
+          style={[
+            styles.backButtonContainer,
+            isRTL ? { right: 20 } : { left: 20 }
+          ]}
+          onPress={() => router.back()}
+        >
+          <View style={styles.backButtonCircle}>
+            <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Scanner frame with animated border */}
+        <View style={[
+          styles.scannerFocusArea,
+          { 
+            borderColor: colors.primary,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.3,
+            shadowRadius: 10,
+            elevation: 5,
+          }
+        ]}>
+          <Animated.View 
             style={[
-              styles.backButtonContainer,
-              isRTL ? { right: 20 } : { left: 20 }
-            ]}
-            onPress={() => router.back()}
-          >
-            <View style={styles.backButtonCircle}>
-              <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
-            </View>
-          </TouchableOpacity>
+              styles.scanLine,
+              {
+                backgroundColor: colors.primary,
+                shadowColor: colors.primary,
+                transform: [
+                  {
+                    translateY: 0 // Replace with animation if needed
+                  }
+                ]
+              }
+            ]} 
+          />
+        </View>
+
+        {/* Instructions text */}
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.scanText}>
+            {translations[language].camera?.scanText || 'Scan QR code for reference ID'}
+          </Text>
           
-          {/* Scanner frame with animated border */}
-          <View style={[
-            styles.scannerFocusArea,
-            { 
-              borderColor: colors.primary,
-              shadowColor: colors.primary,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.3,
-              shadowRadius: 10,
-              elevation: 5,
-            }
-          ]}>
-            <Animated.View 
-              style={[
-                styles.scanLine,
-                {
-                  backgroundColor: colors.primary,
-                  shadowColor: colors.primary,
-                  transform: [
-                    {
-                      translateY: 0 // Replace with animation if needed
-                    }
-                  ]
-                }
-              ]} 
-            />
-          </View>
-          
-          {/* Instructions text */}
-          <View style={styles.instructionsContainer}>
-            <Text style={styles.scanText}>
-              {translations[language].camera?.scanText || 'Scan QR code for reference ID'}
-            </Text>
-            
-            {error && (
-              <View style={styles.errorBanner}>
-                <MaterialIcons name="error-outline" size={20} color="white" />
-                <Text style={styles.errorBannerText}>
-                  {error}
-                </Text>
-              </View>
-            )}
-            
-            {scanned && (
-              <TouchableOpacity
-                style={styles.rescanButton}
-                onPress={() => setScanned(false)}
-              >
-                <Feather name="refresh-cw" size={16} color="white" style={{marginRight: 8}} />
-                <Text style={styles.rescanButtonText}>
-                  {translations[language].camera?.scanAgainTapText || 'Scan Again'}
-                </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          
-          {/* Loading indicator */}
-          {loading && (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#4361EE" />
-              <Text style={styles.loadingText}>
-                {translations[language]?.processing || 'Processing...'}
+          {error && (
+            <View style={styles.errorBanner}>
+              <MaterialIcons name="error-outline" size={20} color="white" />
+              <Text style={styles.errorBannerText}>
+                {error}
               </Text>
             </View>
           )}
+          
+          {scanned && (
+            <TouchableOpacity
+              style={styles.rescanButton}
+              onPress={() => setScanned(false)}
+            >
+              <Feather name="refresh-cw" size={16} color="white" style={{marginRight: 8}} />
+              <Text style={styles.rescanButtonText}>
+                {translations[language].camera?.scanAgainTapText || 'Scan Again'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </CameraView>
+
+        {/* Loading indicator */}
+        {loading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4361EE" />
+            <Text style={styles.loadingText}>
+              {translations[language]?.processing || 'Processing...'}
+            </Text>
+          </View>
+        )}
+      </View>
     </View>
   );
 }

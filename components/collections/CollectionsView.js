@@ -57,7 +57,7 @@ export default function CollectionsView({data, type, loadMoreData, loadingMore, 
         );
     }
 
-    return data.length > 0
+    return (data || []).length > 0
     ?
     <FlatListData
         list={data || []}

@@ -186,18 +186,16 @@ export default function HomeScreen() {
     const fetchData = async (pageNumber = 1, isLoadMore = false)=>{
         if (!isLoadMore) setIsLoading(true);
         try {
-            // const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
+            let typeId;
             
-            
+            // Build query parameters
             if (!activeSearchBy && searchValue) {
                 queryParams.append('search', searchValue);
             }
             
-            // if (collectionIds) queryParams.append('collection_ids', collectionIds)
             if (collectionIds && collectionIds !== 'undefined') {
                 try {
-                    // Parse the JSON string of collection IDs
                     const parsedCollectionIds = JSON.parse(collectionIds);
                     if (Array.isArray(parsedCollectionIds) && parsedCollectionIds.length > 0) {
                         queryParams.append('collection_ids', parsedCollectionIds.join(','));
@@ -226,9 +224,59 @@ export default function HomeScreen() {
             
             queryParams.append('page', pageNumber);
             queryParams.append('language_code', language);
+
+            // Determine type_id based on collection type
+            switch(type) {
+                case "business_money":
+                    typeId = 4;
+                    break;
+                case "driver_money":
+                    typeId = 1;
+                    break;
+                case "business_returned":
+                    typeId = 5;
+                    break;
+                case "driver_returned":
+                    typeId = 2;
+                    break;
+                case "dispatched":
+                    typeId = 3;
+                    break;
+                case "sent":
+                    // Special case for sent collections - uses different endpoint
+                    const sentUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?${queryParams.toString()}`;
+                    const sentRes = await fetch(sentUrl, {
+                        method: "GET",
+                        credentials: "include",
+                        headers: {
+                            'Accept': 'application/json',
+                            "Content-Type": "application/json",
+                            "Accept-Language": language
+                        }
+                    });
+                    const response = await sentRes.json();
+                    console.log("Sent API Response:", response);
+                    
+                    const sentData = {
+                        data: response.data || [],
+                        metadata: response.metadata || {}
+                    };
+                    
+                    if (isLoadMore) {
+                        setData(prevData => ({
+                            ...prevData,
+                            data: [...(prevData.data || []), ...(sentData.data || [])],
+                        }));
+                    } else {
+                        setData(sentData);
+                    }
+                    return;
+                default:
+                    typeId = 1; // Default to type 1 if unknown
+            }
             
-            // Log the complete URL for debugging
-            const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${type === "sent" ? "sent/sm" : type}?${queryParams.toString()}`;
+            // Construct URL with type_id for non-sent collections
+            const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=${typeId}&${queryParams.toString()}`;
             
             const res = await fetch(url, {
                 method: "GET",
@@ -237,17 +285,22 @@ export default function HomeScreen() {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
                     "Accept-Language": language
-                    // "Cookie": token ? `token=${token}` : ""
                 }
             });
             
-            const newData = await res.json();
+            const response = await res.json();
+            console.log("API Response:", response);
             
+            // Handle the new data structure
+            const newData = {
+                data: response.data || response.collections || [],
+                metadata: response.metadata || response.pagination || {}
+            };
             
             if (isLoadMore) {
                 setData(prevData => ({
                     ...prevData,
-                    data: [...prevData.data, ...newData.data],
+                    data: [...(prevData.data || []), ...(newData.data || [])],
                 }));
             } else {
                 setData(newData);
@@ -261,9 +314,14 @@ export default function HomeScreen() {
     }
 
     const loadMoreData = async () => {
-        if (!loadingMore && data.data?.length > 0) {
+        if (!loadingMore) {
+            const currentData = type === "sent" ? data.collections : data.data;
+            const totalRecords = type === "sent" ? data.metadata?.total_records : data.metadata?.total_records;
+            
+            if (!currentData?.length > 0) return;
+            
             // Check if there's more data to load
-            if (data.data.length >= data.metadata.total_records) {
+            if (currentData.length >= totalRecords) {
                 return;
             }
     
@@ -273,6 +331,7 @@ export default function HomeScreen() {
             try {
                 await fetchData(nextPage, true);
             } catch (error) {
+                console.error("Error loading more data:", error);
             } finally {
                 setLoadingMore(false);
             }
@@ -337,7 +396,7 @@ export default function HomeScreen() {
         />
         <View style={styles.section}>
             <CollectionsView
-                data={data.data || []}
+                data={data?.data || []}
                 type={type}
                 loadMoreData={loadMoreData}
                 loadingMore={loadingMore}

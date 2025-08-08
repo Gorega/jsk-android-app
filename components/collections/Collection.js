@@ -17,12 +17,12 @@ import { Colors } from '../../constants/Colors';
 import React from 'react';
 
 function Collection({ type, collection }) {
+    console.log("Collection props:", { type, collection });
     const { language } = useLanguage();
     const { user } = useAuth();
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     const [showModal, setShowModal] = useState(false);
-    const [showSendersModal, setShowSendersModal] = useState(false);
     const [showPhoneOptions, setShowPhoneOptions] = useState(false);
     const [currentPhone, setCurrentPhone] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -83,8 +83,8 @@ function Collection({ type, collection }) {
             return <UserBox
                 box={{
                     label: translations[language].tabs.orders.order.userSenderBoxLabel,
-                    userName: collection.business_name,
-                    phone: ""
+                    userName: collection.from_user_name,
+                    phone: collection.from_user_phone
                 }}
             />
         }
@@ -92,8 +92,8 @@ function Collection({ type, collection }) {
             return <UserBox
                 box={{
                     label: translations[language].tabs.orders.order.userDriverBoxLabel,
-                    userName: type === "sent" ? collection.driver_name : collection.previous_driver_name,
-                    phone: ""
+                    userName: type === "sent" ? collection.driver_name : collection.driver_name,
+                    phone: collection.driver_phone
                 }}
             />
         }
@@ -143,14 +143,14 @@ function Collection({ type, collection }) {
                     </View>
                 </View>
                 
-                <View style={[
+                {type === "sent" && <View style={[
                     styles.statusBadge, 
                     { 
                         backgroundColor: getStatusColor(type === "sent" ? collection.status : collection.status_key)
                     }
                 ]}>
                     <Text style={styles.statusText}>{type === "sent" ? collection.status_label : collection.status}</Text>
-                </View>
+                </View>}
             </View>
             
             <View style={styles.contentContainer}>
@@ -193,7 +193,7 @@ function Collection({ type, collection }) {
                                 styles.sectionValue,
                                 { color: colors.text }
                             ]}>
-                                {type === "sent" ? collection.sub_collections?.length : collection.number_of_orders}
+                                {type === "sent" ? collection.collections_count : collection.order_count}
                             </Text>
                         </View>
                     </View>
@@ -274,8 +274,7 @@ function Collection({ type, collection }) {
                                     styles.sectionValue,
                                     { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
-                                    {user.role === "business" ? collection.total_net_value : collection.total_cod_value}
-                                    {type === "sent" && collection.total_net_value}
+                                    {collection.total_net_value}
                                 </Text>
                             </View>
                         </View>
@@ -315,13 +314,191 @@ function Collection({ type, collection }) {
                                     styles.sectionValue,
                                     { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
-                                    {collection.total_checks}
+                                    {collection.financials && collection.financials.length > 0 
+                                        ? collection.financials.map((f, index) => (
+                                            `${f.currency_code}: ${f.checks_value || 0}${f.currency_symbol}${index < collection.financials.length - 1 ? ' | ' : ''}`
+                                        )).join('')
+                                        : '-'}
                                 </Text>
                             </View>
                         </View>
                     </View>
                 )}
                 
+                {/* Order IDs */}
+                <View style={[
+                    styles.infoSection,
+                    { backgroundColor: colors.surface }
+                ]}>
+                    <View style={[styles.sectionRow]}>
+                        <View style={[
+                            styles.iconWrapper,
+                            { backgroundColor: '#3A0CA3' }
+                        ]}>
+                            <MaterialCommunityIcons name="identifier" size={20} color="#ffffff" />
+                        </View>
+                        <View style={[
+                            styles.sectionContent,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : ""
+                                    }
+                                }),
+                            }
+                        ]}>
+                            <Text style={[
+                                styles.sectionTitle,
+                                { color: colors.textSecondary }
+                            ]}>
+                                {translations[language]?.collections?.collection?.orderIds || "Order IDs"}
+                            </Text>
+                            <Text style={[
+                                styles.sectionValue,
+                                { color: colors.text }
+                            ]}>
+                                {collection.order_ids}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Business Information */}
+                {collection.sub_orders && collection.sub_orders.length > 0 && (
+                    <>
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: '#4361EE' }
+                                ]}>
+                                    <MaterialCommunityIcons name="office-building" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessName || "Business Name"}
+                                    </Text>
+                                    <Text style={[
+                                        styles.sectionValue,
+                                        { color: colors.text }
+                                    ]}>
+                                        {collection.sub_orders[0].business_name}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: colors.primary }
+                                ]}>
+                                    <Feather name="phone" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessPhone || "Business Phone"}
+                                    </Text>
+                                    <View style={styles.phoneContainer}>
+                                        <Text style={[
+                                            styles.sectionValue,
+                                            { color: colors.text, flex: 1 }
+                                        ]}>
+                                            {collection.sub_orders[0].business_phone}
+                                        </Text>
+                                        <View style={styles.contactButtonsContainer}>
+                                            <TouchableOpacity 
+                                                style={[styles.contactButton, styles.callButton]}
+                                                onPress={() => handlePhoneCall(collection.sub_orders[0].business_phone)}
+                                            >
+                                                <FontAwesome name="phone" size={16} color="#ffffff" />
+                                            </TouchableOpacity>
+                                            
+                                            <TouchableOpacity 
+                                                style={[styles.contactButton, styles.whatsappButton]}
+                                                onPress={() => {
+                                                    setCurrentPhone(collection.sub_orders[0].business_phone);
+                                                    setShowPhoneOptions(true);
+                                                }}
+                                            >
+                                                <FontAwesome name="whatsapp" size={16} color="#ffffff" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: '#10B981' }
+                                ]}>
+                                    <Ionicons name="location-outline" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessLocation || "Business Location"}
+                                    </Text>
+                                    <Text style={[
+                                        styles.sectionValue,
+                                        { color: colors.text }
+                                    ]}>
+                                        {collection.sub_orders[0].business_city} | {collection.sub_orders[0].business_address}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </>
+                )}
+
                 {/* Branch section */}
                 {(type === "returned" || type === "dispatched") && (
                     <View style={[
@@ -405,29 +582,7 @@ function Collection({ type, collection }) {
             
             {/* Action buttons */}
             <View style={styles.actionsContainer}>
-                {type === "sent" ? (
-                    <TouchableOpacity 
-                        style={[
-                            styles.actionButton,
-                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
-                        ]}
-                        onPress={() => setShowSendersModal(true)}
-                        activeOpacity={0.7}
-                    >
-                        <View style={[
-                            styles.actionIconContainer,
-                            { backgroundColor: colors.primary }
-                        ]}>
-                            <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
-                        </View>
-                        <Text style={[
-                            styles.actionText,
-                            { color: colors.primary }
-                        ]}>
-                            {translations[language].collections.collection.collections}
-                        </Text>
-                    </TouchableOpacity>
-                ) : (
+                {type !== "sent" && (
                     <TouchableOpacity 
                         style={[
                             styles.actionButton,
@@ -454,213 +609,7 @@ function Collection({ type, collection }) {
                     </TouchableOpacity>
                 )}
                 
-                {/* Senders Information Modal */}
-                {type === "sent" && (
-                    <ModalPresentation 
-                        position="bottom"
-                        customStyles={{maxHeight: '80%'}}
-                        showModal={showSendersModal} 
-                        setShowModal={setShowSendersModal}
-                    >
-                        <View style={[
-                            styles.modalHeader,
-                            { borderBottomColor: colors.border, backgroundColor: colors.card }
-                        ]}>
-                            <Text style={[
-                                styles.modalHeaderText,
-                                { color: colors.text },
-                                { ...Platform.select({
-                                    ios: {
-                                        textAlign: isRTL ? "left" : ""
-                                    }
-                                }) }
-                            ]}>
-                                {translations[language]?.collections?.collection?.collections || "Collections"}
-                            </Text>
-                        </View>
-                        
-                        <ScrollView style={[styles.sendersScrollView, { backgroundColor: colors.background }]}>
-                            {collection.sub_collections?.map((subCollection, index) => (
-                                <View key={index} style={[
-                                    styles.senderCard,
-                                    { borderBottomColor: colors.border, backgroundColor: colors.card }
-                                ]}>
-                                    <View style={styles.senderHeader}>
-                                        <Text style={[
-                                            styles.senderName,
-                                            { color: colors.text },
-                                            { ...Platform.select({
-                                                ios: {
-                                                    textAlign: isRTL ? "left" : ""
-                                                }
-                                            }) }
-                                        ]}>{subCollection.business_name}</Text>
-                                        <View style={[
-                                            styles.senderStatusBadge, 
-                                            { backgroundColor: getStatusColor(subCollection.status) }
-                                        ]}>
-                                            <Text style={styles.senderStatusText}>{subCollection.status_label}</Text>
-                                        </View>
-                                    </View>
-                                    
-                                    <View style={styles.senderInfoRow}>
-                                        <View style={[
-                                            styles.senderIconContainer,
-                                            { backgroundColor: colors.primary }
-                                        ]}>
-                                            <Feather name="phone" size={16} color="#ffffff" />
-                                        </View>
-                                        <Text style={[
-                                            styles.senderInfoText,
-                                            { color: colors.textSecondary },
-                                            { ...Platform.select({
-                                                ios: {
-                                                    textAlign: isRTL ? "left" : ""
-                                                }
-                                            }) }
-                                        ]}>
-                                            {collection.delivery_type === "package" 
-                                                ? subCollection.business_phone 
-                                                : subCollection.sender_phone}
-                                        </Text>
-                                        
-                                        {/* Phone call and WhatsApp buttons */}
-                                        <View style={styles.contactButtonsContainer}>
-                                            <TouchableOpacity 
-                                                style={[styles.contactButton, styles.callButton]}
-                                                onPress={() => handlePhoneCall(collection.delivery_type === "package" 
-                                                    ? subCollection.business_phone 
-                                                    : subCollection.sender_phone)}
-                                            >
-                                                <FontAwesome name="phone" size={16} color="#ffffff" />
-                                            </TouchableOpacity>
-                                            
-                                            <TouchableOpacity 
-                                                style={[styles.contactButton, styles.whatsappButton]}
-                                                onPress={() => {
-                                                    setCurrentPhone(collection.delivery_type === "package" 
-                                                        ? subCollection.business_phone 
-                                                        : subCollection.sender_phone);
-                                                    setShowPhoneOptions(true);
-                                                }}
-                                            >
-                                                <FontAwesome name="whatsapp" size={16} color="#ffffff" />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                    
-                                    <View style={styles.senderInfoRow}>
-                                        <View style={[
-                                            styles.senderIconContainer,
-                                            { backgroundColor: '#10B981' }
-                                        ]}>
-                                            <Ionicons name="location-outline" size={16} color="#ffffff" />
-                                        </View>
-                                        <Text style={[
-                                            styles.senderInfoText,
-                                            { color: colors.textSecondary },
-                                            { ...Platform.select({
-                                                ios: {
-                                                    textAlign: isRTL ? "left" : ""
-                                                }
-                                            }) }
-                                        ]}>
-                                            {collection.delivery_type === "package" 
-                                                ? subCollection.business_city 
-                                                : subCollection.sender_city}
-                                        </Text>
-                                    </View>
-                                    
-                                    {(collection.delivery_type === "package" 
-                                        ? subCollection.business_address 
-                                        : subCollection.sender_address) && (
-                                        <View style={styles.senderInfoRow}>
-                                            <View style={[
-                                                styles.senderIconContainer,
-                                                { backgroundColor: '#8B5CF6' }
-                                            ]}>
-                                                <Ionicons name="home-outline" size={16} color="#ffffff" />
-                                            </View>
-                                            <Text style={[
-                                                styles.senderInfoText,
-                                                { color: colors.textSecondary },
-                                                { ...Platform.select({
-                                                    ios: {
-                                                        textAlign: isRTL ? "left" : ""
-                                                    }
-                                                }) }
-                                            ]}>
-                                                {collection.delivery_type === "package" 
-                                                    ? subCollection.business_address 
-                                                    : subCollection.sender_address}
-                                            </Text>
-                                        </View>
-                                    )}
-                                    
-                                    <View style={styles.senderInfoRow}>
-                                        <View style={[
-                                            styles.senderIconContainer,
-                                            { backgroundColor: '#F72585' }
-                                        ]}>
-                                            <MaterialIcons name="attach-money" size={16} color="#ffffff" />
-                                        </View>
-                                        <Text style={[
-                                            styles.senderInfoText,
-                                            { textAlign: isRTL ? "left" : "" },
-                                            { color: colors.textSecondary },
-                                            { ...Platform.select({
-                                                ios: {
-                                                    textAlign: isRTL ? "left" : ""
-                                                }
-                                            }) }
-                                        ]}>
-                                            {collection.delivery_type === "package" 
-                                                ? subCollection.total_cod_value 
-                                                : subCollection.sender_amount}
-                                        </Text>
-                                    </View>
-                                    
-                                    <View style={styles.senderInfoRow}>
-                                        <View style={[
-                                            styles.senderIconContainer,
-                                            { backgroundColor: '#4CC9F0' }
-                                        ]}>
-                                            <Feather name="package" size={16} color="#ffffff" />
-                                        </View>
-                                        <Text style={[
-                                            styles.senderInfoText,
-                                            { color: colors.textSecondary },
-                                            { ...Platform.select({
-                                                ios: {
-                                                    textAlign: isRTL ? "left" : ""
-                                                }
-                                            }) }
-                                        ]}>
-                                            {translations[language]?.collections?.collection?.orderCount || "Order Count"}: {subCollection.order_count}
-                                        </Text>
-                                    </View>
-                                    
-                                    {collection.delivery_type === "package" && (
-                                        <View style={styles.senderInfoRow}>
-                                            <View style={[
-                                                styles.senderIconContainer,
-                                                { backgroundColor: '#3A0CA3' }
-                                            ]}>
-                                                <MaterialCommunityIcons name="identifier" size={16} color="#ffffff" />
-                                            </View>
-                                            <Text style={[
-                                                styles.senderInfoText,
-                                                { color: colors.textSecondary }
-                                            ]}>
-                                                {translations[language]?.collections?.collection?.orderIds || "Order IDs"}: {collection.order_ids}
-                                            </Text>
-                                        </View>
-                                    )}
-                                </View>
-                            ))}
-                        </ScrollView>
-                    </ModalPresentation>
-                )}
+
                 
                 {/* WhatsApp Options Modal */}
                 <ModalPresentation
@@ -1069,55 +1018,7 @@ const styles = StyleSheet.create({
     noBorder: {
         borderBottomWidth: 0,
     },
-    // New styles for senders modal
-    sendersScrollView: {
-        maxHeight: '80%',
-    },
-    senderCard: {
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.06)',
-    },
-    senderHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 12,
-    },
-    senderName: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#1F2937',
-        flex: 1,
-    },
-    senderStatusBadge: {
-        borderRadius: 30,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-    },
-    senderStatusText: {
-        color: 'white',
-        fontWeight: '600',
-        fontSize: 12,
-    },
-    senderInfoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginVertical: 6,
-        gap: 12,
-    },
-    senderIconContainer: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    senderInfoText: {
-        fontSize: 14,
-        color: '#4B5563',
-        flex: 1,
-    },
+
     // Contact button styles
     contactButtonsContainer: {
         flexDirection: 'row',
@@ -1138,5 +1039,10 @@ const styles = StyleSheet.create({
     },
     whatsappIcon: {
         backgroundColor: '#25D366',
+    },
+    phoneContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12
     },
 });

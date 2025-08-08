@@ -35,6 +35,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
+    // Reference ID modal states
+    const [showReferenceModal, setShowReferenceModal] = useState(false);
+    const [referenceIdInput, setReferenceIdInput] = useState("");
+    const [isReferenceUpdating, setIsReferenceUpdating] = useState(false);
     const isRTL = language === 'ar' || language === 'he';
     const [isConnected, setIsConnected] = useState(!globalOfflineMode);
     const [pendingStatusUpdates, setPendingStatusUpdates] = useState([]);
@@ -774,11 +778,28 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             setShowSuccessModal(true);
                             setTimeout(() => setShowSuccessModal(false), 2500);
                         }, 100);
-                    } else {
+
+                        // If the new status is "received", prompt for reference ID
+                        if (selectedValue?.status?.value === 'received') {
+                            setTimeout(() => {
+                                setReferenceIdInput("");
+                                setShowReferenceModal(true);
+                            }, 200);
+                        }
+                        } else {
                         // Show error message with the actual error details from backend
                         setTimeout(() => {
-                            // Use data.details if available, otherwise fallback to data.error or generic message
-                            setErrorMessage(data.details || data.error || translations[language].tabs.orders.order.statusChangeError);
+                            // Normalize possible object/array error shapes
+                            const rawErr = data.details || data.error;
+                            let normalized = null;
+                            if (typeof rawErr === 'string') {
+                                normalized = rawErr;
+                            } else if (Array.isArray(rawErr)) {
+                                normalized = rawErr.map(e => (typeof e === 'string' ? e : `${e.field ? e.field + ': ' : ''}${e.message || ''}`)).join('\n');
+                            } else if (rawErr && typeof rawErr === 'object') {
+                                normalized = rawErr.message || `${rawErr.field ? rawErr.field + ': ' : ''}${rawErr.message || ''}`;
+                            }
+                            setErrorMessage(normalized || translations[language].tabs.orders.order.statusChangeError);
                             setShowErrorModal(true);
                         }, 100);
                     }
@@ -1136,6 +1157,85 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const handleErrorModalClose = () => {
         setShowErrorModal(false);
     };
+
+    // Pick up scanned reference ID from the camera scanner screen
+    useEffect(() => {
+        try {
+            if (showReferenceModal && global && global.scannedReferenceId) {
+                setReferenceIdInput(global.scannedReferenceId);
+                global.scannedReferenceId = null;
+            }
+        } catch (_) {
+            // ignore
+        }
+    }, [showReferenceModal]);
+
+    // Submit reference ID to backend
+    const submitReferenceId = async () => {
+        if (!referenceIdInput || !referenceIdInput.toString().trim()) {
+            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdRequired || 'Reference ID is required');
+            setShowErrorModal(true);
+            return;
+        }
+        try {
+            setIsReferenceUpdating(true);
+            let res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${order.order_id}`, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language,
+                },
+                credentials: 'include',
+                body: JSON.stringify({ reference_id: referenceIdInput.toString().trim() })
+            });
+
+            const data = await res.json();
+            console.log(data);
+
+            // if (res.ok && !data.error) {
+            //     // Optionally cache updated reference locally
+            //     try {
+            //         await cacheOrder({ ...order, reference_id: referenceIdInput.toString().trim() });
+            //     } catch (_) {}
+            //     setShowReferenceModal(false);
+            //     setSuccessMessage(translations[language]?.tabs?.orders?.order?.referenceIdUpdated || 'Reference ID updated');
+            //     setShowSuccessModal(true);
+            //     setTimeout(() => setShowSuccessModal(false), 2000);
+            // } else {
+            //     const rawErr = data.details || data.error;
+            //     let normalized = null;
+            //     if (typeof rawErr === 'string') {
+            //         normalized = rawErr;
+            //     } else if (Array.isArray(rawErr)) {
+            //         normalized = rawErr.map(e => (typeof e === 'string' ? e : `${e.field ? e.field + ': ' : ''}${e.message || ''}`)).join('\n');
+            //     } else if (rawErr && typeof rawErr === 'object') {
+            //         normalized = rawErr.message || `${rawErr.field ? rawErr.field + ': ' : ''}${rawErr.message || ''}`;
+            //     }
+            //     setErrorMessage(normalized || translations[language]?.tabs?.orders?.order?.referenceIdUpdateError || 'Failed to update Reference ID');
+            //     setShowErrorModal(true);
+            // }
+        } catch (error) {
+            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdUpdateError || 'Failed to update Reference ID');
+            setShowErrorModal(true);
+        } finally {
+            setIsReferenceUpdating(false);
+        }
+    };
+
+    // While the reference modal is open, poll for scanned value to auto-fill input
+    useEffect(() => {
+        if (!showReferenceModal) return;
+        const interval = setInterval(() => {
+            try {
+                if (global && global.scannedReferenceId) {
+                    setReferenceIdInput(global.scannedReferenceId);
+                    global.scannedReferenceId = null;
+                }
+            } catch (_) {}
+        }, 300);
+        return () => clearInterval(interval);
+    }, [showReferenceModal]);
 
     // Load shown error order IDs when component mounts
     useEffect(() => {
@@ -2386,6 +2486,89 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     </View>
                 </ModalPresentation>
             )}
+
+            {/* Reference ID Modal (after received) */}
+            {showReferenceModal && (
+                <ModalPresentation
+                    showModal={showReferenceModal}
+                    setShowModal={setShowReferenceModal}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.referenceModalContainer}>
+                        <View style={styles.referenceHeader}>
+                            <View style={styles.referenceIconBubble}>
+                                <MaterialIcons name="tag" size={18} color="#FFFFFF" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                                <Text style={[styles.referenceTitle, { color: colors.text }]}>
+                                    {translations[language]?.tabs?.orders?.order?.enterReferenceId || 'Enter Reference ID'}
+                                </Text>
+                                <Text style={[styles.referenceSubtitle, { color: colors.textSecondary }]}>
+                                    {translations[language]?.tabs?.orders?.order?.referenceIdHelper || 'You can type it or scan a QR/barcode'}
+                                </Text>
+                            </View>
+                        </View>
+
+                        <View style={[styles.referenceInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                            <MaterialIcons name="confirmation-number" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
+                            <TextInput
+                                style={[styles.referenceInput, { color: colors.text }]}
+                                placeholder={translations[language]?.tabs?.orders?.order?.referenceIdPlaceholder || 'Type or scan reference ID'}
+                                placeholderTextColor={colors.textSecondary}
+                                value={referenceIdInput}
+                                onChangeText={setReferenceIdInput}
+                                autoFocus
+                            />
+                            <TouchableOpacity
+                                onPress={() => setReferenceIdInput("")}
+                                style={styles.clearInputBtn}
+                            >
+                                <MaterialIcons name="close" size={18} color={colors.textSecondary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.referenceActionsRow}>
+                            <TouchableOpacity 
+                                style={[styles.scanActionButton]}
+                                onPress={() => {
+                                    try { if (global) global.scannedReferenceId = null; } catch (_) {}
+                                    router.push({ pathname: '(camera)/scanReference' });
+                                }}
+                            >
+                                <MaterialIcons name="qr-code-scanner" size={18} color="#4361EE" />
+                                <Text style={styles.scanActionText}>
+                                    {translations[language]?.tabs?.orders?.order?.scan || 'Scan'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <View style={{ flex: 1 }} />
+
+                            <TouchableOpacity 
+                                style={[styles.secondaryButton]}
+                                onPress={() => setShowReferenceModal(false)}
+                            >
+                                <Text style={styles.secondaryButtonText}>
+                                    {translations[language]?.tabs?.orders?.order?.skip || 'Skip'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity 
+                                style={[styles.primaryButton, isReferenceUpdating && styles.primaryButtonDisabled]}
+                                onPress={submitReferenceId}
+                                disabled={isReferenceUpdating}
+                            >
+                                {isReferenceUpdating ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={styles.primaryButtonText}>
+                                        {translations[language]?.tabs?.orders?.order?.save || 'Save'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </ModalPresentation>
+            )}
         </RTLWrapper>
     );
 }
@@ -2950,6 +3133,101 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontWeight: '600',
         fontSize: 15,
+    },
+    // Reference modal beautiful styles
+    referenceModalContainer: {
+        padding: 16,
+        gap: 16,
+    },
+    referenceHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    referenceIconBubble: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: '#4361EE',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    referenceTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    referenceSubtitle: {
+        fontSize: 12,
+        opacity: 0.8,
+        marginTop: 2,
+    },
+    referenceInputRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderRadius: 12,
+        paddingHorizontal: 12,
+        paddingVertical: 10,
+    },
+    referenceInput: {
+        flex: 1,
+        fontSize: 15,
+    },
+    clearInputBtn: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    referenceActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 4,
+    },
+    scanActionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: 'rgba(67, 97, 238, 0.08)',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+    },
+    scanActionText: {
+        color: '#4361EE',
+        fontWeight: '600',
+    },
+    secondaryButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.15)',
+        backgroundColor: '#fff',
+    },
+    secondaryButtonText: {
+        color: '#374151',
+        fontWeight: '600',
+    },
+    primaryButton: {
+        paddingVertical: 10,
+        paddingHorizontal: 18,
+        backgroundColor: '#10B981',
+        borderRadius: 10,
+        shadowColor: '#10B981',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    primaryButtonDisabled: {
+        backgroundColor: '#6EE7B7',
+    },
+    primaryButtonText: {
+        color: '#fff',
+        fontWeight: '700',
     },
     phoneRow: {
         marginBottom: 10,
