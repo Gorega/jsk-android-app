@@ -40,10 +40,6 @@
     </array>
     <key>CFBundleVersion</key>
     <string>1</string>
-    <key>UIBackgroundModes</key>
-    <array>
-      <string>remote-notification</string>
-    </array>
     <key>GMSApiKey</key>
     <string>YOUR_IOS_GOOGLE_MAPS_API_KEY_HERE</string>
     <key>ITSAppUsesNonExemptEncryption</key>
@@ -60,7 +56,11 @@
       <true/>
     </dict>
     <key>NSCameraUsageDescription</key>
-    <string>This app needs access to your camera to scan barcodes and QR codes for order processing and reference scanning.</string>
+    <string>Taiar needs access to your camera to scan barcodes, QR codes, and reference numbers for order processing and tracking.</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>remote-notification</string>
+    </array>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

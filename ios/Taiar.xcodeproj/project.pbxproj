@@ -8,29 +8,29 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		18CEA8B8D9AD4A8E99E9D23B /* failure.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 77C007FDC95D4B1BA19D36BB /* failure.mp3 */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		5C74BE63112F8E8B7FA09417 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8454B5CB9AD858F7E4FAFA50 /* PrivacyInfo.xcprivacy */; };
-		6B2A0219ED9C4D2888A47468 /* success.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A0692B439E0A4683B3C21633 /* success.mp3 */; };
-		7D645C2C3BDFBCF6AC18ACAB /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D98B2299BD17EFF714CC68 /* ExpoModulesProvider.swift */; };
+		A14D3C4E2E811CC6E1BFD2D6 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366B0F1C0ED826C7F4FDA643 /* ExpoModulesProvider.swift */; };
+		AA0A5D39A13F4C0F9EBC0921 /* success.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 6CDA1EFE118B48FAA9CAB3A2 /* success.mp3 */; };
+		B5EE5D58CB164D17AC5CD286 /* failure.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 7D6EDE86890E407A9E5DB5F1 /* failure.mp3 */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		DB9F2ED876958CAEF4B1EDE8 /* libPods-Taiar.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BCA68BD4D617FDFA85D816E6 /* libPods-Taiar.a */; };
+		E76A08AFCC576DE7110020B1 /* Pods_Taiar.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AD42212F1756519CD5F2CC18 /* Pods_Taiar.framework */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
+		FF5264E4CEB1D16C22076111 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = CEE735D78F83CC83D3F14078 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* Taiar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Taiar.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Taiar/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Taiar/Info.plist; sourceTree = "<group>"; };
-		681AE515B576178DCECCBCE5 /* Pods-Taiar.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Taiar.release.xcconfig"; path = "Target Support Files/Pods-Taiar/Pods-Taiar.release.xcconfig"; sourceTree = "<group>"; };
-		7379D7A4985D0EBD5741386C /* Pods-Taiar.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Taiar.debug.xcconfig"; path = "Target Support Files/Pods-Taiar/Pods-Taiar.debug.xcconfig"; sourceTree = "<group>"; };
-		77C007FDC95D4B1BA19D36BB /* failure.mp3 */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = failure.mp3; path = Taiar/failure.mp3; sourceTree = "<group>"; };
-		8454B5CB9AD858F7E4FAFA50 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Taiar/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		A0692B439E0A4683B3C21633 /* success.mp3 */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = success.mp3; path = Taiar/success.mp3; sourceTree = "<group>"; };
+		366B0F1C0ED826C7F4FDA643 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Taiar/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		5CA5C8A179FD2C10305F3DA4 /* Pods-Taiar.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Taiar.debug.xcconfig"; path = "Target Support Files/Pods-Taiar/Pods-Taiar.debug.xcconfig"; sourceTree = "<group>"; };
+		6CDA1EFE118B48FAA9CAB3A2 /* success.mp3 */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = success.mp3; path = Taiar/success.mp3; sourceTree = "<group>"; };
+		7D6EDE86890E407A9E5DB5F1 /* failure.mp3 */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = undefined; includeInIndex = 0; lastKnownFileType = unknown; name = failure.mp3; path = Taiar/failure.mp3; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Taiar/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B0D98B2299BD17EFF714CC68 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Taiar/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		AD42212F1756519CD5F2CC18 /* Pods_Taiar.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Taiar.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B83869E784DD1315F0E2F862 /* Pods-Taiar.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Taiar.release.xcconfig"; path = "Target Support Files/Pods-Taiar/Pods-Taiar.release.xcconfig"; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		BCA68BD4D617FDFA85D816E6 /* libPods-Taiar.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Taiar.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEE735D78F83CC83D3F14078 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Taiar/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Taiar/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Taiar-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Taiar-Bridging-Header.h"; path = "Taiar/Taiar-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -41,7 +41,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DB9F2ED876958CAEF4B1EDE8 /* libPods-Taiar.a in Frameworks */,
+				E76A08AFCC576DE7110020B1 /* Pods_Taiar.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,36 +57,26 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				A0692B439E0A4683B3C21633 /* success.mp3 */,
-				77C007FDC95D4B1BA19D36BB /* failure.mp3 */,
-				8454B5CB9AD858F7E4FAFA50 /* PrivacyInfo.xcprivacy */,
+				6CDA1EFE118B48FAA9CAB3A2 /* success.mp3 */,
+				7D6EDE86890E407A9E5DB5F1 /* failure.mp3 */,
+				CEE735D78F83CC83D3F14078 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Taiar;
-			sourceTree = "<group>";
-		};
-		251D0A4744CAEEDB43F4CD92 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				7379D7A4985D0EBD5741386C /* Pods-Taiar.debug.xcconfig */,
-				681AE515B576178DCECCBCE5 /* Pods-Taiar.release.xcconfig */,
-			);
-			name = Pods;
-			path = Pods;
 			sourceTree = "<group>";
 		};
 		2D16E6871FA4F8E400B85C8A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				BCA68BD4D617FDFA85D816E6 /* libPods-Taiar.a */,
+				AD42212F1756519CD5F2CC18 /* Pods_Taiar.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		3E315541A4E7E4EAF1655245 /* ExpoModulesProviders */ = {
+		6D03798831E34CB1F30E7693 /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				C0BCCBDD39707523974B7494 /* Taiar */,
+				F50AB0547F1EA1C841729213 /* Taiar */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -105,8 +95,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				251D0A4744CAEEDB43F4CD92 /* Pods */,
-				3E315541A4E7E4EAF1655245 /* ExpoModulesProviders */,
+				F805402919809B58AC245012 /* Pods */,
+				6D03798831E34CB1F30E7693 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -130,12 +120,22 @@
 			path = Taiar/Supporting;
 			sourceTree = "<group>";
 		};
-		C0BCCBDD39707523974B7494 /* Taiar */ = {
+		F50AB0547F1EA1C841729213 /* Taiar */ = {
 			isa = PBXGroup;
 			children = (
-				B0D98B2299BD17EFF714CC68 /* ExpoModulesProvider.swift */,
+				366B0F1C0ED826C7F4FDA643 /* ExpoModulesProvider.swift */,
 			);
 			name = Taiar;
+			sourceTree = "<group>";
+		};
+		F805402919809B58AC245012 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				5CA5C8A179FD2C10305F3DA4 /* Pods-Taiar.debug.xcconfig */,
+				B83869E784DD1315F0E2F862 /* Pods-Taiar.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -146,13 +146,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Taiar" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				1ADE0550BB270F98D2AC8F20 /* [Expo] Configure project */,
+				0A45A346542D2C6DE4638BF9 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				27AC75347B1967DE2CBE6C05 /* [CP] Embed Pods Frameworks */,
+				1960664314DF1DD3D82DFEB0 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -202,9 +202,9 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				6B2A0219ED9C4D2888A47468 /* success.mp3 in Resources */,
-				18CEA8B8D9AD4A8E99E9D23B /* failure.mp3 in Resources */,
-				5C74BE63112F8E8B7FA09417 /* PrivacyInfo.xcprivacy in Resources */,
+				AA0A5D39A13F4C0F9EBC0921 /* success.mp3 in Resources */,
+				B5EE5D58CB164D17AC5CD286 /* failure.mp3 in Resources */,
+				FF5264E4CEB1D16C22076111 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,7 +248,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		1ADE0550BB270F98D2AC8F20 /* [Expo] Configure project */ = {
+		0A45A346542D2C6DE4638BF9 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -267,7 +267,7 @@
 			shellPath = /bin/sh;
 			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Taiar/expo-configure-project.sh\"\n";
 		};
-		27AC75347B1967DE2CBE6C05 /* [CP] Embed Pods Frameworks */ = {
+		1960664314DF1DD3D82DFEB0 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -347,7 +347,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				7D645C2C3BDFBCF6AC18ACAB /* ExpoModulesProvider.swift in Sources */,
+				A14D3C4E2E811CC6E1BFD2D6 /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -356,7 +356,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7379D7A4985D0EBD5741386C /* Pods-Taiar.debug.xcconfig */;
+			baseConfigurationReference = 5CA5C8A179FD2C10305F3DA4 /* Pods-Taiar.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -392,7 +392,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 681AE515B576178DCECCBCE5 /* Pods-Taiar.release.xcconfig */;
+			baseConfigurationReference = B83869E784DD1315F0E2F862 /* Pods-Taiar.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -467,6 +467,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,
@@ -526,6 +537,17 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon/ReactCommon.framework/Headers/react/nativemodule/core",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/ReactCommon-Samples/ReactCommon_Samples.framework/Headers/platform/ios",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-Fabric/React_Fabric.framework/Headers/react/renderer/components/view/platform/cxx",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-NativeModulesApple/React_NativeModulesApple.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers",
+					"${PODS_CONFIGURATION_BUILD_DIR}/React-graphics/React_graphics.framework/Headers/react/renderer/graphics/platform/ios",
+				);
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
 					/usr/lib/swift,

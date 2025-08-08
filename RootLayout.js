@@ -1,11 +1,11 @@
 // RootLayout.js
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet,Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/utils/languageContext';
 import { getToken, deleteToken, getMasterAccountId, setMasterAccountId, addAccountToMaster, isDirectLogin } from '@/utils/secureStore';
 import useFetch from '@/utils/useFetch';
@@ -77,6 +77,9 @@ export default function RootLayout() {
   // Use theme from context - moved up here to ensure consistent hook order
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Platform.OS === 'ios' ? Math.max(insets.bottom - 30, 0) : insets.bottom;
   
   // Initialize RTL on component mount - using the simplified flag
   useEffect(() => {
@@ -261,8 +264,8 @@ export default function RootLayout() {
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}>
         <SocketProvider isAuthenticated={isAuthenticated}>
           <SafeAreaView 
-            style={{ flex: 1, backgroundColor: colors.background }}
-            edges={['right', 'left', 'bottom']} // Handle top, left, and right edges
+            style={{ flex: 1, backgroundColor: colors.background,paddingBottom: bottomPadding }}
+            edges={['right', 'left']} // Handle top, left, and right edges
           >
             <StatusBar style={colors.statusBarStyle} />
             <AppNavigationStack isAuthenticated={isAuthenticated} colors={colors} />

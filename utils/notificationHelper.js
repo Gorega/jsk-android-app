@@ -21,6 +21,11 @@ Notifications.setNotificationHandler({
 
 // Register the background task handler for notifications
 export async function registerBackgroundNotificationTask() {
+  // Skip for iOS as it's handled by the native side
+  if (Platform.OS === 'ios') {
+    return;
+  }
+  
   // Check if task is already registered
   const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFICATION_TASK);
   
@@ -130,9 +135,12 @@ export async function registerForPushNotificationsAsync() {
         // Use device push token for Android
         token = (await Notifications.getDevicePushTokenAsync()).data;
       } else {
-        // For iOS, always use device push token (APNs) for production builds
+        // For iOS, use getDevicePushTokenAsync() instead of getExpoPushTokenAsync()
         // This is critical for background notifications to work in production
         token = (await Notifications.getDevicePushTokenAsync()).data;
+        
+        // Log the token type for debugging
+        console.log('iOS push token type:', typeof token);
       }
       
       // Register background task for handling notifications when app is closed
@@ -167,8 +175,20 @@ async function sendPushTokenToServer(pushToken) {
 
     const apiUrl = process.env.EXPO_PUBLIC_API_URL;
     
-    // Determine if it's an Expo token or native device token
-    const isExpoToken = typeof pushToken === 'string' && pushToken.startsWith('ExponentPushToken[');
+    // Format the token if it's a native iOS token (Data object)
+    let formattedToken = pushToken;
+    let tokenType = 'native';
+    
+    // Check if it's an Expo token
+    if (typeof pushToken === 'string' && pushToken.startsWith('ExponentPushToken[')) {
+      tokenType = 'expo';
+    } 
+    // Check if it's a native iOS token that needs formatting
+    else if (Platform.OS === 'ios' && typeof pushToken === 'string' && pushToken.includes(' ')) {
+      // Format the token by removing spaces
+      formattedToken = pushToken.replace(/\s/g, '');
+    }
+    
     const response = await fetch(`${apiUrl}/api/notifications/token`, {
       method: 'POST',
       credentials: 'include',
@@ -177,9 +197,9 @@ async function sendPushTokenToServer(pushToken) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        pushToken,
+        pushToken: formattedToken,
         platform: Platform.OS,
-        tokenType: isExpoToken ? 'expo' : 'native'
+        tokenType: tokenType
       })
     });
     
@@ -275,8 +295,25 @@ export async function initializeNotifications() {
   // Register for push notifications
   await registerForPushNotificationsAsync();
   
-  // Explicitly register background task
+  // Register background task (this will skip for iOS)
   await registerBackgroundNotificationTask();
+  
+  // For iOS, we need to request notification permissions again to ensure they're properly set
+  if (Platform.OS === 'ios') {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+          providesAppNotificationSettings: true,
+          allowProvisional: true,
+        },
+      });
+    }
+  }
   
   // Check for any notifications that launched the app
   const lastNotificationResponse = await getLastNotificationResponse();

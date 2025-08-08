@@ -21,9 +21,9 @@ const withIosPushNotifications = (config) => {
   return withEntitlementsPlist(config, (config) => {
     const entitlements = config.modResults;
     
-    // Ensure aps-environment is set
+    // Ensure aps-environment is set to production for production builds
     if (!entitlements['aps-environment']) {
-      entitlements['aps-environment'] = 'development';
+      entitlements['aps-environment'] = 'production';
     }
     
     // Add time-sensitive notifications capability
@@ -135,6 +135,14 @@ module.exports = function configPlugin(config) {
       infoPlist.UIBackgroundModes = ['remote-notification'];
     } else if (!infoPlist.UIBackgroundModes.includes('remote-notification')) {
       infoPlist.UIBackgroundModes.push('remote-notification');
+    }
+    
+    // Add required notification settings for iOS
+    if (!infoPlist.UIUserNotificationSettings) {
+      infoPlist.UIUserNotificationSettings = {
+        types: ['alert', 'badge', 'sound'],
+        categories: []
+      };
     }
     
     return config;
