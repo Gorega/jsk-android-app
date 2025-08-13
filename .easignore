@@ -1,0 +1,60 @@
+# Node modules and cache
+node_modules/
+npm-debug.log
+yarn-error.log
+.npm/
+.yarn/
+.pnp.*
+
+# Build directories
+android/app/build/
+android/.gradle/
+ios/build/
+ios/Pods/
+web-build/
+
+# Development files
+.git/
+.github/
+__tests__/
+*.test.js
+*.spec.js
+jest.config.js
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Logs
+logs/
+*.log
+
+# Environment and local config
+.env.local
+.env.development
+.env.test
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Debug files
+.DS_Store
+Thumbs.db
+
+# Large media files (if applicable)
+assets/videos/
+*.mp4
+*.mov
+*.avi
+*.wmv
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/

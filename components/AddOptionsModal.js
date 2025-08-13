@@ -37,7 +37,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
         const hasSeenTutorial = await getUserData(userId, 'has_seen_add_options_tutorial');
         
         // If the user hasn't seen the tutorial and has the right role, mark it for showing
-        if (hasSeenTutorial !== 'true' && ["driver", "delivery_company"].includes(userRole)) {
+        if (hasSeenTutorial !== 'true' && ["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole)) {
           // We don't set showOnboarding here, we'll do that when the modal becomes visible
         }
       } catch (error) {
@@ -47,17 +47,23 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
     initializeOnboarding();
   }, []);
 
-  // Onboarding content based on step with fallbacks
+  // Onboarding content based on step with fallbacks and user role
   const onboardingContent = [
     {
       title: translations[language]?.onboarding?.assignOrdersTitle || "Assign Orders",
       message: translations[language]?.onboarding?.assignOrdersMessage || "Use this option to scan order QR codes and assign them to your route.",
       icon: <Feather name="camera" size={32} color="#FFFFFF" />
     },
+    ["driver", "delivery_company"].includes(userRole) ? 
     {
       title: translations[language]?.onboarding?.routesTitle || "Manage Routes",
       message: translations[language]?.onboarding?.routesMessage || "Create and manage delivery routes to optimize your deliveries.",
       icon: <MaterialIcons name="route" size={32} color="#FFFFFF" />
+    } : 
+    {
+      title: translations[language]?.onboarding?.createOrdersTitle || "Create Orders",
+      message: translations[language]?.onboarding?.createOrdersMessage || "Create new orders quickly and efficiently.",
+      icon: <Feather name="plus" size={32} color="#FFFFFF" />
     }
   ];
 
@@ -82,7 +88,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
         const hasSeenTutorial = await getUserData(userId, 'has_seen_add_options_tutorial');
         
         // Fix: explicitly check if hasSeenTutorial is null, undefined, or not equal to 'true'
-        const shouldShowOnboarding = hasSeenTutorial !== 'true' && ["driver", "delivery_company"].includes(userRole);
+        const shouldShowOnboarding = hasSeenTutorial !== 'true' && ["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole);
         
         if (shouldShowOnboarding) {
           setShowOnboarding(true);
@@ -266,7 +272,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
             </View>
 
             <View style={styles.optionsContainer}>
-              {["driver", "delivery_company"].includes(userRole) ? (
+              {["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole) ? (
                 <>
                   <TouchableOpacity
                     style={[
@@ -296,7 +302,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                       styles.optionButton,
                       { backgroundColor: colors.surface }
                     ]}
-                    onPress={() => handleOptionPress("/(routes)/")}
+                    onPress={() => handleOptionPress(["driver", "delivery_company"].includes(userRole) ? "/(routes)/" : "/(create)/")}
                   >
                     <LinearGradient
                       colors={[colors.gradientStart, colors.gradientEnd]}
@@ -304,13 +310,19 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 1 }}
                     >
-                      <MaterialIcons name="route" size={24} color="#FFFFFF" />
+                      {["driver", "delivery_company"].includes(userRole) ? (
+                        <MaterialIcons name="route" size={24} color="#FFFFFF" />
+                      ) : (
+                        <Feather name="plus" size={24} color="#FFFFFF" />
+                      )}
                     </LinearGradient>
                     <Text style={[
                       styles.optionText,
                       { color: colors.text }
                     ]}>
-                      {translations[language]?.routes?.title || "Routes"}
+                      {["driver", "delivery_company"].includes(userRole) 
+                        ? (translations[language]?.routes?.title || "Routes")
+                        : (translations[language]?.common?.createNew || "Create New")}
                     </Text>
                   </TouchableOpacity>
                 </>

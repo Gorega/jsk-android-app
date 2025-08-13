@@ -340,7 +340,7 @@ export default function Search({
           </View>
         )}
         
-        <View style={styles.filter}>
+        {filterByGroup.length > 0 && <View style={styles.filter}>
           <TouchableOpacity 
             style={[styles.selectBox, activeFilter && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
             onPress={handleOpenFiltersModal}
@@ -373,7 +373,7 @@ export default function Search({
               </Text>
             </View>
           )}
-        </View>
+        </View>}
       </SafeAreaView>
 
       {showSpecificFilters && (

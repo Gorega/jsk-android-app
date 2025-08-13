@@ -2,9 +2,9 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "2.4.1",
+    "version": "2.4.2",
     "orientation": "portrait",
-    "icon": "./assets/images/tayar_logo.png",
+    "icon": "./assets/images/tayar_logo_dark.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -33,8 +33,8 @@
   "package": "com.taiar",
   "googleServicesFile": "./google-services.json",
   "adaptiveIcon": {
-    "foregroundImage": "./assets/images/tayar_logo.png",
-    "backgroundColor": "#ffffff"
+    "foregroundImage": "./assets/images/tayar_logo_dark.png",
+    "backgroundColor": "#252424"
   },
   "permissions": [
     "android.permission.CAMERA",
@@ -59,17 +59,17 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/tayar_logo.png"
+      "favicon": "./assets/images/tayar_logo_dark.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/tayar_logo.png",
+          "image": "./assets/images/tayar_logo_dark.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#252424"
         }
       ],
       [
@@ -88,8 +88,8 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/tayar_logo.png",
-          "color": "#ffffff",
+          "icon": "./assets/images/tayar_logo_dark.png",
+          "color": "#252424",
           "sounds": [],
           "androidMode": "default",
           "androidCollapsedTitle": "Updates from Taiar",
@@ -124,8 +124,8 @@
     },
     "owner": "expresstaiar",
     "notification": {
-      "icon": "./assets/images/tayar_logo.png",
-      "color": "#ffffff",
+      "icon": "./assets/images/tayar_logo_dark.png",
+      "color": "#252424",
       "androidMode": "default",
       "androidCollapsedTitle": "Updates from Taiar",
       "iosDisplayInForeground": true

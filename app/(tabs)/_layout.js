@@ -72,8 +72,8 @@ export default function TabLayout() {
     animateAddButton();
     // Reduce timeout to minimize potential timing issues
     setTimeout(() => {
-      if (["driver", "delivery_company"].includes(user.role)) {
-        // Show options modal for driver or delivery_company
+      if (["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(user.role)) {
+        // Show options modal for all these roles
         setShowAddOptionsModal(true);
       } else {
         router.push("/(create)/");
@@ -190,7 +190,9 @@ export default function TabLayout() {
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
               >
-                {["driver","delivery_company"].includes(user.role) ? <MaterialIcons name="route" size={24} color="white" /> : <FontAwesome6 name="plus" size={22} color="white" />}
+                {["driver", "delivery_company"].includes(user.role) ? 
+                  <MaterialIcons name="route" size={24} color="white" /> : 
+                  <FontAwesome6 name="plus" size={22} color="white" />}
               </LinearGradient>
             </Animated.View>
           </TouchableOpacity>

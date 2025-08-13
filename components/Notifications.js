@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Platform } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Platform, Animated } from 'react-native';
 import { useLanguage } from '../utils/languageContext';
 import { translations } from '../utils/languageContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -12,6 +12,7 @@ import ModalPresentation from './ModalPresentation';
 import { registerForPushNotificationsAsync } from '../utils/notificationHelper';
 import { useTheme } from '../utils/themeContext';
 import { Colors } from '../constants/Colors';
+import { useSocket } from '../utils/socketContext';
 
 export default function NotificationsComponent() {
   const { language } = useLanguage();
@@ -40,6 +41,11 @@ export default function NotificationsComponent() {
     registerForPushNotificationsAsync().then(token => setExpoPushToken(token));
   }, []);
 
+  // Get socket instance
+  const socket = useSocket();
+  // Animation ref for new notifications
+  const newNotificationAnimation = useRef(new Animated.Value(0)).current;
+
   // Listen for changes in notificationsCount to update UI or refreshKey changes
   useEffect(() => {
     if (user?.userId) {
@@ -48,6 +54,101 @@ export default function NotificationsComponent() {
       fetchNotificationsData();
     }
   }, [user, refreshKey]);
+  
+  // Socket notification handling
+  useEffect(() => {
+    if (!socket || !user || !user.userId) return;
+    
+    const handleNotification = (notification) => {
+      // Validate notification data and user match
+      if (!notification || Number(user.userId) !== Number(notification.user_id)) {
+        return;
+      }
+      
+      // Handle different notification types
+      switch (notification.type) {
+        case 'NEW_NOTIFICATION':
+          // Add the new notification to the list if we have the full notification data
+          if (notification.notification_id && notification.translated_message) {
+            // Add to the top of the list with animation
+            setNotificationsData(prev => {
+              // Check if notification already exists to avoid duplicates
+              const exists = prev.some(n => n.notification_id === notification.notification_id);
+              if (exists) return prev;
+              
+              // Create a complete notification object
+              const newNotification = {
+                notification_id: notification.notification_id,
+                user_id: notification.user_id,
+                message: notification.message,
+                translated_message: notification.translated_message,
+                is_read: false,
+                is_read_count: false,
+                type: notification.notificationType || 'system',
+                order_id: notification.orderId,
+                created_at: new Date().toISOString(),
+                metadata: notification.metadata
+              };
+              
+              // Trigger animation
+              Animated.sequence([
+                Animated.timing(newNotificationAnimation, {
+                  toValue: 1,
+                  duration: 300,
+                  useNativeDriver: true,
+                }),
+                Animated.timing(newNotificationAnimation, {
+                  toValue: 0,
+                  duration: 300,
+                  useNativeDriver: true,
+                }),
+              ]).start();
+              
+              // Return new array with the new notification at the top
+              return [newNotification, ...prev];
+            });
+          } else {
+            // If we don't have full data, refresh the list
+            fetchNotificationsData();
+          }
+          break;
+          
+        case 'NOTIFICATION_UPDATED':
+          // Update notification read status
+          if (notification.notification_id) {
+            setNotificationsData(prev => 
+              prev.map(n => n.notification_id === notification.notification_id 
+                ? {...n, is_read: notification.is_read} 
+                : n
+              )
+            );
+          }
+          break;
+          
+        case 'NOTIFICATION_DELETED':
+          // Remove the notification from the list
+          if (notification.notification_id) {
+            setNotificationsData(prev => 
+              prev.filter(n => n.notification_id !== notification.notification_id)
+            );
+          }
+          break;
+          
+        case 'ALL_NOTIFICATIONS_DELETED':
+          // Clear all notifications
+          setNotificationsData([]);
+          break;
+      }
+    };
+    
+    // Register socket event listener
+    socket.on('notification', handleNotification);
+    
+    // Clean up event listener on unmount
+    return () => {
+      socket.off('notification', handleNotification);
+    };
+  }, [socket, user, language]);
 
   const fetchNotificationsData = async (pageNum = 1) => {
     try {
@@ -63,7 +164,8 @@ export default function NotificationsComponent() {
         credentials: "include",
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Accept-Language": language
         }
       });
 
@@ -476,14 +578,29 @@ export default function NotificationsComponent() {
     return date.toLocaleDateString(language, { day: 'numeric', month: 'short' });
   };
 
-  const renderNotification = (notification) => (
-    <View 
+  const renderNotification = (notification, index) => (
+    <Animated.View 
       key={notification.notification_id} 
       style={[
         styles.notificationItem, 
         { 
           backgroundColor: colors.card,
-          shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000"
+          shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000",
+          // Apply animation to the first item if it's new
+          transform: index === 0 ? [
+            { 
+              translateY: newNotificationAnimation.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, -10]
+              }) 
+            },
+            {
+              scale: newNotificationAnimation.interpolate({
+                inputRange: [0, 0.5, 1],
+                outputRange: [1, 1.03, 1]
+              })
+            }
+          ] : []
         },
         !notification.is_read && [
           styles.unread,
@@ -540,7 +657,7 @@ export default function NotificationsComponent() {
       >
         <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
       </TouchableOpacity>
-    </View>
+    </Animated.View>
   );
 
   const renderEmptyState = () => (
@@ -680,7 +797,7 @@ export default function NotificationsComponent() {
           loadMoreData={loadMoreNotifications}
           loadingMore={loadingMore}
         >
-          {renderNotification}
+          {(notification, index) => renderNotification(notification, index)}
         </FlatListData>
       )}
       

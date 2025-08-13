@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated,Platform, ActivityIndicator,TextInput,ScrollView } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, Platform, ActivityIndicator, TextInput, ScrollView, Alert } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -169,13 +169,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         requiresReason: true,
         reasons: suspendReasons
         },{
-            label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
-            requiresReason: true,
-            reasons: suspendReasons
+        label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
+        requiresReason: true,
+        reasons: suspendReasons
         }, {
-            label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
-            requiresReason: true,
-            reasons: suspendReasons
+        label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
+        requiresReason: true,
+        reasons: suspendReasons
         },{
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
         requiresReason: true,
@@ -188,8 +188,6 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }, {
         label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.delivered_received, value: "delivered/received"
     }]
     :
     [{
@@ -1173,7 +1171,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     // Submit reference ID to backend
     const submitReferenceId = async () => {
         if (!referenceIdInput || !referenceIdInput.toString().trim()) {
-            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdRequired || 'Reference ID is required');
+            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdRequired);
             setShowErrorModal(true);
             return;
         }
@@ -1191,32 +1189,30 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             });
 
             const data = await res.json();
-            console.log(data);
-
-            // if (res.ok && !data.error) {
-            //     // Optionally cache updated reference locally
-            //     try {
-            //         await cacheOrder({ ...order, reference_id: referenceIdInput.toString().trim() });
-            //     } catch (_) {}
-            //     setShowReferenceModal(false);
-            //     setSuccessMessage(translations[language]?.tabs?.orders?.order?.referenceIdUpdated || 'Reference ID updated');
-            //     setShowSuccessModal(true);
-            //     setTimeout(() => setShowSuccessModal(false), 2000);
-            // } else {
-            //     const rawErr = data.details || data.error;
-            //     let normalized = null;
-            //     if (typeof rawErr === 'string') {
-            //         normalized = rawErr;
-            //     } else if (Array.isArray(rawErr)) {
-            //         normalized = rawErr.map(e => (typeof e === 'string' ? e : `${e.field ? e.field + ': ' : ''}${e.message || ''}`)).join('\n');
-            //     } else if (rawErr && typeof rawErr === 'object') {
-            //         normalized = rawErr.message || `${rawErr.field ? rawErr.field + ': ' : ''}${rawErr.message || ''}`;
-            //     }
-            //     setErrorMessage(normalized || translations[language]?.tabs?.orders?.order?.referenceIdUpdateError || 'Failed to update Reference ID');
-            //     setShowErrorModal(true);
-            // }
+            
+            if (res.ok) {
+                // Success case - API returns 200-299 status code
+                // Update the local order data if needed
+                if (order && data.order) {
+                    updateCachedOrder(data.order);
+                }
+                
+                // Show success message
+                setSuccessMessage(translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdated || 'Reference ID updated successfully');
+                setShowSuccessModal(true);
+                
+                // Close the reference modal immediately
+                setShowReferenceModal(false);
+                
+                // Clear the input
+                setReferenceIdInput("");
+            } else {
+                // HTTP error
+                setErrorMessage(data.message || (translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdateError || 'Failed to update Reference ID'));
+                setShowErrorModal(true);
+            }
         } catch (error) {
-            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdUpdateError || 'Failed to update Reference ID');
+            setErrorMessage(translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdateError || 'Failed to update Reference ID');
             setShowErrorModal(true);
         } finally {
             setIsReferenceUpdating(false);
@@ -2501,10 +2497,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </View>
                             <View style={{ flex: 1 }}>
                                 <Text style={[styles.referenceTitle, { color: colors.text }]}>
-                                    {translations[language]?.tabs?.orders?.order?.enterReferenceId || 'Enter Reference ID'}
+                                    {translations[language]?.tabs?.orders?.order?.enterReferenceId}
                                 </Text>
                                 <Text style={[styles.referenceSubtitle, { color: colors.textSecondary }]}>
-                                    {translations[language]?.tabs?.orders?.order?.referenceIdHelper || 'You can type it or scan a QR/barcode'}
+                                    {translations[language]?.tabs?.orders?.order?.referenceIdHelper}
                                 </Text>
                             </View>
                         </View>
@@ -2513,7 +2509,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             <MaterialIcons name="confirmation-number" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
                             <TextInput
                                 style={[styles.referenceInput, { color: colors.text }]}
-                                placeholder={translations[language]?.tabs?.orders?.order?.referenceIdPlaceholder || 'Type or scan reference ID'}
+                                placeholder={translations[language]?.tabs?.orders?.order?.referenceIdPlaceholder}
                                 placeholderTextColor={colors.textSecondary}
                                 value={referenceIdInput}
                                 onChangeText={setReferenceIdInput}
@@ -2537,7 +2533,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             >
                                 <MaterialIcons name="qr-code-scanner" size={18} color="#4361EE" />
                                 <Text style={styles.scanActionText}>
-                                    {translations[language]?.tabs?.orders?.order?.scan || 'Scan'}
+                                    {translations[language]?.tabs?.orders?.order?.scan}
                                 </Text>
                             </TouchableOpacity>
 
@@ -2548,7 +2544,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 onPress={() => setShowReferenceModal(false)}
                             >
                                 <Text style={styles.secondaryButtonText}>
-                                    {translations[language]?.tabs?.orders?.order?.skip || 'Skip'}
+                                    {translations[language]?.tabs?.orders?.order?.skip}
                                 </Text>
                             </TouchableOpacity>
 
@@ -2561,7 +2557,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
                                     <Text style={styles.primaryButtonText}>
-                                        {translations[language]?.tabs?.orders?.order?.save || 'Save'}
+                                        {translations[language]?.tabs?.orders?.order?.save}
                                     </Text>
                                 )}
                             </TouchableOpacity>

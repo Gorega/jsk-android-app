@@ -96,11 +96,9 @@ export default function Orders() {
         setActiveDate("");
         setSelectedDate("");
         setPage(1);
-        
-        // Clear all URL params by navigating to orders tab without params
-        router.replace("/(tabs)/orders");
-        
-        fetchData(1, false);
+        // Clear all URL params on the same route
+        router.setParams({});
+        fetchData(1, false, { ignoreOrderIds: true });
     }, [router, fetchData]);
 
     // Listen for reset event
@@ -125,19 +123,13 @@ export default function Orders() {
             setActiveSearchBy("");
             setActiveDate("");
             setSelectedDate("");
-            
-            // Clear orderIds param by navigating to the orders tab without params
-            if (orderIds) {
-                router.replace("/(tabs)/orders");
-                return; // The navigation will trigger a re-render with new params
-            }
-            
-            await fetchData(1, false);
+            // Fetch all orders and explicitly ignore any orderIds from params
+            await fetchData(1, false, { ignoreOrderIds: true });
         } catch (error) {
         } finally {
             setRefreshing(false);
         }
-    }, [language, orderIds, router]);
+    }, [language, orderIds, router, fetchData]);
 
     // Apply multi_id param if provided (for barcode scanning)
     useEffect(() => {
@@ -325,7 +317,8 @@ export default function Orders() {
     };
 
 
-    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false) => {
+    const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false, options = {}) => {
+        const { ignoreOrderIds = false } = options;
         // Cancel any ongoing fetch
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -340,13 +333,13 @@ export default function Orders() {
             const queryParams = new URLSearchParams();
             
             // Clear orderIds and use a clean request if:
-            // 1. User explicitly selected "All" filter (activeFilter is "") or any other filter
+            // 1. User explicitly selected a status filter (non-empty)
             // 2. User is using search or other filtering methods
-            const isFilterSelected = activeFilter !== undefined && activeFilter !== null;
+            const isFilterSelected = (typeof activeFilter === 'string') ? (activeFilter.trim() !== '') : Boolean(activeFilter);
             const isUsingSearch = activeSearchBy || activeDate || (searchValue && searchValue.trim() !== '');
             
             // If user has selected a filter (including "All") or is using search, don't use orderIds
-            const shouldUseOrderIds = !isFilterSelected && !isUsingSearch;
+            const shouldUseOrderIds = !isFilterSelected && !isUsingSearch && !ignoreOrderIds;
             
             
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
@@ -607,10 +600,7 @@ export default function Orders() {
         setActiveFilter(newFilter);
         
         // When selecting a filter (including "All"), clear orderIds from URL
-        router.replace({
-            pathname: "/(tabs)/orders",
-            params: newFilter ? { status_key: newFilter } : {}
-        });
+        router.setParams(newFilter ? { status_key: newFilter } : {});
         
     }, [router]);
 
@@ -622,15 +612,9 @@ export default function Orders() {
         
         // When changing date filter, clear orderIds from URL
         if (date && date.action) {
-            router.replace({
-                pathname: "/(tabs)/orders", 
-                params: { date_range: date.action }
-            });
+            router.setParams({ date_range: date.action });
         } else {
-            router.replace({
-                pathname: "/(tabs)/orders",
-                params: {}
-            });
+            router.setParams({});
         }
         
     }, [router]);
@@ -641,11 +625,8 @@ export default function Orders() {
         // Clear orderIds when search by is manually changed
         setActiveSearchBy(searchBy);
         
-        // Clear URL parameters by replacing with empty params
-        router.replace({
-            pathname: "/(tabs)/orders",
-            params: {}
-        });
+        // Clear URL parameters on same route
+        router.setParams({});
         
     }, [router]);
 
@@ -656,11 +637,8 @@ export default function Orders() {
         
         // Only clear URL parameters if typing a search query
         if (input.trim() !== '') {
-            // Clear URL parameters by replacing with empty params
-            router.replace({
-                pathname: "/(tabs)/orders",
-                params: {}
-            });
+            // Clear URL parameters on same route
+            router.setParams({});
             
         }
     }, [router]);
@@ -676,14 +654,11 @@ export default function Orders() {
         setSelectedDate("");
         setPage(1);
         
-        // Clear all URL params by completely replacing them
-        router.replace({
-            pathname: "/(tabs)/orders",
-            params: {}
-        });
+        // Clear all URL params on same route
+        router.setParams({});
         
         // Fetch data with no filters
-        fetchData(1, false);
+        fetchData(1, false, { ignoreOrderIds: true });
     }, [router, fetchData]);
 
     // Memoize the refresh control to prevent unnecessary re-renders

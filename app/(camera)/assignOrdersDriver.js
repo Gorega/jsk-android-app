@@ -16,6 +16,7 @@ import { useRTLStyles } from '../../utils/RTLWrapper';
 
 export default function CameraScanner() {
   const { user } = useAuth();
+  const [showDriverSelection, setShowDriverSelection] = useState(false);
   const { language } = useLanguage();
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
@@ -37,7 +38,8 @@ export default function CameraScanner() {
   
   const [selectedValue, setSelectedValue] = useState({
     toBranch: null,
-    toDriver: null
+    toDriver: null,
+    fromDriver: null
   });
   const [processingBarcode, setProcessingBarcode] = useState(false);
 
@@ -48,6 +50,11 @@ export default function CameraScanner() {
   
   // Start animations
   useEffect(() => {
+    // Check if user is not a driver or delivery company
+    if (user && user.role_id !== 4 && user.role_id !== 9) {
+      setShowDriverSelection(true);
+    }
+    
     // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -108,6 +115,7 @@ export default function CameraScanner() {
     }
   };
 
+
   const playSuccessSound = async () => {
     vibrate('success');
   };
@@ -117,6 +125,10 @@ export default function CameraScanner() {
   };
 
   const createDispatchedCollection = async () => {
+    // Create a timeout promise that rejects after 30 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timed out')), 30000);
+    });
 
     try {
       setFormSpinner({ status: true });
@@ -130,6 +142,16 @@ export default function CameraScanner() {
         setFormSpinner({ status: false });
         return;
       }
+      
+      // Check if driver selection is required but no driver is selected
+      if (showDriverSelection && !selectedValue.fromDriver) {
+        Alert.alert(
+          translations[language].errors.error,
+          translations[language]?.camera?.driverSelectionRequired || "Please select a driver"
+        );
+        setFormSpinner({ status: false });
+        return;
+      }
 
       // Format orders array based on collection type
       const formattedOrders = ids.map(id => {
@@ -137,41 +159,80 @@ export default function CameraScanner() {
         return { order_id: orderId };
       });
       
-      // const token = await getToken("userToken");
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+      // Create the fetch promise
+      const fetchPromise = fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
           'Accept-Language': language
-          // "Cookie": token ? `token=${token}` : ""
         },
         body: JSON.stringify({
-          type_id: 6,
+          type_id: 3,
           orders: formattedOrders,
-          driver_id: user?.userId,
+          driver_id: showDriverSelection && selectedValue.fromDriver ? selectedValue.fromDriver.user_id : user?.userId,
           to_branch_id: selectedValue.toBranch?.branch_id ? selectedValue.toBranch?.branch_id : null,
-          to_driver_id: selectedValue.toDriver?.user_id ? selectedValue.toDriver?.user_id : null,
-          note_content: note,
+          to_driver_id: selectedValue.toDriver?.user_id ? selectedValue.toDriver?.user_id : null
         })
       });
       
-      const responseData = await res.json();
-      if (!res.ok) {
-        console.log(responseData)
+      // Race between the fetch and the timeout
+      const res = await Promise.race([fetchPromise, timeoutPromise]);
+      
+      // Try to parse the response, with error handling
+      let responseData;
+      try {
+        responseData = await res.json();
+      } catch (parseError) {
+        console.log('Error parsing response:', parseError);
         setFormSpinner({ status: false });
         Alert.alert(
           translations[language].errors.error,
-          responseData.message
+          'Failed to parse server response. Please try again.'
         );
-        throw new Error(responseData.error || 'Failed to create collection');
-      } else {
-        router.back();
-        setSuccess(true);
+        return;
       }
-    } catch (err) {
+      
+      if (!res.ok) {
+        console.log('Server error:', responseData);
+        setFormSpinner({ status: false });
+        Alert.alert(
+          translations[language].errors.error,
+          responseData.message || 'An unknown error occurred'
+        );
+        return;
+      } 
+      
+      // Success case
+      setSuccess(true);
       setFormSpinner({ status: false });
-      console.log(err);
+      
+      // Small delay before navigation to ensure UI updates
+      setTimeout(() => {
+        router.back();
+      }, 100);
+      
+    } catch (err) {
+      console.log('Request error:', err);
+      setFormSpinner({ status: false });
+      
+      // Show appropriate error message based on error type
+      if (err.message === 'Request timed out') {
+        Alert.alert(
+          translations[language].errors.error,
+          'The request timed out. Please check your connection and try again.'
+        );
+      } else if (err.name === 'AbortError') {
+        Alert.alert(
+          translations[language].errors.error,
+          'The request was aborted. Please try again.'
+        );
+      } else {
+        Alert.alert(
+          translations[language].errors.error,
+          'An unexpected error occurred. Please try again.'
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -602,7 +663,62 @@ export default function CameraScanner() {
             
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalContent}>
-                <View style={styles.fieldContainer}>
+                {showDriverSelection && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[
+                      styles.fieldLabel,
+                      { color: colors.textSecondary },
+                      {
+                        ...Platform.select({
+                          ios: {
+                            textAlign: isRTL ? "left" : "right"
+                          }
+                        }),
+                      }
+                    ]}>
+                      {translations[language]?.camera?.selectDriverFrom || "Select Driver"}
+                    </Text>
+                    <View style={styles.pickerWithClearButton}>
+                      <TouchableOpacity 
+                        style={[
+                          styles.pickerButton, 
+                          { 
+                            borderColor: selectedValue.fromDriver ? colors.primary : colors.inputBorder,
+                            backgroundColor: colors.inputBg,
+                            flex: 1,
+                            height: 50,
+                            borderRadius: 12
+                          }
+                        ]} 
+                        onPress={() => {
+                          setShowPickerModal(true);
+                          fetchDrivers();
+                          setCurrentField("fromDriver");
+                        }}
+                      >
+                        <Text style={[
+                          styles.pickerButtonText, 
+                          selectedValue.fromDriver?.name 
+                            ? [styles.pickerSelectedText, { color: colors.text }] 
+                            : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                        ]}>
+                          {selectedValue.fromDriver?.name || translations[language]?.camera?.selectDriver || "Select Driver"}
+                        </Text>
+                        <Feather name="chevron-down" size={18} color={selectedValue.fromDriver ? colors.primary : colors.textSecondary} />
+                      </TouchableOpacity>
+                      {selectedValue.fromDriver && (
+                        <TouchableOpacity
+                          style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                          onPress={() => clearSelection('fromDriver')}
+                        >
+                          <Feather name="x" size={18} color={colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                )}
+                
+                {/* <View style={styles.fieldContainer}>
                   <Text style={[
                     styles.fieldLabel,
                     isRTL && { textAlign: "left" },
@@ -637,7 +753,7 @@ export default function CameraScanner() {
                     numberOfLines={4}
                     textAlignVertical="top"
                   />
-                </View>
+                </View> */}
                 
                 <View style={styles.fieldContainer}>
                   <Text style={[
@@ -1031,7 +1147,9 @@ export default function CameraScanner() {
             name: currentField,
             label: currentField === 'toBranch' 
               ? translations[language].camera.toBranch 
-              : translations[language].camera.toDriver,
+              : currentField === 'fromDriver'
+                ? translations[language]?.camera?.selectDriverFrom || "Select Driver"
+                : translations[language].camera.toDriver,
             showSearchBar: true
           }}
           colors={colors}

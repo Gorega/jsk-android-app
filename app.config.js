@@ -2,7 +2,7 @@
 import { config } from 'dotenv';
 
 // Load environment variables based on the environment
-const env = process.env.NODE_ENV || 'development';
+const env = process.env.NODE_ENV || 'production';
 const envPath = `.env.${env}`;
 
 try {
@@ -27,15 +27,15 @@ const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVa
 export default {
   name: 'Taiar',
   slug: 'taiar',
-  version: '2.4.1',
+  version: '2.4.2',
   orientation: 'portrait',
-  icon: './assets/images/tayar_logo.png',
+  icon: './assets/images/tayar_logo_dark.png',
   scheme: 'myapp',
   userInterfaceStyle: 'automatic',
   splash: {
-    image: './assets/images/tayar_logo.png',
+    image: './assets/images/tayar_logo_dark.png',
     resizeMode: 'contain',
-    backgroundColor: '#ffffff'
+    backgroundColor: '#252424'
   },
   updates: {
     fallbackToCacheTimeout: 0,
@@ -55,11 +55,12 @@ export default {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/images/tayar_logo.png',
-      backgroundColor: '#FFFFFF'
+      foregroundImage: './assets/images/tayar_logo_dark.png',
+      backgroundColor: '#252424'
     },
     package: 'com.taiar',
     // Enable edge-to-edge display
+    edgeToEdgeEnabled: true,
     softwareKeyboardLayoutMode: 'pan',
     // Enable system UI adjustments
     windowSoftInputMode: 'adjustResize',
@@ -71,7 +72,7 @@ export default {
     }
   },
   web: {
-    favicon: './assets/images/tayar_logo.png'
+    favicon: './assets/images/tayar_logo_dark.png'
   },
   plugins: [
     './app.plugin.js',
@@ -79,9 +80,9 @@ export default {
       'expo-build-properties',
       {
         android: {
-          compileSdkVersion: 35,
-          targetSdkVersion: 35,
-          buildToolsVersion: '35.0.0'
+          compileSdkVersion: 36,
+          targetSdkVersion: 36,
+          buildToolsVersion: '36.0.0'
         },
         ios: {
           useFrameworks: 'static',
@@ -92,8 +93,8 @@ export default {
     [
       'expo-notifications',
       {
-        icon: './assets/images/tayar_logo.png',
-        color: '#ffffff',
+        icon: './assets/images/tayar_logo_dark.png',
+        color: '#252424',
         sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3'],
         enableBackgroundRemoteNotifications: true,
         androidMode: 'default',

@@ -637,26 +637,65 @@ export default function HomeScreen() {
 
     setIsConfirming(true);
     try {
-      // const token = await getToken("userToken");
+      // Determine which collections are being confirmed
+      const collectionsToConfirm = selectedType === 'money' ? moneyCollections : packageCollections;
+      const selectedCollectionObjects = collectionsToConfirm.filter(c => selectedCollections.includes(c.collection_id));
+      // Set status based on collection type
+      const status = selectedType === 'money' ? 'paid' : 'returned_delivered';
+      
+      // Create an array of promises for parallel requests
+      const promises = [];
+      
+      // Main update for selected collections
       const updates = {
         collection_ids: selectedCollections,
-        status: selectedType === 'money' ? 'paid' : 'returned_delivered',
+        status: status,
         note_content: null
       };
-
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/status`, {
-        method: "PUT",
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Accept-Language': language,
-          // "Cookie": token ? `token=${token}` : ""
-        },
-        credentials: "include",
-        body: JSON.stringify({ updates })
+      
+      promises.push(
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/status`, {
+          method: "PUT",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': language,
+          },
+          credentials: "include",
+          body: JSON.stringify({ updates })
+        })
+      );
+      
+      // Add requests for connected collections
+      selectedCollectionObjects.forEach(collection => {
+        const connectedCollectionIds = collection?.connected_collection_ids || [];
+        
+        if (Array.isArray(connectedCollectionIds) && connectedCollectionIds.length > 0) {
+          connectedCollectionIds.forEach(connectedId => {
+            if (connectedId) {
+              promises.push(
+                fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${connectedId}/status`, {
+                  method: 'PUT',
+                  headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language,
+                  },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    status: status,
+                    note_content: "Status updated via connected sent money collection"
+                  })
+                })
+              );
+            }
+          });
+        }
       });
-
-      const data = await res.json();
+      
+      // Execute all requests in parallel
+      const responses = await Promise.all(promises);
+      const data = await responses[0].json();
 
       if (data.failures?.length > 0 && data.successes?.length > 0) {
         Alert.alert(
@@ -935,7 +974,8 @@ export default function HomeScreen() {
         </View>}
 
         {/* Balance Section */}
-        <View 
+        {["driver","delivery_company","business"].includes(user.role) && <>
+          <View 
           style={[styles.sectionHeader]}
         >
           <Text style={[styles.sectionTitle,{color:colors.text}]}>
@@ -1046,6 +1086,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+        </>}
 
         {/* Collections Section */}
         {user.role === "business" && (
@@ -1237,25 +1278,42 @@ export default function HomeScreen() {
 
                 {(selectedType === 'money' ? moneyCollections : packageCollections)?.length > 0 && (
                   <View style={styles.modalFooter}>
-                    <TouchableOpacity
-                      style={[styles.confirmButton, selectedCollections?.length === 0 && styles.disabledButton]}
-                      onPress={handleCollectionConfirm}
-                      disabled={isConfirming || selectedCollections?.length === 0}
-                    >
-                      {isConfirming ? (
-                        <ActivityIndicator color="white" size="small" />
-                      ) : (
-                        <>
-                          <MaterialIcons name="cloud-done" size={20} color="white" />
-                          <Text style={styles.confirmButtonText}>
-                            {selectedType === 'money'
-                              ? translations[language]?.collections?.collection?.confirmPayment
-                              : translations[language]?.collections?.collection?.confirmDelivery}
-                            {selectedCollections.length > 0 && ` (${selectedCollections.length})`}
-                          </Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
+                    <View style={styles.footerButtonsContainer}>
+                      <TouchableOpacity
+                        style={[styles.confirmButton, selectedCollections?.length === 0 && styles.disabledButton]}
+                        onPress={handleCollectionConfirm}
+                        disabled={isConfirming || selectedCollections?.length === 0}
+                      >
+                        {isConfirming ? (
+                          <ActivityIndicator color="white" size="small" />
+                        ) : (
+                          <>
+                            <MaterialIcons name="cloud-done" size={20} color="white" />
+                            <Text style={styles.confirmButtonText}>
+                              {selectedType === 'money'
+                                ? translations[language]?.collections?.collection?.confirmPayment
+                                : translations[language]?.collections?.collection?.confirmDelivery}
+                              {selectedCollections.length > 0 && ` (${selectedCollections.length})`}
+                            </Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={styles.scanButton}
+                        onPress={() => {
+                          setShowCollectionsModal(false);
+                          setTimeout(() => {
+                            router.push("/(camera)/scanCollectionConfirm");
+                          }, 300);
+                        }}
+                      >
+                        <MaterialIcons name="qr-code-scanner" size={20} color="white" />
+                        <Text style={styles.scanButtonText}>
+                          {translations[language]?.collections?.collection?.scanToConfirm}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 )}
               </View>
@@ -2341,6 +2399,27 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.1)',
   },
+  footerButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  scanButton: {
+    backgroundColor: '#10B981',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    flex: 1,
+    marginLeft: 10,
+  },
+  scanButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   confirmButton: {
     backgroundColor: '#4361EE',
     flexDirection: 'row',
@@ -2349,6 +2428,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     gap: 8,
+    flex: 1,
   },
   disabledButton: {
     backgroundColor: '#A5B4FC',

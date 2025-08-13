@@ -973,7 +973,7 @@ const TrackingOrder = () => {
                       
                       <View style={[styles.timelineDateContainer]}>
                         <View style={styles.timelineDateItem}>
-                          <Feather name="calendar" size={12} color={colors.textTertiary} style={styles.timelineDateIcon} />
+                          <Feather name="calendar" size={12} color={colors.textTertiary} />
                           <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                             {date.toLocaleDateString(
                               'en-US',
@@ -982,7 +982,7 @@ const TrackingOrder = () => {
                           </Text>
                         </View>
                         <View style={styles.timelineDateItem}>
-                          <Feather name="clock" size={12} color={colors.textTertiary} style={styles.timelineDateIcon} />
+                          <Feather name="clock" size={12} color={colors.textTertiary} />
                           <Text style={[styles.timelineDate, { color: colors.textTertiary }]}>
                             {date.toLocaleTimeString(
                               'en-US',

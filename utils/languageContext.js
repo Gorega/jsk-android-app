@@ -42,6 +42,8 @@ export const translations = {
       assignOrdersTitle: "Assign Orders",
       assignOrdersMessage: "Use this option to scan order QR codes and assign them to your route. This helps you organize deliveries efficiently and track packages throughout the delivery process.",
       routesTitle: "Manage Routes",
+      createOrdersTitle: "Create Orders",
+      createOrdersMessage: "Create new orders quickly and efficiently.",
       routesMessage: "Create and manage delivery routes to optimize your deliveries. Plan your journey, track progress as you complete orders, and navigate efficiently between delivery locations.",
       
       // Orders onboarding tutorial
@@ -257,6 +259,7 @@ export const translations = {
     },
     
     common:{
+      createNew:"Create New",
       delete:"Delete",
       cancel:"Cancel",
       confirm:"Confirm",
@@ -275,7 +278,9 @@ export const translations = {
       skip:"Skip",
       next:"Next",
       refresh:"Refresh",
-      finish:"Finish"
+      finish:"Finish",
+      someUpdatesFailed:"Some updates failed",
+      updateError:"Update error",
     },
 
     balance:{
@@ -427,6 +432,8 @@ export const translations = {
             "cancelled": "Cancelled",
             "stuck": "Stuck",
             "rescheduled": "Rescheduled",
+            "referenceIdUpdated": "Reference ID updated successfully",
+            "referenceIdUpdateError": "Failed to update Reference ID",
             "return_before_delivered_initiated": "Return before delivery initiated",
             "return_after_delivered_initiated": "Return after delivery initiated",
             "return_after_delivered_fee_received": "Return after delivery and fee received",
@@ -483,6 +490,13 @@ export const translations = {
           "missingStatus": "No status selected",
           "selectReason": "Select reason",
           "statusChangeSuccess": "Status updated successfully",
+          "enterReferenceId":"Enter Reference ID",
+            "referenceIdHelper":"You can type it or scan a QR/barcode",
+            "referenceIdPlaceholder":"Type or scan reference ID",
+            "scan":"Scan",
+            "skip":"Skip",
+            "save":"Save",
+            "referenceIdRequired":"Reference ID is required",
           "statusChangeError": "Failed to update status",
           "selectBranch": "Select branch",
           "reason": "Reason",
@@ -874,6 +888,9 @@ export const translations = {
         toBranch:"To Branch",
         print:"Print",
         collections:"Collections",
+        totalDeductions: "Total Deductions",
+        scanToConfirm: "Scan to Confirm",
+        finalAmount: "Received Amount",
         orders:"Orders",
         actions:"Actions",
         businessName: "Business Name",
@@ -1193,7 +1210,10 @@ export const translations = {
       enterOrderId:"Ebter order ID",
       toDriver:"To Driver",
       add:"Add",
-      scanOrEnterOrderId:"Scan a barcode or enter an order ID above"
+      scanOrEnterOrderId:"Scan a barcode or enter an order ID above",
+      selectDriverFrom: "Select Driver",
+      selectDriver: "Select Driver",
+      driverSelectionRequired: "Please select a driver"
     },
 
     // (change_password)
@@ -1283,6 +1303,8 @@ export const translations = {
      assignOrdersTitle: "Assign Orders",
      assignOrdersMessage: "Use this option to scan QR codes for orders and assign them to your vehicle. This helps you organize deliveries efficiently.",
      routesTitle: "Manage Routes",
+     createOrdersTitle: "Create Orders",
+     createOrdersMessage: "Create new orders quickly and efficiently.",
      routesMessage: "Create and manage delivery routes to improve your delivery operations. Plan your route, track progress as you complete orders, and move efficiently between delivery locations.",
     
     // Home screen hints
@@ -1331,6 +1353,7 @@ export const translations = {
   ar: {
     // Common translations
     common: {
+      createNew:"إنشاء طرد",
       loading: "جاري التحميل...",
       retry: "إعادة المحاولة",
       cancel: "إلغاء",
@@ -1346,6 +1369,8 @@ export const translations = {
       next: "التالي",
       skip: "تخطي",
       finish: "إنهاء",
+      someUpdatesFailed:"بعض التحديثات فشلت",
+      updateError:"خطأ في تحديث",
     },
     
     // Driver and delivery company onboarding
@@ -1353,6 +1378,8 @@ export const translations = {
       assignOrdersTitle: "تعيين الطلبات",
       assignOrdersMessage: "استخدم هذا الخيار لمسح رموز QR للطلبات وتعيينها إلى مسارك. يساعدك ذلك على تنظيم عمليات التوصيل بكفاءة وتتبع الطرود طوال عملية التوصيل.",
       routesTitle: "إدارة المسارات",
+      createOrdersTitle: "إنشاء طرد",
+      createOrdersMessage: "إنشاء طرد جديد بسهولة. قم بإدخال المعلومات المطلوبة وأنشئ طردك الآن.",
       routesMessage: "إنشاء وإدارة مسارات التوصيل لتحسين عمليات التوصيل الخاصة بك. خطط لرحلتك، وتتبع التقدم أثناء إكمال الطلبات، وتنقل بكفاءة بين مواقع التوصيل.",
       
       // Orders onboarding tutorial
@@ -1492,7 +1519,7 @@ export const translations = {
       usernamePlaceholder: "أدخل اسمك الكامل",
       emailPlaceholder: "أدخل بريدك الإلكتروني (اختياري)",
       phonePlaceholder: "أدخل رقم هاتفك",
-      passwordPlaceholder: "أنشئ كلمة مرور",
+      passwordPlaceholder: "ادخل كلمة مرور",
       confirmPasswordPlaceholder: "أكد كلمة المرور",
       comercialNamePlaceholder: "أدخل اسم نشاطك التجاري",
       businessActivity: "نوع النشاط التجاري",
@@ -1645,6 +1672,7 @@ export const translations = {
     },
 
     common:{
+      createNew:"إنشاء طرد",
       delete:"حذف",
       cancel:"إلغاء",
       confirm:"تأكيد",
@@ -1669,6 +1697,8 @@ export const translations = {
       next:"التالي",
       refresh:"تحديث",
       finish:"إنهاء",
+      someUpdatesFailed:"بعض التحديثات فشلت",
+      updateError:"خطأ في تحديث",
     },
 
     balance:{
@@ -1826,6 +1856,8 @@ export const translations = {
             "delayed": "متأخر",
             "failedToUpdate": "فشل تحديث الحالة",
             "forOrders": "للطرود",
+            "referenceIdUpdated": "تم تحديث الرقم المرجعي بنجاح",
+            "referenceIdUpdateError": "فشل تحديث الرقم المرجعي",
             "suspendReasons": {
               "closed": "مغلق",
               "no_response": "لا يوجد رد",
@@ -1913,6 +1945,13 @@ export const translations = {
           "orderActions": "إجراءات الطلب",
           "receivedItems": "العناصر المستلمة",
           "receivedQuantity": "الكمية المستلمة",
+          "enterReferenceId":"أدخل الرقم المرجعي",
+            "referenceIdHelper":"يمكنك إدخاله أو قراءته بالضغط على الكود الباركود",
+            "referenceIdPlaceholder":"أدخل الرقم المرجعي",
+            "scan":"مسح",
+            "skip":"تخطي",
+            "save":"حفظ",
+            "referenceIdRequired":"الرقم المرجعي مطلوب",
           "noteRequiredForOther": "ملاحظة مطلوبة عند اختيار سبب \"آخر\"",
           "statusChangeOffline": "سيتم تحديث الحالة عند الاتصال بالانترنت",
           "orderChecks": {
@@ -2273,8 +2312,11 @@ export const translations = {
         businessName: "اسم التاجر",
         businessPhone: "هاتف التاجر",
         businessLocation: "الموقع",
+        scanToConfirm: "مسح",
         orders: "الطرود",
         actions: "اختر اجراء",
+        totalDeductions: "اجمالي الخصومات",
+        finalAmount: "المبلغ المستلم",
         "request_money": "اطلب أموالك",
         "prepare_money": "تجهيز اموالي",
         "send_money": "أرسل الأموال إلي",
@@ -2539,7 +2581,10 @@ export const translations = {
       enterOrderId:"ادخل الرقم التسلسلي للطرد",
       add:"اضافة",
       toDriver:"الى السائق",
-      scanOrEnterOrderId:"ادخل رقم الطرد او ضع الباركود داخل الإطار"
+      scanOrEnterOrderId:"ادخل رقم الطرد او ضع الباركود داخل الإطار",
+      selectDriverFrom: "اختر السائق",
+      selectDriver: "اختر السائق",
+      driverSelectionRequired: "يرجى اختيار السائق"
     },
 
     // (change_password)
@@ -2754,54 +2799,54 @@ export const translations = {
     },
 
      // Add options onboarding
-     assignOrdersTitle: "تعيين الطلبات",
-     assignOrdersMessage: "استخدم هذا الخيار لمسح رموز QR للطلبات وتعيينها إلى سيارتك. يساعدك هذا في تنظيم التسليمات بكفاءة.",
-     routesTitle: "إدارة المسارات",
-     routesMessage: "إنشاء وإدارة مسارات التوصيل لتحسين عمليات التوصيل. قم بتخطيط رحلتك وتتبع التقدم كلما أنجزت طلبات.",
+     assignOrdersTitle: "הגדר בקשות",
+     assignOrdersMessage: "השתמש באפשרות זו כדי לסרוק קודי QR של בקשות ולהקצות אותן למסלול שלך. זה עוזר לך לארגן את המשלוחים בצורה אפקטיבית.",
+     routesTitle: "הגדר מסלולים",
+     routesMessage: "צור ונהל מסלולים של משלוחים כדי לשפר את המשלוחים שלך. צפה במסלול שלך, ועקב אחר ההתקדמות כאשר אתה משלים בקשות.",
  
      
      
      // Home screen hints
      homeHints: {
        trackOrder: {
-         title: "تتبع طرودك",
-         businessMessage: "تتبع أي طرد بسرعة عن طريق إدخال الرقم التسلسلي او المرجعي. احصل على تحديثات الحالة ومعلومات التوصيل في الوقت الفعلي.",
-         driverMessage: "ابحث عن أي طلب بسرعة عن طريق المسح أو إدخال رقم المرجع للتحقق من تفاصيل التوصيل.",
-         deliveryCompanyMessage: "تتبع أي طلب في نظامك بسرعة عن طريق إدخال رقم المرجع للحصول على معلومات الحالة في الوقت الفعلي."
+         title: "עקוב אחר בקשות",
+         businessMessage: "עקוב אחר כל בקשה בקלות על ידי הזנת מספר סימוכין או קוד QR. קבל עדכונים בזמן אמת על מצב הבקשה ופרטי המשלוח.",
+         driverMessage: "חפש בקשה בקלות על ידי סריקת קוד QR או מספר סימוכין. קבל עדכונים בזמן אמת על מצב הבקשה ופרטי המשלוח.",
+         deliveryCompanyMessage: "עקוב אחר כל בקשה בקלות על ידי סריקת קוד QR או מספר סימוכין. קבל עדכונים בזמן אמת על מצב הבקשה ופרטי המשלוח."
        },
        checkReceiver: {
-         title: "التحقق من المستلم",
-         businessMessage: "تحقق من معلومات المستلم واطلع على سجل طلباته قبل ارسال طردك اليه.",
-         driverMessage: "تحقق من معلومات المستلم وتاريخ التوصيل السابق قبل محاولة التوصيل.",
-         deliveryCompanyMessage: "تحقق من معلومات المستلم وعرض سجل طلباته لإدارة عمليات التوصيل بشكل أفضل."
+         title: "בדיקת קבלת המשלוח",
+         businessMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה.",
+         driverMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה.",
+         deliveryCompanyMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה."
        },
        orderSummary: {
-         title: "ملخص الطرود",
-         businessMessage: "احصل على نظرة سريعة لجميع طرودك. انقر على أي بطاقة لمشاهدة معلومات مفصلة حول الطرود في تلك الحالة. اضغط كبسة مطولة لطلب تحصيل اموالك او طرودك المستلمة / المرتجعة.",
-         driverMessage: "شاهد ملخصًا للطلبات المخصصة لك. انقر على أي بطاقة لعرض الطلبات في حالة معينة.",
-         deliveryCompanyMessage: "احصل على نظرة شاملة لجميع الطلبات في نظامك. مراقبة الأداء عبر فئات الحالة المختلفة."
+         title: "סיכום בקשות",
+         businessMessage: "קבל מעקב מהיר על כל הבקשות שלך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה. לחץ על כפתור ארוך כדי לבקש את הסכום המועסק או את הבקשות המוכנות לקבל.",
+         driverMessage: "צפה בסיכום של הבקשות שמוקצות לך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
+         deliveryCompanyMessage: "קבל מעקב מהיר על כל הבקשות שלך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה."
        },
        balance: {
-         title: "الرصيد المالي",
-         businessMessage: "مراقبة رصيدك المتاح بعملات مختلفة. انقر لمشاهدة سجلك المالي .",
-         driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
-         driverMessage: "تحقق من رصيدك الحالي من التحصيلات. انقر لمشاهدة سجلك المالي.",
+         title: "סכום בקשות",
+         businessMessage: "מעקב מהיר על כל הבקשות שלך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
+         driverMessage: "צפה בסכום של הבקשות שמוקצות לך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
+         driverMessage: "צפה בסכום של הבקשות שמוקצות לך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
        },
        collections: {
-         title: "نأكيد الاستلام",
-         businessMessage: "من هنا، يمكنك تأكيد أنك استلمت المبالغ المالية أو الطرود المستلمة / المرتجعة التي تم تسليمها إليك من قبل السائق او موظف الفرع، وذلك لضمان توثيق العملية وتحديث حالة الطلب في النظام.",
-         driverMessage: "إدارة تحصيلات الأموال والطرود من العملاء والشركات.",
-         deliveryCompanyMessage: "إدارة تحصيلات الأموال والطرود المرتجعة عبر شبكة التوصيل الخاصة بك."
+         title: "בדיקת קבלת המשלוח",
+         businessMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה.",
+         driverMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה.",
+         deliveryCompanyMessage: "בדוק את פרטי הקבל וצפה בסימוכין שלו לפני ששליחת המשלוח אליו. בכך תוכל לוודא שהמשלוח מגיע למקבל בצורה נכונה."
        },
        statusOverview: {
-         title: "نظرة عامة على الحالة",
-         businessMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
-         driverMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم.",
-         deliveryCompanyMessage: "يعرض هذا القسم تمثيلًا مرئيًا لحالات طلباتك، حيث تُوضح النسبة المئوية عدد الطلبات في كل حالة بشكل دقيق وسهل الفهم."
+         title: "סכום בקשות",
+         businessMessage: "קבל מעקב מהיר על כל הבקשות שלך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
+         driverMessage: "צפה בסכום של הבקשות שמוקצות לך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה.",
+         deliveryCompanyMessage: "קבל מעקב מהיר על כל הבקשות שלך. לחץ על כל כרטיס כדי לצפות בפרטים מפורטים על הבקשות במצב זה."
        },
-       skip: "تخطي الكل",
-       next: "التالي",
-       finish: "فهمت"
+       skip: "דלג את המדריך",
+       next: "הבא",
+       finish: "התחל"
      },
     
     // (auth)
@@ -3016,6 +3061,8 @@ export const translations = {
       next:"הבא",
       refresh:"הפעל מחדש",
       finish:"סיום",
+      someUpdatesFailed:"Some updates failed",
+      updateError:"Update error",
     },
 
     balance:{
@@ -3168,6 +3215,8 @@ export const translations = {
             "stuck": "תקוע",
             "rescheduled": "נדחה",
             "return_before_delivered_initiated": "החזרה לפני מסירה",
+            "referenceIdUpdated": "הפניה עודכנה בהצלחה",
+            "referenceIdUpdateError": "הפניה לא עודכנה",
             "return_after_delivered_initiated": "החזרה לאחר מסירה",
             "return_after_delivered_fee_received": "החזרה לאחר מסירה וקבלת עמלת משלוח",
             "delayed": "איחור",
@@ -3201,6 +3250,14 @@ export const translations = {
             "received": "נאסף",
             "delivered_received": "נמסר / נאסף"
           },
+          "enterReferenceId": "הזן את מספר ההפניה",
+          "referenceIdRequired":"מספר ההפניה נדרש",
+            "referenceIdHelper": "אתה יכול להזין אותו או לסרוק קוד QR/ברקוד",
+            "referenceIdPlaceholder": "הזן או סרוק מספר ההפניה",
+            "scan": "סרוק",
+            "skip":"דלג",
+            "save":"שמור",
+            "referenceIdRequired":"מספר ההפניה נדרש",
           "editPhone": "ערוך",
           "receiverAddress": "כתובת נמען",
           "codValue": "ערך תשלום במסירה",
@@ -3618,8 +3675,11 @@ export const translations = {
         orders: "משלוחים",
         actions: "בחר פעולה",
         businessName: "שם העסק",
+        scanToConfirm: "מזהה גבייה",
         businessPhone: "טלפון העסק",
         businessLocation: "מיקום העסק",
+        totalDeductions: "סה\"כ חיסכונות",
+        finalAmount: "סה\"כ משלוחים",
         "request_money": "בקש את הכסף שלך",
         "prepare_money": "הכן את הכסף שלי",
         "send_money": "שלח כסף אל",
@@ -3884,7 +3944,10 @@ export const translations = {
       enterOrderId:"הזן מספר סידורי של משלוח",
       add:"הוסף",
       toDriver:"לנהג",
-      scanOrEnterOrderId:"סרוק ברקוד או הזן מספר סידורי של משלוח"
+      scanOrEnterOrderId:"סרוק ברקוד או הזן מספר סידורי של משלוח",
+      selectDriverFrom: "בחר נהג",
+      selectDriver: "בחר נהג",
+      driverSelectionRequired: "יש לבחור נהג"
     },
 
     // (change_password)

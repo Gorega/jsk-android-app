@@ -17,7 +17,6 @@ import { Colors } from '../../constants/Colors';
 import React from 'react';
 
 function Collection({ type, collection }) {
-    console.log("Collection props:", { type, collection });
     const { language } = useLanguage();
     const { user } = useAuth();
     const { isDark, colorScheme } = useTheme();
@@ -116,6 +115,18 @@ function Collection({ type, collection }) {
         };
         
         return statusColors[statusKey] || colors.textSecondary;
+    };
+
+    // Format financials helper
+    const formatFinancials = (fieldKey) => {
+        try {
+            if (collection?.financials && Array.isArray(collection.financials) && collection.financials.length > 0) {
+                return collection.financials
+                    .map((f, index) => `${f.currency_code}: ${f[fieldKey] || '0.00'}${index < collection.financials.length - 1 ? ' | ' : ''}`)
+                    .join('');
+            }
+        } catch (_) { /* noop */ }
+        return '-';
     };
 
     return (
@@ -274,11 +285,56 @@ function Collection({ type, collection }) {
                                     styles.sectionValue,
                                     { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
-                                    {collection.total_net_value}
+                                    {type === "sent" ? collection.total_net_value : formatFinancials('total_cod_value')}
                                 </Text>
                             </View>
                         </View>
                     </View>
+                )}
+
+                {/* Driver money extra financials */}
+                {(type === "driver_money") && (
+                    <>
+                        <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[styles.iconWrapper, { backgroundColor: '#F59E0B' }]}>
+                                    <MaterialIcons name="remove-circle-outline" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[styles.sectionContent, {
+                                    ...Platform.select({
+                                        ios: { alignItems: isRTL ? "flex-start" : "" }
+                                    }),
+                                }]}>
+                                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                                        {translations[language]?.collections?.collection?.totalDeductions}
+                                    </Text>
+                                    <Text style={[styles.sectionValue, { color: colors.text, textAlign: isRTL ? "left" : "" }]}>
+                                        {formatFinancials('total_deductions')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[styles.iconWrapper, { backgroundColor: '#10B981' }]}>
+                                    <MaterialIcons name="payments" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[styles.sectionContent, {
+                                    ...Platform.select({
+                                        ios: { alignItems: isRTL ? "flex-start" : "" }
+                                    }),
+                                }]}>
+                                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                                        {translations[language]?.collections?.collection?.finalAmount}
+                                    </Text>
+                                    <Text style={[styles.sectionValue, { color: colors.text, textAlign: isRTL ? "left" : "" }]}>
+                                        {formatFinancials('final_amount')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </>
                 )}
                 
                 {/* Checks section for driver */}
@@ -316,7 +372,7 @@ function Collection({ type, collection }) {
                                 ]}>
                                     {collection.financials && collection.financials.length > 0 
                                         ? collection.financials.map((f, index) => (
-                                            `${f.currency_code}: ${f.checks_value || 0}${f.currency_symbol}${index < collection.financials.length - 1 ? ' | ' : ''}`
+                                            `${f.currency_code}: ${f.checks_value || 0}${index < collection.financials.length - 1 ? ' | ' : ''}`
                                         )).join('')
                                         : '-'}
                                 </Text>
@@ -590,7 +646,7 @@ function Collection({ type, collection }) {
                         ]}
                         onPress={() => router.push({
                             pathname: "/(tabs)/orders",
-                            params: { orderIds: collection.order_ids }
+                            params: { orderIds: collection.order_ids, reset: "true" }
                         })}
                         activeOpacity={0.7}
                     >

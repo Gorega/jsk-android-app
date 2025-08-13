@@ -17,7 +17,7 @@ import {
 } from "react-native";
 import TayarLogo from "../../assets/images/tayar_logo.png";
 import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import Field from "../../components/sign/Field";
 import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';

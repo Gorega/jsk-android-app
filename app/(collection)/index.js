@@ -116,41 +116,6 @@ export default function HomeScreen() {
         }
     }, [scannedReferenceId]);
 
-    const filterByGroup = ["business_returned","driver_returned"].includes(type)
-    ? [
-        { name: translations[language].collections.filters.all, action: "" },
-        { name: translations[language].collections.filters.returnedInBranch, action: "returned_in_branch" },
-        { name: translations[language].collections.filters.deleted, action: "deleted" },
-        { name: translations[language].collections.filters.returnedOut, action: "returned_out" },
-        { name: translations[language].collections.filters.returnedDelivered, action: "returned_delivered" },
-        { name: translations[language].collections.filters.completed, action: "completed" }
-      ]
-    : ["business_money","driver_money"].includes(type)
-    ? [
-        { name: translations[language].collections.filters.all, action: "" },
-        { name: translations[language].collections.filters.moneyInBranch, action: "money_in_branch" },
-        { name: translations[language].collections.filters.deleted, action: "deleted" },
-        { name: translations[language].collections.filters.moneyOut, action: "money_out" },
-        { name: translations[language].collections.filters.paid, action: "paid" },
-        { name: translations[language].collections.filters.completed, action: "completed" },
-      ]
-    : type === "dispatched"
-    ? [
-        { name: translations[language].collections.filters.all, action: "" },
-        { name: translations[language].collections.filters.pending, action: "pending" },
-        { name: translations[language].collections.filters.deleted, action: "deleted" },
-        { name: translations[language].collections.filters.inDispatchedToBranch, action: "in_dispatched_to_branch" },
-        { name: translations[language].collections.filters.partial, action: "partial" },
-        { name: translations[language].collections.filters.completed, action: "completed" },
-    ]
-    : type === "sent"
-    ? [
-        { name: translations[language].collections.filters.all, action: "" },
-        { name: translations[language].collections.filters.paid, action: "paid" },
-        { name: translations[language].collections.filters.returnedDelivered, action: "returned_delivered" },
-        { name: translations[language].collections.filters.completed, action: "completed" },
-      ]
-    : []
 
     const searchByGroup = [
         { name: translations[language].collections.filters.collectionId, action: "collection_id" },
@@ -255,7 +220,6 @@ export default function HomeScreen() {
                         }
                     });
                     const response = await sentRes.json();
-                    console.log("Sent API Response:", response);
                     
                     const sentData = {
                         data: response.data || [],
@@ -289,7 +253,6 @@ export default function HomeScreen() {
             });
             
             const response = await res.json();
-            console.log("API Response:", response);
             
             // Handle the new data structure
             const newData = {
@@ -380,7 +343,7 @@ export default function HomeScreen() {
         <Search
             searchValue={searchValue}
             setSearchValue={(input) => setSearchValue(input)}
-            filterByGroup={filterByGroup}
+            filterByGroup={[]}
             searchByGroup={searchByGroup}
             activeFilter={activeFilter}
             setActiveFilter={setActiveFilter}

@@ -109,20 +109,15 @@ export default function Header({ showGreeting = true, title }) {
         }
     }, [language, user]);
 
-    useEffect(() => {
-        if (!socket || !user) return;
-    
-        // Fetch initial notification count when component mounts
-        const fetchNotificationCount = async () => {
+    const fetchNotificationCount = async () => {
             try {
-                // const token = await getToken("userToken");
                 const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/notifications/count?user_id=${user.userId}`, {
                     method: "GET",
                     credentials: "include",
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
-                        // "Cookie": token ? `token=${token}` : ""
+                        "Accept-Language": language
                     }
                 });
 
@@ -135,47 +130,41 @@ export default function Header({ showGreeting = true, title }) {
                 console.error("Error fetching notification count:", error);
             }
         };
-        
-        fetchNotificationCount();
-    
+
+    useEffect(() => {
+        if (!socket || !user) return;
+
+        // Listen for new notifications
         const handleNotification = (notification) => {
-            if (!notification || Number(user.userId) !== Number(notification.user_id)) {
-                return;
-            }
-    
-            switch (notification.type) {
-                case 'NEW_NOTIFICATION':
-                    setNotificationsCount(prev => prev + 1);
-                    break;
-                case 'UPDATE_COUNT':
-                    // Set to the exact count provided in the notification
-                    if (notification.unread_count !== undefined) {
-                        setNotificationsCount(notification.unread_count);
-                    } else {
-                        setNotificationsCount(prev => prev + 1);
-                    }
-                    break;
-                case 'NOTIFICATIONS_RESET':
-                    setNotificationsCount(0);
-                    break;
-                case 'NOTIFICATION_DELETED':
-                    setNotificationsCount(prev => Math.max(0, prev - 1));
-                    break;
-                case 'NOTIFICATION_UPDATED':
-                    // Handle if needed
-                    break;
-                case 'ALL_NOTIFICATIONS_DELETED':
-                    setNotificationsCount(0);
-                    break;
+            if (!notification) return;
+            
+            // Handle different notification types
+            if (notification.type === 'NEW_NOTIFICATION') {
+                // Refresh notifications data
+                fetchNotificationCount();
+            } else if (notification.type === 'NOTIFICATION_UPDATED') {
+                fetchNotificationCount();
+            } else if (notification.type === 'NOTIFICATION_DELETED') {
+                fetchNotificationCount();
+            } else if (notification.type === 'ALL_NOTIFICATIONS_DELETED') {
+                setNotificationsCount(0);
+            } else if (notification.type === 'NOTIFICATIONS_RESET') {
+                // Reset notification count
+                setNotificationsCount(0);
             }
         };
-    
+
+        // Register socket event listener
         socket.on('notification', handleNotification);
-        
+
+        fetchNotificationCount();
+
+        // Clean up event listener on unmount
         return () => {
             socket.off('notification', handleNotification);
         };
-    }, [socket, user]);
+    }, [socket, user, language]);
+
 
     return (
         <RTLWrapper>
