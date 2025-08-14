@@ -49,33 +49,33 @@ function Collection({ type, collection }) {
         Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
     };
 
-    const handleCollectNotification = async (type, action) => {
-        setIsLoading(true);
-        try {
-            // const token = await getToken("userToken");
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
-                method: "POST",
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Accept-Language': language,
-                    // "Cookie": token ? `token=${token}` : ""
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                    action,
-                    collection_id: collection.collection_id
-                })
-            });
-            const data = await res.json();
-            Alert.alert(data.message);
-        } catch (err) {
-            Alert.alert(err.message);
-        } finally {
-            setIsLoading(false);
-            setShowModal(false);
-        }
-    };
+    // const handleCollectNotification = async (type, action) => {
+    //     setIsLoading(true);
+    //     try {
+    //         // const token = await getToken("userToken");
+    //         const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
+    //             method: "POST",
+    //             headers: {
+    //                 'Accept': 'application/json',
+    //                 'Content-Type': 'application/json',
+    //                 'Accept-Language': language,
+    //                 // "Cookie": token ? `token=${token}` : ""
+    //             },
+    //             credentials: "include",
+    //             body: JSON.stringify({
+    //                 action,
+    //                 collection_id: collection.collection_id
+    //             })
+    //         });
+    //         const data = await res.json();
+    //         Alert.alert(data.message);
+    //     } catch (err) {
+    //         Alert.alert(err.message);
+    //     } finally {
+    //         setIsLoading(false);
+    //         setShowModal(false);
+    //     }
+    // };
 
     const renderCollectionUser = () => {
         if ((type === "business_money" || type === "business_returned") && user.role !== "business") {
@@ -285,7 +285,7 @@ function Collection({ type, collection }) {
                                     styles.sectionValue,
                                     { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
-                                    {type === "sent" ? collection.total_net_value : formatFinancials('total_cod_value')}
+                                    {type === "sent" ? collection.net_value : type === "business_money" ? formatFinancials('final_amount') : formatFinancials('total_cod_value')}
                                 </Text>
                             </View>
                         </View>
@@ -731,7 +731,7 @@ function Collection({ type, collection }) {
                 </ModalPresentation>
                 
                 {/* Business package request */}
-                {(user.role === "business" && collection.status_key === "returned_in_branch") && (
+                {/* {(user.role === "business" && collection.status_key === "returned_in_branch") && (
                     <>
                         <TouchableOpacity 
                             style={[
@@ -805,10 +805,10 @@ function Collection({ type, collection }) {
                             </TouchableOpacity>
                         </ModalPresentation>
                     </>
-                )}
+                )} */}
                 
                 {/* Business money request */}
-                {(user.role === "business" && collection.status_key === "money_in_branch") && (
+                {/* {(user.role === "business" && collection.status_key === "money_in_branch") && (
                     <>
                         <TouchableOpacity 
                             style={[styles.actionButton]}
@@ -876,7 +876,7 @@ function Collection({ type, collection }) {
                             </TouchableOpacity>
                         </ModalPresentation>
                     </>
-                )}
+                )} */}
             </View>
             
         </View>
