@@ -777,8 +777,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             setTimeout(() => setShowSuccessModal(false), 2500);
                         }, 100);
 
-                        // If the new status is "received", prompt for reference ID
-                        if (selectedValue?.status?.value === 'received') {
+                        // If the new status is "received" AND order ID ends with R or B, prompt for reference ID
+                        const orderIdSuffix = order.order_id?.toString().slice(-1);
+                        if (selectedValue?.status?.value === 'received' && (orderIdSuffix === 'R' || orderIdSuffix === 'B')) {
                             setTimeout(() => {
                                 setReferenceIdInput("");
                                 setShowReferenceModal(true);
