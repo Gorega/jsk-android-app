@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
+import { useReferenceModal } from '@/contexts/ReferenceModalContext';
 import React from 'react';
 
 function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true, onStatusChange }) {
@@ -35,10 +36,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [showErrorModal, setShowErrorModal] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
     const [errorMessage, setErrorMessage] = useState("");
-    // Reference ID modal states
-    const [showReferenceModal, setShowReferenceModal] = useState(false);
-    const [referenceIdInput, setReferenceIdInput] = useState("");
-    const [isReferenceUpdating, setIsReferenceUpdating] = useState(false);
+    // Use global reference modal context
+    const { showReferenceModal } = useReferenceModal();
     const isRTL = language === 'ar' || language === 'he';
     const [isConnected, setIsConnected] = useState(!globalOfflineMode);
     const [pendingStatusUpdates, setPendingStatusUpdates] = useState([]);
@@ -177,6 +176,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         requiresReason: true,
         reasons: suspendReasons
         },{
+        label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
+        requiresReason: true,
+        reasons: suspendReasons
+    },{
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
         requiresReason: true,
         reasons: suspendReasons
@@ -184,10 +187,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_fee_received, value: "return_after_delivered_fee_received",
         requiresReason: true,
         reasons: suspendReasons
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
-    }, {
+    }, ["receive","delivery/receive"].includes(order.order_type_key) ? {
         label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
+    }: {
+        label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }]
     :
     [{
@@ -778,11 +781,28 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         }, 100);
 
                         // If the new status is "received" AND order ID ends with R or B, prompt for reference ID
-                        const orderIdSuffix = order.order_id?.toString().slice(-1);
-                        if (selectedValue?.status?.value === 'received' && (orderIdSuffix === 'R' || orderIdSuffix === 'B')) {
+                        if (selectedValue?.status?.value === 'received') {
                             setTimeout(() => {
-                                setReferenceIdInput("");
-                                setShowReferenceModal(true);
+                                showReferenceModal(order.order_id, order, {
+                                    onSuccess: (updatedOrder, successMessage) => {
+                                        // Update cached order
+                                        updateCachedOrder(updatedOrder.order_id, updatedOrder.status, updatedOrder.status_key);
+                                        
+                                        // Show success message
+                                        setSuccessMessage(successMessage);
+                                        setShowSuccessModal(true);
+                                        setTimeout(() => setShowSuccessModal(false), 2500);
+                                        
+                                        // Trigger status change callback if provided
+                                        if (onStatusChange) {
+                                            onStatusChange(updatedOrder.order_id, updatedOrder.status, updatedOrder.status_key);
+                                        }
+                                    },
+                                    onError: (errorMessage) => {
+                                        setErrorMessage(errorMessage);
+                                        setShowErrorModal(true);
+                                    }
+                                });
                             }, 200);
                         }
                         } else {
@@ -881,6 +901,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             "stuck": "#F59E0B",
             "delayed": "#F59E0B",
             "on_the_way": "#6366F1",
+            "with_driver": "#6366F1",
             "driver_responsibility": "#6366F1",
             "reschedule": "#F59E0B",
             "return_before_delivered_initiated": "#EF4444",
@@ -1154,6 +1175,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     // Add this to the Error Modal to handle closing
     const handleErrorModalClose = () => {
+        // Always allow closing the error modal
         setShowErrorModal(false);
     };
 
@@ -1169,57 +1191,6 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }
     }, [showReferenceModal]);
 
-    // Submit reference ID to backend
-    const submitReferenceId = async () => {
-        if (!referenceIdInput || !referenceIdInput.toString().trim()) {
-            setErrorMessage(translations[language]?.tabs?.orders?.order?.referenceIdRequired);
-            setShowErrorModal(true);
-            return;
-        }
-        try {
-            setIsReferenceUpdating(true);
-            let res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${order.order_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Accept-Language': language,
-                },
-                credentials: 'include',
-                body: JSON.stringify({ reference_id: referenceIdInput.toString().trim() })
-            });
-
-            const data = await res.json();
-            
-            if (res.ok) {
-                // Success case - API returns 200-299 status code
-                // Update the local order data if needed
-                if (order && data.order) {
-                    updateCachedOrder(data.order);
-                }
-                
-                // Show success message
-                setSuccessMessage(translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdated || 'Reference ID updated successfully');
-                setShowSuccessModal(true);
-                
-                // Close the reference modal immediately
-                setShowReferenceModal(false);
-                
-                // Clear the input
-                setReferenceIdInput("");
-            } else {
-                // HTTP error
-                setErrorMessage(data.message || (translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdateError || 'Failed to update Reference ID'));
-                setShowErrorModal(true);
-            }
-        } catch (error) {
-            setErrorMessage(translations[language]?.tabs?.orders?.order?.states?.referenceIdUpdateError || 'Failed to update Reference ID');
-            setShowErrorModal(true);
-        } finally {
-            setIsReferenceUpdating(false);
-        }
-    };
-
     // While the reference modal is open, poll for scanned value to auto-fill input
     useEffect(() => {
         if (!showReferenceModal) return;
@@ -1233,6 +1204,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }, 300);
         return () => clearInterval(interval);
     }, [showReferenceModal]);
+
+    // Reference modal state is now managed globally via ReferenceModalContext
 
     // Load shown error order IDs when component mounts
     useEffect(() => {
@@ -1452,7 +1425,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:colors.text}]}>
+                                    <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:"#FFA500"}]}>
                                         {order.order_type}
                                         {order.received_items ? ` (${order.received_items})` : ''}
                                         {order.received_quantity ? ` - ${order.received_quantity}` : ''}
@@ -2455,6 +2428,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     showModal={showErrorModal}
                     setShowModal={handleErrorModalClose}
                     position="center"
+                    closeOnBackdropPress={true}
                 >
                     <View style={styles.errorModalContainer}>
                         <View style={styles.errorIconContainer}>
@@ -2484,88 +2458,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 </ModalPresentation>
             )}
 
-            {/* Reference ID Modal (after received) */}
-            {showReferenceModal && (
-                <ModalPresentation
-                    showModal={showReferenceModal}
-                    setShowModal={setShowReferenceModal}
-                    customStyles={{ bottom: 15 }}
-                >
-                    <View style={styles.referenceModalContainer}>
-                        <View style={styles.referenceHeader}>
-                            <View style={styles.referenceIconBubble}>
-                                <MaterialIcons name="tag" size={18} color="#FFFFFF" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                                <Text style={[styles.referenceTitle, { color: colors.text }]}>
-                                    {translations[language]?.tabs?.orders?.order?.enterReferenceId}
-                                </Text>
-                                <Text style={[styles.referenceSubtitle, { color: colors.textSecondary }]}>
-                                    {translations[language]?.tabs?.orders?.order?.referenceIdHelper}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={[styles.referenceInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                            <MaterialIcons name="confirmation-number" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                            <TextInput
-                                style={[styles.referenceInput, { color: colors.text }]}
-                                placeholder={translations[language]?.tabs?.orders?.order?.referenceIdPlaceholder}
-                                placeholderTextColor={colors.textSecondary}
-                                value={referenceIdInput}
-                                onChangeText={setReferenceIdInput}
-                                autoFocus
-                            />
-                            <TouchableOpacity
-                                onPress={() => setReferenceIdInput("")}
-                                style={styles.clearInputBtn}
-                            >
-                                <MaterialIcons name="close" size={18} color={colors.textSecondary} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.referenceActionsRow}>
-                            <TouchableOpacity 
-                                style={[styles.scanActionButton]}
-                                onPress={() => {
-                                    try { if (global) global.scannedReferenceId = null; } catch (_) {}
-                                    router.push({ pathname: '(camera)/scanReference' });
-                                }}
-                            >
-                                <MaterialIcons name="qr-code-scanner" size={18} color="#4361EE" />
-                                <Text style={styles.scanActionText}>
-                                    {translations[language]?.tabs?.orders?.order?.scan}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <View style={{ flex: 1 }} />
-
-                            <TouchableOpacity 
-                                style={[styles.secondaryButton]}
-                                onPress={() => setShowReferenceModal(false)}
-                            >
-                                <Text style={styles.secondaryButtonText}>
-                                    {translations[language]?.tabs?.orders?.order?.skip}
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity 
-                                style={[styles.primaryButton, isReferenceUpdating && styles.primaryButtonDisabled]}
-                                onPress={submitReferenceId}
-                                disabled={isReferenceUpdating}
-                            >
-                                {isReferenceUpdating ? (
-                                    <ActivityIndicator size="small" color="#FFFFFF" />
-                                ) : (
-                                    <Text style={styles.primaryButtonText}>
-                                        {translations[language]?.tabs?.orders?.order?.save}
-                                    </Text>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </ModalPresentation>
-            )}
+            {/* Reference modal is now handled globally via GlobalReferenceModal */}
         </RTLWrapper>
     );
 }

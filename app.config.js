@@ -27,7 +27,7 @@ const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVa
 export default {
   name: 'Taiar',
   slug: 'taiar',
-  version: '2.4.2',
+  version: '2.4.3',
   orientation: 'portrait',
   icon: './assets/images/tayar_logo_dark.png',
   scheme: 'myapp',

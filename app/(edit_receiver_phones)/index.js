@@ -156,7 +156,7 @@ export default function EditReceiverDetailsScreen() {
 
     const requestCodValueUpdate = async () => {
         if (!form.codValueReason) {
-            setFieldErrors(prev => ({ ...prev, cod_value_reason: translations[language].tabs.orders.create.validation.required || 'Reason is required' }));
+            setFieldErrors(prev => ({ ...prev, cod_value_reason: translations[language].tabs.orders.create.validation.required }));
             setSubmitting(false); // Add this line to reset the submitting state
             
             // Also add an error alert to notify the user
@@ -224,8 +224,8 @@ export default function EditReceiverDetailsScreen() {
             setShowAlert({
                 visible: true,
                 type: 'success',
-                title: translations[language].tabs.orders.create.success || 'Success',
-                message: translations[language].tabs.orders.create.codUpdateRequestSuccess || 'COD value update request sent successfully',
+                title: translations[language].common.success || 'Success',
+                message: translations[language].tabs.orders.order.codUpdateRequestSuccess || 'COD value update request sent successfully',
                 onClose: () => router.back()
             });
 
@@ -250,7 +250,7 @@ export default function EditReceiverDetailsScreen() {
 
         // Basic validation
         if (!form.receiverFirstPhone) {
-            setFieldErrors({ receiver_mobile: translations[language].tabs.orders.create.validation.required || 'This field is required' });
+            setFieldErrors({ receiver_mobile: translations[language].tabs.orders.create.validation.required });
             setSubmitting(false);
             return;
         }
@@ -330,7 +330,7 @@ export default function EditReceiverDetailsScreen() {
             setShowAlert({
                 visible: true,
                 type: 'success',
-                title: translations[language].tabs.orders.create.success || 'Success',
+                title: translations[language].common.success || 'Success',
                 message: translations[language].tabs.orders.create.receiverDetailsUpdateSuccess || 'Receiver details updated successfully',
                 onClose: () => router.back()
             });
@@ -407,8 +407,8 @@ export default function EditReceiverDetailsScreen() {
         }
     ];
     
-    // Update the condition to check for cod_values array as well
-    if (orderData && user.role === 'driver' || user.role === 'delivery_company' &&
+    // Update the condition to check for cod_values array as well and include business users
+    if (orderData && (user.role === 'driver' || user.role === 'delivery_company' || user.role === 'business') &&
         (orderData.total_cod_value || 
          (orderData.cod_values && Array.isArray(orderData.cod_values) && orderData.cod_values.length > 0))) {
         

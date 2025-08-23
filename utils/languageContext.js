@@ -227,7 +227,15 @@ export const translations = {
 
     errors:{
       error:"Error",
-      success:"Success"
+      success:"Success",
+      failedToParse:"Failed to parse server response. Please try again.",
+      requestTimedOut:"The request timed out. Please check your connection and try again.",
+      requestAborted:"The request was aborted. Please try again.",
+      unexpectedError:"An unexpected error occurred. Please try again.",
+      pleaseSelectStatus:"Please select a status",
+      pleaseSelectReason:"Please select a reason",
+      pleaseSelectBranch:"Please select a branch",
+      noItemsScanned:"No items scanned"
     },
 
       "check": {
@@ -460,6 +468,8 @@ export const translations = {
               "receive_request_issue": "Recipient didn't request shipment",
               "other": "Other reason"
             },
+            "on_the_way": "On the way",
+            "dispatched_to_branch": "Dispatched to branch",
             "delivered": "Delivered",
             "waiting": "Waiting",
             "inBranch": "In branch",
@@ -513,6 +523,7 @@ export const translations = {
           "edit": "Edit",
           "status":"Status",
           "changeStatus": "Change status",
+          "confirmStatusChange":"Are you sure you want to change the status of this order?",
           "changeStatusAlert": "You're about to change shipment status to",
           "changeStatusAlertNote": "Write a note...",
           "changeStatusAlertConfirm": "Confirm",
@@ -748,7 +759,7 @@ export const translations = {
             }
           },
           "validation": {
-              "required": "This field is required"
+              "required": "There are missing fields, please fill them"
             }
         }
       },
@@ -1194,6 +1205,7 @@ export const translations = {
     // (camera)
     camera:{
       permission:{
+        grant:"Grant Permission",
         notGranted:"Camera permission not granted",
         request:"Requesting camera permission...",
       },
@@ -1204,6 +1216,8 @@ export const translations = {
       note:"Leave a note...",
       fromBranch:"From Branch",
       toBranch:"To Branch",
+      branch:"Branch",
+
       confirm:"Confirm",
       cancel:"Cancel",
       totalScanned:"Total Scanned",
@@ -1562,7 +1576,15 @@ export const translations = {
 
     errors:{
       error:"خطأ",
-      success:"تم بنجاح"
+      success:"تم بنجاح",
+      failedToParse:"فشل في تحليل الاستجابة من الخادم. يرجى المحاولة مرة أخرى.",
+      requestTimedOut:"انتهى وقت الطلب. يرجى التحقق من اتصالك والمحاولة مرة أخرى.",
+      requestAborted:"تم إيقاف الطلب. يرجى المحاولة مرة أخرى.",
+      unexpectedError:"حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
+      pleaseSelectStatus:"يرجى اختيار حالة",
+      pleaseSelectReason:"يرجى اختيار سبب",
+      pleaseSelectBranch:"يرجى اختيار فرع",
+      noItemsScanned:"لا توجد طلبات مسجلة",
     },
 
     "check": {
@@ -1759,8 +1781,8 @@ export const translations = {
           onTheWay: "في الطريق",
           driverResponsibilityOrders: "بعهدة السائق",
           rescheduled: "مؤجل",
-          returnBeforeDeliveredInitiated: "مرتجع قبل التوصيل",
-          returnAfterDeliveredInitiated: "مرتجع بعد التوصيل",
+          returnBeforeDeliveredInitiated: "مرجع قبل الوصول",
+          returnAfterDeliveredInitiated: "مرجع بعد الوصول",
           returned: "مرتجع",
           returnedInBranch: "مرتجع في الفرع",
           returnedOut: "جاري تسليم المرتجع / التبديل",
@@ -1850,9 +1872,11 @@ export const translations = {
             "cancelled": "ملغي",
             "stuck": "عالق",
             "rescheduled": "مؤجل",
-            "return_before_delivered_initiated": "ارجاع قبل التوصيل",
-            "return_after_delivered_initiated": "ارجاع بعد التوصيل",
-            "return_after_delivered_fee_received": "ارجاع بعد التوصيل وتم استلام اجرة التوصيل",
+            "on_the_way": "تعيين سائق",
+            "dispatched_to_branch": "ارسال الى فرع اخر",
+            "return_before_delivered_initiated": "مرجع قبل الوصول",
+            "return_after_delivered_initiated": "مرجع بعد الوصول",
+            "return_after_delivered_fee_received": "مرجع مدفوع",
             "delayed": "متأخر",
             "failedToUpdate": "فشل تحديث الحالة",
             "forOrders": "للطرود",
@@ -1890,10 +1914,10 @@ export const translations = {
           },
           "editPhone": "تعديل",
           "receiverAddress": "عنوان المستلم",
-          "codValue": "قيمة الدفع عند الاستلام",
-          "codUpdateReason": "سبب تغيير قيمة الدفع عند الاستلام",
+          "codValue": "قيمة الطرد",
+          "codUpdateReason": "سبب تغيير قيمة الطرد",
           "enterReason": "أدخل سبب التغيير",
-          "codUpdateNote": "ملاحظة: يتطلب تغيير قيمة الدفع عند الاستلام موافقة المرسل",
+          "codUpdateNote": "ملاحظة: يتطلب تغيير قيمة الطرد موافقة المرسل",
           "loading": "جاري التحميل...",
           "codValue": "تكلفة الطرد",
           "error": "خطأ",
@@ -1901,7 +1925,7 @@ export const translations = {
           "ok": "موافق",
           "phoneUpdateSuccess": "تم تحديث أرقام الهاتف بنجاح",
           "receiverDetailsUpdateSuccess": "تم تحديث بيانات المستلم بنجاح",
-          "codUpdateRequestSuccess": "تم إرسال طلب تغيير قيمة الدفع عند الاستلام بنجاح",
+          "codUpdateRequestSuccess": "تم إرسال طلب تغيير قيمة الطرد بنجاح, سوف يتم اشعارك عند الموافقة",
           "receiverPhones": "هواتف المستلم",
           "loading": "جاري التحميل...",
           "error": "خطأ",
@@ -1925,10 +1949,13 @@ export const translations = {
           "contactWhatsapp": "واتساب",
           "edit": "تعديل",
           "status":"الحالة",
+          "selectStatus":"اختر الحالة",
+          "confirmStatusChange":"هل أنت متأكد من أنك تريد تعيين تلك الطرود بعهدتك ؟",
           "changeStatus": "تغيير الحالة",
           "changeStatusAlert": "أنت على وشك تغيير حالة الطرد إلى",
           "changeStatusAlertNote": "اكتب ملاحظة...",
           "changeStatusAlertConfirm": "تأكيد",
+          "changeStatus": "تغيير الحالة",
           "changeStatusAlertCancel": "إلغاء",
           "print": "طباعة",
           "location": "الموقع",
@@ -1974,7 +2001,7 @@ export const translations = {
           }
         },
         validation: {
-          required: "هذا الحقل مطلوب"
+          required: "تأكد من ادخال جميع الحقول"
         },
         save: "حفظ التغييرات",
         cancel: "إلغاء",
@@ -2083,7 +2110,7 @@ export const translations = {
                 searchReceiver:"ابحث عن الزبون",
                 enterPhone:"ادخل رقم الهاتف",
                 noReceivers:"لا يوجد زبائن",
-                found:"تم ايحاد",
+                found:"تم ايجاد",
                 receivers:"زبائن",
                 search_error:"يجب ادخال رقم هاتف صالح",
                 no_results:"لا يوجد زبائن",
@@ -2171,7 +2198,7 @@ export const translations = {
             }
           },
             "validation": {
-            "required": "هذا الحقل مطلوب"
+              required: "تأكد من ادخال جميع الحقول"
           }
         }
       },
@@ -2569,6 +2596,7 @@ export const translations = {
         request: "جارٍ طلب إذن الكاميرا..."
       },
       scanText: "ضع الباركود داخل الإطار",
+      scanReference: "امسح الباركود",
       scanDuplicateTextError: "العنصر تم مسحه مسبقًا",
       scanInvalidTextError: "تنسيق مسح غير صالح",
       scanAgainTapText: "اضغط للمسح مرة أخرى",
@@ -2576,6 +2604,8 @@ export const translations = {
       fromBranch: "من الفرع",
       toBranch: "إلى الفرع",
       confirm: "تأكيد",
+      branch:"الفرع",
+
       cancel: "إلغاء",
       totalScanned: "إجمالي الممسوح",
       enterOrderId:"ادخل الرقم التسلسلي للطرد",
@@ -2927,7 +2957,15 @@ export const translations = {
 
     errors:{
       error:"שגיאה",
-      success:"בוצע בהצלחה"
+      success:"בוצע בהצלחה",
+      failedToParse:"שגיאה בטעינת פרטי הזמנה. אנא נסה שנית.",
+      requestTimedOut:"הזמנה לא נגשה. אנא בדוק את החיבור שלך ונסה שנית.",
+      requestAborted:"הזמנה בוטלה. אנא נסה שנית.",
+      unexpectedError:"שגיאה בלתי צפויה. אנא נסה שנית.",
+      pleaseSelectStatus:"אנא בחר סטטוס",
+      pleaseSelectReason:"אנא בחר סיבה",
+      pleaseSelectBranch:"אנא בחר סניף",
+      noItemsScanned:"לא סרקו פריטים"
     },
 
     "check": {
@@ -3214,6 +3252,8 @@ export const translations = {
             "cancelled": "בוטל",
             "stuck": "תקוע",
             "rescheduled": "נדחה",
+            "on_the_way": "בדרך",
+            "dispatched_to_branch": "נשלח לסניף היעד",
             "return_before_delivered_initiated": "החזרה לפני מסירה",
             "referenceIdUpdated": "הפניה עודכנה בהצלחה",
             "referenceIdUpdateError": "הפניה לא עודכנה",
@@ -3295,6 +3335,8 @@ export const translations = {
           "contactWhatsapp": "וואטסאפ",
           "edit": "ערוך",
           "status":"סטטוס",
+          "selectStatus":"בחר סטטוס",
+          "confirmStatusChange":"האם אתה בטוח שברצונך לשנות את הסטטוס ל",
           "changeStatus": "שנה סטטוס",
           "changeStatusAlert": "אתה עומד לשנות את סטטוס המשלוח ל",
           "changeStatusAlertNote": "רשום הערה...",
@@ -3928,6 +3970,7 @@ export const translations = {
     // (camera)
     camera: {
       permission: {
+        grant:"הרשאת מצלמה",
         notGranted: "הרשאת מצלמה לא ניתנה",
         request: "מבקש הרשאת מצלמה..."
       },
@@ -3938,6 +3981,7 @@ export const translations = {
       note: "השאר הערה...",
       fromBranch: "מהסניף",
       toBranch: "לסניף",
+      branch:"סניף",
       confirm: "אשר",
       cancel: "ביטול",
       totalScanned: "סה\"כ נסרק",

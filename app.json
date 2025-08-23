@@ -2,7 +2,7 @@
   "expo": {
     "name": "Taiar",
     "slug": "taiar",
-    "version": "2.4.2",
+    "version": "2.4.3",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo_dark.png",
     "scheme": "myapp",

@@ -342,7 +342,7 @@ export default function Search({
         
         {filterByGroup.length > 0 && <View style={styles.filter}>
           <TouchableOpacity 
-            style={[styles.selectBox, activeFilter && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
+            style={[styles.selectBox, (activeFilter !== null && activeFilter !== undefined) && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
             onPress={handleOpenFiltersModal}
             activeOpacity={0.7}
           >
@@ -350,10 +350,10 @@ export default function Search({
               <View style={styles.selectBoxTextContainer}>
                 <Text style={[
                   styles.selectBoxText,
-                  activeFilter && styles.selectBoxTextActive,
+                  (activeFilter !== null && activeFilter !== undefined) && styles.selectBoxTextActive,
                   {color: isDark ? colors.text : '#1E293B'}
                 ]}>
-                  {activeFilter 
+                  {(activeFilter !== null && activeFilter !== undefined)
                     ? filterByGroup?.find(filter => filter.action === activeFilter)?.name 
                     : translations[language].search.all || "All"}
                 </Text>
@@ -364,7 +364,7 @@ export default function Search({
             </View>
           </TouchableOpacity>
           
-          {(activeSearchBy || activeDate || activeFilter || searchValue) && searchResultCount !== undefined && (
+          {(activeSearchBy || activeDate || (activeFilter !== null && activeFilter !== undefined) || searchValue) && searchResultCount !== undefined && (
             <View style={[styles.searchResultCount, {
               backgroundColor: isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)'
             }]}>

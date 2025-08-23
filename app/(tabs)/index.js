@@ -233,30 +233,30 @@ export default function HomeScreen() {
     animateOnboardingOut(completeOnboarding);
   };
 
-  const fetchUserBalance = async () => {
-    try {
-      // const token = await getToken("userToken");
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/balances`, {
-        method: "GET",
-        credentials: "include",
-        headers: {
-            'Accept': 'application/json',
-            "Content-Type": "application/json",
-            // "Cookie": token ? `token=${token}` : ""
-        }
-    });
-    const data = await res.json();
-    setUserBalances(data.data);
-    } catch (error) {
-    }
-  };
+  // const fetchUserBalance = async () => {
+  //   try {
+  //     // const token = await getToken("userToken");
+  //     const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/balances`, {
+  //       method: "GET",
+  //       credentials: "include",
+  //       headers: {
+  //           'Accept': 'application/json',
+  //           "Content-Type": "application/json",
+  //           // "Cookie": token ? `token=${token}` : ""
+  //       }
+  //   });
+  //   const data = await res.json();
+  //   setUserBalances(data.data);
+  //   } catch (error) {
+  //   }
+  // };
 
   const onRefresh = useCallback(async () => {
     try {
       setRefreshing(true);
       await Promise.all([
         getRequest("/api/orders/status/totals"),
-        fetchUserBalance(),
+        // fetchUserBalance(),
         checkWaitingOrders()
       ]);
     } catch (error) {
@@ -408,7 +408,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     getRequest("/api/orders/status/totals");
-    fetchUserBalance();
+    // fetchUserBalance();
   }, [user]);
 
   const handleGeneralCollectRequest = async (type, action) => {
@@ -974,7 +974,7 @@ export default function HomeScreen() {
         </View>}
 
         {/* Balance Section */}
-        {["driver","delivery_company","business"].includes(user.role) && <>
+        {/* {["driver","delivery_company","business"].includes(user.role) && <>
           <View 
           style={[styles.sectionHeader]}
         >
@@ -1086,7 +1086,7 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
-        </>}
+        </>} */}
 
         {/* Collections Section */}
         {user.role === "business" && (

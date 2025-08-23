@@ -15,6 +15,8 @@ import { initializeNotifications } from './utils/notificationHelper';
 import { useTheme } from './utils/themeContext';
 import { Colors } from './constants/Colors';
 import { handleAppUpdates } from './utils/updateChecker';
+import { ReferenceModalProvider } from './contexts/ReferenceModalContext';
+import GlobalReferenceModal from './components/GlobalReferenceModal';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
@@ -263,13 +265,16 @@ export default function RootLayout() {
     <RTLWrapper>
       <AuthContext.Provider value={{ isAuthenticated, setIsAuthenticated, user, userId, setUserId }}>
         <SocketProvider isAuthenticated={isAuthenticated}>
-          <SafeAreaView 
-            style={{ flex: 1, backgroundColor: colors.background,paddingBottom: bottomPadding }}
-            edges={['right', 'left']} // Handle top, left, and right edges
-          >
-            <StatusBar style={colors.statusBarStyle} />
-            <AppNavigationStack isAuthenticated={isAuthenticated} colors={colors} />
-          </SafeAreaView>
+          <ReferenceModalProvider>
+            <SafeAreaView 
+              style={{ flex: 1, backgroundColor: colors.background,paddingBottom: bottomPadding }}
+              edges={['right', 'left']} // Handle top, left, and right edges
+            >
+              <StatusBar style={colors.statusBarStyle} />
+              <AppNavigationStack isAuthenticated={isAuthenticated} colors={colors} />
+              <GlobalReferenceModal />
+            </SafeAreaView>
+          </ReferenceModalProvider>
         </SocketProvider>
       </AuthContext.Provider>
     </RTLWrapper>

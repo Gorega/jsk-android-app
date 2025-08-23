@@ -19,6 +19,7 @@ import ReceiverSearchModal from "../../components/create/ReceiverSearchModal";
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 import * as SecureStore from 'expo-secure-store';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
 export default function HomeScreen() {
     const { language } = useLanguage();
@@ -191,7 +192,7 @@ export default function HomeScreen() {
                                     if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
                                         Alert.alert(
                                             translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
-                                            translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message,
+                                            type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
                                             [{ 
                                                 text: translations[language].ok || "OK",
                                                 style: "default"
@@ -359,33 +360,6 @@ export default function HomeScreen() {
         label: translations[language].tabs.orders.create.sections.cost.title,
         icon: <FontAwesome name="money" size={24} color='#10B981' />,
         fields: [
-            {
-                label: translations[language].tabs.orders.create.sections.paymentType.title,
-                type: "select",
-                name: "paymentType",
-                defaultValue: "cash",
-                value: selectedValue.paymentType.name,
-                list: paymentTypes
-            },
-            ["business", "admin", "manager"].includes(user.role) ? {
-                type: "toggle",
-                label: ["admin", "manager"].includes(user.role) ? 
-                    translations[language].tabs.orders.create.sections.sender.fields.sender_deduct : 
-                    translations[language].tabs.orders.create.sections.sender.fields.my_balance_deduct,
-                name: "from_business_balance",
-                value: user.role === "business" && selectedValue.orderType?.value === "receive" && !form.withMoneyReceive ? true : 
-                      user.role === "business" && selectedValue.orderType?.value === "payment" ? true : 
-                      (form.fromBusinessBalance || false),
-                disabled: (user.role === "business" && selectedValue.orderType?.value === "receive" && !form.withMoneyReceive) || 
-                         (user.role === "business" && selectedValue.orderType?.value === "payment"),
-                onChange: async (value) => {
-                    setFromBusinessBalance(value);
-                    setForm(prevForm => ({
-                        ...prevForm,
-                        fromBusinessBalance: value
-                    }));
-                }
-            } : null,
             (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
             (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
             (selectedValue.paymentType?.value || form.paymentTypeId) === "check"
@@ -406,38 +380,7 @@ export default function HomeScreen() {
                         currency: item.currency,
                         index: index,
                         error: index === 0 ? fieldErrors.cod_value : null,
-                        showCurrencyPicker: (idx) => setActiveCurrencyPicker(idx),
-                        availableCurrencies: currencyList
-                            .filter(c => !codAmounts.some((item, i) => i !== index && item.currency === c.value))
-                            .map(c => ({ name: c.name, value: c.value })),
-                        onChange: (input) => {
-                            clearFieldError('cod_value');
-                            const newAmounts = [...codAmounts];
-                            newAmounts[index].value = input;
-                            setCodAmounts(newAmounts);
-                            
-                            if (index === 0) {
-                                setForm((form) => ({ ...form, codValue: input }));
-                            }
-                        },
-                        onCurrencyChange: (currency) => {
-                            const newAmounts = [...codAmounts];
-                            newAmounts[index].currency = currency;
-                            setCodAmounts(newAmounts);
-                        }
-                    })),
-                    codAmounts.length < 3 ? {
-                        type: "addCurrencyButton",
-                        value: translations[language].tabs.orders.create.sections.cost.fields.addCurrency,
-                        onPress: () => {
-                            const usedCurrencies = codAmounts.map(item => item.currency);
-                            const unused = ["ILS", "USD", "JOD"].find(c => !usedCurrencies.includes(c));
-                            
-                            if (unused) {
-                                setCodAmounts([...codAmounts, { value: "", currency: unused }]);
-                            }
-                        }
-                    } : null
+                    }))
                 ] : []),
                 
                 // Show checks input for check or cash/check
@@ -494,17 +437,36 @@ export default function HomeScreen() {
                         const value = parseFloat(cod.value || 0);
                         const currency = cod.currency || 'ILS';
                         
-                        if (!isNaN(value) && value > 0) {
+                        if (!isNaN(value)) {
                             codByCurrency[currency] = (codByCurrency[currency] || 0) + value;
                         }
                     });
                     
-                    // Get delivery fee
+                    // Get delivery fee, commission, and discount
                     const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
                     const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
+                    const commissionValue = parseFloat(form.commission || 0);
+                    const commissionCurrency = 'ILS'; // Default currency for commission
+                    const discountValue = parseFloat(form.discount || 0);
+                    const discountCurrency = 'ILS'; // Default currency for discount
                     
-                    // Calculate ILS fees (currently only delivery fee)
-                    const ilsFees = deliveryFeeCurrency === 'ILS' ? deliveryFeeValue : 0;
+                    // Calculate ILS fees
+                    const ilsFees = 
+                        (deliveryFeeCurrency === 'ILS' ? deliveryFeeValue : 0) +
+                        (commissionCurrency === 'ILS' ? commissionValue : 0) -
+                        (discountCurrency === 'ILS' ? discountValue : 0);
+                    
+                    // Calculate JOD fees
+                    const jodFees = 
+                        (deliveryFeeCurrency === 'JOD' ? deliveryFeeValue : 0) +
+                        (commissionCurrency === 'JOD' ? commissionValue : 0) -
+                        (discountCurrency === 'JOD' ? discountValue : 0);
+                    
+                    // Calculate USD fees
+                    const usdFees = 
+                        (deliveryFeeCurrency === 'USD' ? deliveryFeeValue : 0) +
+                        (commissionCurrency === 'USD' ? commissionValue : 0) -
+                        (discountCurrency === 'USD' ? discountValue : 0);
                     
                     // Check if this is a payment order or receive without money receive
                     const isPaymentOrReceiveWithoutMoney = 
@@ -514,114 +476,93 @@ export default function HomeScreen() {
                     // Calculate ILS net value
                     let ilsNetValue = 0;
                     
-                    // If there are ILS fees
-                    if (ilsFees > 0) {
-                        // If ILS COD exists
-                        if (codByCurrency.ILS > 0) {
-                            if (isPaymentOrReceiveWithoutMoney) {
-                                // For payment or receive without money receive, make it negative
-                                ilsNetValue = -(codByCurrency.ILS + ilsFees);
-                            } else {
-                                // Check if ILS COD is sufficient (normal case - subtract fees)
-                                if (codByCurrency.ILS >= ilsFees) {
-                                    ilsNetValue = codByCurrency.ILS - ilsFees;
-                                } 
-                                // Check if JOD can cover the deficit
-                                else if ((codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= (ilsFees - codByCurrency.ILS)) {
-                                    ilsNetValue = 0; // JOD covers the remainder
-                                }
-                                // Check if USD can cover the deficit
-                                else if ((codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS) >= (ilsFees - codByCurrency.ILS)) {
-                                    ilsNetValue = 0; // USD covers the remainder
-                                }
-                                // If no other currency can cover the deficit
-                                else {
-                                    ilsNetValue = codByCurrency.ILS - ilsFees;
-                                }
+                    // Check if COD value is negative
+                    const isIlsCodNegative = codByCurrency.ILS < 0;
+                    
+                    // Direct calculation based on COD and fees, preserving negative values
+                    if (isPaymentOrReceiveWithoutMoney) {
+                        // For payment or receive without money receive, make COD negative if it's not already
+                        const ilsCodValue = isIlsCodNegative ? codByCurrency.ILS : -codByCurrency.ILS;
+                        ilsNetValue = ilsCodValue - ilsFees; // Subtract fees (not add) to preserve sign
+                    } else {
+                        // For normal delivery, simply subtract fees from COD
+                        ilsNetValue = codByCurrency.ILS - ilsFees;
+                        
+                        // Only apply deficit coverage logic if we have a negative value and other currencies
+                        if (ilsNetValue < 0 && !isIlsCodNegative) { // Skip deficit coverage if COD was intentionally negative
+                            const ilsDeficit = Math.abs(ilsNetValue);
+                            const jodCoverage = codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
+                            const usdCoverage = codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS;
+                            
+                            // If JOD can fully cover the deficit
+                            if (jodCoverage >= ilsDeficit) {
+                                ilsNetValue = 0; // JOD covers it completely
                             }
-                        }
-                        // No ILS COD value exists
-                        else {
-                            if (isPaymentOrReceiveWithoutMoney) {
-                                // For payment or receive without money receive, make it negative
-                                ilsNetValue = -ilsFees;
-                            } else {
-                                // Check if JOD can cover ILS deficit
-                                if ((codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= ilsFees) {
-                                    ilsNetValue = 0; // JOD can cover it
-                                }
-                                // Check if USD can cover ILS deficit
-                                else if ((codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS) >= ilsFees) {
-                                    ilsNetValue = 0; // USD can cover it
-                                }
-                                // If no other currency can cover
-                                else {
-                                    ilsNetValue = -ilsFees;
-                                }
+                            // If USD can fully cover the deficit
+                            else if (usdCoverage >= ilsDeficit) {
+                                ilsNetValue = 0; // USD covers it completely
                             }
+                            // If JOD and USD together can cover the deficit
+                            else if (jodCoverage + usdCoverage >= ilsDeficit) {
+                                ilsNetValue = 0; // Combined coverage
+                            }
+                            // Otherwise, keep the negative value
                         }
-                    }
-                    // If no ILS fees but ILS COD exists
-                    else if (codByCurrency.ILS > 0) {
-                        if (isPaymentOrReceiveWithoutMoney) {
-                            // For payment or receive without money receive, make it negative
-                            ilsNetValue = -codByCurrency.ILS;
-                        } else {
-                            ilsNetValue = codByCurrency.ILS;
-                        }
-                    }
-                    // No ILS fees and no ILS COD
-                    else {
-                        ilsNetValue = 0;
                     }
                     
                     // Calculate JOD net value
                     let jodNetValue = 0;
                     
-                    // Only calculate if JOD COD exists
-                    if (codByCurrency.JOD > 0) {
-                        if (isPaymentOrReceiveWithoutMoney) {
-                            // For payment or receive without money receive, make it negative
-                            jodNetValue = -codByCurrency.JOD;
-                        } else {
-                            // Start with JOD COD
-                            jodNetValue = codByCurrency.JOD;
+                    // Check if COD value is negative
+                    const isJodCodNegative = codByCurrency.JOD < 0;
+                    
+                    // Direct calculation for JOD, preserving negative values
+                    if (isPaymentOrReceiveWithoutMoney) {
+                        // For payment or receive without money receive, make it negative if it's not already
+                        const jodCodValue = isJodCodNegative ? codByCurrency.JOD : -codByCurrency.JOD;
+                        jodNetValue = jodCodValue - jodFees; // Subtract fees (not add) to preserve sign
+                    } else {
+                        // Start with JOD COD minus JOD fees
+                        jodNetValue = codByCurrency.JOD - jodFees;
+                        
+                        // Handle ILS deficit coverage if needed
+                        if (ilsNetValue < 0 && jodNetValue > 0 && !isIlsCodNegative && !isJodCodNegative) {
+                            // Calculate how much of the ILS deficit this JOD can cover
+                            const ilsDeficitToJod = Math.min(
+                                Math.abs(ilsNetValue) / CURRENCY_EXCHANGE_RATES.JOD_TO_ILS,
+                                jodNetValue
+                            );
                             
-                            // Check if we need to cover ILS deficit
-                            const ilsDeficit = ilsFees - codByCurrency.ILS;
-                            
-                            if (ilsDeficit > 0 && 
-                                (codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS) >= ilsDeficit) {
-                                // Convert ILS deficit to JOD and deduct
-                                jodNetValue -= ilsDeficit / CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
-                            }
+                            // Deduct the coverage amount from JOD net value
+                            jodNetValue -= ilsDeficitToJod;
                         }
                     }
                     
                     // Calculate USD net value
                     let usdNetValue = 0;
                     
-                    // Only calculate if USD COD exists
-                    if (codByCurrency.USD > 0) {
-                        if (isPaymentOrReceiveWithoutMoney) {
-                            // For payment or receive without money receive, make it negative
-                            usdNetValue = -codByCurrency.USD;
-                        } else {
-                            // Start with USD COD
-                            usdNetValue = codByCurrency.USD;
+                    // Check if COD value is negative
+                    const isUsdCodNegative = codByCurrency.USD < 0;
+                    
+                    // Direct calculation for USD, preserving negative values
+                    if (isPaymentOrReceiveWithoutMoney) {
+                        // For payment or receive without money receive, make it negative if it's not already
+                        const usdCodValue = isUsdCodNegative ? codByCurrency.USD : -codByCurrency.USD;
+                        usdNetValue = usdCodValue - usdFees; // Subtract fees (not add) to preserve sign
+                    } else {
+                        // Start with USD COD minus USD fees
+                        usdNetValue = codByCurrency.USD - usdFees;
+                        
+                        // Handle remaining ILS deficit after JOD coverage
+                        if (ilsNetValue < 0 && usdNetValue > 0 && !isIlsCodNegative && !isUsdCodNegative) {
+                            // Calculate how much of the ILS deficit this USD can cover
+                            const ilsDeficitToUsd = Math.min(
+                                Math.abs(ilsNetValue) / CURRENCY_EXCHANGE_RATES.USD_TO_ILS,
+                                usdNetValue
+                            );
                             
-                            // Check if there's an ILS deficit and JOD hasn't already covered it
-                            const ilsDeficit = ilsFees - codByCurrency.ILS;
-                            const jodCoverage = codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
-                            
-                            if (ilsDeficit > 0 && jodCoverage < ilsDeficit) {
-                                // Calculate remaining deficit after JOD contribution
-                                const remainingDeficit = ilsDeficit - jodCoverage;
-                                
-                                // Convert ILS deficit to USD and deduct, but don't go below zero
-                                const deficitInUsd = remainingDeficit / CURRENCY_EXCHANGE_RATES.USD_TO_ILS;
-                                usdNetValue -= Math.min(usdNetValue, deficitInUsd);
-                            }
+                            // Deduct the coverage amount from USD net value
+                            usdNetValue -= ilsDeficitToUsd;
                         }
                     }
                     
@@ -631,13 +572,13 @@ export default function HomeScreen() {
                     // Always include ILS
                     netValues.push(`ILS: ${ilsNetValue.toFixed(2)}`);
                     
-                    // Only include JOD if COD exists
-                    if (codByCurrency.JOD > 0) {
+                    // Include JOD if it has a non-zero value
+                    if (codByCurrency.JOD !== 0 || jodFees !== 0) {
                         netValues.push(`JOD: ${jodNetValue.toFixed(2)}`);
                     }
                     
-                    // Only include USD if COD exists
-                    if (codByCurrency.USD > 0) {
+                    // Include USD if it has a non-zero value
+                    if (codByCurrency.USD !== 0 || usdFees !== 0) {
                         netValues.push(`USD: ${usdNetValue.toFixed(2)}`);
                     }
                     
@@ -787,7 +728,7 @@ export default function HomeScreen() {
 
         // Format COD values - now supports multiple currencies
         const codValues = codAmounts
-            .filter(item => item.value && parseFloat(item.value) > 0)
+            .filter(item => item.value)
             .map(item => ({
                 value: parseFloat(item.value),
                 currency: item.currency || 'ILS'
@@ -795,7 +736,7 @@ export default function HomeScreen() {
 
         // If there are no COD values and payment type is not check, add a default value
         if (codValues.length === 0 && !["check"].includes(selectedValue.paymentType.value)) {
-            codValues.push({ value: null, currency: 'ILS' });
+            codValues.push({ value: 0, currency: 'ILS' });
         }
 
         // Ensure commission exists (required field)
@@ -868,24 +809,24 @@ export default function HomeScreen() {
                 };
             }
 
-            // Process business balance deduction if enabled
-            if (form.fromBusinessBalance && data.data?.order_id) {
-                // Add check to prevent duplicate deductions on edit
-                const shouldDeduct = method === "POST" || 
-                                    (method === "PUT" && !form.originalFromBusinessBalance);
+            // // Process business balance deduction if enabled
+            // if (form.fromBusinessBalance && data.data?.order_id) {
+            //     // Add check to prevent duplicate deductions on edit
+            //     const shouldDeduct = method === "POST" || 
+            //                         (method === "PUT" && !form.originalFromBusinessBalance);
                 
-                if (shouldDeduct) {
-                    try {
-                        await processDeduction(data.data.order_id, user.role === "business" ? user.userId : selectedValue.sender.user_id);
-                    } catch (error) {
-                        Alert.alert(
-                            translations[language].tabs.orders.create.sections.sender.fields.deduction_error || "Deduction Error",
-                            error.message || translations[language].tabs.orders.create.sections.sender.fields.deduction_failed || "Failed to process deduction",
-                            [{ text: "OK" }]
-                        );
-                    }
-                }
-            }
+            //     if (shouldDeduct) {
+            //         try {
+            //             await processDeduction(data.data.order_id, user.role === "business" ? user.userId : selectedValue.sender.user_id);
+            //         } catch (error) {
+            //             Alert.alert(
+            //                 translations[language].tabs.orders.create.sections.sender.fields.deduction_error || "Deduction Error",
+            //                 error.message || translations[language].tabs.orders.create.sections.sender.fields.deduction_failed || "Failed to process deduction",
+            //                 [{ text: "OK" }]
+            //             );
+            //         }
+            //     }
+            // }
 
             setFormSpinner({ status: false });
             setSuccess(true);
@@ -1188,7 +1129,7 @@ export default function HomeScreen() {
 
     const fetchSenders = async () => {
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?language_code=${language}&role_id=2&np=${prickerSearchValue}`, {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?language_code=${language}&role_id=2&active_users=1&np=${prickerSearchValue}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -1352,6 +1293,30 @@ export default function HomeScreen() {
         };
         
         checkScannedData();
+    }, []);
+    
+    // Add event listener for scanned reference ID from the camera
+    useEffect(() => {
+        // Create event listener for REFERENCE_SCANNED event
+        const handleReferenceScanned = (scannedValue) => {
+            if (scannedValue) {
+                // Update the form with the scanned reference ID
+                setForm(prevForm => ({
+                    ...prevForm,
+                    referenceId: scannedValue
+                }));
+            }
+        };
+        
+        // Add the event listener
+        const unsubscribe = eventEmitter.on(EVENTS.REFERENCE_SCANNED, handleReferenceScanned);
+        
+        // Clean up the event listener when component unmounts
+        return () => {
+            if (typeof unsubscribe === 'function') {
+                unsubscribe();
+            }
+        };
     }, []);
     
     useFocusEffect(
@@ -1704,7 +1669,8 @@ export default function HomeScreen() {
                                         if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
                                             Alert.alert(
                                                 translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
-                                                translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message,
+                                                type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
+
                                                 [{ 
                                                     text: translations[language].ok || "OK",
                                                     style: "default"
@@ -1722,7 +1688,7 @@ export default function HomeScreen() {
                         ))}
                     </View>
                     
-                    {/* Add with_money_receive toggle directly in the header */}
+                    {/* Add with_money_receive toggle directly in the header
                     {selectedValue.orderType?.value === "receive" && (
                         <View style={styles.businessBalanceToggleContainer}>
                             <Field
@@ -1750,7 +1716,7 @@ export default function HomeScreen() {
                                 }}
                             />
                         </View>
-                    )}
+                    )} */}
                 </View>
                 <ScrollView 
                     ref={scrollViewRef}

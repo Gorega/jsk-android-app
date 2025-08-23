@@ -39,7 +39,7 @@ export default function Orders() {
     // Extract URL parameters when component mounts
     useEffect(() => {
         // Handle status_key parameter
-        if (params.status_key) {
+        if (params.status_key !== undefined) {
             setActiveFilter(params.status_key);
         } else if (params.status_key === undefined && activeFilter !== '') {
             // If status_key was removed from URL, clear the filter
@@ -161,6 +161,9 @@ export default function Orders() {
         name: translations[language].tabs.orders.filters.onTheWay,
         action: "on_the_way"
     }, {
+        name: translations[language].tabs.orders.filters.driverResponsibilityOrders,
+        action: "with_driver"
+    },{
         name: translations[language].tabs.orders.filters.rescheduled,
         action: "reschedule"
     }, {
@@ -181,9 +184,6 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.received,
         action: "received"
-    }, {
-        name: translations[language].tabs.orders.filters["delivered/received"],
-        action: "delivered/received"
     }] : [{
         name: translations[language].tabs.orders.filters.all,
         action: "",
@@ -207,7 +207,7 @@ export default function Orders() {
         action: "on_the_way"
     },{
         name: translations[language].tabs.orders.filters.driverResponsibilityOrders,
-        action: "driver_responsibility"
+        action: "with_driver"
     }, {
         name: translations[language].tabs.orders.filters.returnBeforeDeliveredInitiated,
         action: "return_before_delivered_initiated"
@@ -232,9 +232,6 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.received,
         action: "received"
-    }, {
-        name: translations[language].tabs.orders.filters["delivered/received"],
-        action: "delivered/received"
     }, {
         name: translations[language].tabs.orders.filters.moneyInBranch,
         action: "money_in_branch"
@@ -333,9 +330,9 @@ export default function Orders() {
             const queryParams = new URLSearchParams();
             
             // Clear orderIds and use a clean request if:
-            // 1. User explicitly selected a status filter (non-empty)
+            // 1. User explicitly selected a status filter (including "All" which is empty string)
             // 2. User is using search or other filtering methods
-            const isFilterSelected = (typeof activeFilter === 'string') ? (activeFilter.trim() !== '') : Boolean(activeFilter);
+            const isFilterSelected = (typeof activeFilter === 'string'); // Any string value means filter was selected
             const isUsingSearch = activeSearchBy || activeDate || (searchValue && searchValue.trim() !== '');
             
             // If user has selected a filter (including "All") or is using search, don't use orderIds
@@ -351,8 +348,8 @@ export default function Orders() {
             
             if (multi_id && multi_id.trim() !== "") queryParams.append('multi_id', multi_id);
             
-            // Only include status_key if activeFilter is not empty
-            if (activeFilter && activeFilter !== '') {
+            // Include status_key if activeFilter is a string (including empty string for 'all')
+            if (typeof activeFilter === 'string') {
                 queryParams.append('status_key', activeFilter);
             }
             
@@ -600,7 +597,7 @@ export default function Orders() {
         setActiveFilter(newFilter);
         
         // When selecting a filter (including "All"), clear orderIds from URL
-        router.setParams(newFilter ? { status_key: newFilter } : {});
+        router.setParams({ status_key: newFilter });
         
     }, [router]);
 

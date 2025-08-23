@@ -11,7 +11,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRTLStyles } from '../../utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
-import Animated from 'react-native-reanimated';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
 export default function ScanReference() {
   const { language } = useLanguage();
@@ -37,8 +37,12 @@ export default function ScanReference() {
   }, [requestPermission, permission]);
 
   const handleBarCodeScanned = ({ type: barcodeType, data }) => {
+    if (scanned) return;
+    
     try {
       setLoading(true);
+      setScanned(true);
+      
       let referenceId;
       
       // Handle different barcode types correctly
@@ -56,25 +60,24 @@ export default function ScanReference() {
         referenceId = data;
       }
       
-      setScanned(true);
-      
-      // Instead of using global variable, pass the data directly via router      
-      // Use a simpler approach - just pass the scanned ID and go back
-      setTimeout(() => {
-        // Store the scanned ID in a global variable as a fallback
-        if (typeof global === 'undefined') {
-          global = {};
-        }
-        global.scannedReferenceId = referenceId;
-        
-        // Navigate back to the previous screen
-        router.back();
-      }, 300);
+      // Emit the scanned reference event
+       const trimmedReferenceId = referenceId?.trim() || referenceId;
+       
+       // Navigate back first
+       router.back();
+       
+       // Then emit the event with a slight delay to ensure navigation completes
+       setTimeout(() => {
+           eventEmitter.emit(EVENTS.REFERENCE_SCANNED, trimmedReferenceId);
+       }, 100);
       
     } catch (err) {
       console.error('Error processing scan:', err);
       setError(translations[language].camera?.scanInvalidTextError || 'Invalid scan data');
-      setTimeout(() => setError(null), 3000);
+      setTimeout(() => {
+          setError(null);
+          setScanned(false); // Allow rescanning
+      }, 3000);
     } finally {
       setLoading(false);
     }
@@ -153,7 +156,7 @@ export default function ScanReference() {
         </TouchableOpacity>
 
         {/* Scanner frame with animated border */}
-        <View style={[
+        {/* <View style={[
           styles.scannerFocusArea,
           { 
             borderColor: colors.primary,
@@ -178,12 +181,12 @@ export default function ScanReference() {
               }
             ]} 
           />
-        </View>
+        </View> */}
 
         {/* Instructions text */}
         <View style={styles.instructionsContainer}>
           <Text style={styles.scanText}>
-            {translations[language].camera?.scanText || 'Scan QR code for reference ID'}
+            {translations[language].camera?.scanReference || 'Scan QR code for reference ID'}
           </Text>
           
           {error && (

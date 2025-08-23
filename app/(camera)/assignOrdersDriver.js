@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView, Platform, StatusBar, Animated } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
@@ -35,6 +35,12 @@ export default function CameraScanner() {
   const [note, setNote] = useState("");
   const { isRTL } = useRTLStyles();
   const [manualOrderId, setManualOrderId] = useState("");
+  const [showStatusSelection, setShowStatusSelection] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [showDriverField, setShowDriverField] = useState(false);
+  const [showBranchField, setShowBranchField] = useState(false);
+  const [showStatusReason, setShowStatusReason] = useState(false);
+  const [selectedReason, setSelectedReason] = useState(null);
   
   const [selectedValue, setSelectedValue] = useState({
     toBranch: null,
@@ -48,11 +54,61 @@ export default function CameraScanner() {
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scanLineAnim = useRef(new Animated.Value(0)).current;
   
+  // Define status options
+  const suspendReasons = useMemo(() => [
+    { value: 'closed', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.closed || 'Closed' },
+    { value: 'no_response', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.no_response || 'No Response' },
+    { value: 'cancelled_from_office', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.cancelled_from_office || 'Cancelled From Office' },
+    { value: 'address_changed', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.address_changed || 'Address Changed' },
+    { value: 'not_compatible', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.not_compatible || 'Not Compatible' },
+    { value: 'delivery_fee_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue || 'Delivery Fee Issue' },
+    { value: 'duplicate_reschedule', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule || 'Duplicate Reschedule' },
+    { value: 'receive_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.receive_issue || 'Receive Issue' },
+    { value: 'sender_cancelled', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled || 'Sender Cancelled' },
+    { value: 'reschedule_request', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.reschedule_request || 'Reschedule Request' },
+    { value: 'incorrect_number', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.incorrect_number || 'Incorrect Number' },
+    { value: 'not_existing', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.not_existing || 'Not Existing' },
+    { value: 'cod_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.cod_issue || 'COD Issue' },
+    { value: 'death_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.death_issue || 'Death Issue' },
+    { value: 'not_exist_in_address', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address || 'Not Exist In Address' },
+    { value: 'receiver_cancelled', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled || 'Receiver Cancelled' },
+    { value: 'receiver_no_response', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response || 'Receiver No Response' },
+    { value: 'order_incomplete', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.order_incomplete || 'Order Incomplete' },
+    { value: 'receive_request_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue || 'Receive Request Issue' },
+    { value: 'other', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.other || 'Other' }
+  ], [language]);
+  
+  // Define status options - adding name property for compatibility with PickerModal
+  const statusOptions = useMemo(() => [
+    { label: translations[language]?.tabs?.orders?.order?.states?.waiting || 'Waiting', value: 'waiting', name: translations[language]?.tabs?.orders?.order?.states?.waiting || 'Waiting' },
+    { label: translations[language]?.tabs?.orders?.order?.states?.inBranch || 'In Branch', value: 'in_branch', name: translations[language]?.tabs?.orders?.order?.states?.in_branch || 'In Branch', requiresBranch: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.rejected || 'Rejected', value: 'rejected', name: translations[language]?.tabs?.orders?.order?.states?.rejected || 'Rejected', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.stuck || 'Stuck', value: 'stuck', name: translations[language]?.tabs?.orders?.order?.states?.stuck || 'Stuck', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.rescheduled || 'Rescheduled', value: 'reschedule', name: translations[language]?.tabs?.orders?.order?.states?.rescheduled || 'Rescheduled', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.on_the_way || 'On The Way', value: 'on_the_way', name: translations[language]?.tabs?.orders?.order?.states?.on_the_way || 'On The Way', requiresDriver: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.dispatched_to_branch || 'Dispatched To Branch', value: 'dispatched_to_branch', name: translations[language]?.tabs?.orders?.order?.states?.dispatched_to_branch || 'Dispatched To Branch', requiresDriver: true, requiresBranch: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.return_before_delivered_initiated || 'Return Before Delivered Initiated', value: 'return_before_delivered_initiated', name: translations[language]?.tabs?.orders?.order?.states?.return_before_delivered_initiated || 'Return Before Delivered Initiated', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.return_after_delivered_initiated || 'Return After Delivered Initiated', value: 'return_after_delivered_initiated', name: translations[language]?.tabs?.orders?.order?.states?.return_after_delivered_initiated || 'Return After Delivered Initiated', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.return_after_delivered_fee_received || 'Return After Delivered Fee Received', value: 'return_after_delivered_fee_received', name: translations[language]?.tabs?.orders?.order?.states?.return_after_delivered_fee_received || 'Return After Delivered Fee Received', requiresReason: true },
+    { label: translations[language]?.tabs?.orders?.order?.states?.delivered || 'Delivered', value: 'delivered', name: translations[language]?.tabs?.orders?.order?.states?.delivered || 'Delivered' },
+    { label: translations[language]?.tabs?.orders?.order?.states?.received || 'Received', value: 'received', name: translations[language]?.tabs?.orders?.order?.states?.received || 'Received' }
+  ], [language]);
+  
+  // Add name property to suspendReasons for compatibility with PickerModal
+  const suspendReasonsWithName = useMemo(() => {
+    return suspendReasons.map(reason => ({
+      ...reason,
+      name: reason.label
+    }));
+  }, [suspendReasons]);
+  
   // Start animations
   useEffect(() => {
-    // Check if user is not a driver or delivery company
-    if (user && user.role_id !== 4 && user.role_id !== 9) {
-      setShowDriverSelection(true);
+    // Check if user is admin, manager, entry, warehouse_admin, or warehouse_staff
+    const adminRoles = ["admin", "manager", "entery", "warehouse_admin", "warehouse_staff"];
+    // Don't show status selection for driver or delivery_company roles
+    if (user && adminRoles.includes(user.role) && user.role !== 'driver' && user.role !== 'delivery_company') {
+      setShowStatusSelection(true);
     }
     
     // Fade in animation
@@ -184,17 +240,15 @@ export default function CameraScanner() {
       try {
         responseData = await res.json();
       } catch (parseError) {
-        console.log('Error parsing response:', parseError);
         setFormSpinner({ status: false });
         Alert.alert(
           translations[language].errors.error,
-          'Failed to parse server response. Please try again.'
+          translations[language].errors.failedToParse
         );
         return;
       }
       
       if (!res.ok) {
-        console.log('Server error:', responseData);
         setFormSpinner({ status: false });
         Alert.alert(
           translations[language].errors.error,
@@ -213,24 +267,23 @@ export default function CameraScanner() {
       }, 100);
       
     } catch (err) {
-      console.log('Request error:', err);
       setFormSpinner({ status: false });
       
       // Show appropriate error message based on error type
       if (err.message === 'Request timed out') {
         Alert.alert(
           translations[language].errors.error,
-          'The request timed out. Please check your connection and try again.'
+          translations[language].errors.requestTimedOut
         );
       } else if (err.name === 'AbortError') {
         Alert.alert(
           translations[language].errors.error,
-          'The request was aborted. Please try again.'
+          translations[language].errors.requestAborted
         );
       } else {
         Alert.alert(
           translations[language].errors.error,
-          'An unexpected error occurred. Please try again.'
+          translations[language].errors.unexpectedError
         );
       }
     } finally {
@@ -364,6 +417,9 @@ export default function CameraScanner() {
       return;
     }
 
+    // Set processing flag to show loading state
+    setProcessingBarcode(true);
+    
     // Fetch order details
     const orderDetails = await fetchOrderDetails(manualOrderId);
     
@@ -374,14 +430,280 @@ export default function CameraScanner() {
     } else {
       playErrorSound();
     }
+    
+    // Reset processing flag
+    setProcessingBarcode(false);
+  };
+  
+  // Handle status change
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+    
+    // Check if the selected status requires a driver or branch
+    const statusOption = statusOptions.find(option => option.value === status);
+    
+    if (statusOption) {
+      // Handle reason requirement
+      if (statusOption.requiresReason) {
+        setShowStatusReason(true);
+      } else {
+        setShowStatusReason(false);
+        setSelectedReason(null);
+      }
+      
+      // Handle driver field visibility
+      const shouldShowDriver = status === 'on_the_way' || status === 'dispatched_to_branch';
+      setShowDriverField(shouldShowDriver);
+      
+      // Handle branch field visibility
+      const shouldShowBranch = status === 'dispatched_to_branch' || status === 'in_branch';
+      setShowBranchField(shouldShowBranch);
+    }
+  };
+  
+  // Update order status
+  const updateOrderStatus = async () => {
+    // For driver or delivery_company roles, automatically set status to with_driver
+    if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
+      // Set status directly to with_driver without requiring selection
+      const autoStatus = 'with_driver';
+      
+      // Check if we have any orders to update
+      if (scannedItems.length === 0) {
+        Alert.alert(
+          translations[language].errors.error,
+          translations[language].camera.noItemsScanned
+        );
+        return;
+      }
+      
+      setFormSpinner({ status: true });
+      
+      // Process orders with automatic driver assignment
+      try {
+        // First create a collection to assign the driver_id
+        // Format orders array
+        const formattedOrders = scannedItems.map(item => {
+          const orderId = typeof item === 'object' ? item.order_id : item;
+          return { order_id: orderId };
+        });
+        
+        // Prepare the collection request body
+        const collectionRequestBody = {
+          type_id: 3, // For dispatched collection
+          orders: formattedOrders,
+          driver_id: user.userId
+        };
+        
+        // Send the collection request to assign driver_id
+        const collectionRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            'Accept-Language': language
+          },
+          body: JSON.stringify(collectionRequestBody)
+        });
+        
+        const collectionData = await collectionRes.json();
+        
+        if (!collectionRes.ok) {
+          throw new Error(collectionData.message || 'Failed to assign driver');
+        }
+        
+        // After successful driver assignment, update the status
+        const updates = scannedItems.map(item => {
+          const orderId = typeof item === 'object' ? item.order_id : item;
+          
+          return {
+            order_id: orderId,
+            status: autoStatus,
+            note_content: note
+          };
+        });
+        
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+          method: "PUT",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': language
+          },
+          credentials: "include",
+          body: JSON.stringify({ updates })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.details || 'Failed to update status');
+        }
+        
+        setSuccess(true);
+        setTimeout(() => {
+          router.back();
+        }, 100);
+        
+        return; // Exit early since we've handled the special case
+      } catch (error) {
+        setFormSpinner({ status: false });
+        Alert.alert(
+          translations[language].errors.error,
+          error.message || translations[language].errors.unexpectedError
+        );
+        return;
+      }
+    }
+    
+    // Regular flow for other user roles
+    if (!selectedStatus) {
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].errors.pleaseSelectStatus
+      );
+      return;
+    }
+    
+    // Check if we need a reason but don't have one
+    const statusOption = statusOptions.find(option => option.value === selectedStatus);
+    if (statusOption?.requiresReason && !selectedReason) {
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].errors.pleaseSelectReason
+      );
+      return;
+    }
+    
+    // Validate driver selection for on_the_way status
+    if (selectedStatus === 'on_the_way' && !selectedValue.fromDriver) {
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language]?.camera?.driverSelectionRequired || 'Please select a driver'
+      );
+      return;
+    }
+    
+    // Validate branch selection for dispatched_to_branch or in_branch status
+    if ((selectedStatus === 'dispatched_to_branch' || selectedStatus === 'in_branch') && !selectedValue.toBranch) {
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].errors.pleaseSelectBranch
+      );
+      return;
+    }
+    
+    // Check if we have any orders to update
+    if (scannedItems.length === 0) {
+      Alert.alert(
+        translations[language].errors.error,
+        translations[language].errors.noItemsScanned
+      );
+      return;
+    }
+    
+    setFormSpinner({ status: true });
+    
+    try {
+      // For on_the_way or dispatched_to_branch, use collection endpoint
+      if (selectedStatus === 'on_the_way' || selectedStatus === 'dispatched_to_branch') {
+        // Format orders array
+        const formattedOrders = scannedItems.map(item => {
+          const orderId = typeof item === 'object' ? item.order_id : item;
+          return { order_id: orderId };
+        });
+        
+        // Prepare the request body
+        const requestBody = {
+          type_id: 3, // For dispatched collection
+          orders: formattedOrders,
+          driver_id: selectedValue.fromDriver ? selectedValue.fromDriver.user_id : user?.userId
+        };
+        
+        // Add branch if needed
+        if (selectedStatus === 'dispatched_to_branch' && selectedValue.toBranch) {
+          requestBody.to_branch_id = selectedValue.toBranch.branch_id;
+        }
+        
+        // Add driver if needed
+        if (selectedValue.toDriver) {
+          requestBody.to_driver_id = selectedValue.toDriver.user_id;
+        }
+        
+        // Send the request
+        const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            'Accept-Language': language
+          },
+          body: JSON.stringify(requestBody)
+        });
+        
+        const responseData = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(responseData.message || 'Failed to update status');
+        }
+        
+        setSuccess(true);
+        setTimeout(() => {
+          router.back();
+        }, 100);
+      } else {
+        // For other statuses, use the orders/status endpoint
+        const updates = scannedItems.map(item => {
+          const orderId = typeof item === 'object' ? item.order_id : item;
+          
+          return {
+            order_id: orderId,
+            status: selectedStatus,
+            note_content: note,
+            ...(selectedReason && { reason: selectedReason }),
+            ...(selectedStatus === 'in_branch' && selectedValue.toBranch && { 
+              current_branch: selectedValue.toBranch.branch_id 
+            })
+          };
+        });
+        
+        const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+          method: "PUT",
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': language
+          },
+          credentials: "include",
+          body: JSON.stringify({ updates })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.details || 'Failed to update status');
+        }
+        
+        setSuccess(true);
+        setTimeout(() => {
+          router.back();
+        }, 100);
+      }
+    } catch (err) {
+      Alert.alert(
+        translations[language].errors.error,
+        err.message || 'An unexpected error occurred. Please try again.'
+      );
+    } finally {
+      setFormSpinner({ status: false });
+    }
   };
 
   const handleBarCodeScanned = async ({ type, data }) => {
     // Prevent duplicate scans by checking if we're already processing a barcode
     if (processingBarcode) return;
     
-    // Immediately set scanned to true to stop the scanner from reading additional codes
-    setScanned(true);
+    // Set processing flag to prevent duplicate scans
     setProcessingBarcode(true);
     
     try {
@@ -409,9 +731,13 @@ export default function CameraScanner() {
         playErrorSound();
         setTimeout(() => setError(null), 5000);
         setProcessingBarcode(false);
+        // Don't set scanned to true for duplicates, so we can scan again immediately
         return;
       }
 
+      // Temporarily set scanned to true while we fetch order details
+      setScanned(true);
+      
       // Fetch order details
       const orderDetails = await fetchOrderDetails(stringifiedItem);
       
@@ -426,10 +752,11 @@ export default function CameraScanner() {
       playErrorSound();
       setTimeout(() => setError(null), 5000);
     } finally {
-      // Allow new scan after a short delay
+      // Allow new scan after a short delay and reset scanned state
       setTimeout(() => {
         setProcessingBarcode(false);
-      }, 1500);
+        setScanned(false); // Reset scanned to false to enable automatic rescanning
+      }, 1000);
     }
   };
 
@@ -460,7 +787,7 @@ export default function CameraScanner() {
             onPress={requestPermission}
           >
             <Text style={[styles.permissionButtonText, { color: colors.buttonText }]}>
-              {translations[language]?.grantPermission || 'Grant Permission'}
+              {translations[language]?.camera?.permission?.grant || 'Grant Permission'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -634,7 +961,7 @@ export default function CameraScanner() {
           </View>
         </CameraView>
       
-        {showCreateDispatchedCollectionModal ? (
+        {showStatusSelection && showCreateDispatchedCollectionModal ? (
           <Animated.View 
             style={[
               styles.modalContainer, 
@@ -647,7 +974,7 @@ export default function CameraScanner() {
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.divider }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {translations[language].camera.createCollection}
+                {selectedStatus ? `${translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}: ${statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus}` : translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}
               </Text>
               <TouchableOpacity 
                 style={[styles.backButton, isRTL && { left: 16 }]} 
@@ -663,7 +990,159 @@ export default function CameraScanner() {
             
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalContent}>
-                {showDriverSelection && (
+                {/* Status selection */}
+                <View style={styles.fieldContainer}>
+                  <Text style={[
+                    styles.fieldLabel,
+                    { color: colors.textSecondary },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : "right"
+                        }
+                      }),
+                    }
+                  ]}>
+                    {translations[language]?.tabs?.orders?.order?.status || "Status"}
+                  </Text>
+                  <View style={styles.pickerWithClearButton}>
+                    <TouchableOpacity 
+                      style={[
+                        styles.pickerButton, 
+                        { 
+                          borderColor: selectedStatus ? colors.primary : colors.inputBorder,
+                          backgroundColor: colors.inputBg,
+                          flex: 1,
+                          height: 50,
+                          borderRadius: 12
+                        }
+                      ]} 
+                      onPress={() => {
+                        setShowPickerModal(true);
+                        setCurrentField("status");
+                      }}
+                    >
+                      <Text style={[
+                        styles.pickerButtonText, 
+                        selectedStatus 
+                          ? [styles.pickerSelectedText, { color: colors.text }] 
+                          : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                      ]}>
+                        {selectedStatus ? statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus : translations[language]?.tabs?.orders?.order?.selectStatus || "Select Status"}
+                      </Text>
+                      <Feather name="chevron-down" size={18} color={selectedStatus ? colors.primary : colors.textSecondary} />
+                    </TouchableOpacity>
+                    {selectedStatus && (
+                      <TouchableOpacity
+                        style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                        onPress={() => {
+                          setSelectedStatus(null);
+                          setShowStatusReason(false);
+                          setSelectedReason(null);
+                          setShowDriverField(false);
+                          setShowBranchField(false);
+                        }}
+                      >
+                        <Feather name="x" size={18} color={colors.error} />
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                </View>
+                
+                {/* Reason selection for statuses that require it */}
+                {showStatusReason && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[
+                      styles.fieldLabel,
+                      { color: colors.textSecondary },
+                      {
+                        ...Platform.select({
+                          ios: {
+                            textAlign: isRTL ? "left" : "right"
+                          }
+                        }),
+                      }
+                    ]}>
+                      {translations[language]?.tabs?.orders?.order?.reason || "Reason"}
+                    </Text>
+                    <View style={styles.pickerWithClearButton}>
+                      <TouchableOpacity 
+                        style={[
+                          styles.pickerButton, 
+                          { 
+                            borderColor: selectedReason ? colors.primary : colors.inputBorder,
+                            backgroundColor: colors.inputBg,
+                            flex: 1,
+                            height: 50,
+                            borderRadius: 12
+                          }
+                        ]} 
+                        onPress={() => {
+                          setShowPickerModal(true);
+                          setCurrentField("reason");
+                        }}
+                      >
+                        <Text style={[
+                          styles.pickerButtonText, 
+                          selectedReason 
+                            ? [styles.pickerSelectedText, { color: colors.text }] 
+                            : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                        ]}>
+                          {selectedReason ? suspendReasons.find(r => r.value === selectedReason)?.label || selectedReason : translations[language]?.tabs?.orders?.order?.selectReason || "Select Reason"}
+                        </Text>
+                        <Feather name="chevron-down" size={18} color={selectedReason ? colors.primary : colors.textSecondary} />
+                      </TouchableOpacity>
+                      {selectedReason && (
+                        <TouchableOpacity
+                          style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                          onPress={() => setSelectedReason(null)}
+                        >
+                          <Feather name="x" size={18} color={colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                )}
+                
+                {/* Note field */}
+                <View style={styles.fieldContainer}>
+                  {/* <Text style={[
+                    styles.fieldLabel,
+                    { color: colors.textSecondary },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: isRTL ? "left" : "right"
+                        }
+                      }),
+                    }
+                  ]}>
+                    {translations[language].camera.note}
+                  </Text> */}
+                  {/* <TextInput
+                    style={[
+                      styles.textInput, 
+                      { 
+                        borderColor: colors.inputBorder,
+                        backgroundColor: colors.inputBg,
+                        color: colors.inputText,
+                        borderRadius: 12,
+                        padding: 14,
+                        textAlignVertical: "top"
+                      }
+                    ]}
+                    placeholder={translations[language].camera.notePlaceholder || "Add a note..."}
+                    placeholderTextColor={colors.textTertiary}
+                    value={note}
+                    onChangeText={(input) => setNote(input)}
+                    multiline={true}
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  /> */}
+                </View>
+                
+                {/* Show driver selection based on status */}
+                {(showDriverSelection || showDriverField) && (
                   <View style={styles.fieldContainer}>
                     <Text style={[
                       styles.fieldLabel,
@@ -755,6 +1234,8 @@ export default function CameraScanner() {
                   />
                 </View> */}
                 
+                {/* Branch selection - show only for in_branch or dispatched_to_branch status */}
+                {(showBranchField) && (
                 <View style={styles.fieldContainer}>
                   <Text style={[
                     styles.fieldLabel,
@@ -767,7 +1248,7 @@ export default function CameraScanner() {
                       }),
                     }
                   ]}>
-                    {translations[language].camera.toBranch}
+                    {translations[language].camera.branch}
                   </Text>
                   <View style={styles.pickerWithClearButton}>
                     <TouchableOpacity 
@@ -803,7 +1284,10 @@ export default function CameraScanner() {
                     )}
                   </View>
                 </View>
+                )}
 
+                {/* To Driver selection - show only for dispatched_to_branch status
+                {console.log('Rendering toDriver field, selectedStatus:', selectedStatus) || (selectedStatus === 'dispatched_to_branch') && (
                 <View style={[styles.fieldContainer]}>
                   <Text style={[
                     styles.fieldLabel,
@@ -852,6 +1336,7 @@ export default function CameraScanner() {
                     )}
                   </View>
                 </View>
+                )} */}
                 
                 <View style={styles.actionButtons}>
                   <TouchableOpacity 
@@ -869,8 +1354,8 @@ export default function CameraScanner() {
                       { backgroundColor: colors.primary },
                       formSpinner.status && { opacity: 0.7 }
                     ]} 
-                    onPress={createDispatchedCollection}
-                    disabled={formSpinner.status}
+                    onPress={showStatusSelection ? updateOrderStatus : createDispatchedCollection}
+                    disabled={formSpinner.status || (showStatusSelection && !selectedStatus)}
                   >
                     {formSpinner.status ? (
                       <ActivityIndicator size="small" color={colors.buttonText} />
@@ -911,10 +1396,30 @@ export default function CameraScanner() {
                 {scannedItems.length > 0 && (
                   <TouchableOpacity 
                     style={[styles.nextButton, { backgroundColor: colors.primary }]} 
-                    onPress={() => setShowCreateDispatchedCollectionModal(true)}
+                    onPress={() => {
+                      // For driver or delivery_company roles, show confirmation alert first
+                      if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
+                        Alert.alert(
+                          translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status',
+                          translations[language]?.tabs?.orders?.order?.confirmStatusChange || 'Are you sure you want to change the status of these orders?',
+                          [
+                            {
+                              text: translations[language]?.camera?.cancel || 'Cancel',
+                              style: 'cancel'
+                            },
+                            {
+                              text: translations[language]?.camera?.confirm || 'Confirm',
+                              onPress: () => updateOrderStatus()
+                            }
+                          ]
+                        );
+                      } else {
+                        setShowCreateDispatchedCollectionModal(true);
+                      }
+                    }}
                   >
                     <Text style={[styles.nextButtonText, { color: colors.buttonText }]}>
-                      {translations[language].camera.next}
+                      {showStatusSelection ? translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status' : translations[language].camera.next}
                     </Text>
                     <Feather 
                       name={isRTL ? "chevron-left" : "chevron-right"} 
@@ -1138,18 +1643,60 @@ export default function CameraScanner() {
 
       {showPickerModal && (
         <PickerModal
-          list={currentField === "toBranch" ? branches : drivers}
-          setSelectedValue={setSelectedValue}
+          list={currentField === "toBranch" ? branches : 
+                currentField === "status" ? statusOptions : 
+                currentField === "reason" ? suspendReasonsWithName : 
+                drivers}
+          setSelectedValue={(value) => {
+            // IMPORTANT: PickerModal internally calls setSelectedValue with a function
+            // that updates the state. We need to handle both cases.
+            if (typeof value === 'function') {
+              // Execute the function to get the actual value
+              const prevValue = {...selectedValue};
+              const newValueObj = value(prevValue);
+              
+              // Get the selected item from the newValueObj
+              const selectedItem = newValueObj[currentField];
+              
+              if (selectedItem) {
+                // Handle different field types
+                if (currentField === "status") {
+                  setSelectedStatus(selectedItem.value);
+                  handleStatusChange(selectedItem.value);
+                } else if (currentField === "reason") {
+                  setSelectedReason(selectedItem.value);
+                } else {
+                  // For other fields, update the selectedValue state
+                  setSelectedValue(newValueObj);
+                }
+              }
+            } else {
+              // Direct item selection (this is the case we were handling before)
+              
+              if (currentField === "status" && value) {
+                setSelectedStatus(value.value);
+                handleStatusChange(value.value);
+              } else if (currentField === "reason" && value) {
+                setSelectedReason(value.value);
+              } else {
+                // For branch and driver selections
+                const newValues = {...selectedValue};
+                newValues[currentField] = value;
+                setSelectedValue(newValues);
+              }
+            }
+          }}
           showPickerModal={showPickerModal}
           setShowModal={setShowPickerModal}
           loading={loading}
           field={{
             name: currentField,
-            label: currentField === 'toBranch' 
-              ? translations[language].camera.toBranch 
-              : currentField === 'fromDriver'
-                ? translations[language]?.camera?.selectDriverFrom || "Select Driver"
-                : translations[language].camera.toDriver,
+            label: currentField === 'toBranch' ? translations[language].camera.toBranch : 
+                  currentField === 'fromDriver' ? translations[language]?.camera?.selectDriverFrom || "Select Driver" : 
+                  currentField === 'status' ? translations[language]?.tabs?.orders?.order?.status || "Status" : 
+                  currentField === 'reason' ? translations[language]?.tabs?.orders?.order?.reason || "Reason" : 
+
+                  translations[language].camera.toDriver,
             showSearchBar: true
           }}
           colors={colors}
