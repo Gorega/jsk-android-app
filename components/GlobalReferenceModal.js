@@ -12,7 +12,6 @@ import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
 const GlobalReferenceModal = () => {
     const { language } = useLanguage();
-    const [isScanClicked, setIsScanClicked] = useState(false);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     
@@ -30,37 +29,45 @@ const GlobalReferenceModal = () => {
     
     const [isTemporarilyHidden, setIsTemporarilyHidden] = useState(false);
 
-    // Listen for scanned reference events
+    // Listen for camera and scanned reference events
     useEffect(() => {
-        const unsubscribe = eventEmitter.on(EVENTS.REFERENCE_SCANNED, (scannedValue) => {
+        const unsubscribeScanned = eventEmitter.on(EVENTS.REFERENCE_SCANNED, (scannedValue) => {
             if (scannedValue) {
                 updateReferenceInput(scannedValue);
-                // Make sure modal is visible
+                // Make sure modal is visible after scan
+                setIsTemporarilyHidden(false);
+            }
+        });
+
+        const unsubscribeCameraOpened = eventEmitter.on(EVENTS.CAMERA_OPENED, () => {
+            // Hide modal when camera opens
+            setIsTemporarilyHidden(true);
+        });
+
+        const unsubscribeCameraClosed = eventEmitter.on(EVENTS.CAMERA_CLOSED, () => {
+            // Show modal when camera closes (if it was visible before)
+            if (isVisible) {
                 setIsTemporarilyHidden(false);
             }
         });
         
-        // Cleanup listener on unmount
-        return () => unsubscribe();
-    }, [updateReferenceInput]);
+        // Cleanup listeners on unmount
+        return () => {
+            unsubscribeScanned();
+            unsubscribeCameraOpened();
+            unsubscribeCameraClosed();
+        };
+    }, [updateReferenceInput, isVisible]);
 
     const handleScanReference = () => {
         // Temporarily hide the modal
         setIsTemporarilyHidden(true);
-        setIsScanClicked(true)
         
         // Navigate to camera screen
         router.push('/(camera)/scanReference');
     };
     
-    // Listen for focus to restore modal visibility
-    useFocusEffect(
-        useCallback(() => {
-            if (isTemporarilyHidden) {
-                setIsTemporarilyHidden(false);
-            }
-        }, [isTemporarilyHidden])
-    );
+    // Remove the useFocusEffect since we now handle visibility with camera events
 
     if (!isVisible) {
         return null;
@@ -112,7 +119,7 @@ const GlobalReferenceModal = () => {
                 </View>
 
                 <View style={styles.referenceActionsRow}>
-                    {!isScanClicked && <TouchableOpacity 
+                    <TouchableOpacity 
                         style={styles.scanActionButton}
                         onPress={handleScanReference}
                         disabled={isUpdating}
@@ -121,7 +128,7 @@ const GlobalReferenceModal = () => {
                         <Text style={styles.scanActionText}>
                             {translations[language]?.tabs?.orders?.order?.scan}
                         </Text>
-                    </TouchableOpacity>}
+                    </TouchableOpacity>
 
                     <View style={{ flex: 1 }} />
 

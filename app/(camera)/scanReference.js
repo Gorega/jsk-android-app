@@ -1,6 +1,6 @@
 // app/(camera)/scanReference.js
 import React, { useState, useEffect } from 'react';
-import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView } from 'react-native';
+import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaView, Animated } from 'react-native';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -22,6 +22,16 @@ export default function ScanReference() {
   const [loading, setLoading] = useState(false);
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+
+  // Emit camera opened event when component mounts
+  useEffect(() => {
+    eventEmitter.emit(EVENTS.CAMERA_OPENED);
+    
+    // Cleanup - emit camera closed when component unmounts
+    return () => {
+      eventEmitter.emit(EVENTS.CAMERA_CLOSED);
+    };
+  }, []);
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -156,7 +166,7 @@ export default function ScanReference() {
         </TouchableOpacity>
 
         {/* Scanner frame with animated border */}
-        {/* <View style={[
+        <View style={[
           styles.scannerFocusArea,
           { 
             borderColor: colors.primary,
@@ -181,7 +191,7 @@ export default function ScanReference() {
               }
             ]} 
           />
-        </View> */}
+        </View>
 
         {/* Instructions text */}
         <View style={styles.instructionsContainer}>

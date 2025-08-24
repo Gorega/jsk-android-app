@@ -74,7 +74,7 @@ export const ReferenceModalProvider = ({ children }) => {
             return;
         }
 
-        if (!referenceIdInput || !referenceIdInput.toString().trim()) {
+        if (!referenceIdInput || !referenceIdInput) {
             const errorMessage = translations[language]?.tabs?.orders?.order?.states?.referenceIdRequired || 
                 'Reference ID is required';
             if (onError) {
@@ -90,9 +90,12 @@ export const ReferenceModalProvider = ({ children }) => {
 
             // Ensure the order_id always has a suffix
             let modifiedOrderId = orderId;
-            if (!/-(B|R)$/.test(orderId)) {
-                // Add suffix only once
-                modifiedOrderId = orderId + (Math.random() > 0.5 ? '-B' : '-R');
+            if (currentOrder && currentOrder.order_type_key) {
+                if (currentOrder.order_type_key === 'receive' && !orderId.endsWith('-B')) {
+                    modifiedOrderId = orderId + '-B';
+                } else if (currentOrder.order_type_key === 'delivery/receive' && !orderId.endsWith('-R')) {
+                    modifiedOrderId = orderId + '-R';
+                }
             }
             
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${modifiedOrderId}`, {
@@ -103,7 +106,7 @@ export const ReferenceModalProvider = ({ children }) => {
                     'Accept-Language': language,
                 },
                 credentials: 'include',
-                body: JSON.stringify({ reference_id: referenceIdInput.toString().trim() })
+                body: JSON.stringify({ reference_id: referenceIdInput })
             });
 
             const data = await response.json();
@@ -119,7 +122,7 @@ export const ReferenceModalProvider = ({ children }) => {
                     const updatedOrder = {
                         ...currentOrder,
                         order_id: data.data.order_id,
-                        reference_id: referenceIdInput.toString().trim()
+                        reference_id: referenceIdInput
                     };
                     onSuccess(updatedOrder, successMessage);
                 }

@@ -31,6 +31,8 @@ const eventEmitter = new EventEmitter();
 // Event names
 export const EVENTS = {
     REFERENCE_SCANNED: 'REFERENCE_SCANNED',
+    CAMERA_OPENED: 'CAMERA_OPENED',
+    CAMERA_CLOSED: 'CAMERA_CLOSED',
 };
 
 export default eventEmitter;

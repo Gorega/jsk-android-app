@@ -9,7 +9,6 @@ import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Orders() {
     const socket = useSocket();
@@ -180,10 +179,7 @@ export default function Orders() {
         action: "returned"
     }, {
         name: translations[language].tabs.orders.filters.delivered,
-        action: "delivered"
-    }, {
-        name: translations[language].tabs.orders.filters.received,
-        action: "received"
+        action: "delivered,received"
     }] : [{
         name: translations[language].tabs.orders.filters.all,
         action: "",
@@ -228,10 +224,7 @@ export default function Orders() {
         action: "business_returned_delivered"
     }, {
         name: translations[language].tabs.orders.filters.delivered,
-        action: "delivered"
-    }, {
-        name: translations[language].tabs.orders.filters.received,
-        action: "received"
+        action: "delivered,received"
     }, {
         name: translations[language].tabs.orders.filters.moneyInBranch,
         action: "money_in_branch"
@@ -330,14 +323,16 @@ export default function Orders() {
             const queryParams = new URLSearchParams();
             
             // Clear orderIds and use a clean request if:
-            // 1. User explicitly selected a status filter (including "All" which is empty string)
+            // 1. User explicitly selected a status filter (including "All" which is empty string) AND it's not from a predefined filter with orderIds
             // 2. User is using search or other filtering methods
             const isFilterSelected = (typeof activeFilter === 'string'); // Any string value means filter was selected
-            const isUsingSearch = activeSearchBy || activeDate || (searchValue && searchValue.trim() !== '');
+            const isUsingSearch = activeSearchBy || (searchValue && searchValue.trim() !== '');
             
-            // If user has selected a filter (including "All") or is using search, don't use orderIds
-            const shouldUseOrderIds = !isFilterSelected && !isUsingSearch && !ignoreOrderIds;
-            
+            // Use orderIds if:
+            // - We have orderIds parameter AND
+            // - We're not ignoring orderIds AND
+            // - Either no filter is selected OR we have a date filter (like "today") which should work with orderIds
+            const shouldUseOrderIds = orderIds && !ignoreOrderIds && (!isFilterSelected || activeDate) && !isUsingSearch;
             
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
             
@@ -348,8 +343,8 @@ export default function Orders() {
             
             if (multi_id && multi_id.trim() !== "") queryParams.append('multi_id', multi_id);
             
-            // Include status_key if activeFilter is a string (including empty string for 'all')
-            if (typeof activeFilter === 'string') {
+            // Include status_key only if activeFilter has a value (not empty string)
+            if (typeof activeFilter === 'string' && activeFilter !== '') {
                 queryParams.append('status_key', activeFilter);
             }
             

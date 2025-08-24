@@ -439,6 +439,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     }
                 }
             } catch (error) {
+                console.log(error)
                 // Store any error message with the update
                 update.errorDetails = error.message || "Unknown error occurred";
                 failedUpdates.push(update);

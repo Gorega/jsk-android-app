@@ -868,6 +868,7 @@ export default function HomeScreen() {
               key={index} 
               style={styles.cardTouchable}
               onPress={() => {
+
                 // First reset all filters
                 // DeviceEventEmitter.emit('resetOrdersFilters');
                 
@@ -893,16 +894,16 @@ export default function HomeScreen() {
                       router.push({
                         pathname: "/(tabs)/orders",
                         params: {
-                          orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
                           date_range: "today"
                         }
                       });
-                    } else {
+                    }else {
                       // For other filters, use status_key as before
                       router.push({
                         pathname: "/(tabs)/orders",
                         params: {
-                          orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
                           status_key: statusKey
                         }
                       });
@@ -1352,9 +1353,9 @@ export default function HomeScreen() {
                   case translations[language].tabs.index.boxes.onTheWay:
                     return "on_the_way";
                   case translations[language].tabs.index.boxes.withDriver:
-                    return "driver_responsibility";
+                    return "with_driver";
                   case translations[language].tabs.index.boxes.delivered:
-                    return "delivered";
+                    return "delivered,received";
                   case translations[language].tabs.index.boxes.returned:
                     return "returned";
                   case translations[language].tabs.index.boxes.returnedInBranch:
@@ -1404,7 +1405,7 @@ export default function HomeScreen() {
                           router.push({
                             pathname: "/(tabs)/orders",
                             params: {
-                              orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                              orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
                               date_range: "today"
                             }
                           });
@@ -1413,7 +1414,7 @@ export default function HomeScreen() {
                           router.push({
                             pathname: "/(tabs)/orders",
                             params: {
-                              orderIds: box?.orderIds?.length > 0 ? box?.orderIds : {},
+                              orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
                               status_key: statusKey
                             }
                           });
