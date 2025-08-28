@@ -347,6 +347,7 @@ export const translations = {
           stuck:"Stuck",
           delayed:"Delayed",
           onTheWay:"On The Way",
+          replacedDeliveredOrders:"Replaced",
           driverResponsibilityOrders:"Driver Responsibility Orders",
           rescheduled:"Rescheduled",
           returnBeforeDeliveredInitiated:"Return Before Delivered Initiated",
@@ -573,6 +574,7 @@ export const translations = {
         "success": "Success",
         "errorMsg": "An error occurred",
         "errorValidationMsg": "Please correct the errors in the form",
+        "resend":"Resend",
         // (create)
         create:{
           edit:"Edit Order",
@@ -1755,6 +1757,7 @@ export const translations = {
           returned: "مرتجع",
           rescheduled: "مؤجل",
           returnedInBranch: "مرتجع في الفرع",
+          replacedDeliveredOrders: "تم تبديلها",
           stuck: "عالق",
           rejected: "مرفوض",
           ofOrders: "من الطرود",
@@ -1779,6 +1782,7 @@ export const translations = {
           stuck: "عالق",
           delayed: "متأخر",
           onTheWay: "في الطريق",
+          replacedDeliveredOrders: "تم تبديلها",
           driverResponsibilityOrders: "بعهدة السائق",
           rescheduled: "مؤجل",
           returnBeforeDeliveredInitiated: "مرجع قبل الوصول",
@@ -1981,6 +1985,7 @@ export const translations = {
             "referenceIdRequired":"الرقم المرجعي مطلوب",
           "noteRequiredForOther": "ملاحظة مطلوبة عند اختيار سبب \"آخر\"",
           "statusChangeOffline": "سيتم تحديث الحالة عند الاتصال بالانترنت",
+          "resend":"اعادة الارسال الى مستلم اخر",
           "orderChecks": {
             "addCheck": "إضافة شيك",
             "title": "شيكات الطلب",
@@ -3161,6 +3166,7 @@ export const translations = {
           onTheWay: "בדרך",
           driverResponsibilityOrders: "בעבודת נהג",
           rescheduled: "נדחה",
+          replacedDeliveredOrders: "הוחזר",
           returnBeforeDeliveredInitiated: "החזרה לפני מסירה החלה",
           returnAfterDeliveredInitiated: "החזרה לאחר מסירה החלה",
           returned: "הוחזר",

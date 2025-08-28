@@ -319,7 +319,14 @@ export default function HomeScreen() {
     numberOfOrders: data?.on_the_way_orders?.count,
     money: formatMoney(data?.on_the_way_orders?.cod_value),
     orderIds: data?.on_the_way_orders?.order_ids
-  },{
+  },user.role === "business" ? {
+    label: translations[language].tabs.index.boxes.replacedDeliveredOrders,
+    icon: <MaterialCommunityIcons name="package-variant-closed" size={22} color="white" />,
+    gradientColors: ['#4361EE', '#3F37C9'],
+    numberOfOrders: data?.replaced_delivered_orders?.count,
+    money: formatMoney(data?.replaced_delivered_orders?.cod_value),
+    orderIds: data?.replaced_delivered_orders?.order_ids
+  } : {
     label: translations[language].tabs.index.boxes.withDriver,
     icon: <MaterialCommunityIcons name="truck-delivery" size={22} color="white" />,
     gradientColors: ['#4361EE', '#3F37C9'],
@@ -328,7 +335,7 @@ export default function HomeScreen() {
     orderIds: data?.driver_responsibility_orders?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.delivered,
-    icon: <MaterialIcons name="delivery-dining" size={22} color="white" />,
+    icon: <MaterialIcons name="done" size={22} color="white" />,
     gradientColors: ['#4895EF', '#4361EE'],
     numberOfOrders: data?.delivered_orders?.count,
     money: formatMoney(data?.delivered_orders?.cod_value),
@@ -1354,6 +1361,8 @@ export default function HomeScreen() {
                     return "on_the_way";
                   case translations[language].tabs.index.boxes.withDriver:
                     return "with_driver";
+                  case translations[language].tabs.index.boxes.replacedDeliveredOrders:
+                    return "replaced_delivered";
                   case translations[language].tabs.index.boxes.delivered:
                     return "delivered,received";
                   case translations[language].tabs.index.boxes.returned:

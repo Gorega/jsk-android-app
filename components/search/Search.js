@@ -1,6 +1,6 @@
 import EvilIcons from '@expo/vector-icons/EvilIcons';
 import AntDesign from '@expo/vector-icons/AntDesign';
-import { TextInput, TouchableOpacity, View, StyleSheet, Text, ScrollView, SafeAreaView, Platform, I18nManager, Dimensions, Animated, Keyboard } from 'react-native';
+import { TextInput, TouchableOpacity, View, StyleSheet, Text, ScrollView, SafeAreaView, Platform, Animated, Keyboard } from 'react-native';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import ModalPresentation from "../../components/ModalPresentation";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';

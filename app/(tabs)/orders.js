@@ -225,7 +225,10 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.delivered,
         action: "delivered,received"
-    }, {
+    },{
+        name: translations[language].tabs.orders.filters.replacedDeliveredOrders,
+        action: "replaced_delivered"
+    },{
         name: translations[language].tabs.orders.filters.moneyInBranch,
         action: "money_in_branch"
     }, {

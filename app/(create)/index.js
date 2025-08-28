@@ -27,7 +27,7 @@ export default function HomeScreen() {
     const [error, setError] = useState({});
     const [formSpinner, setFormSpinner] = useState({})
     const [fieldErrors, setFieldErrors] = useState({});
-    const { orderId } = useLocalSearchParams();
+    const { orderId, isDuplicate } = useLocalSearchParams();
     const [senders, setSenders] = useState([]);
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
@@ -241,7 +241,7 @@ export default function HomeScreen() {
                 )}
             </View>
         )
-    }, {
+    }, !isDuplicate && {
         label: translations[language].tabs.orders.create.sections?.referenceId?.title,
         icon: <AntDesign name="qrcode" size={22} color= '#8B5CF6' />,
         fields: [{
@@ -702,6 +702,71 @@ export default function HomeScreen() {
         }
     };
 
+    const handleDuplicateOrder = async (orderId) => {
+        setFormSpinner({status: true});
+        setError({status: false, msg: ""});
+        setSuccess(false);
+        setFieldErrors({});
+        
+        try {
+            // Get current branch info for the duplicate request
+            const currentBranchId = user.branch_id || user.current_branch_id;
+            
+            // Prepare receiver info from form data
+            const receiverInfo = {
+                name: form.receiverName || "",
+                phone: form.receiverFirstPhone || "",
+                phone_2: form.receiverSecondPhone || "",
+                address: form.receiverAddress || "",
+                city_id: selectedValue.city?.city_id || form.senderCityId || ""
+            };
+            
+            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/duplicate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language
+                },
+                credentials: "include",
+                body: JSON.stringify({
+                    order_id: orderId,
+                    receiver_info: receiverInfo,
+                    current_branch_id: currentBranchId
+                })
+            });
+            
+            const data = await response.json();            
+            if (response.ok && data.success) {
+                setSuccess(true);
+                setFormSpinner({status: false});
+                
+                // Show success message
+                setShowAlert({
+                    visible: true,
+                    type: 'success',
+                    title: translations[language].tabs.orders.create.success || "Success",
+                    message: `تم اعادة ارسال الطرد بنجاح. رقم الطرد الجديد: ${data.data.new_order_id}`,
+                    onClose: () => router.push("/(tabs)")
+                });
+            } else {
+                throw new Error(data.message || translations[language].tabs.orders.create.error || "Error");
+            }
+            
+        } catch (err) {
+            setFormSpinner({status: false});
+            console.error('Duplicate order error:', err);
+            
+            // Show error message in alert instead of just setting error state
+            setShowAlert({
+                visible: true,
+                type: 'error',
+                title: translations[language].tabs.orders.create.error || "Error",
+                message: err.message || translations[language].tabs.orders.create.error || "An unexpected error occurred",
+                onClose: () => {}
+            });
+        }
+    };
+
     const handleCreateOrder = async (url, method) => {
         // Clear previous errors
         setFieldErrors({});
@@ -750,6 +815,11 @@ export default function HomeScreen() {
         }
 
         try {
+            // Check if this is a duplicate order submission
+            if (isDuplicate === 'true') {
+                return await handleDuplicateOrder(orderId);
+            }
+            
             // Create the request body based on the method
             const requestBody = {
                 reference_id: form.referenceId,
@@ -1751,14 +1821,17 @@ export default function HomeScreen() {
                             ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
                             : handleCreateOrder('/api/orders', "POST")
                         }
-                        disabled={formSpinner.status}xxx
+                        disabled={formSpinner.status}
                         activeOpacity={0.8}
                     >
                         {formSpinner.status ? (
                             <ActivityIndicator size="small" color="#FFFFFF" />
                         ) : (
                             <Text style={[styles.submitButtonText]}>
-                                {translations[language].tabs.orders.create.submit}
+                                {isDuplicate === 'true' 
+                                    ? (translations[language].tabs.orders.order.resend || "Re send")
+                                    : translations[language].tabs.orders.create.submit
+                                }
                             </Text>
                         )}
                     </TouchableOpacity>

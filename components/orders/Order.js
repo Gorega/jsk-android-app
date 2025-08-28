@@ -439,7 +439,6 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     }
                 }
             } catch (error) {
-                console.log(error)
                 // Store any error message with the update
                 update.errorDetails = error.message || "Unknown error occurred";
                 failedUpdates.push(update);
@@ -2070,6 +2069,40 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 {translations[language].tabs.orders.track.orderTracking || 'Track Order'}
                             </Text>
                         </TouchableOpacity>
+
+                        {/* Re send button for all roles except driver and delivery_company */}
+                        {!["driver", "delivery_company"].includes(authUserRole) && ["rejected","stuck","returned_in_branch","in_branch"].includes(order.status_key) && (
+                            <TouchableOpacity 
+                                style={[
+                                    styles.controlOption, 
+                                    styles.noBorder
+                                ]} 
+                                onPress={() => {
+                                    setShowControl(false);
+                                    router.push({
+                                        pathname: "(create)",
+                                        params: { orderId: order.order_id, isDuplicate: true }
+                                    });
+                                }}
+                            >
+                                <View style={[
+                                    styles.controlIconContainer, 
+                                    { backgroundColor: '#F59E0B' }
+                                ]}>
+                                    <MaterialIcons name="send" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.controlText,{
+                                    color: colors.text,
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                    {translations[language].tabs.orders.order.resend || "Re send"}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
 
                         {["business"].includes(authUserRole) && <TouchableOpacity 
                             style={[
