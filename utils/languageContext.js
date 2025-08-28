@@ -1880,7 +1880,7 @@ export const translations = {
             "dispatched_to_branch": "ارسال الى فرع اخر",
             "return_before_delivered_initiated": "مرجع قبل الوصول",
             "return_after_delivered_initiated": "مرجع بعد الوصول",
-            "return_after_delivered_fee_received": "مرجع مدفوع",
+            "return_after_delivered_fee_received": "مرجع بعد الوصول وتم استلام اجرة التوصيل",
             "delayed": "متأخر",
             "failedToUpdate": "فشل تحديث الحالة",
             "forOrders": "للطرود",

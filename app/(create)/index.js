@@ -380,6 +380,14 @@ export default function HomeScreen() {
                         currency: item.currency,
                         index: index,
                         error: index === 0 ? fieldErrors.cod_value : null,
+                        onChange: (value) => {
+                            const newAmounts = [...codAmounts];
+                            newAmounts[index].value = value;
+                            setCodAmounts(newAmounts);
+                        },
+                        showCurrencyPicker: (pickerIndex) => {
+                            setActiveCurrencyPicker(pickerIndex);
+                        }
                     }))
                 ] : []),
                 
