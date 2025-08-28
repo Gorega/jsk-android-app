@@ -384,9 +384,6 @@ export default function HomeScreen() {
                             const newAmounts = [...codAmounts];
                             newAmounts[index].value = value;
                             setCodAmounts(newAmounts);
-                        },
-                        showCurrencyPicker: (pickerIndex) => {
-                            setActiveCurrencyPicker(pickerIndex);
                         }
                     }))
                 ] : []),
