@@ -1,11 +1,10 @@
-import { View, StyleSheet, Text, TouchableOpacity, Alert, Platform, ActivityIndicator, ScrollView, Linking } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from "../../RootLayout";
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import UserBox from "../orders/userBox/UserBox";
 import { translations } from '../../utils/languageContext';
@@ -285,7 +284,7 @@ function Collection({ type, collection }) {
                                     styles.sectionValue,
                                     { color: colors.text, textAlign: isRTL ? "left" : "" }
                                 ]}>
-                                    {type === "sent" ? collection.net_value : type === "business_money" ? formatFinancials('final_amount') : formatFinancials('total_cod_value')}
+                                    {type === "sent" ? collection.total_net_value : type === "business_money" ? formatFinancials('final_amount') : formatFinancials('total_cod_value')}
                                 </Text>
                             </View>
                         </View>
