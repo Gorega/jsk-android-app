@@ -53,25 +53,25 @@ export default function ScanReference() {
       setLoading(true);
       setScanned(true);
       
-      let referenceId;
+      let qrId;
       
       // Handle different barcode types correctly
       if (barcodeType === 'qr') {
         try {
           // Try to parse as JSON first
           const parsedData = JSON.parse(data);
-          referenceId = parsedData.id || parsedData.reference_id || data;
+          qrId = parsedData.id || parsedData.qr_id || data;
         } catch (parseError) {
           // If parsing fails, use the raw data as reference ID
-          referenceId = data;
+          qrId = data;
         }
       } else {
         // For non-QR barcodes, use the data directly
-        referenceId = data;
+        qrId = data;
       }
       
       // Emit the scanned reference event
-       const trimmedReferenceId = referenceId?.trim() || referenceId;
+       const trimmedReferenceId = qrId?.trim() || qrId;
        
        // Navigate back first
        router.back();

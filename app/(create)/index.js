@@ -24,6 +24,26 @@ import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 export default function HomeScreen() {
     const { language } = useLanguage();
     const [success, setSuccess] = useState(false);
+    
+    // Function to convert Arabic/Persian numerals to English
+    const convertToEnglishNumerals = (input) => {
+        if (!input) return input;
+        const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
+        const persianNumerals = '۰۱۲۳۴۵۶۷۸۹';
+        const englishNumerals = '0123456789';
+        
+        return input.replace(/[٠-٩۰-۹]/g, (char) => {
+            const arabicIndex = arabicNumerals.indexOf(char);
+            const persianIndex = persianNumerals.indexOf(char);
+            
+            if (arabicIndex !== -1) {
+                return englishNumerals[arabicIndex];
+            } else if (persianIndex !== -1) {
+                return englishNumerals[persianIndex];
+            }
+            return char;
+        });
+    };
     const [error, setError] = useState({});
     const [formSpinner, setFormSpinner] = useState({})
     const [fieldErrors, setFieldErrors] = useState({});
@@ -247,9 +267,10 @@ export default function HomeScreen() {
         fields: [{
             label: translations[language].tabs.orders.create.sections?.referenceId?.explain,
             type: "input",
-            name: "reference_id",
-            value: form.referenceId || "",
-            onChange: (input) => setForm((form) => ({ ...form, referenceId: input })),
+            name: "qr_id",
+            value: form.qrId || "",
+            onChange: (input) => setForm((form) => ({ ...form, qrId: input })),
+            showScanButton: true
         }]
     },user.role !== "business" ? {
         label: translations[language].tabs.orders.create.sections.sender.title,
@@ -314,7 +335,7 @@ export default function HomeScreen() {
             type: "input",
             name: "receiver_second_mobile",
             value: form.receiverSecondPhone || "",
-            onChange: (input) => setForm((form) => ({ ...form, receiverSecondPhone: input })),
+            onChange: (input) => setForm((form) => ({ ...form, receiverSecondPhone: convertToEnglishNumerals(input) })),
         }, {
             label: translations[language].tabs.orders.create.sections.client.fields.city,
             type: "select",
@@ -382,7 +403,7 @@ export default function HomeScreen() {
                         error: index === 0 ? fieldErrors.cod_value : null,
                         onChange: (value) => {
                             const newAmounts = [...codAmounts];
-                            newAmounts[index].value = value;
+                            newAmounts[index].value = convertToEnglishNumerals(value);
                             setCodAmounts(newAmounts);
                         }
                     }))
@@ -407,11 +428,12 @@ export default function HomeScreen() {
                 editable: ["admin", "manager", "entery"].includes(user.role),
                 onChange: (input) => {
                     // When manually changing delivery fee, prevent auto-updates
+                    const convertedInput = convertToEnglishNumerals(input);
                     setShouldUpdateDeliveryFee(false);
-                    setDeliveryFee(input);
+                    setDeliveryFee(convertedInput);
                     setForm(prevForm => ({
                         ...prevForm,
-                        deliveryFee: input
+                        deliveryFee: convertedInput
                     }));
                 },
                 keyboardType: "numeric"
@@ -608,13 +630,13 @@ export default function HomeScreen() {
             type: "input",
             name: "number_of_items",
             value: form.numberOfItems || "",
-            onChange: (input) => setForm((form) => ({ ...form, numberOfItems: input }))
+            onChange: (input) => setForm((form) => ({ ...form, numberOfItems: convertToEnglishNumerals(input) }))
         }, {
             label: translations[language].tabs.orders.create.sections.details.fields.weight,
             type: "input",
             name: "order_weight",
             value: form.orderWeight || "",
-            onChange: (input) => setForm((form) => ({ ...form, orderWeight: input }))
+            onChange: (input) => setForm((form) => ({ ...form, orderWeight: convertToEnglishNumerals(input) }))
         },
         (selectedValue.orderType?.value || form.orderTypeId) === "receive" ||
         (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
@@ -630,7 +652,7 @@ export default function HomeScreen() {
             type: "input",
             name: "received_quantity",
             value: form.receivedQuantity || "",
-            onChange: (input) => setForm((form) => ({ ...form, receivedQuantity: input }))
+            onChange: (input) => setForm((form) => ({ ...form, receivedQuantity: convertToEnglishNumerals(input) }))
         } : { visibility: "hidden" },
         {
             label: translations[language].tabs.orders.create.sections.itemsCotnentType.title,
@@ -827,7 +849,7 @@ export default function HomeScreen() {
             
             // Create the request body based on the method
             const requestBody = {
-                reference_id: form.referenceId,
+                qr_id: form.qrId,
                 delivery_fee: parseFloat(deliveryFee) || parseFloat(form.deliveryFee) || 0,
                 commission: commission[0].value,
                 discount: discount[0].value,
@@ -1056,7 +1078,7 @@ export default function HomeScreen() {
         }
         
         const fieldMapping = {
-            'reference_id': 'reference_id',
+            'qr_id': 'qr_id',
             'delivery_fee': 'delivery_fee',
             'commission': 'commission',
             'discount': 'discount',
@@ -1186,7 +1208,7 @@ export default function HomeScreen() {
                 originalFromBusinessBalance: orderData.from_business_balance ? true : false,
                 balanceDeduction: orderData.balance_deduction || null,
                 originalBalanceDeduction: orderData.balance_deduction || null,
-                referenceId: orderData.reference_id || null,
+                qrId: orderData.qr_id || null,
                 itemsType: orderData.items_type // Store original items type for comparison
             });
             
@@ -1354,10 +1376,10 @@ export default function HomeScreen() {
                 const scannedValue = global.scannedReferenceId;
                 
                 // Only update if we have a value and we're scanning for the reference ID field
-                if (scannedValue && global.scanTargetField === 'reference_id') {
+                if (scannedValue && global.scanTargetField === 'qr_id') {
                     setForm(prevForm => ({
                         ...prevForm,
-                        referenceId: scannedValue
+                        qrId: scannedValue
                     }));
                     
                     // Clear the global variables after using them
@@ -1378,7 +1400,7 @@ export default function HomeScreen() {
                 // Update the form with the scanned reference ID
                 setForm(prevForm => ({
                     ...prevForm,
-                    referenceId: scannedValue
+                    qrId: scannedValue
                 }));
             }
         };
@@ -1397,11 +1419,11 @@ export default function HomeScreen() {
     useFocusEffect(
         useCallback(() => {
             // Check if we have a scanned reference ID when the screen is focused
-            if (global && global.scannedReferenceId && global.scanTargetField === 'reference_id') {
+            if (global && global.scannedReferenceId && global.scanTargetField === 'qr_id') {
                 // Update the form with the scanned value
                 setForm(prevForm => ({
                     ...prevForm,
-                    referenceId: global.scannedReferenceId
+                    qrId: global.scannedReferenceId
                 }));
                 
                 // Clear the global variables

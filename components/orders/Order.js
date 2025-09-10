@@ -1286,7 +1286,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>
                                 )}
                             </View>
-                            {order.reference_id && !isMinimized && (
+                            {order.qr_id && !isMinimized && (
                                <Text style={[styles.referenceId, { color: colors.textSecondary, textAlign: isRTL ? "left" : "left" },{
                                 
                                 ...Platform.select({
@@ -1295,7 +1295,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     }
                                 }),
                             }]}>
-                                    Ref: {order.reference_id}
+                                    Ref: {order.qr_id}
                                 </Text>
                             )}
                         </View>

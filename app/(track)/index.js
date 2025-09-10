@@ -10,8 +10,6 @@ import { useLanguage } from '../../utils/languageContext';
 import { translations } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
-import { getToken } from '../../utils/secureStore';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 
@@ -310,6 +308,75 @@ const TrackingOrder = () => {
               <Text style={styles.currentStatusText}>{order.status} {order.status_reason ? ` | ${order.status_reason}` : ''}</Text>
             </LinearGradient>
             
+            {/* Edit Receiver Phone Button */}
+            {(
+              // For driver and delivery_company
+              (["driver", "delivery_company"].includes(authUser?.role) && 
+               ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
+              
+              // For business users
+              (authUser?.role === "business" && 
+               ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
+                "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
+            ) && (
+              <TouchableOpacity 
+                style={styles.editPhoneButton}
+                onPress={() => {
+                  router.push({
+                    pathname: "(edit_receiver_phones)",
+                    params: { orderId: order.order_id, editPhoneOnly: true }
+                  });
+                }}
+              >
+                <LinearGradient
+                  colors={['#10B981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.editPhoneButtonGradient}
+                >
+                  <Feather name="phone" size={16} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Text style={styles.editPhoneButtonText}>
+                    {translations[language]?.tabs?.orders?.order?.editPhone || 'Edit Receiver Phone'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+            
+            {/* Edit Button */}
+            {(
+              // For business users, only show on "waiting" status
+              (authUser?.role === "business" && order.status_key === "waiting") ||
+              
+              // For driver and delivery_company, never show
+              (!["driver", "delivery_company", "business"].includes(authUser?.role) && 
+               ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way", 
+                "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
+                "return_before_delivered_initiated", "return_after_delivered_initiated", 
+                "business_returned_delivered", "received", "delivered/received"].includes(order.status_key))
+            ) && (
+              <TouchableOpacity 
+                style={styles.editButton}
+                onPress={() => {
+                  router.push({
+                    pathname: "(create)",
+                    params: { orderId: order.order_id }
+                  });
+                }}
+              >
+                <LinearGradient
+                  colors={['#4361EE', '#3730A3']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.editButtonGradient}
+                >
+                  <Feather name="edit" size={16} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Text style={styles.editButtonText}>
+                    {translations[language]?.tabs?.orders?.order?.edit || 'Edit Order'}
+                  </Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            )}
+            
             {/* Order created info */}
             <View style={styles.heroInfoContainer}>
               <View style={styles.heroInfoItem}>
@@ -399,6 +466,7 @@ const TrackingOrder = () => {
                   </TouchableOpacity>
                 </View>
               )}
+
               
               <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
@@ -1707,6 +1775,60 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  
+  // Edit Button Styles
+  editButton: {
+    marginTop: 12,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#4361EE',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  editButtonGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  
+  // Edit Phone Button Styles
+  editPhoneButton: {
+    marginTop: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#10B981',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  editPhoneButtonGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editPhoneButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 

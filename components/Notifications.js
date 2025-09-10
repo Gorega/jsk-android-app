@@ -476,9 +476,21 @@ export default function NotificationsComponent() {
     }
   };
 
-  const getIcon = (type, metadata) => {
+  const getIcon = (type, metadata, isAlert = false) => {
     switch (type) {
       case 'order':
+        if (isAlert) {
+          return (
+            <LinearGradient
+              colors={['#DC2626', '#B91C1C']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.notificationIconGradient, styles.alertIcon]}
+            >
+              <MaterialIcons name="warning" size={20} color="white" />
+            </LinearGradient>
+          );
+        }
         return (
           <LinearGradient
             colors={['#4CC9F0', '#4361EE']}
@@ -578,35 +590,73 @@ export default function NotificationsComponent() {
     return date.toLocaleDateString(language, { day: 'numeric', month: 'short' });
   };
 
-  const renderNotification = (notification, index) => (
-    <Animated.View 
-      key={notification.notification_id} 
-      style={[
-        styles.notificationItem, 
-        { 
-          backgroundColor: colors.card,
-          shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000",
-          // Apply animation to the first item if it's new
-          transform: index === 0 ? [
-            { 
-              translateY: newNotificationAnimation.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, -10]
-              }) 
-            },
-            {
-              scale: newNotificationAnimation.interpolate({
-                inputRange: [0, 0.5, 1],
-                outputRange: [1, 1.03, 1]
-              })
-            }
-          ] : []
-        },
-        !notification.is_read && [
-          styles.unread,
-          { borderLeftColor: colors.primary }
-        ]
-      ]}
+  // Helper function to check if notification is an alert (order with stuck/delayed status)
+  const isAlertNotification = (notification) => {
+    if (notification.type !== 'order') return false;
+    
+    try {
+      // Extract newStatus from the message using the backend template pattern
+      const message = notification.message || '';
+      
+      // Pattern 1: "status changed from X to Y" - extract Y
+      const changeMatch = message.match(/status changed from "[^"]+" to "([^"]+)"/i);
+      if (changeMatch) {
+        const newStatus = changeMatch[1].toLowerCase().trim();
+        const isAlert = newStatus === 'stuck' || newStatus === 'delayed';
+        
+        return isAlert;
+      }
+      
+      // Pattern 2: "status set to Y" - extract Y
+      const setMatch = message.match(/status set to "([^"]+)"/i);
+      if (setMatch) {
+        const newStatus = setMatch[1].toLowerCase().trim();
+        const isAlert = newStatus === 'stuck' || newStatus === 'delayed';
+        
+        return isAlert;
+      }
+      
+      return false;
+      
+    } catch (error) {
+      console.error('❌ Alert detection error:', error);
+      return false;
+    }
+  };
+
+  const renderNotification = (notification, index) => {
+    const isAlert = isAlertNotification(notification);
+    
+    return (
+      <Animated.View 
+        key={notification.notification_id} 
+        style={[
+          styles.notificationItem, 
+          { 
+            backgroundColor: isAlert ? '#FEF2F2' : colors.card,
+            shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : "#000",
+            // Apply animation to the first item if it's new
+            transform: index === 0 ? [
+              { 
+                translateY: newNotificationAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -10]
+                }) 
+              },
+              {
+                scale: newNotificationAnimation.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [1, 1.03, 1]
+                })
+              }
+            ] : []
+          },
+          isAlert && (notification.is_read ? styles.alertNotificationRead : styles.alertNotification),
+          !notification.is_read && [
+            styles.unread,
+            { borderLeftColor: isAlert ? '#DC2626' : colors.primary }
+          ]
+        ]}
     >
       <TouchableOpacity 
         style={styles.notificationContent}
@@ -614,13 +664,13 @@ export default function NotificationsComponent() {
         activeOpacity={0.7}
       >
         <View style={styles.iconContainer}>
-          {getIcon(notification.type, notification.metadata)}
+          {getIcon(notification.type, notification.metadata, isAlert)}
           {!notification.is_read && <View style={styles.unreadIndicator} />}
         </View>
         
         <View style={styles.contentContainer}>
           <View style={styles.notificationHeader}>
-            <Text style={[styles.time, { color: colors.textSecondary }]}>
+            <Text style={[styles.time, { color: isAlert && notification.is_read ? '#6B7280' : colors.textSecondary }]}>
               {formatDate(notification.created_at)}
             </Text>
           </View>
@@ -628,11 +678,12 @@ export default function NotificationsComponent() {
           <Text 
             style={[
               styles.message,
-              { color: colors.textSecondary },
+              { color: isAlert ? (notification.is_read ? '#6B7280' : '#DC2626') : colors.textSecondary },
               !notification.is_read && [
                 styles.unreadText,
-                { color: colors.text }
+                { color: isAlert ? '#B91C1C' : colors.text }
               ],
+              isAlert && (notification.is_read ? styles.alertTextRead : styles.alertText),
               {
                 ...Platform.select({
                   ios: {
@@ -658,7 +709,8 @@ export default function NotificationsComponent() {
         <Ionicons name="trash-outline" size={18} color="#FF6B6B" />
       </TouchableOpacity>
     </Animated.View>
-  );
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
@@ -1006,6 +1058,27 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  alertNotification: {
+    borderWidth: 2,
+    borderColor: '#FCA5A5',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    transform: [{ scale: 1.02 }],
+  },
+  alertNotificationRead: {
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    opacity: 0.7,
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+    transform: [{ scale: 1.0 }],
+  },
   unread: {
     borderLeftWidth: 3,
     borderLeftColor: '#4361EE',
@@ -1019,6 +1092,13 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  alertIcon: {
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   unreadIndicator: {
     position: 'absolute',
@@ -1059,6 +1139,15 @@ const styles = StyleSheet.create({
   unreadText: {
     color: '#1F2937',
     fontWeight: '500',
+  },
+  alertText: {
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  alertTextRead: {
+    fontWeight: '500',
+    fontSize: 14,
+    opacity: 1.0,
   },
   notificationContent: {
     flex: 1,

@@ -106,7 +106,7 @@ export const ReferenceModalProvider = ({ children }) => {
                     'Accept-Language': language,
                 },
                 credentials: 'include',
-                body: JSON.stringify({ reference_id: referenceIdInput })
+                body: JSON.stringify({ qr_id: referenceIdInput })
             });
 
             const data = await response.json();
@@ -122,7 +122,7 @@ export const ReferenceModalProvider = ({ children }) => {
                     const updatedOrder = {
                         ...currentOrder,
                         order_id: data.data.order_id,
-                        reference_id: referenceIdInput
+                        qr_id: referenceIdInput
                     };
                     onSuccess(updatedOrder, successMessage);
                 }

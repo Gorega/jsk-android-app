@@ -13,6 +13,26 @@ import { getToken } from "../../utils/secureStore";
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 
+// Function to convert Arabic/Persian numerals to English
+const convertToEnglishNumerals = (input) => {
+    if (!input) return input;
+    const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
+    const persianNumerals = '۰۱۲۳۴۵۶۷۸۹';
+    const englishNumerals = '0123456789';
+    
+    return input.replace(/[٠-٩۰-۹]/g, (char) => {
+        const arabicIndex = arabicNumerals.indexOf(char);
+        const persianIndex = persianNumerals.indexOf(char);
+        
+        if (arabicIndex !== -1) {
+            return englishNumerals[arabicIndex];
+        } else if (persianIndex !== -1) {
+            return englishNumerals[persianIndex];
+        }
+        return char;
+    });
+};
+
 export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
     // Add safety check for undefined field
     if (!field) {
@@ -33,6 +53,20 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     const isRTL = language === 'ar' || language === 'he';
+
+    // Function to convert Arabic/Persian numerals to English numerals
+    const convertToEnglishNumerals = (text) => {
+        if (!text) return text;
+        return text
+            .replace(/[٠-٩]/g, (d) => {
+                const arabicDigits = '٠١٢٣٤٥٦٧٨٩';
+                return arabicDigits.indexOf(d).toString();
+            }) // Arabic-Indic digits
+            .replace(/[۰-۹]/g, (d) => {
+                const persianDigits = '۰۱۲۳۴۵۶۷۸۹';
+                return persianDigits.indexOf(d).toString();
+            }); // Persian digits
+    };
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
@@ -164,7 +198,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     <>
                         <View style={[
                             styles.inputWrapper,
-                            field.name === "reference_id" && styles.scanInputWrapper,
+                            (field.name === "reference_id" || (field.name === "qr_id" && field.showScanButton)) && styles.scanInputWrapper,
                             error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 },
 
                         ]}>
@@ -194,6 +228,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         value={field.value || ""}
                                         editable={false}
                                         pointerEvents="none"
+                                        onSubmitEditing={() => {
+                                            setIsFocused(false);
+                                        }}
+                                        blurOnSubmit={true}
                                     />
                                 </TouchableOpacity>
                             ) : (
@@ -204,7 +242,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         {
                                             textAlign: isRTL ? "right" : ""
                                         },
-                                        field.name === "reference_id" && styles.scanInput,
+                                        (field.name === "reference_id" || (field.name === "qr_id" && field.showScanButton)) && styles.scanInput,
                                         {
                                             ...Platform.select({
                                                 ios: {
@@ -214,7 +252,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             color: colors.text
                                         }
                                     ]}
-                                    value={field.value ? field.value.toString() : ""}
+                                    value={field.value ? convertToEnglishNumerals(field.value.toString()) : ""}
                                     onFocus={() => {
                                         if (field.onFocus === null) {
                                             return;
@@ -226,8 +264,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         if (field.onChange === null) {
                                             return;
                                         }
+                                        
+                                        // Convert to English numerals for numeric fields
+                                        let processedText = text;
+                                        if (field.keyboardType === 'numeric' || field.keyboardType === 'number-pad' || field.keyboardType === 'decimal-pad') {
+                                            processedText = convertToEnglishNumerals(text);
+                                        }
+                                        
                                         if (field.onChange) {
-                                            field.onChange(text);
+                                            field.onChange(processedText);
                                         }
                                         if (error && field.name) {
                                             setFieldErrors(prev => ({
@@ -236,14 +281,18 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             }));
                                         }
                                     }}
+                                    onSubmitEditing={() => {
+                                        setIsFocused(false);
+                                    }}
                                     placeholder={field.placeholder || ""}
                                     placeholderTextColor="#94A3B8"
                                     editable={field.editable !== undefined ? field.editable : editable}
                                     keyboardType={field.keyboardType || "default"}
+                                    blurOnSubmit={true}
                                 />
                             )}
                             
-                            {field.name === "reference_id" && (
+                            {(field.name === "reference_id" || (field.name === "qr_id" && field.showScanButton)) && (
                                 <TouchableOpacity
                                     style={styles.scanButton}
                                     onPress={handleScanQRCode}
@@ -297,12 +346,15 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     color: colors.text
                                 }
                             ]}
-                            value={field.value}
+                            value={convertToEnglishNumerals(field.value || "")}
                             onFocus={() => setIsFocused(true)}
                             onBlur={() => setIsFocused(false)}
                             onChangeText={(text) => {
+                                // Convert to English numerals for currency input
+                                const processedText = convertToEnglishNumerals(text);
+                                
                                 if (field.onChange) {
-                                    field.onChange(text);
+                                    field.onChange(processedText);
                                 }
                                 if (error && field.name) {
                                     setFieldErrors(prev => ({
@@ -311,9 +363,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }));
                                 }
                             }}
+                            onSubmitEditing={() => {
+                                setIsFocused(false);
+                            }}
                             keyboardType="numeric"
                             placeholder="0.00"
                             placeholderTextColor="#94A3B8"
+                            blurOnSubmit={true}
                         />
                         
                         <Pressable 
@@ -583,10 +639,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                     }),
                                                     color: colors.text
                                                 }]}
-                                                value={check.value ? check.value.toString() : ''}
+                                                value={check.value ? convertToEnglishNumerals(check.value.toString()) : ''}
                                                 onChangeText={(text) => {
                                                     const updatedChecks = [...field.value];
-                                                    updatedChecks[index] = { ...check, value: text };
+                                                    updatedChecks[index] = { ...check, value: convertToEnglishNumerals(text) };
                                                     field.onChange(updatedChecks);
                                                 }}
                                                 keyboardType="numeric"
