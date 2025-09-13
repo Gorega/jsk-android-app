@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "651617113332",
-    "project_id": "taiar-8d49d",
-    "storage_bucket": "taiar-8d49d.firebasestorage.app"
+    "project_number": "1005569697326",
+    "project_id": "expressjsk-7b027",
+    "storage_bucket": "expressjsk-7b027.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:651617113332:android:f054b28ac1d364cff8baa1",
+        "mobilesdk_app_id": "1:1005569697326:android:878d955223d7a6cfb0a1bf",
         "android_client_info": {
-          "package_name": "com.taiar"
+          "package_name": "com.expressjsk"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA0-qCiZ87dantSMK4lUPNKhp8C_XLhHv8"
+          "current_key": "AIzaSyD7Lsgd2qpmRIlYE0Kpl8eeiuBLN-_EP98"
         }
       ],
       "services": {

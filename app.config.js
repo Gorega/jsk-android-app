@@ -20,33 +20,33 @@ try {
 }
 
 // Default API URL if not defined in environment
-const apiUrl = process.env.EXPO_PUBLIC_API_URL || envVars.EXPO_PUBLIC_API_URL || 'https://api.taiar.org';
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || envVars.EXPO_PUBLIC_API_URL || 'https://jsk-backend-production.up.railway.app';
 const googleMapsIosApiKey = process.env.GOOGLE_MAPS_IOS_API_KEY || envVars.GOOGLE_MAPS_IOS_API_KEY || '';
 const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVars.GOOGLE_MAPS_ANDROID_API_KEY || '';
 
 export default {
-  name: 'Taiar',
-  slug: 'taiar',
-  version: '2.4.3',
+  name: 'JSK',
+  slug: 'jsk',
+  version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/images/tayar_logo_dark.png',
+  icon: './assets/images/tayar_logo.png',
   scheme: 'myapp',
   userInterfaceStyle: 'automatic',
   splash: {
-    image: './assets/images/tayar_logo_dark.png',
+    image: './assets/images/tayar_logo.png',
     resizeMode: 'contain',
     backgroundColor: '#252424'
   },
   updates: {
     fallbackToCacheTimeout: 0,
-    url: 'https://u.expo.dev/c1d54568-437f-4a8c-a692-8b8ac589ffb0',
+    url: 'https://u.expo.dev/7cd8b12e-2b06-47bf-b819-a41c16408900',
     enabled: true,
     checkAutomatically: 'ON_LOAD'
   },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.expresstaiar.taiar',
+    bundleIdentifier: 'com.expressjsk.jsk',
     // Enable edge-to-edge display
     config: {
       usesNonExemptEncryption: false,
@@ -55,10 +55,10 @@ export default {
   },
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/images/tayar_logo_dark.png',
+      foregroundImage: './assets/images/tayar_logo.png',
       backgroundColor: '#252424'
     },
-    package: 'com.taiar',
+    package: 'com.expressjsk',
     // Enable edge-to-edge display
     edgeToEdgeEnabled: true,
     softwareKeyboardLayoutMode: 'pan',
@@ -72,7 +72,7 @@ export default {
     }
   },
   web: {
-    favicon: './assets/images/tayar_logo_dark.png'
+    favicon: './assets/images/tayar_logo.png'
   },
   plugins: [
     './app.plugin.js',
@@ -93,12 +93,12 @@ export default {
     [
       'expo-notifications',
       {
-        icon: './assets/images/tayar_logo_dark.png',
+        icon: './assets/images/tayar_logo.png',
         color: '#252424',
         sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3'],
         enableBackgroundRemoteNotifications: true,
         androidMode: 'default',
-        androidCollapsedTitle: 'Taiar',
+        androidCollapsedTitle: 'Jsk',
         androidBadgeIconType: 'large',
         androidImportance: 'max',
         iosDisplayInForeground: true
@@ -110,7 +110,7 @@ export default {
     googleMapsIosApiKey,
     googleMapsAndroidApiKey,
     eas: {
-      projectId: 'c1d54568-437f-4a8c-a692-8b8ac589ffb0'
+      projectId: '7cd8b12e-2b06-47bf-b819-a41c16408900'
     }
   }
 }; 

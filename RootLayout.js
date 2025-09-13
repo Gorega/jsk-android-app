@@ -73,8 +73,8 @@ export default function RootLayout() {
   const [rtlInitialized, setRtlInitialized] = useState(false);
   
   // Add state for update check
-  const [updateCheckComplete, setUpdateCheckComplete] = useState(false);
-  const [canContinue, setCanContinue] = useState(false);
+  const [updateCheckComplete, setUpdateCheckComplete] = useState(true);
+  const [canContinue, setCanContinue] = useState(true);
   
   // Use theme from context - moved up here to ensure consistent hook order
   const { isDark, colorScheme } = useTheme();
@@ -89,37 +89,37 @@ export default function RootLayout() {
   }, []);
 
 
-  // Check for updates before initializing the app
-  useEffect(() => {
-    async function checkForUpdates() {
-      try {
-        // Get saved language for localized update messages
-        const savedLanguage = await getToken('language') || 'ar';
+  // // Check for updates before initializing the app
+  // useEffect(() => {
+  //   async function checkForUpdates() {
+  //     try {
+  //       // Get saved language for localized update messages
+  //       const savedLanguage = await getToken('language') || 'ar';
         
-        // Add timeout to ensure we don't get stuck
-        const updateCheckPromise = handleAppUpdates(savedLanguage);
-        const timeoutPromise = new Promise(resolve => {
-          // Timeout after 10 seconds
-          setTimeout(() => {
-            resolve(true);
-          }, 10000);
-        });
+  //       // Add timeout to ensure we don't get stuck
+  //       const updateCheckPromise = handleAppUpdates(savedLanguage);
+  //       const timeoutPromise = new Promise(resolve => {
+  //         // Timeout after 10 seconds
+  //         setTimeout(() => {
+  //           resolve(true);
+  //         }, 10000);
+  //       });
         
-        // Use Promise.race to either get the update check result or timeout
-        const shouldContinue = await Promise.race([updateCheckPromise, timeoutPromise]);
+  //       // Use Promise.race to either get the update check result or timeout
+  //       const shouldContinue = await Promise.race([updateCheckPromise, timeoutPromise]);
         
-        // Set states based on update check result
-        setUpdateCheckComplete(true);
-        setCanContinue(shouldContinue);
-      } catch (error) {
-        // In case of error, allow the app to continue
-        setUpdateCheckComplete(true);
-        setCanContinue(true);
-      }
-    }
+  //       // Set states based on update check result
+  //       setUpdateCheckComplete(true);
+  //       setCanContinue(shouldContinue);
+  //     } catch (error) {
+  //       // In case of error, allow the app to continue
+  //       setUpdateCheckComplete(true);
+  //       setCanContinue(true);
+  //     }
+  //   }
     
-    checkForUpdates();
-  }, []);
+  //   checkForUpdates();
+  // }, []);
 
   useEffect(() => {
     // Initialize notifications and store the listener reference

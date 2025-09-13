@@ -55,17 +55,19 @@ export default function Contact({ contact, orderId }) {
         // Extract all available data with fallbacks
         const receiverName = contact.userName || '';
         const orderReference = contact.orderId || contact.reference || '';
-        const businessName = contact.businessName || user?.business?.name || 'طيار للتوصيل';
+        const businessName = contact.businessName || user?.business?.name || 'JSK';
         const codValue = contact.codValue || contact.cod_value || '';
         const currency = contact.currency || '';
         const deliveryDate = contact.deliveryDate || 'اليوم';
         const senderName = contact.senderName || contact.sender?.name || '';
         
         // Create message based on language
-        if (language === 'ar' || language === 'he') {
-            return `مرحبا ${receiverName}، منحكي معك من شركة طيار للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
-        } else {
-            return `Hello ${receiverName}, this is Taiar delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+        if (language === 'ar') {
+            return `مرحبا ${receiverName}، منحكي معك من شركة JSK للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
+        }else if (language === 'he') {
+            return `שלום ${receiverName}, זה JSK שירות משלוח. אנחנו נשלם את החבילה (${orderReference})${codValue ? ` עם ערך ${codValue}${currency}` : ''} מ (${businessName}) ${deliveryDate}. נא לשלוח את המיקום ושם העיר כדי לאשר שהחבילה תגיע ליעדה (זמן המשלוח לא יכול להיות מוגדר בגלל תנועה בסטרה ומגוון תנאים אחרים). תגובה להודעה תגרום להתקדמות.`;
+        }else {
+            return `Hello ${receiverName}, this is JSK delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
         }
     };
 

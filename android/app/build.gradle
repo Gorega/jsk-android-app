@@ -94,13 +94,13 @@ android {
         }
     }
 
-    namespace 'com.taiar'
+    namespace 'com.expressjsk'
     defaultConfig {
-        applicationId 'com.taiar'
+        applicationId 'com.expressjsk'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "2.4.3"
+        versionName "1.0.0"
     }
     signingConfigs {
         debug {

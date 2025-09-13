@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Taiar",
-    "slug": "taiar",
-    "version": "2.4.3",
+    "name": "JSK",
+    "slug": "jsk",
+    "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/tayar_logo_dark.png",
+    "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "updates": {
       "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/c1d54568-437f-4a8c-a692-8b8ac589ffb0",
+      "url": "https://u.expo.dev/7cd8b12e-2b06-47bf-b819-a41c16408900",
       "enabled": true,
       "checkAutomatically": "ON_LOAD"
     },
@@ -22,7 +22,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "UIBackgroundModes": ["remote-notification"]
       },
-      "bundleIdentifier": "com.expresstaiar.taiar",
+      "bundleIdentifier": "com.expressjsk.jsk",
       "userInterfaceStyle": "automatic",
       "config": {
         "isRTL": true
@@ -30,10 +30,10 @@
       "supportsRTL": true
     },
     "android": {
-  "package": "com.taiar",
+  "package": "com.expressjsk",
   "googleServicesFile": "./google-services.json",
   "adaptiveIcon": {
-    "foregroundImage": "./assets/images/tayar_logo_dark.png",
+    "foregroundImage": "./assets/images/tayar_logo.png",
     "backgroundColor": "#252424"
   },
   "permissions": [
@@ -59,14 +59,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/tayar_logo_dark.png"
+      "favicon": "./assets/images/tayar_logo.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/tayar_logo_dark.png",
+          "image": "./assets/images/tayar_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#252424"
@@ -88,11 +88,11 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/images/tayar_logo_dark.png",
+          "icon": "./assets/images/tayar_logo.png",
           "color": "#252424",
           "sounds": [],
           "androidMode": "default",
-          "androidCollapsedTitle": "Updates from Taiar",
+          "androidCollapsedTitle": "Updates from JSK",
           "iosDisplayInForeground": true,
           "enableBackgroundRemoteNotifications": true
         }
@@ -119,15 +119,15 @@
         "origin": false
       },
       "eas": {
-        "projectId": "c1d54568-437f-4a8c-a692-8b8ac589ffb0"
+        "projectId": "7cd8b12e-2b06-47bf-b819-a41c16408900"
       }
     },
-    "owner": "expresstaiar",
+    "owner": "expressjsk",
     "notification": {
-      "icon": "./assets/images/tayar_logo_dark.png",
+      "icon": "./assets/images/tayar_logo.png",
       "color": "#252424",
       "androidMode": "default",
-      "androidCollapsedTitle": "Updates from Taiar",
+      "androidCollapsedTitle": "Updates from Jsk",
       "iosDisplayInForeground": true
     }
   }
