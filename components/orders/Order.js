@@ -1262,7 +1262,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <MaterialIcons 
                                         name="expand-more" 
                                         size={24} 
-                                        color={showExpandHint ? "#FFFFFF" : "#4361EE"} 
+                                        color={showExpandHint ? "#FFFFFF" : "#F59994"} 
                                     />
                                 </Animated.View>
                             </TouchableOpacity>

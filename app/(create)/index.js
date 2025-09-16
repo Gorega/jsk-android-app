@@ -342,7 +342,7 @@ export default function HomeScreen() {
             name: "city",
             value: selectedValue.city ? selectedValue.city.name : form.receiverCity,
             list: cities
-                .slice(2)
+                .slice(1)
                 .sort((a, b) => a.name.localeCompare(b.name))
                 .filter(city => 
                     !prickerSearchValue || 

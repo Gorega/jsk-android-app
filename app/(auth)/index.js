@@ -504,7 +504,7 @@ export default function SignIn() {
             <TouchableOpacity 
               style={[styles.forgotPassword]}
               activeOpacity={0.7}
-              onPress={() => router.push("https://wa.me/972566150002")}
+              onPress={() => router.push("https://wa.me/972543569848")}
             >
               <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
                 {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}

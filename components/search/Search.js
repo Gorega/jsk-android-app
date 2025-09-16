@@ -237,13 +237,13 @@ export default function Search({
               {
                 width: (activeSearchBy || activeDate) ? "60%" : showScanButton ? "70%" : "80%",
                 transform: [{ scale: scaleAnim }],
-                backgroundColor: isDark ? colors.surface : '#F8F9FA',
+                backgroundColor: isDark ? colors.surface : colors.inputBg,
                 borderWidth: isFocused ? 1 : 0,
-                borderColor: isFocused ? '#4361EE' : '#E2E8F0',
+                borderColor: isFocused ? colors.accent : colors.accent,
                 borderRadius: 10,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
-                shadowColor: isFocused ? "rgba(67, 97, 238, 0.2)" : "rgba(0, 0, 0, 0.1)",
+                shadowColor: isFocused ? colors.cardShadow : colors.cardShadow,
                 shadowOffset: { width: 0, height: isFocused ? 3 : 1 },
                 shadowOpacity: isFocused ? 0.4 : 0.2,
                 shadowRadius: isFocused ? 6 : 3,
@@ -251,7 +251,7 @@ export default function Search({
               }
             ]}
           >
-            <EvilIcons name="search" size={24} color="#4361EE" />
+            <EvilIcons name="search" size={24} color={colors.accent} />
             <TextInput
               style={[
                 styles.input,
@@ -266,7 +266,7 @@ export default function Search({
                 }
               ]}
               placeholder={`${translations[language].search.placeholder} ${activeSearchBy ? `${translations[language].search.by} ${activeSearchBy.name}` : ''}`}
-              placeholderTextColor={isDark ? "#94A3B8" : "#94A3B8"}
+              placeholderTextColor={colors.accent}
               value={searchValue}
               onChangeText={setSearchValue}
               onFocus={() => setIsFocused(true)}
@@ -274,7 +274,7 @@ export default function Search({
             />
             {searchValue ? (
               <TouchableOpacity onPress={() => setSearchValue('')}>
-                <Ionicons name="close-circle-outline" size={20} color="#94A3B8" />
+                <Ionicons name="close-circle-outline" size={20} color={colors.accent} />
               </TouchableOpacity>
             ) : null}
           </Animated.View>
@@ -285,7 +285,7 @@ export default function Search({
                 style={[styles.iconButton, styles.clearButton]} 
                 onPress={clearAll}
               >
-                <MaterialIcons name="clear" size={22} color="#FFFFFF" />
+                <MaterialIcons name="clear" size={22} color={colors.textInverse} />
               </TouchableOpacity>
             )}
             
@@ -294,7 +294,7 @@ export default function Search({
                 style={[styles.iconButton, styles.actionIconButton]}
                 onPress={handleScanPress}
               >
-                <Ionicons name="scan" size={22} color="#4361EE" />
+                <Ionicons name="scan" size={22} color={colors.accent} />
               </TouchableOpacity>
             )}
             
@@ -302,14 +302,14 @@ export default function Search({
               style={[styles.iconButton, styles.actionIconButton, activeSearchBy && styles.activeIconButton]}
               onPress={handleOpenSpecificFilters}
             >
-              <AntDesign name="filter" size={20} color={activeSearchBy ? "#FFFFFF" : "#4361EE"} />
+              <AntDesign name="filter" size={20} color={activeSearchBy ? colors.textInverse : colors.accent} />
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.iconButton, styles.actionIconButton, activeDate && styles.activeIconButton]}
               onPress={handleOpenDateFilters}
             >
-              <Ionicons name="calendar-number-outline" size={22} color={activeDate ? "#FFFFFF" : "#4361EE"} />
+              <Ionicons name="calendar-number-outline" size={22} color={activeDate ? colors.textInverse : colors.accent} />
             </TouchableOpacity>
           </View>
         </View>
@@ -322,7 +322,7 @@ export default function Search({
                   {activeSearchBy.name}
                 </Text>
                 <TouchableOpacity onPress={() => setActiveSearchBy("")}>
-                  <Ionicons name="close-circle" size={18} color="#4361EE" />
+                  <Ionicons name="close-circle" size={18} color={colors.accent} />
                 </TouchableOpacity>
               </View>
             )}
@@ -333,7 +333,7 @@ export default function Search({
                   {activeDate.name || translations[language].search.customDate}
                 </Text>
                 <TouchableOpacity onPress={() => setActiveDate("")}>
-                  <Ionicons name="close-circle" size={18} color="#4361EE" />
+                  <Ionicons name="close-circle" size={18} color={colors.accent} />
                 </TouchableOpacity>
               </View>
             )}
@@ -342,7 +342,7 @@ export default function Search({
         
         {filterByGroup.length > 0 && <View style={styles.filter}>
           <TouchableOpacity 
-            style={[styles.selectBox, (activeFilter !== null && activeFilter !== undefined) && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : '#F8F9FA', borderColor: isDark ? colors.border : '#E2E8F0'}]}
+            style={[styles.selectBox, (activeFilter !== null && activeFilter !== undefined) && styles.activeSelectBox, {backgroundColor: isDark ? colors.surface : colors.inputBg, borderColor: isDark ? colors.border : colors.inputBorder}]}
             onPress={handleOpenFiltersModal}
             activeOpacity={0.7}
           >
@@ -351,7 +351,7 @@ export default function Search({
                 <Text style={[
                   styles.selectBoxText,
                   (activeFilter !== null && activeFilter !== undefined) && styles.selectBoxTextActive,
-                  {color: isDark ? colors.text : '#1E293B'}
+                  {color: isDark ? colors.text : colors.text}
                 ]}>
                   {(activeFilter !== null && activeFilter !== undefined)
                     ? filterByGroup?.find(filter => filter.action === activeFilter)?.name 
@@ -359,14 +359,14 @@ export default function Search({
                 </Text>
               </View>
               <View style={styles.selectBoxIcon}>
-                <MaterialIcons name="keyboard-arrow-down" size={24} color="#4361EE" />
+                <MaterialIcons name="keyboard-arrow-down" size={24} color={colors.accent} />
               </View>
             </View>
           </TouchableOpacity>
           
           {(activeSearchBy || activeDate || (activeFilter !== null && activeFilter !== undefined) || searchValue) && searchResultCount !== undefined && (
             <View style={[styles.searchResultCount, {
-              backgroundColor: isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)'
+              backgroundColor: isDark ? `${colors.primary}26` : `${colors.primary}14`
             }]}>
               <Text style={[styles.searchResultCountText, {color: isDark ? colors.primary : colors.primary}]}>
                 {searchResultCount} {translations[language]?.search?.results || 'results'}
@@ -388,39 +388,39 @@ export default function Search({
             }, Platform.OS === 'ios' ? 500 : 300);
           }}
         >
-          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
-            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
+          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : colors.modalBg, borderBottomColor: isDark ? colors.border : colors.inputBorder}]}>
+            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : colors.inputBorder}]} />
             <Text style={[styles.modalH2, {color: colors.text}]}>{translations[language].search.searchBy}</Text>
           </View>
           
-          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : 'white'}]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : colors.modalBg}]} showsVerticalScrollIndicator={false}>
             {searchByGroup?.map((item, index) => (
               <TouchableOpacity 
                 key={index} 
                 style={[
                   styles.modalItem,
                   activeSearchBy?.action === item.action && styles.modalItemActive,
-                  {borderBottomColor: isDark ? colors.border : '#E2E8F0', backgroundColor: activeSearchBy?.action === item.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)') : 'transparent'}
+                  {borderBottomColor: isDark ? colors.border : colors.inputBorder, backgroundColor: activeSearchBy?.action === item.action ? (isDark ? `${colors.primary}26` : `${colors.primary}0D`) : 'transparent'}
                 ]} 
                 onPress={() => handleSelectSearchBy(item)}
               >
                 <Text style={[
                   styles.modalItemText,
                   activeSearchBy?.action === item.action && styles.modalItemTextActive,
-                  {color: activeSearchBy?.action === item.action ? '#4361EE' : colors.text}
+                  {color: activeSearchBy?.action === item.action ? colors.primary : colors.text}
                 ]}>
                   {item.name}
                 </Text>
                 {activeSearchBy?.action === item.action && (
-                  <MaterialIcons name="check-circle" size={22} color="#4361EE" />
+                  <MaterialIcons name="check-circle" size={22} color={colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
           </ScrollView>
           
-          <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : 'white', borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
+          <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : colors.modalBg, borderTopColor: isDark ? colors.border : colors.inputBorder}]}>
             <TouchableOpacity 
-              style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]} 
+              style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : colors.buttonSecondary, borderColor: isDark ? colors.border : colors.inputBorder}]} 
               onPress={() => {
                 modalTransitionInProgress.current = true;
                 setShowSpecificFilters(false);
@@ -429,7 +429,7 @@ export default function Search({
                 }, Platform.OS === 'ios' ? 500 : 300);
               }}
             >
-              <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
+              <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : colors.textSecondary}]}>{translations[language].search.cancel}</Text>
             </TouchableOpacity>
           </View>
         </ModalPresentation>
@@ -447,39 +447,39 @@ export default function Search({
             }, Platform.OS === 'ios' ? 500 : 300);
           }}
         >
-          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
-            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
+          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : colors.modalBg, borderBottomColor: isDark ? colors.border : colors.inputBorder}]}>
+            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : colors.inputBorder}]} />
             <Text style={[styles.modalH2, {color: colors.text}]}>{translations[language].search.searchByDate}</Text>
           </View>
           
-          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : 'white'}]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : colors.modalBg}]} showsVerticalScrollIndicator={false}>
             {searchByDateGroup?.map((item, index) => (
               <TouchableOpacity 
                 key={index} 
                 style={[
                   styles.modalItem,
                   activeDate?.action === item.action && styles.modalItemActive,
-                  {borderBottomColor: isDark ? colors.border : '#E2E8F0', backgroundColor: activeDate?.action === item.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.05)') : 'transparent'}
+                  {borderBottomColor: isDark ? colors.border : colors.inputBorder, backgroundColor: activeDate?.action === item.action ? (isDark ? `${colors.primary}26` : `${colors.primary}0D`) : 'transparent'}
                 ]}
                 onPress={() => handleSelectDateFilter(item)}
               >
                 <Text style={[
                   styles.modalItemText,
                   activeDate?.action === item.action && styles.modalItemTextActive,
-                  {color: activeDate?.action === item.action ? '#4361EE' : colors.text}
+                  {color: activeDate?.action === item.action ? colors.primary : colors.text}
                 ]}>
                   {item.name}
                 </Text>
                 {activeDate?.action === item.action && (
-                  <MaterialIcons name="check-circle" size={22} color="#4361EE" />
+                  <MaterialIcons name="check-circle" size={22} color={colors.accent} />
                 )}
               </TouchableOpacity>
             ))}
           </ScrollView>
           
-          <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : 'white', borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
+          <View style={[styles.modalFooter, {backgroundColor: isDark ? colors.card : colors.modalBg, borderTopColor: isDark ? colors.border : colors.inputBorder}]}>
             <TouchableOpacity 
-              style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]} 
+              style={[styles.modalButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : colors.buttonSecondary, borderColor: isDark ? colors.border : colors.inputBorder}]} 
               onPress={() => {
                 modalTransitionInProgress.current = true;
                 setShowDateFilters(false);
@@ -488,7 +488,7 @@ export default function Search({
                 }, Platform.OS === 'ios' ? 500 : 300);
               }}
             >
-              <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
+              <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : colors.textSecondary}]}>{translations[language].search.cancel}</Text>
             </TouchableOpacity>
           </View>
         </ModalPresentation>
@@ -506,8 +506,8 @@ export default function Search({
             }, Platform.OS === 'ios' ? 500 : 300);
           }}
         >
-          <View style={[styles.calendarContainer, {backgroundColor: isDark ? colors.card : 'white'}]}>
-            <View style={[styles.calendarHeader, {borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
+          <View style={[styles.calendarContainer, {backgroundColor: isDark ? colors.card : colors.modalBg}]}>
+            <View style={[styles.calendarHeader, {borderBottomColor: isDark ? colors.border : colors.inputBorder}]}>
               <Text style={[styles.calendarTitle, {color: colors.text}]}>{translations[language].search.selectDate || "Select Date"}</Text>
             </View>
             
@@ -516,22 +516,22 @@ export default function Search({
                 setSelectedDate(day.dateString);
               }}
               markedDates={{
-                [selectedDate]: { selected: true, selectedColor: '#4361EE', selectedTextColor: '#FFFFFF' },
+                [selectedDate]: { selected: true, selectedColor: colors.accent, selectedTextColor: colors.textInverse },
               }}
               theme={{
-                backgroundColor: isDark ? colors.card : '#FFFFFF',
-                calendarBackground: isDark ? colors.card : '#FFFFFF',
-                textSectionTitleColor: '#4361EE',
-                selectedDayBackgroundColor: '#4361EE',
-                selectedDayTextColor: '#FFFFFF',
-                todayTextColor: '#4361EE',
-                dayTextColor: isDark ? colors.text : '#2D3748',
-                textDisabledColor: isDark ? colors.border : '#CBD5E0',
-                dotColor: '#4361EE',
-                selectedDotColor: '#FFFFFF',
-                arrowColor: '#4361EE',
-                monthTextColor: isDark ? colors.text : '#1A202C',
-                indicatorColor: '#4361EE',
+                backgroundColor: isDark ? colors.card : colors.modalBg,
+                calendarBackground: isDark ? colors.card : colors.modalBg,
+                textSectionTitleColor: colors.primary,
+                selectedDayBackgroundColor: colors.primary,
+                selectedDayTextColor: colors.textInverse,
+                todayTextColor: colors.primary,
+                dayTextColor: isDark ? colors.text : colors.text,
+                textDisabledColor: isDark ? colors.border : colors.textTertiary,
+                dotColor: colors.primary,
+                selectedDotColor: colors.textInverse,
+                arrowColor: colors.primary,
+                monthTextColor: isDark ? colors.text : colors.text,
+                indicatorColor: colors.primary,
                 textDayFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
                 textMonthFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
                 textDayHeaderFontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
@@ -544,9 +544,9 @@ export default function Search({
               }}
             />
             
-            <View style={[styles.calendarActions, {borderTopColor: isDark ? colors.border : '#E2E8F0'}]}>
+            <View style={[styles.calendarActions, {borderTopColor: isDark ? colors.border : colors.inputBorder}]}>
               <TouchableOpacity 
-                style={[styles.calendarButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : '#F1F5F9', borderColor: isDark ? colors.border : '#E2E8F0'}]}
+                style={[styles.calendarButton, styles.secondaryButton, {backgroundColor: isDark ? colors.surface : colors.buttonSecondary, borderColor: isDark ? colors.border : colors.inputBorder}]}
                 onPress={() => {
                   modalTransitionInProgress.current = true;
                   setShowCalendar(false);
@@ -555,7 +555,7 @@ export default function Search({
                   }, Platform.OS === 'ios' ? 500 : 300);
                 }}
               >
-                <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : '#64748B'}]}>{translations[language].search.cancel}</Text>
+                <Text style={[styles.secondaryButtonText, {color: isDark ? colors.textSecondary : colors.textSecondary}]}>{translations[language].search.cancel}</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
@@ -583,8 +583,8 @@ export default function Search({
             }, Platform.OS === 'ios' ? 500 : 300);
           }}
         >
-          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : 'white', borderBottomColor: isDark ? colors.border : '#E2E8F0'}]}>
-            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : '#E2E8F0'}]} />
+          <View style={[styles.modalHeader, {backgroundColor: isDark ? colors.card : colors.modalBg, borderBottomColor: isDark ? colors.border : colors.inputBorder}]}>
+            <View style={[styles.modalHeaderBar, {backgroundColor: isDark ? colors.border : colors.inputBorder}]} />
             <View style={styles.modalTitleContainer}>
               <Text style={[styles.modalH2, {color: colors.text}]}>{translations[language].search.selectFilter || "Select Filter"}</Text>
               <TouchableOpacity 
@@ -597,31 +597,31 @@ export default function Search({
                   }, Platform.OS === 'ios' ? 500 : 300);
                 }}
               >
-                <MaterialIcons name="close" size={24} color={isDark ? colors.textSecondary : "#64748B"} />
+                <MaterialIcons name="close" size={24} color={isDark ? colors.textSecondary : colors.textSecondary} />
               </TouchableOpacity>
             </View>
           </View>
           
-          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : 'white'}]} showsVerticalScrollIndicator={false}>
+          <ScrollView style={[styles.modalScrollView, {backgroundColor: isDark ? colors.card : colors.modalBg}]} showsVerticalScrollIndicator={false}>
             {filterByGroup?.map((filter, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.filterOption,
                   activeFilter === filter.action && styles.filterOptionActive,
-                  {borderBottomColor: isDark ? colors.border : '#F1F5F9', backgroundColor: activeFilter === filter.action ? (isDark ? 'rgba(67, 97, 238, 0.15)' : '#F0F9FF') : 'transparent'}
+                  {borderBottomColor: isDark ? colors.border : colors.inputBorder, backgroundColor: activeFilter === filter.action ? (isDark ? `${colors.primary}26` : `${colors.primary}14`) : 'transparent'}
                 ]}
                 onPress={() => handleSelectFilter(filter)}
               >
                 <Text style={[
                   styles.filterOptionText,
                   activeFilter === filter.action && styles.filterOptionTextActive,
-                  {color: activeFilter === filter.action ? '#4361EE' : colors.text}
+                  {color: activeFilter === filter.action ? colors.primary : colors.text}
                 ]}>
                   {filter.name}
                 </Text>
                 {activeFilter === filter.action && (
-                  <MaterialIcons name="check-circle" size={22} color="#4361EE" />
+                  <MaterialIcons name="check-circle" size={22} color={colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -634,15 +634,12 @@ export default function Search({
 const styles = StyleSheet.create({
   searchBox: {
       padding: 12,
-      backgroundColor: "white",
       elevation: 3,
-      shadowColor: "rgba(0, 0, 0, 0.1)",
       shadowOffset: { width: 0, height: 1 },
       shadowOpacity: 0.6,
       shadowRadius: 3,
       justifyContent: "flex-end",
       borderBottomWidth: 1,
-      borderBottomColor: "rgba(0,0,0,0.05)",
   },
   search: {
       flexDirection: "row",
@@ -652,7 +649,6 @@ const styles = StyleSheet.create({
   inputField: {
       flexDirection: "row",
       alignItems: "center",
-      borderColor: "#E2E8F0",
       borderWidth: 1,
       borderRadius: 8,
       height: 42,
@@ -671,13 +667,13 @@ const styles = StyleSheet.create({
       marginLeft: 3,
   },
   actionIconButton: {
-      backgroundColor: 'rgba(67, 97, 238, 0.1)',
+      backgroundColor: 'rgba(245, 153, 148, 0.1)',
   },
   activeIconButton: {
-      backgroundColor: '#4361EE',
+      backgroundColor: '#F59994',
   },
   clearButton: {
-      backgroundColor: '#E63946',
+      backgroundColor: '#E1251B',
   },
   filter: {
       marginTop: 12,
@@ -753,7 +749,6 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
       borderBottomWidth: 1,
-      borderBottomColor: "#E2E8F0",
       paddingBottom: 10,
       marginBottom: 10,
   },
@@ -762,7 +757,6 @@ const styles = StyleSheet.create({
       fontSize: 18,
       fontWeight: "700",
       textAlign: "center",
-      color: '#1E293B',
   },
   modalScrollView: {
       marginVertical: 8,
@@ -774,18 +768,14 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       paddingVertical: 14,
       paddingHorizontal: 16,
-      borderBottomColor: "#E2E8F0",
       borderBottomWidth: 1,
   },
   modalItemActive: {
-      backgroundColor: 'rgba(67, 97, 238, 0.05)',
   },
   modalItemText: {
       fontSize: 16,
-      color: '#334155',
   },
   modalItemTextActive: {
-      color: '#4361EE',
       fontWeight: '600',
   },
   modalFooter: {
@@ -793,7 +783,6 @@ const styles = StyleSheet.create({
       flexDirection: "row",
       justifyContent: "center",
       borderTopWidth: 1,
-      borderTopColor: "#E2E8F0",
       paddingTop: 15,
   },
   modalButton: {
@@ -805,11 +794,9 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
       fontSize: 16,
-      color: '#4361EE',
       fontWeight: '600',
   },
   calendarContainer: {
-      backgroundColor: 'white',
       borderRadius: 16,
       overflow: 'hidden',
       padding: 10,
@@ -817,13 +804,11 @@ const styles = StyleSheet.create({
   calendarHeader: {
       paddingVertical: 16,
       borderBottomWidth: 1,
-      borderBottomColor: '#E2E8F0',
       marginBottom: 10,
   },
   calendarTitle: {
       fontSize: 18,
       fontWeight: '700',
-      color: '#1E293B',
       textAlign: 'center',
   },
   calendarActions: {
@@ -832,7 +817,6 @@ const styles = StyleSheet.create({
       alignItems: "center",
       padding: 12,
       borderTopWidth: 1,
-      borderTopColor: "#E2E8F0",
       marginTop: 8,
   },
   calendarButton: {
@@ -843,25 +827,19 @@ const styles = StyleSheet.create({
       alignItems: 'center',
   },
   primaryButton: {
-      backgroundColor: '#4361EE',
-      shadowColor: 'rgba(67, 97, 238, 0.3)',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 8,
       elevation: 4,
   },
   primaryButtonText: {
-      color: 'white',
       fontWeight: '600',
       fontSize: 16,
   },
   secondaryButton: {
-      backgroundColor: '#F1F5F9',
       borderWidth: 1,
-      borderColor: '#E2E8F0',
   },
   secondaryButtonText: {
-      color: '#64748B',
       fontWeight: '600',
       fontSize: 16,
   },
@@ -875,23 +853,18 @@ const styles = StyleSheet.create({
       paddingVertical: 16,
       paddingHorizontal: 16,
       borderBottomWidth: 1,
-      borderBottomColor: '#F1F5F9',
   },
   filterOptionActive: {
-      backgroundColor: '#F0F9FF',
   },
   filterOptionText: {
       fontSize: 17,
-      color: '#334155',
   },
   filterOptionTextActive: {
-      color: '#4361EE',
       fontWeight: '600',
   },
   modalHeaderBar: {
       width: 40,
       height: 5,
-      backgroundColor: '#E2E8F0',
       borderRadius: 3,
       alignSelf: 'center',
       marginBottom: 15,
@@ -904,7 +877,6 @@ const styles = StyleSheet.create({
   },
   activeFilterLabel: {
       fontSize: 14,
-      color: '#64748B',
       marginRight: 4,
   },
   modalTitleContainer: {
@@ -923,7 +895,6 @@ const styles = StyleSheet.create({
   searchResultCount: {
       paddingVertical: 4,
       paddingHorizontal: 12,
-      backgroundColor: 'rgba(67, 97, 238, 0.08)',
       borderRadius: 8,
       marginLeft: 10,
   },

@@ -20,14 +20,14 @@ try {
 }
 
 // Default API URL if not defined in environment
-const apiUrl = process.env.EXPO_PUBLIC_API_URL || envVars.EXPO_PUBLIC_API_URL || 'https://jsk-backend-production.up.railway.app';
+const apiUrl = process.env.EXPO_PUBLIC_API_URL || envVars.EXPO_PUBLIC_API_URL || 'https://api.jsk-logistics.org';
 const googleMapsIosApiKey = process.env.GOOGLE_MAPS_IOS_API_KEY || envVars.GOOGLE_MAPS_IOS_API_KEY || '';
 const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVars.GOOGLE_MAPS_ANDROID_API_KEY || '';
 
 export default {
   name: 'JSK',
   slug: 'jsk',
-  version: '1.0.0',
+  version: '1.1.0',
   orientation: 'portrait',
   icon: './assets/images/tayar_logo.png',
   scheme: 'myapp',
@@ -35,7 +35,7 @@ export default {
   splash: {
     image: './assets/images/tayar_logo.png',
     resizeMode: 'contain',
-    backgroundColor: '#252424'
+    backgroundColor: '#ffffff'
   },
   updates: {
     fallbackToCacheTimeout: 0,
@@ -56,7 +56,7 @@ export default {
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/images/tayar_logo.png',
-      backgroundColor: '#252424'
+      backgroundColor: '#ffffff'
     },
     package: 'com.expressjsk',
     // Enable edge-to-edge display
@@ -94,7 +94,7 @@ export default {
       'expo-notifications',
       {
         icon: './assets/images/tayar_logo.png',
-        color: '#252424',
+        color: '#ffffff',
         sounds: ['./assets/sound/success.mp3', './assets/sound/failure.mp3'],
         enableBackgroundRemoteNotifications: true,
         androidMode: 'default',

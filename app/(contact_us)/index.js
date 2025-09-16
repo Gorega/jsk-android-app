@@ -91,7 +91,7 @@ export default function HomeScreen(){
                                     }),
                                 }
                             ]}>{translations[language].contact.local}</Text>
-                            <Text style={[styles.contactValue, { color: colors.text }]}>+972566150002</Text>
+                            <Text style={[styles.contactValue, { color: colors.text }]}>+972543569848</Text>
                         </View>
                     </View>
                 </View>
@@ -115,7 +115,7 @@ export default function HomeScreen(){
                     <View style={styles.socialButtonsContainer}>
                         <TouchableOpacity 
                             style={styles.socialButton}
-                            onPress={() => router.push("https://www.facebook.com/TAIAR.Palestine/?locale=ar_AR")}
+                            onPress={() => router.push("https://www.facebook.com/profile.php?id=100079912524942")}
                         >
                             <LinearGradient
                                 colors={['#4267B2', '#3b5998']}
@@ -132,7 +132,7 @@ export default function HomeScreen(){
 
                         <TouchableOpacity 
                             style={styles.socialButton}
-                            onPress={() => router.push("https://www.instagram.com/taiar.palestine/?hl=ar")}
+                            onPress={() => router.push("https://www.instagram.com/jsk_logistics1/")}
                         >
                             <LinearGradient
                                 colors={['#C13584', '#833AB4']}
@@ -166,7 +166,7 @@ export default function HomeScreen(){
                         
                         <TouchableOpacity 
                             style={styles.socialButton}
-                            onPress={() => router.push("https://wa.me/972566150002")}
+                            onPress={() => router.push("https://wa.me/972543569848")}
                         >
                             <LinearGradient
                                 colors={['#25D366', '#128C7E']}
@@ -184,7 +184,7 @@ export default function HomeScreen(){
                 </View>
                 
                 {/* Visit Website Button */}
-                <TouchableOpacity style={styles.websiteButtonContainer} onPress={() => router.push("https://taiar.org/ar")}>
+                <TouchableOpacity style={styles.websiteButtonContainer} onPress={() => router.push("https://jsk-logistics.org/ar")}>
                     <LinearGradient
                         colors={[colors.primary, colors.secondary]}
                         start={{ x: 0, y: 0 }}
