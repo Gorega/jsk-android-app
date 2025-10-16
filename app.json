@@ -2,7 +2,7 @@
   "expo": {
     "name": "JSK",
     "slug": "jsk",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/images/tayar_logo.png",
     "scheme": "myapp",
