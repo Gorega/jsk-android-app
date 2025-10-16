@@ -150,9 +150,7 @@ export default function ChangePasswordScreen() {
           method: "PUT",
           headers: {
             'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Accept-Language': language,
-            "Cookie": token ? `token=${token}` : ""
+            'Content-Type': 'application/json'
           },
           credentials: "include",
           body: JSON.stringify({

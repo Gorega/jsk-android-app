@@ -368,22 +368,6 @@ export default function HomeScreen() {
     numberOfOrders: data?.rejected_orders?.count,
     money: formatMoney(data?.rejected_orders?.cod_value),
     orderIds: data?.rejected_orders?.order_ids
-  }, user.role === "business" ? {visibility: "hidden"} :{
-    label: translations[language]?.collections?.collection?.sentMoney || "Sent Money",
-    icon: <FontAwesome6 name="money-bill-transfer" size={22} color="white" />,
-    gradientColors: ['#4CC9F0', '#4361EE'],
-    numberOfOrders: data?.sent_money_collections?.numberOfOrders,
-    money: formatMoney(data?.sent_money_collections?.money),
-    collectionIds: data?.sent_money_collections?.collectionIds,
-    isCollection: true
-  }, user.role === "business" ? {visibility: "hidden"} :{
-    label: translations[language]?.collections?.collection?.sentPackages || "Sent Packages",
-    icon: <MaterialCommunityIcons name="package-variant-closed" size={22} color="white" />,
-    gradientColors: ['#8338EC', '#3A0CA3'],
-    numberOfOrders: data?.sent_packages_collections?.numberOfOrders,
-    money: formatMoney(data?.sent_packages_collections?.money),
-    collectionIds: data?.sent_packages_collections?.collectionIds,
-    isCollection: true
   }];
 
   useEffect(() => {
@@ -586,22 +570,15 @@ export default function HomeScreen() {
       setIsLoadingCollections(true);
       // const token = await getToken("userToken");
       const [moneyRes, packageRes] = await Promise.all([
-        Promise.all([
-          fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?delivery_type=money&status=money_out`, {
-            credentials: 'include',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              // "Cookie": token ? `token=${token}` : ""
-            }
-          })
-        ]).then(async ([businessRes]) => {
-          const businessData = await businessRes.json();
-          return {
-            data: [...(businessData.data || [])]
-          };
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=4&status=money_out`, {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            // "Cookie": token ? `token=${token}` : ""
+          }
         }),
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?delivery_type=package&status=returned_out`, {
+        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=5&status=returned_out`, {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -611,11 +588,11 @@ export default function HomeScreen() {
         })
       ]);
 
-      const moneyData = moneyRes;
+      const moneyData = await moneyRes.json();
       const packageData = await packageRes.json();
 
-      setMoneyCollections(moneyData.data || []);
-      setPackageCollections(packageData.data || []);
+      setMoneyCollections(moneyData.collections || []);
+      setPackageCollections(packageData.collections || []);
     } catch (error) {
       Alert.alert("Error", error.message || "Failed to fetch collections");
     } finally {
@@ -644,91 +621,118 @@ export default function HomeScreen() {
 
     setIsConfirming(true);
     try {
-      // Determine which collections are being confirmed
-      const collectionsToConfirm = selectedType === 'money' ? moneyCollections : packageCollections;
-      const selectedCollectionObjects = collectionsToConfirm.filter(c => selectedCollections.includes(c.collection_id));
       // Set status based on collection type
       const status = selectedType === 'money' ? 'paid' : 'returned_delivered';
       
-      // Create an array of promises for parallel requests
-      const promises = [];
+      // Process each selected collection individually
+      const results = [];
+      let hasErrors = false;
       
-      // Main update for selected collections
-      const updates = {
-        collection_ids: selectedCollections,
-        status: status,
-        note_content: null
-      };
-      
-      promises.push(
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/status`, {
-          method: "PUT",
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Accept-Language': language,
-          },
-          credentials: "include",
-          body: JSON.stringify({ updates })
-        })
-      );
-      
-      // Add requests for connected collections
-      selectedCollectionObjects.forEach(collection => {
-        const connectedCollectionIds = collection?.connected_collection_ids || [];
-        
-        if (Array.isArray(connectedCollectionIds) && connectedCollectionIds.length > 0) {
-          connectedCollectionIds.forEach(connectedId => {
-            if (connectedId) {
-              promises.push(
-                fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${connectedId}/status`, {
-                  method: 'PUT',
-                  headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json',
-                    'Accept-Language': language,
-                  },
-                  credentials: 'include',
-                  body: JSON.stringify({
-                    status: status,
-                    note_content: "Status updated via connected sent money collection"
-                  })
-                })
-              );
-            }
+      for (const collectionId of selectedCollections) {
+        try {
+          // Create the API request for individual collection
+          const apiRequest = fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collectionId}/status`, {
+            method: 'PUT',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'Accept-Language': language,
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              status: status,
+              note_content: "Status updated via connected sent money collection"
+            })
           });
+          
+          // Execute the request and get response
+          const response = await apiRequest;
+          const data = await response.json();
+          
+          // Check if the response is ok
+          if (!response.ok) {
+            // Handle error responses from backend
+            const errorMessage = data.message || `HTTP error! status: ${response.status}`;
+            results.push({ collectionId, success: false, error: errorMessage });
+            hasErrors = true;
+            continue;
+          }
+          
+          // Handle successful response
+          results.push({ collectionId, success: true, data });
+          
+        } catch (err) {
+          console.error(`Error updating collection ${collectionId}:`, err);
+          
+          // Handle different types of errors
+          let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
+          
+          if (err.name === 'TypeError' && err.message.includes('fetch')) {
+            errorMessage = translations[language]?.collections?.collection?.networkError || 'Network error. Please check your connection.';
+          } else if (err.message) {
+            errorMessage = err.message;
+          }
+          
+          results.push({ collectionId, success: false, error: errorMessage });
+          hasErrors = true;
         }
-      });
+      }
       
-      // Execute all requests in parallel
-      const responses = await Promise.all(promises);
-      const data = await responses[0].json();
-
-      if (data.failures?.length > 0 && data.successes?.length > 0) {
+      // Show appropriate success/error messages
+      const successfulCollections = results.filter(r => r.success).map(r => r.collectionId);
+      const failedCollections = results.filter(r => !r.success);
+      
+      if (successfulCollections.length > 0 && failedCollections.length > 0) {
+        // Partial success
         Alert.alert(
-          translations[language]?.collections?.collection?.partialSuccess,
-          `${translations[language]?.collections?.collection?.updatedCollections}: ${data.successes.join(', ')}\n\n${translations[language]?.collections?.collection?.failedCollections}: ${data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')}`
+          translations[language]?.collections?.collection?.partialSuccess || "Partial Success",
+          `${translations[language]?.collections?.collection?.updatedCollections || "Updated collections"}: ${successfulCollections.join(', ')}\n\n${translations[language]?.collections?.collection?.failedCollections || "Failed collections"}: ${failedCollections.map(f => `#${f.collectionId}: ${f.error}`).join('\n')}`
         );
-      } else if (data.failures?.length > 0) {
+      } else if (failedCollections.length > 0) {
+        // All failed
         Alert.alert(
-          translations[language]?.collections?.collection?.error,
-          data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')
+          translations[language]?.collections?.collection?.error || "Error",
+          failedCollections.map(f => `#${f.collectionId}: ${f.error}`).join('\n')
         );
       } else {
+        // All successful
         Alert.alert(
-          translations[language]?.collections?.collection?.success,
-          `${translations[language]?.collections?.collection?.statusUpdated}: ${data.successes.join(', ')}`
+          translations[language]?.collections?.collection?.success || "Success",
+          translations[language]?.collections?.collection?.statusUpdatedSuccessfully || "Status updated successfully"
         );
       }
 
-      // Reset selections and refresh data
+      // Make sure we wait for the API to update before fetching new data
+      // Use Promise.all to wait for both local refresh and parent refresh
+      await Promise.all([
+        // First, wait a moment to ensure API state is updated
+        new Promise(resolve => setTimeout(resolve, 500)),
+        
+        // Then refresh our local collections data
+        fetchCollections()
+      ]);
+      
+      // Finally notify parent component to refresh dashboard data
+      if (onRefresh && typeof onRefresh === 'function') {
+        onRefresh();
+      }
+
+      // Reset selections
       setSelectedCollections([]);
-      fetchCollections();
-      onRefresh();
-    } catch (err) {
+      
+    } catch (err) {      
+      // Handle different types of errors
+      let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = translations[language]?.collections?.collection?.networkError || 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       Alert.alert(
-        translations[language]?.collections?.collection?.error,
-        err.message || translations[language]?.collections?.collection?.tryAgainLater
+        translations[language]?.collections?.collection?.error || "Error",
+        errorMessage
       );
     } finally {
       setIsConfirming(false);
@@ -1133,7 +1137,6 @@ export default function HomeScreen() {
                     <Text style={styles.collectionSubtitle}>
                       {translations[language]?.collections?.collection?.actions}
                     </Text>
-                    <AntDesign name={"arrowleft"} size={20} color="white" />
                   </View>
                 </LinearGradient>
               </TouchableOpacity>
@@ -1243,34 +1246,28 @@ export default function HomeScreen() {
                             </View>
                             <View style={styles.orderCountContainer}>
                               <Text style={styles.orderCount}>
-                                {collection.number_of_orders} {translations[language]?.collections?.collection?.orders}
+                                {collection.order_count} {translations[language]?.collections?.collection?.orders}
                               </Text>
                             </View>
                           </View>
 
                           <View style={styles.collectionItemBody}>
-                            <View style={styles.orderIdsContainer}>
-                                <Text style={[styles.orderIdsLabel,{
-                                    color: colors.text
-                                }]}>
-                                {translations[language]?.collections?.collection?.orderIds}:
-                              </Text>
-                              <Text style={[styles.orderIds,{
-                                color: colors.text
-                              }]}>
-                                {Array.isArray(collection.order_ids) ? collection.order_ids.join(', ') : collection.order_ids || '-'}
-                              </Text>
-                            </View>
-                            <View style={styles.valueContainer}>
-                            <Text style={[styles.valueLabel,{
-                                color: colors.text
-                              }]}>
-                                {translations[language]?.collections?.collection?.totalNetValue}:
-                              </Text>
-                              <Text style={[styles.value,{
-                                color: colors.success
-                              }]}>{collection.total_net_value}</Text>
-                            </View>
+                            {collection.financials && collection.financials.length > 0 && (
+                              <>
+                                <View style={styles.valueContainer}>
+                                  <Text style={[styles.valueLabel,{
+                                      color: colors.text
+                                    }]}>
+                                      {translations[language]?.collections?.collection?.totalNetValue}:
+                                    </Text>
+                                    <Text style={[styles.value,{
+                                      color: colors.success
+                                    }]}>
+                                      {collection.financials[0].final_amount} {collection.financials[0].currency_symbol}
+                                    </Text>
+                                </View>
+                              </>
+                            )}
                           </View>
 
                           {selectedCollections.includes(collection.collection_id) && (
@@ -1375,10 +1372,6 @@ export default function HomeScreen() {
                     return "stuck";
                   case translations[language].tabs.index.boxes.rejected:
                     return "rejected";
-                  case translations[language]?.collections?.collection?.sentMoney:
-                    return "sent_money";
-                  case translations[language]?.collections?.collection?.sentPackages:
-                    return "sent_packages";
                   default:
                     return "";
                 }
@@ -1395,40 +1388,26 @@ export default function HomeScreen() {
                     // Then navigate to orders with the specific filter
                     const statusKey = getStatusKey();
                     
-                    if (box.isCollection) {
-                      // Check if it's sent money or sent packages
-                      const collectionType = box.label === translations[language]?.collections?.collection?.sentMoney 
-                        ? "sent" 
-                        : box.label === translations[language]?.collections?.collection?.sentPackages 
-                          ? "sent" 
-                          : "";
-                      
+                     // Navigate to orders page with the specific filter
+                     if (statusKey === "today") {
+                      // For today filter, use date_range parameter instead of status_key
                       router.push({
-                        pathname: "/(collection)",
-                        params: { type: collectionType }
+                        pathname: "/(tabs)/orders",
+                        params: {
+                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
+                          date_range: "today"
+                        }
                       });
                     } else {
-                        // Navigate to orders page with the specific filter
-                        if (statusKey === "today") {
-                          // For today filter, use date_range parameter instead of status_key
-                          router.push({
-                            pathname: "/(tabs)/orders",
-                            params: {
-                              orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
-                              date_range: "today"
-                            }
-                          });
-                        } else {
-                          // For other filters, use status_key as before
-                          router.push({
-                            pathname: "/(tabs)/orders",
-                            params: {
-                              orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
-                              status_key: statusKey
-                            }
-                          });
+                      // For other filters, use status_key as before
+                      router.push({
+                        pathname: "/(tabs)/orders",
+                        params: {
+                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
+                          status_key: statusKey
                         }
-                     }
+                      });
+                    }
                     }}
                   activeOpacity={0.9}
                 >

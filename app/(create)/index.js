@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, Platform, StatusBar, Animated, Dimensions, Modal } from "react-native";
+import { View, StyleSheet, ScrollView, Text, Alert, ActivityIndicator, Keyboard, TouchableOpacity, Platform, StatusBar, Animated, Dimensions, Modal, KeyboardAvoidingView } from "react-native";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Section from "../../components/create/Section";
 import { useEffect, useState, useRef, React, useCallback } from "react";
@@ -48,11 +48,51 @@ export default function HomeScreen() {
     const [formSpinner, setFormSpinner] = useState({})
     const [fieldErrors, setFieldErrors] = useState({});
     const { orderId, isDuplicate } = useLocalSearchParams();
-    const [senders, setSenders] = useState([]);
+    const [senders, setSenders] = useState({
+        data: [],
+        metadata: {},
+        loading: false,
+        error: null,
+        hasMore: false,
+        currentPage: 1,
+        searchTerm: ''
+    });
     const [page, setPage] = useState(1);
     const [loadingMore, setLoadingMore] = useState(false);
     const { user } = useAuth()
     const [cities, setCities] = useState([]);
+    
+    // Enhanced cities state management for pagination and search
+    const [citiesState, setCitiesState] = useState({
+        data: [],
+        loading: false,
+        error: null,
+        hasMore: true,
+        page: 1,
+        totalRecords: 0,
+        searchTerm: '',
+        searchLoading: false
+    });
+    
+    // Debounced search term for cities
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    
+    // Direct search for senders - no debouncing needed
+    
+    // Cache for cities data to avoid unnecessary API calls
+    const [citiesCache, setCitiesCache] = useState(new Map());
+    
+    // Debounce effect for search
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearchTerm(citiesState.searchTerm);
+        }, 300);
+        
+        return () => clearTimeout(timer);
+    }, [citiesState.searchTerm]);
+
+    // Direct search - no debouncing needed since we handle it directly in setPickerSearchValue
+    
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     
@@ -229,36 +269,6 @@ export default function HomeScreen() {
                         />
                     ))}
                 </View>
-                
-                {/* Always show with_money_receive toggle when order type is "receive" */}
-                {selectedValue.orderType?.value === "receive" && (
-                    <View style={styles.businessBalanceToggleContainer}>
-                        <Field
-                            field={{
-                                type: "toggle",
-                                label: translations[language].tabs.orders.create.sections.sender.fields.with_money_receive,
-                                name: "with_money_receive",
-                                value: form.withMoneyReceive || false,
-                                onChange: (value) => {
-                                    setWithMoneyReceive(value);
-                                    setForm(prevForm => ({
-                                        ...prevForm,
-                                        withMoneyReceive: value
-                                    }));
-                                    
-                                    // For business users, auto-set from_business_balance based on with_money_receive
-                                    if (user.role === "business" && !value) {
-                                        setFromBusinessBalance(true);
-                                        setForm(prevForm => ({
-                                            ...prevForm,
-                                            fromBusinessBalance: true
-                                        }));
-                                    }
-                                }
-                            }}
-                        />
-                    </View>
-                )}
             </View>
         )
     }, !isDuplicate && {
@@ -268,7 +278,7 @@ export default function HomeScreen() {
             label: translations[language].tabs.orders.create.sections?.referenceId?.explain,
             type: "input",
             name: "qr_id",
-            value: form.qrId || "",
+            value: form.qrId,
             onChange: (input) => setForm((form) => ({ ...form, qrId: input })),
             showScanButton: true
         }]
@@ -280,8 +290,28 @@ export default function HomeScreen() {
             type: "select",
             name: "sender",
             value: selectedValue.sender.name,
-            list: senders.data,
             showSearchBar: true,
+            apiConfig: {
+                endpoint: `${process.env.EXPO_PUBLIC_API_URL}/api/users`,
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                    // 'Authorization': `Bearer ${user.token}`,
+                },
+                credentials: 'include',
+                params: {
+                    language_code: language,
+                    role_id: '2',
+                    active_users: '1',
+                    limit: '20'
+                },
+                searchParam: 'np', // The parameter name for search
+                dataPath: 'data', // Path to the data array in response
+                totalPagesPath: 'metadata.total_pages', // Path to total pages
+                currentPagePath: 'metadata.page' // Path to current page
+            },
+            keyExtractor: (item, index) => `sender-${item.user_id || 'unknown'}-${index}`,
             onSelect: () => {
                 // Enable delivery fee update when sender changes
                 setShouldUpdateDeliveryFee(true);
@@ -341,14 +371,24 @@ export default function HomeScreen() {
             type: "select",
             name: "city",
             value: selectedValue.city ? selectedValue.city.name : form.receiverCity,
-            list: cities
-                .slice(1)
-                .sort((a, b) => a.name.localeCompare(b.name))
-                .filter(city => 
-                    !prickerSearchValue || 
-                    city.name.toLowerCase().includes(prickerSearchValue.toLowerCase())
-                ),
+            list: citiesState.data.length > 0 ? citiesState.data : cities.slice(2),
             showSearchBar: true,
+            loading: citiesState.loading,
+            searchLoading: citiesState.searchLoading,
+            loadMoreData: loadMoreCities,
+            loadingMore: citiesState.loading && citiesState.page > 1,
+            prickerSearchValue: citiesState.searchTerm,
+            setPickerSearchValue: (searchTerm) => {
+                setCitiesState(prev => ({ ...prev, searchTerm }));
+            },
+            onSearchClear: () => {
+                resetCitiesSearch();
+            },
+            error: citiesState.error,
+            onRetry: () => {
+                setCitiesState(prev => ({ ...prev, error: null }));
+                fetchCities(1, citiesState.searchTerm, false);
+            },
             onSelect: (city) => {
                 
                 // Update the selectedValue.city with the selected city
@@ -403,7 +443,19 @@ export default function HomeScreen() {
                         error: index === 0 ? fieldErrors.cod_value : null,
                         onChange: (value) => {
                             const newAmounts = [...codAmounts];
-                            newAmounts[index].value = convertToEnglishNumerals(value);
+                            let processedValue = convertToEnglishNumerals(value);
+                            
+                            // For payment type orders, ensure the value has a minus sign
+                            if (selectedValue.orderType?.value === "payment") {
+                                // Remove any existing minus signs first to avoid double negatives
+                                processedValue = processedValue.replace(/^-+/, '');
+                                // Add minus sign if the value is not empty and not zero
+                                if (processedValue && processedValue !== '0' && processedValue !== '0.00') {
+                                    processedValue = '-' + processedValue;
+                                }
+                            }
+                            
+                            newAmounts[index].value = processedValue;
                             setCodAmounts(newAmounts);
                         }
                     }))
@@ -439,182 +491,38 @@ export default function HomeScreen() {
                 keyboardType: "numeric"
             },
             {
-                label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
-                type: "input",
-                name: "net_value",
-                value: (() => {
-                    // Define currency exchange rates
-                    const CURRENCY_EXCHANGE_RATES = {
-                        ILS_TO_USD: 0.27,  // 1 ILS = 0.27 USD
-                        ILS_TO_JOD: 0.19,  // 1 ILS = 0.19 JOD
-                        USD_TO_ILS: 3.7,   // 1 USD = 3.7 ILS
-                        USD_TO_JOD: 0.71,  // 1 USD = 0.71 JOD
-                        JOD_TO_ILS: 5,     // 1 JOD = 5 ILS
-                        JOD_TO_USD: 1.41,  // 1 JOD = 1.41 USD
-                    };
-                    
-                    // Group COD values by currency
-                    const codByCurrency = {
-                        ILS: 0,
-                        JOD: 0,
-                        USD: 0
-                    };
-                    
-                    codAmounts.forEach(cod => {
-                        const value = parseFloat(cod.value || 0);
-                        const currency = cod.currency || 'ILS';
-                        
-                        if (!isNaN(value)) {
-                            codByCurrency[currency] = (codByCurrency[currency] || 0) + value;
-                        }
-                    });
-                    
-                    // Get delivery fee, commission, and discount
-                    const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
-                    const deliveryFeeCurrency = 'ILS'; // Default currency for delivery fee
-                    const commissionValue = parseFloat(form.commission || 0);
-                    const commissionCurrency = 'ILS'; // Default currency for commission
-                    const discountValue = parseFloat(form.discount || 0);
-                    const discountCurrency = 'ILS'; // Default currency for discount
-                    
-                    // Calculate ILS fees
-                    const ilsFees = 
-                        (deliveryFeeCurrency === 'ILS' ? deliveryFeeValue : 0) +
-                        (commissionCurrency === 'ILS' ? commissionValue : 0) -
-                        (discountCurrency === 'ILS' ? discountValue : 0);
-                    
-                    // Calculate JOD fees
-                    const jodFees = 
-                        (deliveryFeeCurrency === 'JOD' ? deliveryFeeValue : 0) +
-                        (commissionCurrency === 'JOD' ? commissionValue : 0) -
-                        (discountCurrency === 'JOD' ? discountValue : 0);
-                    
-                    // Calculate USD fees
-                    const usdFees = 
-                        (deliveryFeeCurrency === 'USD' ? deliveryFeeValue : 0) +
-                        (commissionCurrency === 'USD' ? commissionValue : 0) -
-                        (discountCurrency === 'USD' ? discountValue : 0);
-                    
-                    // Check if this is a payment order or receive without money receive
-                    const isPaymentOrReceiveWithoutMoney = 
-                        (selectedValue.orderType?.value === "payment" || 
-                        (selectedValue.orderType?.value === "receive" && !form.withMoneyReceive));
-                    
-                    // Calculate ILS net value
-                    let ilsNetValue = 0;
-                    
-                    // Check if COD value is negative
-                    const isIlsCodNegative = codByCurrency.ILS < 0;
-                    
-                    // Direct calculation based on COD and fees, preserving negative values
-                    if (isPaymentOrReceiveWithoutMoney) {
-                        // For payment or receive without money receive, make COD negative if it's not already
-                        const ilsCodValue = isIlsCodNegative ? codByCurrency.ILS : -codByCurrency.ILS;
-                        ilsNetValue = ilsCodValue - ilsFees; // Subtract fees (not add) to preserve sign
-                    } else {
-                        // For normal delivery, simply subtract fees from COD
-                        ilsNetValue = codByCurrency.ILS - ilsFees;
-                        
-                        // Only apply deficit coverage logic if we have a negative value and other currencies
-                        if (ilsNetValue < 0 && !isIlsCodNegative) { // Skip deficit coverage if COD was intentionally negative
-                            const ilsDeficit = Math.abs(ilsNetValue);
-                            const jodCoverage = codByCurrency.JOD * CURRENCY_EXCHANGE_RATES.JOD_TO_ILS;
-                            const usdCoverage = codByCurrency.USD * CURRENCY_EXCHANGE_RATES.USD_TO_ILS;
-                            
-                            // If JOD can fully cover the deficit
-                            if (jodCoverage >= ilsDeficit) {
-                                ilsNetValue = 0; // JOD covers it completely
-                            }
-                            // If USD can fully cover the deficit
-                            else if (usdCoverage >= ilsDeficit) {
-                                ilsNetValue = 0; // USD covers it completely
-                            }
-                            // If JOD and USD together can cover the deficit
-                            else if (jodCoverage + usdCoverage >= ilsDeficit) {
-                                ilsNetValue = 0; // Combined coverage
-                            }
-                            // Otherwise, keep the negative value
-                        }
+            label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
+            type: "input",
+            name: "net_value",
+            value: (() => {
+                // Get COD values (only ILS matters now)
+                let ilsCodTotal = 0;
+                codAmounts.forEach(cod => {
+                    const value = parseFloat(cod.value || 0);
+                    const currency = cod.currency || "ILS";
+                    if (currency === "ILS" && !isNaN(value)) {
+                        ilsCodTotal += value;
                     }
-                    
-                    // Calculate JOD net value
-                    let jodNetValue = 0;
-                    
-                    // Check if COD value is negative
-                    const isJodCodNegative = codByCurrency.JOD < 0;
-                    
-                    // Direct calculation for JOD, preserving negative values
-                    if (isPaymentOrReceiveWithoutMoney) {
-                        // For payment or receive without money receive, make it negative if it's not already
-                        const jodCodValue = isJodCodNegative ? codByCurrency.JOD : -codByCurrency.JOD;
-                        jodNetValue = jodCodValue - jodFees; // Subtract fees (not add) to preserve sign
-                    } else {
-                        // Start with JOD COD minus JOD fees
-                        jodNetValue = codByCurrency.JOD - jodFees;
-                        
-                        // Handle ILS deficit coverage if needed
-                        if (ilsNetValue < 0 && jodNetValue > 0 && !isIlsCodNegative && !isJodCodNegative) {
-                            // Calculate how much of the ILS deficit this JOD can cover
-                            const ilsDeficitToJod = Math.min(
-                                Math.abs(ilsNetValue) / CURRENCY_EXCHANGE_RATES.JOD_TO_ILS,
-                                jodNetValue
-                            );
-                            
-                            // Deduct the coverage amount from JOD net value
-                            jodNetValue -= ilsDeficitToJod;
-                        }
-                    }
-                    
-                    // Calculate USD net value
-                    let usdNetValue = 0;
-                    
-                    // Check if COD value is negative
-                    const isUsdCodNegative = codByCurrency.USD < 0;
-                    
-                    // Direct calculation for USD, preserving negative values
-                    if (isPaymentOrReceiveWithoutMoney) {
-                        // For payment or receive without money receive, make it negative if it's not already
-                        const usdCodValue = isUsdCodNegative ? codByCurrency.USD : -codByCurrency.USD;
-                        usdNetValue = usdCodValue - usdFees; // Subtract fees (not add) to preserve sign
-                    } else {
-                        // Start with USD COD minus USD fees
-                        usdNetValue = codByCurrency.USD - usdFees;
-                        
-                        // Handle remaining ILS deficit after JOD coverage
-                        if (ilsNetValue < 0 && usdNetValue > 0 && !isIlsCodNegative && !isUsdCodNegative) {
-                            // Calculate how much of the ILS deficit this USD can cover
-                            const ilsDeficitToUsd = Math.min(
-                                Math.abs(ilsNetValue) / CURRENCY_EXCHANGE_RATES.USD_TO_ILS,
-                                usdNetValue
-                            );
-                            
-                            // Deduct the coverage amount from USD net value
-                            usdNetValue -= ilsDeficitToUsd;
-                        }
-                    }
-                    
-                    // Format the result with pipe separators
-                    const netValues = [];
-                    
-                    // Always include ILS
-                    netValues.push(`ILS: ${ilsNetValue.toFixed(2)}`);
-                    
-                    // Include JOD if it has a non-zero value
-                    if (codByCurrency.JOD !== 0 || jodFees !== 0) {
-                        netValues.push(`JOD: ${jodNetValue.toFixed(2)}`);
-                    }
-                    
-                    // Include USD if it has a non-zero value
-                    if (codByCurrency.USD !== 0 || usdFees !== 0) {
-                        netValues.push(`USD: ${usdNetValue.toFixed(2)}`);
-                    }
-                    
-                    return netValues.join(' | ');
-                })(),
-                readOnly: true,
-                editable: false,
-                style: { fontWeight: 'bold', color: '#2e7d32', backgroundColor: 'rgba(46, 125, 50, 0.05)' }
-            }
+                });
+
+                // Get delivery fee, commission, and discount (all in ILS only)
+                const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
+                const commissionValue = parseFloat(form.commission || 0);
+                const discountValue = parseFloat(form.discount || 0);
+
+                // Calculate ILS fees
+                const ilsFees = deliveryFeeValue + commissionValue - discountValue;
+
+                // Final net value in ILS
+                const ilsNetValue = ilsCodTotal - ilsFees;
+
+                // Return only ILS result
+                return `ILS: ${ilsNetValue.toFixed(2)}`;
+            })(),
+            readOnly: true,
+            editable: false,
+            style: { fontWeight: "bold", color: "#2e7d32", backgroundColor: "rgba(46, 125, 50, 0.05)" }
+        }
         ].filter(Boolean)
     },!["payment"].includes(selectedValue.orderType?.value) ? {
         label: translations[language].tabs.orders.create.sections.details.title,
@@ -629,7 +537,7 @@ export default function HomeScreen() {
             label: translations[language].tabs.orders.create.sections.details.fields.quantity,
             type: "input",
             name: "number_of_items",
-            value: form.numberOfItems || "",
+            value: form.numberOfItems,
             onChange: (input) => setForm((form) => ({ ...form, numberOfItems: convertToEnglishNumerals(input) }))
         }, {
             label: translations[language].tabs.orders.create.sections.details.fields.weight,
@@ -856,7 +764,7 @@ export default function HomeScreen() {
                 sender_id: user.role === "business" ? user.userId : selectedValue.sender.user_id,
                 business_branch_id: selectedValue.sender.branch_id || user.branch_id,
                 title: form.orderItems,
-                quantity: form.numberOfItems,
+                quantity: form.numberOfItems || 1,
                 description: form.description,
                 cod_value: totalCodValue,
                 cod_values: codValues,
@@ -1198,7 +1106,7 @@ export default function HomeScreen() {
                 codValue: orderData.cod_values?.[0]?.value?.toString() || "0",
                 comission: orderData.commission?.[0]?.value || 0,
                 orderItems: orderData.order_items || "",
-                numberOfItems: orderData.number_of_items?.toString() || "",
+                numberOfItems: orderData.number_of_items?.toString() || "1",
                 orderWeight: orderData.order_weight?.toString() || 0,
                 receivedItems: orderData.received_items || "",
                 receivedQuantity: orderData.received_quantity || 0,
@@ -1208,7 +1116,7 @@ export default function HomeScreen() {
                 originalFromBusinessBalance: orderData.from_business_balance ? true : false,
                 balanceDeduction: orderData.balance_deduction || null,
                 originalBalanceDeduction: orderData.balance_deduction || null,
-                qrId: orderData.qr_id || null,
+                qrId: orderData.qr_id,
                 itemsType: orderData.items_type // Store original items type for comparison
             });
             
@@ -1224,30 +1132,155 @@ export default function HomeScreen() {
         }
     };
 
-    const fetchSenders = async () => {
+    const fetchSenders = async (page = 1, searchTerm = '', loadMore = false) => {
+
+        // Enhanced duplicate call prevention
+        if (senders.loading || (loadMore && loadingMore)) {
+            return;
+        }
+
+        // Prevent duplicate calls for the same page and search term
+        if (!loadMore && page === senders.currentPage && searchTerm === senders.searchTerm && senders.data?.length > 0) {
+            return;
+        }
+
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users?language_code=${language}&role_id=2&active_users=1&np=${prickerSearchValue}`, {
+            // Set loading state
+            if (!loadMore) {
+                setSenders(prev => ({
+                    ...prev,
+                    loading: true,
+                    error: null
+                }));
+            } else {
+                setLoadingMore(true);
+            }
+
+            // Build query parameters
+            const params = new URLSearchParams({
+                language_code: language,
+                role_id: '2', // Business users
+                active_users: '1',
+                active_status: '1',
+                page: page.toString(),
+                limit: '20',
+            });
+            
+            if (searchTerm && searchTerm.trim()) {
+                params.append('np', searchTerm.trim());
+            }
+
+            const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/users?${params}`;
+
+            const res = await fetch(apiUrl, {
                 method: "GET",
                 credentials: "include",
                 headers: {
                     'Accept': 'application/json',
                     "Content-Type": "application/json",
+                    'Authorization': `Bearer ${user.token}`,
                 }
             });
-            const data = await res.json();
-            // Make sure we're setting the data in the expected format
-            setSenders({
-                data: data.data || [],
-                metadata: data.metadata || {}
+
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const responseText = await res.text();
+            
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (jsonError) {
+                throw new Error(`Invalid JSON response from server. Expected JSON but got: ${responseText.substring(0, 100)}...`);
+            }
+
+            // Determine pagination info
+            const hasNextPage = data.pagination ? data.pagination.has_next_page : 
+                               (data.metadata ? data.metadata.page < data.metadata.total_pages : false);
+            const currentPageFromResponse = data.pagination ? data.pagination.current_page : 
+                                          (data.metadata ? data.metadata.page : page);
+
+            // Update senders state
+            setSenders(prev => {
+                const newData = loadMore ? [...(prev.data || []), ...(data.data || [])] : (data.data || []);
+
+                return {
+                    data: newData,
+                    metadata: data.metadata || {},
+                    loading: false,
+                    error: null,
+                    hasMore: hasNextPage,
+                    currentPage: currentPageFromResponse,
+                    searchTerm: searchTerm || ''
+                };
             });
+
         } catch (err) {
-            // Error handling
+            console.error("❌ Error fetching senders:", err);
+            setSenders(prev => ({
+                ...prev,
+                loading: false,
+                error: err.message || 'Failed to fetch senders'
+            }));
+        } finally {
+            if (loadMore) {
+                setLoadingMore(false);
+            }
         }
     }
 
-    const fetchCities = async () => {
+    // Enhanced fetchCities with pagination and search
+    const fetchCities = async (page = 1, searchTerm = '', loadMore = false) => {
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/addresses/cities?language_code=${language}`, {
+            // Create cache key
+            const cacheKey = `${searchTerm || 'all'}_page_${page}`;
+            
+            // Check cache first
+            if (citiesCache.has(cacheKey)) {
+                const cachedData = citiesCache.get(cacheKey);
+                setCitiesState(prev => ({
+                    ...prev,
+                    data: loadMore ? [...prev.data, ...cachedData.data] : cachedData.data,
+                    loading: false,
+                    searchLoading: false,
+                    hasMore: cachedData.hasMore,
+                    page: cachedData.page,
+                    totalRecords: cachedData.totalRecords,
+                    error: null
+                }));
+                
+                // Also update legacy cities state for backward compatibility
+                if (!loadMore) {
+                    setCities(cachedData.data);
+                } else {
+                    setCities(prev => [...prev, ...cachedData.data]);
+                }
+                return;
+            }
+            
+            // Set loading state
+            setCitiesState(prev => ({
+                ...prev,
+                loading: !loadMore,
+                searchLoading: !!searchTerm,
+                error: null
+            }));
+
+            // Build query parameters
+            const params = new URLSearchParams({
+                language_code: language,
+                page: page.toString(),
+                limit: '20',
+                all: 'false' // Use pagination instead of loading all
+            });
+
+            // Add search parameter if provided
+            if (searchTerm.trim()) {
+                params.append('name', searchTerm.trim());
+            }
+
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/addresses/cities?${params}`, {
                 method: "GET",
                 credentials: "include",
                 headers: {
@@ -1255,13 +1288,95 @@ export default function HomeScreen() {
                     "Content-Type": "application/json"
                 }
             });
-            const data = await res.json();
-            setCities(data.data);
-        } catch (err) {
-            // Handle error
-        }
-    }
 
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+
+            const data = await res.json();
+            
+            // Cache the fetched data
+            const cacheData = {
+                data: data.data,
+                hasMore: data.pagination ? data.pagination.has_next_page : false,
+                page: data.pagination ? data.pagination.current_page : 1,
+                totalRecords: data.metadata ? data.metadata.total_records : data.data.length
+            };
+            
+            setCitiesCache(prev => {
+                const newCache = new Map(prev);
+                newCache.set(cacheKey, cacheData);
+                
+                // Limit cache size to prevent memory issues (keep last 50 entries)
+                if (newCache.size > 50) {
+                    const firstKey = newCache.keys().next().value;
+                    newCache.delete(firstKey);
+                }
+                
+                return newCache;
+            });
+            
+            // Update cities state with pagination support
+            setCitiesState(prev => ({
+                ...prev,
+                data: loadMore ? [...prev.data, ...data.data] : data.data,
+                loading: false,
+                searchLoading: false,
+                hasMore: data.pagination ? data.pagination.has_next_page : false,
+                page: data.pagination ? data.pagination.current_page : 1,
+                totalRecords: data.metadata ? data.metadata.total_records : data.data.length,
+                error: null
+            }));
+
+            // Also update the legacy cities state for backward compatibility
+            if (!loadMore) {
+                setCities(data.data);
+            } else {
+                setCities(prev => [...prev, ...data.data]);
+            }
+
+        } catch (err) {
+            console.error('Error fetching cities:', err);
+            setCitiesState(prev => ({
+                ...prev,
+                loading: false,
+                searchLoading: false,
+                error: err.message || 'Failed to load cities'
+            }));
+        }
+    };
+
+    // Function to load more cities (for infinite scroll)
+    const loadMoreCities = async () => {
+        if (citiesState.loading || !citiesState.hasMore) return;
+        
+        await fetchCities(citiesState.page + 1, debouncedSearchTerm, true);
+    };
+
+    // Function to search cities
+    const searchCities = (searchTerm) => {
+        setCitiesState(prev => ({
+            ...prev,
+            searchTerm,
+            page: 1,
+            data: [],
+            hasMore: true
+        }));
+    };
+
+    // Function to reset cities search
+    const resetCitiesSearch = () => {
+        setCitiesState(prev => ({
+            ...prev,
+            searchTerm: '',
+            page: 1,
+            data: [],
+            hasMore: true
+        }));
+        setDebouncedSearchTerm('');
+        // Reload initial cities
+        fetchCities(1, '', false);
+    };
 
     const fetchDeliveryFee = async () => {
         
@@ -1306,28 +1421,6 @@ export default function HomeScreen() {
             console.error("Error fetching delivery fee:", err);
         }
     }
-
-    const loadMoreData = async () => {
-        if (!loadingMore && senders?.data && senders?.data.length > 0) {
-            // Check if there's more data to load
-            if (senders.metadata && senders.data.length >= senders?.metadata.total_records) {
-               
-                return;
-            }
-
-            setLoadingMore(true);
-            const nextPage = page + 1;
-            setPage(nextPage);
-            try {
-                await fetchSenders(nextPage, true);
-            } catch (error) {
-               
-             }
-            finally {
-                    setLoadingMore(false);
-                }
-            }
-        };
     
     // Update the useEffect hooks for delivery fee
     useEffect(() => {
@@ -1336,9 +1429,26 @@ export default function HomeScreen() {
         }
     }, [orderId]);
     
+    // Initial cities fetch
     useEffect(() => {
-        fetchCities();
-    }, []);
+        fetchCities(1, '', false);
+    }, [language]);
+
+    // Initial senders fetch
+    useEffect(() => {
+        if (user.role !== "business") {
+            fetchSenders(1, '', false);
+        }
+    }, [language, user.role]);
+
+    // Effect to handle search when debounced search term changes
+    useEffect(() => {
+        // Reset and fetch with search term
+        fetchCities(1, debouncedSearchTerm, false);
+    }, [debouncedSearchTerm]);
+
+    // Direct search approach - no complex useEffect needed
+    // Search is triggered directly from setPickerSearchValue
     
     // This effect handles delivery fee updates when sender or city changes
     useEffect(() => {
@@ -1416,6 +1526,72 @@ export default function HomeScreen() {
         };
     }, []);
     
+    // Add keyboard event listeners to handle keyboard appearance
+    useEffect(() => {
+        // Track currently focused input position
+        let currentlyFocusedInput = null;
+        
+        // Create listeners for keyboard show/hide events
+        const keyboardDidShowListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+            (e) => {
+                // When keyboard appears, scroll to the active input
+                if (scrollViewRef.current && currentlyFocusedInput) {
+                    // Get keyboard height
+                    const keyboardHeight = e.endCoordinates.height;
+                    
+                    // Add a slight delay to ensure the input is properly focused
+                    setTimeout(() => {
+                        // Calculate position to scroll to (with extra padding)
+                        const scrollToPosition = currentlyFocusedInput - (keyboardHeight / 2);
+                        
+                        // Scroll to the position
+                        scrollViewRef.current.scrollTo({ 
+                            y: Math.max(0, scrollToPosition), 
+                            animated: true 
+                        });
+                    }, 150);
+                }
+            }
+        );
+
+        const keyboardDidHideListener = Keyboard.addListener(
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+            () => {
+                // Reset the focused input position
+                currentlyFocusedInput = null;
+            }
+        );
+        
+        // Listen for text input focus events
+        const handleTextInputFocus = (e) => {
+            if (e.target) {
+                // Measure the position of the focused input
+                e.target.measure((x, y, width, height, pageX, pageY) => {
+                    currentlyFocusedInput = pageY;
+                });
+            }
+        };
+        
+        // Set up a listener for text input focus events
+        if (Platform.OS === 'ios') {
+            // For iOS, we can use the notification center
+            const textInputFocusListener = Keyboard.addListener('keyboardWillShow', handleTextInputFocus);
+            
+            return () => {
+                keyboardDidShowListener.remove();
+                keyboardDidHideListener.remove();
+                textInputFocusListener.remove();
+            };
+        } else {
+            // For Android, we just clean up the keyboard listeners
+            return () => {
+                keyboardDidShowListener.remove();
+                keyboardDidHideListener.remove();
+            };
+        }
+    }, []);
+    
     useFocusEffect(
         useCallback(() => {
             // Check if we have a scanned reference ID when the screen is focused
@@ -1475,25 +1651,7 @@ export default function HomeScreen() {
         );
     };
 
-    // Add this useEffect to handle auto-setting from_business_balance for business users
-    useEffect(() => {
-        if (user.role === "business") {
-            if (selectedValue.orderType?.value === "payment" || 
-                (selectedValue.orderType?.value === "receive" && !form.withMoneyReceive)) {
-                setFromBusinessBalance(true);
-                setForm(prevForm => ({
-                    ...prevForm,
-                    fromBusinessBalance: true
-                }));
-            }
-        }
-    }, [selectedValue.orderType, form.withMoneyReceive]);
-
-    useEffect(() => {
-        if (user.role !== "business") {
-            fetchSenders();
-        }
-    }, [prickerSearchValue, user.role, language]);
+    // Removed duplicate useEffect - senders fetching is now handled by the consolidated useEffect above
     
     // Initialize sender for business users
     useEffect(() => {
@@ -1731,7 +1889,12 @@ export default function HomeScreen() {
                 translucent={true}
             />
             
-            <View style={[styles.pageContainer, { backgroundColor: colors.background }]}>
+            <KeyboardAvoidingView 
+                style={[styles.pageContainer, { backgroundColor: colors.background }]}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+                enabled
+            >
                 <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
                     <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
                     <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
@@ -1828,41 +1991,41 @@ export default function HomeScreen() {
                             key={index}
                             section={section}
                             setSelectedValue={setSelectedValue}
-                            loadMoreData={loadMoreData}
-                            loadingMore={loadingMore}
                             prickerSearchValue={prickerSearchValue}
                             setPickerSearchValue={setPickerSearchValue}
                             fieldErrors={fieldErrors}
                             setFieldErrors={setFieldErrors}
                         />
                     ))}
+                    
+                    {/* Submit Button moved inside ScrollView */}
+                    <View style={styles.submitButtonContainer}>
+                        <TouchableOpacity 
+                            style={[styles.submitButton, {
+                                marginHorizontal: 40,
+                                marginVertical: Platform.OS === 'ios' ? 20 : 10,
+                            }]}
+                            onPress={() => orderId 
+                                ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
+                                : handleCreateOrder('/api/orders', "POST")
+                            }
+                            disabled={formSpinner.status}
+                            activeOpacity={0.8}
+                        >
+                            {formSpinner.status ? (
+                                <ActivityIndicator size="small" color="#FFFFFF" />
+                            ) : (
+                                <Text style={[styles.submitButtonText]}>
+                                    {isDuplicate === 'true' 
+                                        ? (translations[language].tabs.orders.order.resend || "Re send")
+                                        : translations[language].tabs.orders.create.submit
+                                    }
+                                </Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
                     </View>
                 </ScrollView>
-                <SafeAreaView edges={['']}>
-                    <TouchableOpacity 
-                        style={[styles.submitButton, {
-                            marginHorizontal: 40,
-                            marginVertical: Platform.OS === 'ios' ? 20 : 0,
-                        }]}
-                        onPress={() => orderId 
-                            ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
-                            : handleCreateOrder('/api/orders', "POST")
-                        }
-                        disabled={formSpinner.status}
-                        activeOpacity={0.8}
-                    >
-                        {formSpinner.status ? (
-                            <ActivityIndicator size="small" color="#FFFFFF" />
-                        ) : (
-                            <Text style={[styles.submitButtonText]}>
-                                {isDuplicate === 'true' 
-                                    ? (translations[language].tabs.orders.order.resend || "Re send")
-                                    : translations[language].tabs.orders.create.submit
-                                }
-                            </Text>
-                        )}
-                    </TouchableOpacity>
-                </SafeAreaView>
             
                 {/* Loading Spinner */}
                 {formSpinner.status && (
@@ -2071,7 +2234,7 @@ export default function HomeScreen() {
                         </View>
                     </Modal>
                 )}
-            </View>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -2079,6 +2242,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+    },
+    submitButtonContainer: {
+        width: '100%',
+        paddingBottom: Platform.OS === 'ios' ? 10 : 0,
+        backgroundColor: 'transparent',
     },
     testButtonsContainer: {
         flexDirection: 'row',
@@ -2251,6 +2419,7 @@ const styles = StyleSheet.create({
     },
     contentContainer: {
         flexGrow: 1,
+        paddingBottom: 40,
     },
     main: {
         padding: 12,

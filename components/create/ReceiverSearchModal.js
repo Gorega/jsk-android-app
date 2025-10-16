@@ -168,7 +168,7 @@ export default function ReceiverSearchModal({
                             value={searchQuery}
                             onChangeText={handlePhoneInput}
                             keyboardType="phone-pad"
-                            maxLength={10}
+                            maxLength={20}
                             autoFocus
                             placeholderTextColor={isDark ? colors.textSecondary : "#94A3B8"}
                         />

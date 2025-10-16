@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert, ActivityIndicator, Share } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -6,6 +6,7 @@ import { useAuth } from "../../RootLayout";
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import UserBox from "../orders/userBox/UserBox";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -14,6 +15,9 @@ import { useState } from 'react';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 import React from 'react';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import tayarLogo from '../../assets/images/tayar_logo_dark.png';
 
 function Collection({ type, collection }) {
     const { language } = useLanguage();
@@ -24,6 +28,7 @@ function Collection({ type, collection }) {
     const [showPhoneOptions, setShowPhoneOptions] = useState(false);
     const [currentPhone, setCurrentPhone] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
     const isRTL = language === 'ar' || language === 'he';
 
     // Handle phone call
@@ -128,6 +133,388 @@ function Collection({ type, collection }) {
         return '-';
     };
 
+    // Helper function to generate HTML template for PDF
+    const generateCollectionHTML = (collection, ordersData, type, language) => {
+        const isRTL = language === 'ar' || language === 'he';
+        const direction = isRTL ? 'rtl' : 'ltr';
+        const textAlign = isRTL ? 'right' : 'left';
+        
+        // Ensure ordersData is an array
+        const safeOrdersData = Array.isArray(ordersData) ? ordersData : [];
+        
+        // Calculate totals
+        const totalValue = type === "sent" 
+            ? collection.total_net_value 
+            : type === "business_money" 
+                ? formatFinancials('final_amount') 
+                : formatFinancials('total_cod_value');
+
+        return `
+        <!DOCTYPE html>
+        <html dir="${direction}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Collection #${collection.collection_id}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+                
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: ${isRTL ? "'Noto Sans Arabic', Arial, sans-serif" : "'Roboto', Arial, sans-serif"};
+                    direction: ${direction};
+                    text-align: ${textAlign};
+                    line-height: 1.6;
+                    color: #333;
+                    padding: 20px;
+                    background: white;
+                }
+                
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 3px solid #4361EE;
+                    padding-bottom: 20px;
+                }
+                
+                .header h1 {
+                    color: #4361EE;
+                    font-size: 28px;
+                    font-weight: 700;
+                    margin-bottom: 10px;
+                }
+                
+                .header .meta {
+                    color: #64748B;
+                    font-size: 14px;
+                }
+                
+                .section {
+                    margin-bottom: 25px;
+                    background: #f8fafc;
+                    padding: 15px;
+                    border-radius: 8px;
+                    border-left: 4px solid #4361EE;
+                }
+                
+                .section-title {
+                    color: #4361EE;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 15px;
+                }
+                
+                .info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .info-label {
+                    font-weight: 500;
+                    color: #64748B;
+                    min-width: 120px;
+                }
+                
+                .info-value {
+                    font-weight: 600;
+                    color: #1f2937;
+                    text-align: ${isRTL ? 'left' : 'right'};
+                }
+                
+                .status-badge {
+                    display: inline-block;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    background: #4361EE;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+                
+                .orders-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 15px;
+                    background: white;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .orders-table th {
+                    background: #4361EE;
+                    color: white;
+                    padding: 8px 4px;
+                    font-weight: 600;
+                    text-align: ${textAlign};
+                    font-size: 11px;
+                    word-wrap: break-word;
+                    max-width: 100px;
+                }
+                
+                .orders-table td {
+                    padding: 6px 4px;
+                    border-bottom: 1px solid #e2e8f0;
+                    text-align: ${textAlign};
+                    font-size: 10px;
+                    word-wrap: break-word;
+                    max-width: 100px;
+                }
+                
+                .orders-table tr:nth-child(even) {
+                    background: #f8fafc;
+                }
+                
+                .orders-table tr:hover {
+                    background: #e2e8f0;
+                }
+                
+                .total-row {
+                    background: #4361EE !important;
+                    color: white;
+                    font-weight: 700;
+                }
+                
+                .footer {
+                    margin-top: 40px;
+                    text-align: center;
+                    color: #64748B;
+                    font-size: 12px;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 20px;
+                }
+                
+                @media print {
+                    body { padding: 0; }
+                    .section { break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="flex: 1;">
+                       <h1 style="margin: 0; color: #4361EE; font-size:15px">JSK للخدمات اللوجستية والبريد السريع</h1>
+                        <h1 style="margin: 0; color: #4361EE;">كشف #${collection.collection_id}</h1>
+                    </div>
+                    <div class="meta" style="text-align: right;">
+                        <br><br>
+                        تاريخ الإنشاء: ${new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">تفاصيل المجموعة</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">عدد الطلبات:</span>
+                        <span class="info-value">${type === "sent" ? collection.collections_count : collection.order_count}</span>
+                    </div>
+                    ${type !== "returned" ? `
+                    <div class="info-item">
+                        <span class="info-label">${type === "sent" 
+                            ? "المبلغ المطلوب توصيله" 
+                            : type === "business_money" 
+                                ? "المبلغ المطلوب تحصيله" 
+                                : "المبلغ المطلوب تحصيله"}:</span>
+                        <span class="info-value">${totalValue}</span>
+                    </div>
+                    ` : ''}
+                    ${type === "driver_money" ? `
+                    <div class="info-item">
+                        <span class="info-label">إجمالي الخصومات:</span>
+                        <span class="info-value">${formatFinancials('total_deductions')}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">المبلغ النهائي:</span>
+                        <span class="info-value">${formatFinancials('final_amount')}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            ${collection.sub_orders && collection.sub_orders.length > 0 ? `
+            <div class="section">
+                <div class="section-title">تفاصيل التاجر</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">اسم التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">هاتف التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_phone}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">موقع التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_city} | ${collection.sub_orders[0].business_address}</span>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            ${(type === "returned" || type === "dispatched") ? `
+            <div class="section">
+                <div class="section-title">تفاصيل الفرع</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">الفرع الحالي:</span>
+                        <span class="info-value">${collection.current_branch_name}</span>
+                    </div>
+                    ${type === "dispatched" ? `
+                    <div class="info-item">
+                        <span class="info-label">إلى الفرع:</span>
+                        <span class="info-value">${collection.to_branch_name}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ` : ''}
+
+            ${safeOrdersData.length > 0 ? `
+            <div class="section">
+                <div class="section-title">قائمة الطلبات</div>
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>الباركود</th>
+                            <th>رقم الطلب</th>
+                            <th>اسم المستلم</th>
+                            <th>هاتف المستلم</th>
+                            <th>عنوان المستلم</th>
+                            <th>ملاحظة</th>
+                            <th>قيمة الدفع عند الاستلام</th>
+                            <th>القيمة الصافية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${safeOrdersData.map(order => `
+                        <tr>
+                            <td style="text-align: center; padding: 8px;">
+                                ${order.barcode ? `<img src="data:image/png;base64,${order.barcode}" alt="Barcode" style="max-width: 80px; height: auto;" />` : 'N/A'}
+                            </td>
+                            <td>${order.order_id || 'N/A'}</td>
+                            <td>${order.receiver_name || 'N/A'}</td>
+                            <td>${order.receiver_mobile || order.receiver_phone || 'N/A'}</td>
+                            <td>${order.receiver_address || 'N/A'}</td>
+                            <td>${order.note || 'لا توجد ملاحظات'}</td>
+                            <td>${order.total_cod_value || 'N/A'}</td>
+                            <td>${order.total_net_value || 'N/A'}</td>
+                        </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td colspan="7"><strong>الإجمالي:</strong></td>
+                            <td><strong>${totalValue}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            ` : ''}
+
+            <div class="footer">
+                <p>تم الإنشاء في: ${new Date().toLocaleString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}</p>
+                <p>خدمة توصيل JSK</p>
+            </div>
+        </body>
+        </html>
+        `;
+    };
+ 
+    // Generate PDF using expo-print
+    const generatePDF = async () => {
+        try {
+            setIsPdfLoading(true);
+            
+            // Fetch collection details with orders if needed
+            let ordersData = [];
+            
+            if (collection.order_ids) {
+                try {
+                    const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/orders?order_ids=${collection.order_ids}`;
+                    
+                    // Fetch real order details from API with proper authentication
+                    const response = await fetch(apiUrl, {
+                        method: "GET",
+                        credentials: "include",
+                        headers: {
+                            'Accept': 'application/json',
+                            "Content-Type": "application/json",
+                        }
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok && result.data && Array.isArray(result.data)) {
+                        ordersData = result.data;
+                    } else {
+                        ordersData = [];
+                    }
+                } catch (error) {
+                    console.error('PDF Generation: Fetch error:', error);
+                    ordersData = [];
+                }
+            } else {
+                console.log('PDF Generation: No order_ids found in collection');
+            }
+            
+            // Generate HTML content
+                const htmlContent = generateCollectionHTML(collection, ordersData, type, language);
+            
+            // Generate PDF from HTML
+            const { uri } = await Print.printToFileAsync({
+                html: htmlContent,
+                base64: false,
+                width: 612,
+                height: 792,
+                margins: {
+                    left: 20,
+                    top: 20,
+                    right: 20,
+                    bottom: 20,
+                },
+                fileName: `Tayar_Collection_${collection.collection_id}_${new Date().toISOString().split('T')[0]}.pdf`
+            });
+            
+            // Share the PDF file
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri, {
+                    mimeType: 'application/pdf',
+                    dialogTitle: `Collection #${collection.collection_id} PDF`,
+                    UTI: 'com.adobe.pdf'
+                });
+            } else {
+                Alert.alert(
+                    translations[language]?.collections?.collection?.sharingNotAvailable || "Sharing Not Available",
+                    translations[language]?.collections?.collection?.sharingNotAvailableMessage || "Sharing is not available on this device"
+                );
+            }
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            Alert.alert(
+                translations[language]?.collections?.collection?.pdfError || "PDF Generation Error",
+                translations[language]?.collections?.collection?.pdfErrorMessage || "There was an error generating the PDF"
+            );
+        } finally {
+            setIsPdfLoading(false);
+        }
+    };
+    
+  
     return (
         <View style={[
             styles.collectionCard,
@@ -153,14 +540,6 @@ function Collection({ type, collection }) {
                     </View>
                 </View>
                 
-                {type === "sent" && <View style={[
-                    styles.statusBadge, 
-                    { 
-                        backgroundColor: getStatusColor(type === "sent" ? collection.status : collection.status_key)
-                    }
-                ]}>
-                    <Text style={styles.statusText}>{type === "sent" ? collection.status_label : collection.status}</Text>
-                </View>}
             </View>
             
             <View style={styles.contentContainer}>
@@ -209,45 +588,6 @@ function Collection({ type, collection }) {
                     </View>
                 </View>
                 
-                {/* Delivery Type section */}
-                {type === "sent" && (
-                    <View style={[
-                        styles.infoSection,
-                        { backgroundColor: colors.surface }
-                    ]}>
-                        <View style={[styles.sectionRow]}>
-                            <View style={[
-                                styles.iconWrapper, 
-                                { backgroundColor: '#8B5CF6' }
-                            ]}>
-                                <MaterialCommunityIcons name="truck-delivery" size={20} color="#ffffff" />
-                            </View>
-                            <View style={[
-                                styles.sectionContent,
-                                {
-                                    ...Platform.select({
-                                        ios: {
-                                            alignItems: isRTL ? "flex-start" : ""
-                                        }
-                                    }),
-                                }
-                            ]}>
-                                <Text style={[
-                                    styles.sectionTitle,
-                                    { color: colors.textSecondary }
-                                ]}>
-                                    {translations[language]?.collections?.collection?.deliveryType || "Delivery Type"}
-                                </Text>
-                                <Text style={[
-                                    styles.sectionValue,
-                                    { color: colors.text }
-                                ]}>
-                                    {collection.delivery_type_label}
-                                </Text>
-                            </View>
-                        </View>
-                    </View>   
-                )}
                 
                 {/* Money section */}
                 {type !== "returned" && (
@@ -381,7 +721,7 @@ function Collection({ type, collection }) {
                 )}
                 
                 {/* Order IDs */}
-                <View style={[
+                {/* <View style={[
                     styles.infoSection,
                     { backgroundColor: colors.surface }
                 ]}>
@@ -416,7 +756,7 @@ function Collection({ type, collection }) {
                             </Text>
                         </View>
                     </View>
-                </View>
+                </View> */}
 
                 {/* Business Information */}
                 {collection.sub_orders && collection.sub_orders.length > 0 && (
@@ -663,6 +1003,36 @@ function Collection({ type, collection }) {
                         </Text>
                     </TouchableOpacity>
                 )}
+                
+                {/* PDF Export Button */}
+                <TouchableOpacity 
+                    style={[
+                        styles.actionButton,
+                        { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)' }
+                    ]}
+                    onPress={generatePDF}
+                    activeOpacity={0.7}
+                    disabled={isPdfLoading}
+                >
+                    {isPdfLoading ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                        <>
+                            <View style={[
+                                styles.actionIconContainer,
+                                { backgroundColor: '#EF4444' }
+                            ]}>
+                                <FontAwesome5 name="file-pdf" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[
+                                styles.actionText,
+                                { color: '#EF4444' }
+                            ]}>
+                                {translations[language]?.collections?.collection?.exportPdf || "Export PDF"}
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
                 
 
                 

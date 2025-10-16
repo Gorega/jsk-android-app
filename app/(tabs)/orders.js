@@ -1,6 +1,8 @@
-import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter } from 'react-native';
+import { View, StyleSheet, RefreshControl, StatusBar, DeviceEventEmitter, ActivityIndicator, Text, FlatList, TouchableOpacity } from 'react-native';
 import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
 import { translations } from '../../utils/languageContext';
@@ -34,6 +36,13 @@ export default function Orders() {
     const abortControllerRef = useRef(null);
     const pendingFetchRef = useRef(null);
     const isMountedRef = useRef(true);
+    
+    // City grouping state
+    const [cityGroups, setCityGroups] = useState([]);
+    const [cityOrdersMap, setCityOrdersMap] = useState({});
+    const [loadingCityOrdersMap, setLoadingCityOrdersMap] = useState({});
+    const [cityGroupsLoading, setCityGroupsLoading] = useState(false);
+    const [expandedCities, setExpandedCities] = useState({});
 
     // Extract URL parameters when component mounts
     useEffect(() => {
@@ -122,13 +131,22 @@ export default function Orders() {
             setActiveSearchBy("");
             setActiveDate("");
             setSelectedDate("");
-            // Fetch all orders and explicitly ignore any orderIds from params
-            await fetchData(1, false, { ignoreOrderIds: true });
+            
+            // Refresh based on current view mode
+            if (activeSearchBy?.action === "group_by_city") {
+                await fetchCityGroups();
+            } else {
+                // Fetch all orders and explicitly ignore any orderIds from params
+                await fetchData(1, false, { ignoreOrderIds: true });
+            }
         } catch (error) {
+            console.error("Refresh error:", error);
         } finally {
             setRefreshing(false);
         }
-    }, [language, orderIds, router, fetchData]);
+    }, [fetchData, fetchCityGroups, activeSearchBy]);
+    
+    // No longer needed - removed toggleCityGrouping and handleCitySelect functions
 
     // Apply multi_id param if provided (for barcode scanning)
     useEffect(() => {
@@ -266,6 +284,10 @@ export default function Orders() {
     }, {
         name: translations[language].tabs.orders.filters.driverName,
         action: "driver"
+    }, {
+        name: translations[language]?.tabs?.orders?.filters?.groupByCity || "Group By City",
+        action: "group_by_city",
+        isSpecial: true
     }], [language, translations]);
 
     const searchByDateGroup = useMemo(() => [{
@@ -308,6 +330,173 @@ export default function Orders() {
             throw err;
         }
     };
+    
+    // Use ref to track if we're already fetching city groups
+    const isFetchingCityGroupsRef = useRef(false);
+    
+    // Fetch city groups
+    const fetchCityGroups = useCallback(async () => {
+        // Prevent multiple simultaneous calls
+        if (cityGroupsLoading || isFetchingCityGroupsRef.current) {
+            return;
+        }
+        
+        // Set loading state and lock
+        setCityGroupsLoading(true);
+        isFetchingCityGroupsRef.current = true;
+        
+        try {
+            // Cancel any ongoing fetch
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            
+            // Create a new abort controller for this request
+            abortControllerRef.current = new AbortController();
+            
+            const queryParams = new URLSearchParams();
+            
+            // Explicitly set group_by parameter for receiver_city
+            queryParams.append('group_by', 'receiver_city');
+            
+            // Add language code
+            queryParams.append('language_code', language);
+            
+            // Add any active filters
+            if (activeFilter) queryParams.append('status_key', activeFilter);
+            if (activeDate) queryParams.append("date_range", activeDate.action);
+            if (activeDate && activeDate.action === "custom") {
+                queryParams.append("start_date", selectedDate);
+                queryParams.append("end_date", selectedDate);
+            }
+                        
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/json",
+                    },
+                    signal: abortControllerRef.current.signal
+                }
+            );
+            
+            // Check if response is ok before trying to parse JSON
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            // Log the full response for debugging
+            const responseText = await response.text();
+            
+            let result;
+            try {
+                result = JSON.parse(responseText);
+                
+                // Check if the data is in the expected format
+                if (result && result.data && Array.isArray(result.data)) {
+                    setCityGroups(result.data);
+                } else if (result && result.data) {
+                    // If data exists but is not an array, try to handle it anyway
+                    const dataArray = Array.isArray(result.data) ? result.data : [result.data];
+                    setCityGroups(dataArray);
+                } else {
+                    setCityGroups([]);
+                }
+            } catch (parseError) {
+                setCityGroups([]);
+            }
+        } catch (error) {
+            if (error.name !== 'AbortError') {
+                setCityGroups([]);
+            }
+        } finally {
+            setCityGroupsLoading(false);
+            isFetchingCityGroupsRef.current = false;
+        }
+    }, [
+        language, 
+        activeFilter, 
+        activeDate, 
+        selectedDate
+    ]);
+    
+    // Fetch orders for a specific city
+    const fetchCityOrders = useCallback(async (cityGroup) => {
+        if (!cityGroup || !cityGroup.order_ids || cityGroup.order_ids.length === 0) {
+            console.error('Invalid city group or missing order IDs:', cityGroup);
+            return;
+        }
+        
+        const cityKey = cityGroup.group_value;
+        if (!cityKey) {
+            console.error('Missing group_value in city group:', cityGroup);
+            return;
+        }
+        
+        // Set loading state for this city
+        setLoadingCityOrdersMap(prev => ({
+            ...prev,
+            [cityKey]: true
+        }));
+        
+        try {
+            // Create query params with order_id list
+            // Limit to 50 orders at a time to prevent URL length issues
+            const orderIds = cityGroup.order_ids.slice(0, 50);
+            
+            const queryParams = new URLSearchParams();
+            queryParams.append('order_id', orderIds.join(','));
+            queryParams.append('language_code', language);
+                        
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
+                {
+                    method: "GET",
+                    credentials: "include",
+                    headers: {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/json",
+                    }
+                }
+            );
+            
+            // Check if response is ok before trying to parse JSON
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result && result.data) {
+                setCityOrdersMap(prev => ({
+                    ...prev,
+                    [cityKey]: result.data
+                }));
+            } else {
+                console.error('Invalid orders data format for city:', cityKey, result);
+                // Set empty array for this city to prevent repeated fetch attempts
+                setCityOrdersMap(prev => ({
+                    ...prev,
+                    [cityKey]: []
+                }));
+            }
+        } catch (error) {
+            console.error('Error fetching city orders:', error);
+            // Set empty array for this city to prevent repeated fetch attempts
+            setCityOrdersMap(prev => ({
+                ...prev,
+                [cityKey]: []
+            }));
+        } finally {
+            setLoadingCityOrdersMap(prev => ({
+                ...prev,
+                [cityKey]: false
+            }));
+        }
+    }, [language]);
 
 
     const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false, options = {}) => {
@@ -544,10 +733,60 @@ export default function Orders() {
         };
     }, [socket, fetchData, handleOrderStatusUpdate, activeFilter, data]);
 
+    // Main data fetching effect
+    // Create a ref to track previous filter values
+    const prevFiltersRef = useRef({
+        searchValue: '',
+        activeFilter: '',
+        activeDate: '',
+        selectedDate: '',
+        activeSearchBy: null,
+        orderIds: []
+    });
+    
     useEffect(() => {
+        // Skip unnecessary fetches by comparing with previous values
+        const shouldFetch = 
+            prevFiltersRef.current.searchValue !== searchValue ||
+            prevFiltersRef.current.activeFilter !== activeFilter ||
+            prevFiltersRef.current.activeDate !== (activeDate?.action || '') ||
+            prevFiltersRef.current.orderIds !== orderIds ||
+            prevFiltersRef.current.language !== language ||
+            prevFiltersRef.current.activeSearchBy !== (activeSearchBy?.action || '');
+        
+        if (!shouldFetch) {
+            return;
+        }
+        
         setPage(1);
+        
+        if (activeSearchBy?.action === "group_by_city") {
+            // Only fetch if not already loading
+            if (!isFetchingCityGroupsRef.current) {
+                fetchCityGroups();
+            }
+        } else {
+            fetchData(1, false);
+        }
+        
+        // Update previous values
+        prevFiltersRef.current = {
+            searchValue,
+            activeFilter,
+            activeDate: activeDate?.action || '',
+            selectedDate,
+            activeSearchBy: activeSearchBy?.action || '',
+            orderIds,
+            language
+        };
+    }, [searchValue, activeFilter, activeDate, orderIds, language, fetchData, activeSearchBy, fetchCityGroups]);
+    
+    // Initial load effect - only runs once on component mount
+    useEffect(() => {
+        // Initial data load
         fetchData(1, false);
-    }, [searchValue, activeFilter, activeDate, orderIds, language, fetchData]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Reset all filters when re-entering the orders route or when params change
     useEffect(() => {
@@ -616,8 +855,29 @@ export default function Orders() {
 
     // Handle search by changes from user interaction
     const handleSearchByChange = useCallback((searchBy) => {
+        // Check if this is the special "group_by_city" action
+        if (searchBy && searchBy.action === "group_by_city") {
+            
+            // Set active search by to group_by_city
+            setActiveSearchBy(searchBy);
+            
+            // Clear search value
+            setSearchValue("");
+            
+            // Clear other filters
+            setActiveFilter("");
+            setActiveDate("");
+            setSelectedDate("");
+            
+            // The useEffect will handle the data fetching based on activeSearchBy change
+            // No need to call fetchCityGroups directly here
+            
+            // Clear URL parameters on same route
+            router.setParams({});
+            return;
+        }
         
-        // Clear orderIds when search by is manually changed
+        // Regular search by handling
         setActiveSearchBy(searchBy);
         
         // Clear URL parameters on same route
@@ -703,18 +963,187 @@ export default function Orders() {
         <View style={[styles.container, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
             
-            <Search {...searchProps} searchResultCount={data?.metadata?.total_records} />
+            <Search {...searchProps} searchResultCount={activeSearchBy?.action === "group_by_city" ? null : data?.metadata?.total_records} />
             
             <View style={styles.ordersList}>
-                <OrdersView
-                    data={isLoading ? [] : (data.data || [])}
-                    metadata={data.metadata}
-                    loadMoreData={loadMoreData}
-                    loadingMore={loadingMore}
-                    isLoading={isLoading}
-                    refreshControl={refreshControl}
-                    onStatusChange={handleOrderStatusUpdate}
-                />
+                {activeSearchBy?.action === "group_by_city" ? (
+                    cityGroupsLoading ? (
+                        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                        </View>
+                    ) : cityGroups && cityGroups.length > 0 ? (
+                        // Show city groups - direct implementation without using CityGrouping component
+                        <FlatList
+                            data={cityGroups}
+                            keyExtractor={(item) => item.group_value}
+                            contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 8 }}
+                            refreshControl={refreshControl}
+                            renderItem={({ item: cityGroup }) => {
+                                const cityKey = cityGroup.group_value;
+                                const isExpanded = expandedCities[cityKey] || false;
+                                const isLoading = loadingCityOrdersMap[cityKey] || false;
+                                const cityOrders = cityOrdersMap[cityKey] || [];
+                                
+                                return (
+                                    <View style={[styles.cityCard, { backgroundColor: colors.card }]}>
+                                        {/* City header */}
+                                        <TouchableOpacity 
+                                            style={[styles.cityHeader, { borderBottomColor: colors.border }]} 
+                                            onPress={() => {
+                                                // Toggle expanded state
+                                                const newExpandedState = !isExpanded;
+                                                setExpandedCities(prev => ({
+                                                    ...prev,
+                                                    [cityKey]: newExpandedState
+                                                }));
+                                                
+                                                // Load orders if expanding and no orders loaded yet
+                                                if (newExpandedState && cityOrders.length === 0 && !isLoading) {
+                                                    // Set loading state
+                                                    setLoadingCityOrdersMap(prev => ({
+                                                        ...prev,
+                                                        [cityKey]: true
+                                                    }));
+                                                    
+                                                    // Get order IDs
+                                                    const orderIds = cityGroup.order_ids || [];
+                                                    if (orderIds.length > 0) {
+                                                        // Create query params
+                                                        const queryParams = new URLSearchParams();
+                                                        queryParams.append('order_id', orderIds.slice(0, 50).join(','));
+                                                        queryParams.append('language_code', language);
+                                                        
+                                                        // Fetch orders
+                                                        fetch(
+                                                            `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
+                                                            {
+                                                                method: "GET",
+                                                                credentials: "include",
+                                                                headers: {
+                                                                    'Accept': 'application/json',
+                                                                    "Content-Type": "application/json",
+                                                                }
+                                                            }
+                                                        )
+                                                        .then(response => {
+                                                            if (!response.ok) {
+                                                                throw new Error(`HTTP error! status: ${response.status}`);
+                                                            }
+                                                            return response.json();
+                                                        })
+                                                        .then(result => {
+                                                            if (result && result.data) {
+                                                                setCityOrdersMap(prev => ({
+                                                                    ...prev,
+                                                                    [cityKey]: result.data
+                                                                }));
+                                                            } else {
+                                                                setCityOrdersMap(prev => ({
+                                                                    ...prev,
+                                                                    [cityKey]: []
+                                                                }));
+                                                            }
+                                                        })
+                                                        .catch(error => {
+                                                            console.error('Error fetching city orders:', error);
+                                                            setCityOrdersMap(prev => ({
+                                                                ...prev,
+                                                                [cityKey]: []
+                                                            }));
+                                                        })
+                                                        .finally(() => {
+                                                            setLoadingCityOrdersMap(prev => ({
+                                                                ...prev,
+                                                                [cityKey]: false
+                                                            }));
+                                                        });
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <View style={styles.cityInfo}>
+                                                <View style={[styles.cityIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                                                    <MaterialCommunityIcons name="city-variant-outline" size={20} color={colors.primary} />
+                                                </View>
+                                                <View style={styles.cityTextContainer}>
+                                                    <Text style={[styles.cityName, { color: colors.text }]}>
+                                                        {cityGroup.group_value_label || cityGroup.group_value}
+                                                    </Text>
+                                                    <Text style={[styles.orderCount, { color: colors.textSecondary }]}>
+                                                        {cityGroup.total_orders} {translations[language]?.tabs?.orders?.orderCount || 'Orders'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            
+                                            <View style={styles.cityAction}>
+                                                <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
+                                                    <Text style={styles.countBadgeText}>{cityGroup.total_orders}</Text>
+                                                </View>
+                                                <MaterialIcons 
+                                                    name={isExpanded ? "expand-less" : "expand-more"} 
+                                                    size={24} 
+                                                    color={colors.primary} 
+                                                />
+                                            </View>
+                                        </TouchableOpacity>
+                                        
+                                        {/* Expanded content */}
+                                        {isExpanded && (
+                                            <View style={styles.expandedContent}>
+                                                {isLoading ? (
+                                                    <View style={styles.cityLoadingContainer}>
+                                                        <ActivityIndicator size="large" color={colors.primary} />
+                                                        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+                                                            {translations[language]?.common?.loading || 'Loading orders...'}
+                                                        </Text>
+                                                    </View>
+                                                ) : cityOrders.length > 0 ? (
+                                                    <View style={styles.ordersContainer}>
+                                                        {cityOrders.map(order => (
+                                                            <View key={order.order_id} style={styles.orderItem}>
+                                                                <OrdersView
+                                                                    data={[order]}
+                                                                    metadata={data?.metadata}
+                                                                    isLoading={false}
+                                                                    onStatusChange={handleOrderStatusUpdate}
+                                                                    hideEmptyState={true}
+                                                                />
+                                                            </View>
+                                                        ))}
+                                                    </View>
+                                                ) : (
+                                                    <View style={styles.emptyOrdersContainer}>
+                                                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                                                            {translations[language]?.tabs?.orders?.noOrdersInCity || 'No orders available for this city'}
+                                                        </Text>
+                                                    </View>
+                                                )}
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            }}
+                        />
+                    ) : (
+                        // No city groups found
+                        <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+                            <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center' }}>
+                                {translations[language]?.tabs?.orders?.emptyArray || 'No city groups available'}
+                            </Text>
+                        </View>
+                    )
+                ) : (
+                    // Regular orders view
+                    <OrdersView
+                        data={isLoading ? [] : (data.data || [])}
+                        metadata={data.metadata}
+                        loadMoreData={loadMoreData}
+                        loadingMore={loadingMore}
+                        isLoading={isLoading}
+                        refreshControl={refreshControl}
+                        onStatusChange={handleOrderStatusUpdate}
+                    />
+                )}
             </View>
         </View>
     );
@@ -727,6 +1156,104 @@ const styles = StyleSheet.create({
     },
     ordersList: {
         flex: 1,
-        marginTop: 10,
+        marginTop: 4,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 20,
+    },
+    // City card styles
+    cityCard: {
+        marginBottom: 16,
+        borderRadius: 16,
+        overflow: 'hidden',
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    cityHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+    },
+    cityInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flex: 1,
+    },
+    cityIconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    cityTextContainer: {
+        flex: 1,
+    },
+    cityName: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    orderCount: {
+        fontSize: 13,
+        marginTop: 2,
+    },
+    cityAction: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    countBadge: {
+        minWidth: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 8,
+        paddingHorizontal: 8,
+    },
+    countBadgeText: {
+        color: 'white',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    expandedContent: {
+        width: '100%',
+    },
+    cityLoadingContainer: {
+        padding: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 14,
+    },
+    ordersContainer: {
+        padding: 8,
+    },
+    orderItem: {
+        marginBottom: 8,
+    },
+    emptyOrdersContainer: {
+        padding: 24,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

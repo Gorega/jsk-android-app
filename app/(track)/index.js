@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, StatusBar, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, StatusBar, Platform, Clipboard, Alert } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -124,38 +124,30 @@ const TrackingOrder = () => {
     }
   };
 
-  const handleOrderUpdate = useCallback((notification) => {
-    switch (notification.type) {
-      case 'ORDER_UPDATED':
-      case 'COLLECTION_CREATED':
-      case 'COLLECTION_UPDATED':
-      case 'COLLECTION_DELETED':
-      case 'STATUS_UPDATED':
-        fetchOrderData();
-        break;
-      default:
-        break;
+  const handleCopyToClipboard = async (text, label) => {
+    if (text && text !== '-') {
+      try {
+        await Clipboard.setString(text);
+        Alert.alert(
+          translations[language].tabs.orders.track.copySuccess || 'Copied!',
+          `${label} ${translations[language].tabs.orders.track.copiedToClipboard || 'copied to clipboard'}`,
+          [{ text: translations[language].common.ok || 'OK' }]
+        );
+      } catch (error) {
+        Alert.alert(
+          translations[language].tabs.orders.track.copyError || 'Error',
+          translations[language].tabs.orders.track.copyErrorMessage || 'Failed to copy to clipboard',
+          [{ text: translations[language].common.ok || 'OK' }]
+        );
+      }
     }
-  }, [fetchOrderData]);
+  };
 
   useEffect(() => {
     if (orderId) {
       fetchOrderData();
     }
   }, [fetchOrderData, language, orderId]);
-
-  useEffect(() => {
-    if (socket) {
-      // Set up both listeners at once
-      socket.on('orderUpdate', handleOrderUpdate);
-      socket.on('collectionUpdate', handleOrderUpdate);
-
-      return () => {
-        socket.off('orderUpdate', handleOrderUpdate);
-        socket.off('collectionUpdate', handleOrderUpdate);
-      };
-    }
-  }, [socket, handleOrderUpdate]);
 
   if (isLoading) {
     return (
@@ -421,16 +413,27 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { 
-                  color: colors.text,
-                  ...Platform.select({
-                    ios: {
-                      textAlign: isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {order.receiver_name || '-'}
-                </Text>
+                <View style={styles.infoValueContainer}>
+                  <Text style={[styles.infoValue, { 
+                    color: colors.text,
+                    flex: 1,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {order.receiver_name || '-'}
+                  </Text>
+                  {order.receiver_name && order.receiver_name !== '-' && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.receiver_name, translations[language].tabs.orders.track.name)}
+                    >
+                      <Feather name="copy" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
               <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
@@ -440,13 +443,23 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.phoneButton]}
-                  onPress={() => handlePhoneCall(order.receiver_mobile)}
-                >
-                  <Text style={styles.phoneButtonText}>{order.receiver_mobile || '-'}</Text>
-                  <Feather name="phone-call" size={14} color="#ffffff" />
-                </TouchableOpacity>
+                <View style={styles.infoValueContainer}>
+                  <TouchableOpacity 
+                    style={[styles.phoneButton, { flex: 1 }]}
+                    onPress={() => handlePhoneCall(order.receiver_mobile)}
+                  >
+                    <Text style={styles.phoneButtonText}>{order.receiver_mobile || '-'}</Text>
+                    <Feather name="phone-call" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                  {order.receiver_mobile && order.receiver_mobile !== '-' && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.receiver_mobile, translations[language].tabs.orders.track.mobile)}
+                    >
+                      <Feather name="copy" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
               {order.receiver_second_mobile && (
@@ -457,13 +470,21 @@ const TrackingOrder = () => {
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={[styles.phoneButton]}
-                    onPress={() => handlePhoneCall(order.receiver_second_mobile)}
-                  >
-                    <Text style={styles.phoneButtonText}>{order.receiver_second_mobile}</Text>
-                    <Feather name="phone-call" size={14} color="#ffffff" />
-                  </TouchableOpacity>
+                  <View style={styles.infoValueContainer}>
+                    <TouchableOpacity 
+                      style={[styles.phoneButton, { flex: 1 }]}
+                      onPress={() => handlePhoneCall(order.receiver_second_mobile)}
+                    >
+                      <Text style={styles.phoneButtonText}>{order.receiver_second_mobile}</Text>
+                      <Feather name="phone-call" size={14} color="#ffffff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.receiver_second_mobile, translations[language].tabs.orders.track.secondMobile)}
+                    >
+                      <Feather name="copy" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
 
@@ -475,16 +496,30 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { 
-                  color: colors.text,
-                  ...Platform.select({
-                    ios: {
-                      textAlign: isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {order.receiver_city || '-'}{order.receiver_address ? `, ${order.receiver_address}` : ''}
-                </Text>
+                <View style={styles.infoValueContainer}>
+                  <Text style={[styles.infoValue, { 
+                    color: colors.text,
+                    flex: 1,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {order.receiver_city || '-'}{order.receiver_address ? `, ${order.receiver_address}` : ''}
+                  </Text>
+                  {(order.receiver_city || order.receiver_address) && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(
+                        `${order.receiver_city || ''}${order.receiver_address ? `, ${order.receiver_address}` : ''}`.trim().replace(/^,\s*/, ''),
+                        translations[language].tabs.orders.track.location
+                      )}
+                    >
+                      <Feather name="copy" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
               <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
@@ -494,16 +529,27 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.address}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { 
-                  color: colors.text,
-                  ...Platform.select({
-                    ios: {
-                      textAlign: isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {order.receiver_address || '-'}
-                </Text>
+                <View style={styles.infoValueContainer}>
+                  <Text style={[styles.infoValue, { 
+                    color: colors.text,
+                    flex: 1,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {order.receiver_address || '-'}
+                  </Text>
+                  {order.receiver_address && order.receiver_address !== '-' && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.receiver_address, translations[language].tabs.orders.track.address)}
+                    >
+                      <Feather name="copy" size={16} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
           </View>
@@ -532,16 +578,27 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.name}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { 
-                  color: colors.text,
-                  ...Platform.select({
-                    ios: {
-                      textAlign: isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {order.sender || '-'}
-                </Text>
+                <View style={styles.infoValueContainer}>
+                  <Text style={[styles.infoValue, { 
+                    color: colors.text,
+                    flex: 1,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {order.sender || '-'}
+                  </Text>
+                  {order.sender && order.sender !== '-' && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.sender, translations[language].tabs.orders.track.name)}
+                    >
+                      <Feather name="copy" size={16} color="#7C3AED" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
               <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
@@ -551,13 +608,23 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.mobile}
                   </Text>
                 </View>
-                <TouchableOpacity 
-                  style={[styles.phoneButton, { backgroundColor: '#7C3AED' }]}
-                  onPress={() => handlePhoneCall(order.sender_mobile)}
-                >
-                  <Text style={[styles.phoneButtonText]}>{order.sender_mobile || '-'}</Text>
-                  <Feather name="phone-call" size={14} color="#ffffff" />
-                </TouchableOpacity>
+                <View style={styles.infoValueContainer}>
+                  <TouchableOpacity 
+                    style={[styles.phoneButton, { backgroundColor: '#7C3AED', flex: 1 }]}
+                    onPress={() => handlePhoneCall(order.sender_mobile)}
+                  >
+                    <Text style={[styles.phoneButtonText]}>{order.sender_mobile || '-'}</Text>
+                    <Feather name="phone-call" size={14} color="#ffffff" />
+                  </TouchableOpacity>
+                  {order.sender_mobile && order.sender_mobile !== '-' && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.sender_mobile, translations[language].tabs.orders.track.mobile)}
+                    >
+                      <Feather name="copy" size={16} color="#7C3AED" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
               {order.sender_second_mobile && (
@@ -568,13 +635,21 @@ const TrackingOrder = () => {
                       {translations[language].tabs.orders.track.secondMobile}
                     </Text>
                   </View>
-                  <TouchableOpacity 
-                    style={[styles.phoneButton, { backgroundColor: '#7C3AED' }]}
-                    onPress={() => handlePhoneCall(order.sender_second_mobile)}
-                  >
-                    <Text style={[styles.phoneButtonText]}>{order.sender_second_mobile}</Text>
-                    <Feather name="phone-call" size={14} color="#ffffff" />
-                  </TouchableOpacity>
+                  <View style={styles.infoValueContainer}>
+                    <TouchableOpacity 
+                      style={[styles.phoneButton, { backgroundColor: '#7C3AED', flex: 1 }]}
+                      onPress={() => handlePhoneCall(order.sender_second_mobile)}
+                    >
+                      <Text style={[styles.phoneButtonText]}>{order.sender_second_mobile}</Text>
+                      <Feather name="phone-call" size={14} color="#ffffff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(order.sender_second_mobile, translations[language].tabs.orders.track.secondMobile)}
+                    >
+                      <Feather name="copy" size={16} color="#7C3AED" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               )}
               
@@ -585,16 +660,30 @@ const TrackingOrder = () => {
                     {translations[language].tabs.orders.track.location}
                   </Text>
                 </View>
-                <Text style={[styles.infoValue, { 
-                  color: colors.text,
-                  ...Platform.select({
-                    ios: {
-                      textAlign: isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {order.sender_city || '-'}{order.sender_address ? `, ${order.sender_address}` : ''}
-                </Text>
+                <View style={styles.infoValueContainer}>
+                  <Text style={[styles.infoValue, { 
+                    color: colors.text,
+                    flex: 1,
+                    ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {order.sender_city || '-'}{order.sender_address ? `, ${order.sender_address}` : ''}
+                  </Text>
+                  {(order.sender_city || order.sender_address) && (
+                    <TouchableOpacity 
+                      style={styles.copyButton}
+                      onPress={() => handleCopyToClipboard(
+                        `${order.sender_city || ''}${order.sender_address ? `, ${order.sender_address}` : ''}`.trim().replace(/^,\s*/, ''),
+                        translations[language].tabs.orders.track.location
+                      )}
+                    >
+                      <Feather name="copy" size={16} color="#7C3AED" />
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
               
             </View>
@@ -1330,6 +1419,17 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '500',
+  },
+  infoValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1.5,
+    gap: 8,
+  },
+  copyButton: {
+    padding: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
   },
   
   // Details Grid Styles

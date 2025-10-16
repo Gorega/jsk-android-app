@@ -111,6 +111,8 @@ export default function RouteNavigate() {
     const [hasMore, setHasMore] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [allOrders, setAllOrders] = useState([]);
+    const [companyType, setCompanyType] = useState('jsk'); // Default to 'taiar', can be 'jsk'
+    const [selectedDeliveryDay, setSelectedDeliveryDay] = useState('today'); // 'today' or 'tomorrow'
     const ITEMS_PER_PAGE = 10; // Number of orders to fetch per page
 
     // First, define the allowed statuses that can be changed
@@ -238,20 +240,97 @@ export default function RouteNavigate() {
     // Generate WhatsApp message template with dynamic order data
     const generateWhatsAppMessage = (order) => {
         if (!order) return '';
+        
         // Extract all available data with fallbacks
         const receiverName = order.receiver_name || '';
         const orderReference = order.order_id || order.reference || '';
+        const businessName = order.sender_name || '';
         const codValue = order.cod_value || '';
-        const currency = order.currency || '';
-        const deliveryDate = 'اليوم';
+        const receiverCity = `${order.receiver_city}, ${order.receiver_address}` || '';
+        const driverName = user?.name || '';
+        const day = selectedDeliveryDay === 'today' ? 
+            (language === 'he' ? 'היום' : 'اليوم') : 
+            (language === 'he' ? 'מחר' : 'غدا');
         
-        // Create message based on language
+        // Get company display name
+        const companyDisplayName = companyType.toLowerCase() === 'jsk' ? 'JSK Logistics' : 'طيار';
+        
+        // For JSK, show both Arabic and Hebrew messages
+        if (companyType.toLowerCase() === 'jsk') {
+            // Arabic message
+            const arMessage = `${companyDisplayName} – إشعار توصيل – في الطريق إليك\n\n` +
+                `مرحباً،\n` +
+                `معك ${companyDisplayName} للتوصيل 🚚\n\n` +
+                `نود إعلامك بأن طلبيتك في طريقها إليك حالياً 🚗💨\n\n` +
+                `👤 الاسم: ${receiverName}\n` +
+                `📍 المنطقة: ${receiverCity}\n` +
+                `💰 سعر الطلبية: ${codValue}\n` +
+                `🔢 رقم الباركود: ${orderReference}\n\n` +
+                `✨ ملاحظة: سأكون في منطقتكم ${day}، وسأرسل لكم رسالة قبل الوصول بـ 30 دقيقة لطلب موقعكم.\n` +
+                `نرجو التعاون معنا وإرسال موقعكم لتسهيل وصول المندوب إليكم.\n\n` +
+                `شكراً لاختياركم خدماتنا.\n` +
+                `مع تحياتي،\n` +
+                `${companyDisplayName}`;
+            
+            // Hebrew message
+            const heMessage = `${companyDisplayName} – הודעת משלוח – בדרך אליך\n\n` +
+                `שלום,\n` +
+                `עם ${companyDisplayName} למשלוחים 🚚\n\n` +
+                `נשמח להודיעך שההזמנה שלך בדרך אליך 🚗💨\n\n` +
+                `👤 שם: ${receiverName}\n` +
+                `📍 אזור: ${receiverCity}\n` +
+                `💰 מחיר ההזמנה: ${codValue}\n` +
+                `🔢 מספר ברקוד: ${orderReference}\n\n` +
+                `✨ הערה: אהיה באזורכם ${day}, ואשלח הודעה 30 דקות לפני ההגעה כדי לבקש את מיקומכם.\n` +
+                `נודה לשיתוף הפעולה ושליחת מיקומכם להקל על הגעת השליח.\n\n` +
+                `תודה שבחרתם בשירותינו.\n` +
+                `${companyDisplayName}`;
+            
+            // Combine both messages
+            return `${arMessage}\n\n---\n\n${heMessage}`;
+        }
+        
+        // For other companies, use language-specific templates
         if (language === 'ar') {
-            return `مرحبا ${receiverName}، منحكي معك من شركة JSK للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
-        }else if (language === 'he') {
-            return `שלום ${receiverName}, זה JSK שירות משלוח. אנחנו נשלם את החבילה (${orderReference})${codValue ? ` עם ערך ${codValue}${currency}` : ''} מ (${businessName}) ${deliveryDate}. נא לשלוח את המיקום ושם העיר כדי לאשר שהחבילה תגיע ליעדה (זמן המשלוח לא יכול להיות מוגדר בגלל תנועה בסטרה ומגוון תנאים אחרים). תגובה להודעה תגרום להתקדמות.`;
-        }else {
-            return `Hello ${receiverName}, this is JSK delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+            return `${companyDisplayName} – إشعار توصيل – في الطريق إليك\n\n` +
+                `مرحباً،\n` +
+                `معك ${companyDisplayName} للتوصيل 🚚\n\n` +
+                `نود إعلامك بأن طلبيتك في طريقها إليك حالياً 🚗💨\n\n` +
+                `👤 الاسم: ${receiverName}\n` +
+                `📍 المنطقة: ${receiverCity}\n` +
+                `💰 سعر الطلبية: ${codValue}\n` +
+                `🔢 رقم الباركود: ${orderReference}\n\n` +
+                `✨ ملاحظة: سأكون في منطقتكم ${day}، وسأرسل لكم رسالة قبل الوصول بـ 30 دقيقة لطلب موقعكم.\n` +
+                `نرجو التعاون معنا وإرسال موقعكم لتسهيل وصول المندوب إليكم.\n\n` +
+                `شكراً لاختياركم خدماتنا.\n` +
+                `مع تحياتي،\n` +
+                `${companyDisplayName}`;
+        } else if (language === 'he') {
+            return `${companyDisplayName} – הודעת משלוח – בדרך אליך\n\n` +
+                `שלום,\n` +
+                `עם ${companyDisplayName} למשלוחים 🚚\n\n` +
+                `נשמח להודיעך שההזמנה שלך בדרך אליך 🚗💨\n\n` +
+                `👤 שם: ${receiverName}\n` +
+                `📍 אזור: ${receiverCity}\n` +
+                `💰 מחיר ההזמנה: ${codValue}\n` +
+                `🔢 מספר ברקוד: ${orderReference}\n\n` +
+                `✨ הערה: אהיה באזורכם ${day}, ואשלח הודעה 30 דקות לפני ההגעה כדי לבקש את מיקומכם.\n` +
+                `נודה לשיתוף הפעולה ושליחת מיקומכם להקל על הגעת השליח.\n\n` +
+                `תודה שבחרתם בשירותינו.\n` +
+                `${companyDisplayName}`;
+        } else { // English
+            return `${companyDisplayName} - Delivery Notification - On the way to you\n\n` +
+                `Hello,\n` +
+                `This is ${companyDisplayName} Delivery 🚚\n\n` +
+                `We would like to inform you that your order is on its way to you now 🚗💨\n\n` +
+                `👤 Name: ${receiverName}\n` +
+                `📍 Area: ${receiverCity}\n` +
+                `💰 Order price: ${codValue}\n` +
+                `🔢 Barcode number: ${orderReference}\n\n` +
+                `✨ Note: I will be in your area ${selectedDeliveryDay === 'today' ? 'today' : 'tomorrow'}, and will send you a message 30 minutes before arrival to request your location.\n` +
+                `Please cooperate with us and send your location to facilitate the driver's arrival.\n\n` +
+                `Thank you for choosing our services.\n` +
+                `${companyDisplayName}`;
         }
     };
 
@@ -263,13 +342,23 @@ export default function RouteNavigate() {
         setShowCallOptionsModal(true);
     };
     
-    // Modified message handler to show options modal
+    // Modified message handler to show day selection modal first
     const handleMessage = (phoneNumber, order) => {
         if (!phoneNumber) return;
         
         setCurrentPhoneNumber(phoneNumber);
         setCurrentOrderForContact(order);
-        setShowMessageOptionsModal(true);
+        setShowMessageOptionsModal(true); // Show day selection modal first
+    };
+    
+    // Handle delivery day selection
+    const handleDeliveryDaySelect = (day) => {
+        setSelectedDeliveryDay(day);
+        setShowMessageOptionsModal(false);
+        
+        setTimeout(() => {
+            setShowCallOptionsModal(true);
+        }, Platform.OS === 'ios' ? 600 : 300);
     };
 
     const handleStatusUpdate = (order) => {
@@ -1217,7 +1306,7 @@ export default function RouteNavigate() {
                 </ModalPresentation>
             )}
             
-            {/* Add Message Options Modal */}
+            {/* Add Message Options Modal for Delivery Day Selection */}
             {showMessageOptionsModal && (
                 <ModalPresentation
                     showModal={showMessageOptionsModal}
@@ -1239,7 +1328,7 @@ export default function RouteNavigate() {
                                 }
                             }),
                         }]}>
-                            {translations[language]?.tabs?.orders?.order?.userBoxMessageContactLabel || "Message Options"}
+                            {translations[language]?.routes?.selectDeliveryDay || "Select Delivery Day"}
                         </Text>
                     </View>
                     <View style={[styles.modalContent,{
@@ -1251,19 +1340,13 @@ export default function RouteNavigate() {
                             }]}
                             onPress={() => {
                                 if (modalTransitionInProgress.current) return;
-                                modalTransitionInProgress.current = true;
-                                setShowMessageOptionsModal(false);
-                                
-                                setTimeout(() => {
-                                    handleSMS();
-                                    modalTransitionInProgress.current = false;
-                                }, Platform.OS === 'ios' ? 500 : 300);
+                                handleDeliveryDaySelect('today');
                             }}
                         >
                             <View style={[styles.modalIconContainer,{
                                 backgroundColor: colors.primary
                             }]}>
-                                <Feather name="message-square" size={20} color={colors.textInverse} />
+                                <Feather name="sun" size={20} color={colors.textInverse} />
                             </View>
                             <Text style={[styles.modalOptionText,{
                                 ...Platform.select({
@@ -1273,37 +1356,7 @@ export default function RouteNavigate() {
                                 }),
                                 color: colors.text
                             }]}>
-                                {translations[language]?.tabs?.orders?.order?.contactPhone || "SMS"}
-                            </Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity
-                            style={[styles.modalOption,{
-                                borderBottomColor: colors.border
-                            }]}
-                            onPress={() => {
-                                if (modalTransitionInProgress.current) return;
-                                modalTransitionInProgress.current = true;
-                                setShowMessageOptionsModal(false);
-                                
-                                setTimeout(() => {
-                                    handleWhatsApp972();
-                                    modalTransitionInProgress.current = false;
-                                }, Platform.OS === 'ios' ? 500 : 300);
-                            }}
-                        >
-                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
-                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
-                            </View>
-                            <Text style={[styles.modalOptionText,{
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                                color: colors.text
-                            }]}>
-                                {translations[language]?.tabs?.orders?.order?.contactWhatsapp || "WhatsApp"} (+972)
+                                {language === 'he' ? 'היום' : language === 'ar' ? 'اليوم' : 'Today'}
                             </Text>
                         </TouchableOpacity>
                         
@@ -1311,17 +1364,13 @@ export default function RouteNavigate() {
                             style={[styles.modalOption, styles.withoutBorder]}
                             onPress={() => {
                                 if (modalTransitionInProgress.current) return;
-                                modalTransitionInProgress.current = true;
-                                setShowMessageOptionsModal(false);
-                                
-                                setTimeout(() => {
-                                    handleWhatsApp970();
-                                    modalTransitionInProgress.current = false;
-                                }, Platform.OS === 'ios' ? 500 : 300);
+                                handleDeliveryDaySelect('tomorrow');
                             }}
                         >
-                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
-                                <FontAwesome name="whatsapp" size={20} color={colors.textInverse} />
+                            <View style={[styles.modalIconContainer,{
+                                backgroundColor: colors.primary
+                            }]}>
+                                <Feather name="sunrise" size={20} color={colors.textInverse} />
                             </View>
                             <Text style={[styles.modalOptionText,{
                                 ...Platform.select({
@@ -1331,7 +1380,7 @@ export default function RouteNavigate() {
                                 }),
                                 color: colors.text
                             }]}>
-                                {translations[language]?.tabs?.orders?.order?.contactWhatsapp || "WhatsApp"} (+970)
+                                {language === 'he' ? 'מחר' : language === 'ar' ? 'غدا' : 'Tomorrow'}
                             </Text>
                         </TouchableOpacity>
                     </View>

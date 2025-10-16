@@ -53,7 +53,7 @@ export default function HomeScreen() {
 
     const sections = [{
         label: translations[language].users.create.sections.user.title,
-        icon: <FontAwesome name="user-o" size={24} color="#4361EE" />,
+        icon: <FontAwesome name="user-o" size={24} color="#E1251B" />,
         fields: [{
             label: translations[language].users.create.sections.user.fields.name,
             name: "name",
@@ -106,7 +106,7 @@ export default function HomeScreen() {
         }]
     }, ["admin","manager"].includes(user.role) ? {
         label: translations[language].users.create.sections.details.title,
-        icon: <MaterialIcons name="admin-panel-settings" size={24} color="#4361EE" />,
+        icon: <MaterialIcons name="admin-panel-settings" size={24} color="#E1251B" />,
         fields: [["admin","manager"].includes(user.role) ? {
             label: translations[language].users.create.sections.details.fields.branch,
             type: "select",
@@ -421,7 +421,7 @@ export default function HomeScreen() {
                             disabled={formSpinner.status}
                         >
                             <LinearGradient
-                                colors={['#4361EE', '#3A0CA3']}
+                                colors={['#E1251B', '#B81C15']}
                                 style={styles.gradientButton}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}

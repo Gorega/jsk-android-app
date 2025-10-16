@@ -22,6 +22,7 @@ import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
 import { useReferenceModal } from '@/contexts/ReferenceModalContext';
 import React from 'react';
+import * as Print from 'expo-print';
 
 function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true, onStatusChange }) {
     const { language } = useLanguage();
@@ -45,6 +46,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const colors = Colors[colorScheme];
     const [reasonSearchQuery, setReasonSearchQuery] = useState('');
     const [showExpandHint, setShowExpandHint] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
+    const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false);
+    const [selectedPrintFormat, setSelectedPrintFormat] = useState(null);
     
     // Safely access authUser role with a default value
     const authUserRole = authUser?.role || "user";
@@ -175,6 +179,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
         requiresReason: true,
         reasons: suspendReasons
+        },{
+        label: translations[language].tabs.orders.order.states.on_the_way_back, value: "on_the_way"
         },{
         label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
         requiresReason: true,
@@ -891,6 +897,565 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }
     };
 
+    // Handle cancel order for business users
+    const handleCancelOrder = async () => {
+        // Show confirmation alert
+        Alert.alert(
+            translations[language]?.tabs?.orders?.order?.cancelOrderTitle || "Cancel Order",
+            translations[language]?.tabs?.orders?.order?.cancelOrderConfirmation || "Are you sure you want to cancel this order? This action cannot be undone.",
+            [
+                {
+                    text: translations[language]?.common?.cancel || "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: translations[language]?.common?.confirm || "Confirm",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            const updates = {
+                                order_id: order.order_id,
+                                status: 'cancelled',
+                                timestamp: new Date().toISOString()
+                            };
+
+                           // We're online, send the update directly
+                                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
+                                    method: "PUT",
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'Accept-Language': language,
+                                    },
+                                    credentials: "include",
+                                    body: JSON.stringify({ updates })
+                                });
+
+                                const responseText = await res.text();
+                                let data;
+                                try {
+                                    data = JSON.parse(responseText);
+                                } catch (parseError) {
+                                    throw new Error('Invalid server response');
+                                }
+
+                                if (!data.error) {
+                                    // Update was successful
+                                    const updatedOrder = {
+                                        ...order,
+                                        status: "cancelled",
+                                    };
+                                    await cacheOrder(updatedOrder);
+
+                                    // Call the onStatusChange callback to update the parent component
+                                    if (typeof onStatusChange === 'function') {
+                                        onStatusChange(order.order_id, translations[language]?.tabs?.orders?.order?.states?.cancelled || "Cancelled", 'cancelled');
+                                    }
+
+                                    // Show success message
+                                    setSuccessMessage(translations[language]?.tabs?.orders?.order?.orderCancelledSuccess || "Order cancelled successfully");
+                                    setShowSuccessModal(true);
+                                    setTimeout(() => setShowSuccessModal(false), 2500);
+                                } else {
+                                    // Show error message
+                                    setErrorMessage(data.details || data.error || translations[language]?.tabs?.orders?.order?.cancelOrderError || "Failed to cancel order");
+                                    setShowErrorModal(true);
+                                }
+                        } catch (error) {
+                            // Show error message
+                            setErrorMessage(error.message || translations[language]?.tabs?.orders?.order?.cancelOrderError || "Failed to cancel order");
+                            setShowErrorModal(true);
+                        }
+                    }
+                }
+            ]
+        );
+    };
+
+    // Helper function to generate HTML template for PDF with size and color options
+    const generateOrderHTML = (order, language, options = {}) => {
+        const { 
+            size = 'A4', 
+            colorMode = 'blackwhite',
+            format = 'full' 
+        } = options;
+        
+        const isRTL = language === 'ar' || language === 'he';
+        const direction = isRTL ? 'rtl' : 'ltr';
+        const textAlign = isRTL ? 'right' : 'left';
+        
+        // Size configurations with optimized settings for single page
+        const sizeConfigs = {
+            'A4': { 
+                width: '210mm', 
+                height: '297mm', 
+                padding: '15px', 
+                fontSize: '11px',
+                headerSize: '16px',
+                titleSize: '12px',
+                spacing: '8px'
+            },
+            'waybill_10x10': { 
+                width: '10cm', 
+                height: '10cm', 
+                padding: '5px', 
+                fontSize: '7px',
+                headerSize: '10px',
+                titleSize: '8px',
+                spacing: '3px'
+            },
+            'waybill_5x5': { 
+                width: '5cm', 
+                height: '5cm', 
+                padding: '3px', 
+                fontSize: '5px',
+                headerSize: '7px',
+                titleSize: '6px',
+                spacing: '2px'
+            },
+            'receipt': { 
+                width: '80mm', 
+                height: '200mm', 
+                padding: '4px', 
+                fontSize: '8px',
+                headerSize: '12px',
+                titleSize: '9px',
+                spacing: '4px'
+            },
+            'label': { 
+                width: '100mm', 
+                height: '50mm', 
+                padding: '2px', 
+                fontSize: '6px',
+                headerSize: '8px',
+                titleSize: '7px',
+                spacing: '2px'
+            }
+        };
+        
+        const config = sizeConfigs[size] || sizeConfigs['A4'];
+        const isSmallFormat = ['waybill_5x5', 'label'].includes(size);
+        const isMediumFormat = ['waybill_10x10', 'receipt'].includes(size);
+        
+        // Color mode styles
+        const colorStyles = colorMode === 'blackwhite' ? {
+            primaryColor: '#000000',
+            secondaryColor: '#333333',
+            backgroundColor: '#ffffff',
+            borderColor: '#000000',
+            gradients: 'none',
+            shadows: 'none'
+        } : {
+            primaryColor: '#4361EE',
+            secondaryColor: '#64748B',
+            backgroundColor: '#f8fafc',
+            borderColor: '#4361EE',
+            gradients: 'linear-gradient(135deg, #4361EE, #3B82F6)',
+            shadows: '0 2px 8px rgba(67, 97, 238, 0.3)'
+        };
+        
+        return `
+        <!DOCTYPE html>
+        <html dir="${direction}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Order #${order.order_id}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+                
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                @page {
+                    size: ${config.width} ${config.height};
+                    margin: 0;
+                }
+                
+                body {
+                    font-family: ${isRTL ? "'Noto Sans Arabic', Arial, sans-serif" : "'Roboto', Arial, sans-serif"};
+                    direction: ${direction};
+                    text-align: ${textAlign};
+                    line-height: ${isSmallFormat ? '1.1' : '1.2'};
+                    color: ${colorStyles.primaryColor};
+                    padding: ${config.padding};
+                    background: ${colorStyles.backgroundColor};
+                    font-size: ${config.fontSize};
+                    width: ${config.width};
+                    height: ${config.height};
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    page-break-inside: avoid;
+                }
+                
+                .header {
+                    text-align: center;
+                    margin-bottom: ${config.spacing};
+                    border-bottom: ${isSmallFormat ? '1px' : '2px'} solid ${colorStyles.borderColor};
+                    padding-bottom: ${config.spacing};
+                    position: relative;
+                    flex-shrink: 0;
+                }
+                
+                .header h1 {
+                    color: ${colorStyles.primaryColor};
+                    font-size: ${config.headerSize};
+                    font-weight: 700;
+                    margin-bottom: ${isSmallFormat ? '1px' : '3px'};
+                }
+                
+                .header .company-name {
+                    color: ${colorStyles.primaryColor};
+                    font-size: ${config.titleSize};
+                    font-weight: 600;
+                    margin-bottom: ${isSmallFormat ? '1px' : '5px'};
+                }
+                
+                .header .meta {
+                    color: ${colorStyles.secondaryColor};
+                    font-size: ${isSmallFormat ? parseInt(config.fontSize) - 1 + 'px' : config.fontSize};
+                }
+                
+                .status-badge {
+                    position: absolute;
+                    top: 0;
+                    ${isRTL ? 'left' : 'right'}: 0;
+                    background: ${colorStyles.primaryColor};
+                    color: ${colorStyles.backgroundColor};
+                    padding: ${isSmallFormat ? '1px 2px' : '2px 4px'};
+                    border-radius: ${isSmallFormat ? '2px' : '4px'};
+                    font-size: ${isSmallFormat ? parseInt(config.fontSize) - 1 + 'px' : config.fontSize};
+                    font-weight: 600;
+                    text-transform: uppercase;
+                }
+                
+                .content {
+                    flex: 1;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .section {
+                    margin-bottom: ${config.spacing};
+                    background: ${colorStyles.backgroundColor};
+                    padding: ${isSmallFormat ? '2px' : '6px'};
+                    border-radius: ${isSmallFormat ? '1px' : '3px'};
+                    border-left: ${isSmallFormat ? '1px' : '2px'} solid ${colorStyles.borderColor};
+                    ${colorMode === 'color' ? 'box-shadow: 0 1px 3px rgba(0,0,0,0.1);' : ''}
+                    flex-shrink: 0;
+                }
+                
+                .section-title {
+                    color: ${colorStyles.primaryColor};
+                    font-size: ${config.titleSize};
+                    font-weight: 700;
+                    margin-bottom: ${isSmallFormat ? '1px' : '3px'};
+                    text-transform: uppercase;
+                    letter-spacing: 0.1px;
+                }
+                
+                .info-grid {
+                    display: ${isSmallFormat ? 'block' : 'grid'};
+                    grid-template-columns: ${isSmallFormat ? '1fr' : isMediumFormat ? '1fr' : 'repeat(2, 1fr)'};
+                    gap: ${isSmallFormat ? '1px' : '4px'};
+                }
+                
+                .info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: ${isSmallFormat ? '0.5px 0' : '2px 0'};
+                    border-bottom: ${isSmallFormat ? '0.5px' : '1px'} solid ${colorStyles.borderColor};
+                }
+                
+                .info-label {
+                    font-weight: 600;
+                    color: ${colorStyles.secondaryColor};
+                    min-width: ${isSmallFormat ? '20px' : '60px'};
+                    font-size: ${config.fontSize};
+                    flex-shrink: 0;
+                }
+                
+                .info-value {
+                    font-weight: 700;
+                    color: ${colorStyles.primaryColor};
+                    text-align: ${isRTL ? 'left' : 'right'};
+                    font-size: ${config.fontSize};
+                    word-break: break-word;
+                }
+                
+                .highlight-value {
+                    background: ${colorStyles.primaryColor};
+                    color: ${colorStyles.backgroundColor};
+                    padding: ${isSmallFormat ? '0.5px 1px' : '1px 2px'};
+                    border-radius: ${isSmallFormat ? '1px' : '2px'};
+                    font-weight: 700;
+                }
+                
+                .barcode-section {
+                    text-align: center;
+                    background: ${colorStyles.backgroundColor};
+                    padding: ${isSmallFormat ? '1px' : '4px'};
+                    border-radius: ${isSmallFormat ? '1px' : '3px'};
+                    border: ${isSmallFormat ? '0.5px' : '1px'} ${isSmallFormat ? 'solid' : 'dashed'} ${colorStyles.borderColor};
+                    margin: ${config.spacing} 0;
+                    flex-shrink: 0;
+                }
+                
+                .barcode-section img {
+                    max-width: ${isSmallFormat ? '25px' : isMediumFormat ? '50px' : '100px'};
+                    height: auto;
+                    margin: ${isSmallFormat ? '1px 0' : '2px 0'};
+                }
+                
+                .footer {
+                    margin-top: auto;
+                    text-align: center;
+                    color: ${colorStyles.secondaryColor};
+                    font-size: ${isSmallFormat ? parseInt(config.fontSize) - 1 + 'px' : config.fontSize};
+                    border-top: ${isSmallFormat ? '0.5px' : '1px'} solid ${colorStyles.borderColor};
+                    padding-top: ${config.spacing};
+                    flex-shrink: 0;
+                }
+                
+                .footer .company-info {
+                    font-weight: 600;
+                    color: ${colorStyles.primaryColor};
+                    margin-bottom: ${isSmallFormat ? '0.5px' : '1px'};
+                }
+                
+                @media print {
+                    body { 
+                        padding: 0; 
+                        -webkit-print-color-adjust: exact;
+                        color-adjust: exact;
+                        page-break-inside: avoid;
+                    }
+                    .section { 
+                        break-inside: avoid; 
+                        page-break-inside: avoid;
+                    }
+                    .header { 
+                        break-after: avoid; 
+                        page-break-after: avoid;
+                    }
+                    .content {
+                        page-break-inside: avoid;
+                    }
+                    .barcode-section {
+                        page-break-inside: avoid;
+                    }
+                    .footer {
+                        page-break-before: avoid;
+                    }
+                }
+                
+                /* Compact layouts for small formats */
+                ${isSmallFormat ? `
+                .compact-row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 1px;
+                    font-size: 6px;
+                }
+                .compact-row .label {
+                    font-weight: 600;
+                    color: ${colorStyles.secondaryColor};
+                }
+                .compact-row .value {
+                    font-weight: 700;
+                    color: ${colorStyles.primaryColor};
+                }
+                ` : ''}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div class="status-badge">${order.status || 'N/A'}</div>
+                <div class="company-name">JSK للخدمات اللوجستية والبريد السريع</div>
+                <h1>طلب #${order.order_id}</h1>
+                <div class="meta">
+                    تاريخ الإنشاء: ${new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}
+                </div>
+            </div>
+
+            <div class="content">
+                <div class="section">
+                    <div class="section-title">معلومات الطلب</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">رقم الطلب:</span>
+                            <span class="info-value highlight-value">${order.order_id}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">تاريخ الإنشاء:</span>
+                            <span class="info-value">${order.created_at ? new Date(order.created_at).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US') : 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">المرسل</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">الاسم:</span>
+                            <span class="info-value">${order.sender_name || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">المستلم</div>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">الاسم:</span>
+                            <span class="info-value">${order.receiver_name || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">المدينة:</span>
+                            <span class="info-value">${order.receiver_city || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">العنوان:</span>
+                            <span class="info-value">${order.receiver_address || 'N/A'}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">الهاتف:</span>
+                            <span class="info-value">${order.receiver_phone || order.receiver_mobile || 'N/A'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${order.barcode ? `
+                <div class="barcode-section">
+                    <img src="data:image/png;base64,${order.barcode}" alt="Order Barcode" />
+                </div>
+                ` : ''}
+            </div>
+
+            <div class="footer">
+                <div class="company-info">JSK للخدمات اللوجستية والبريد السريع</div>
+                <p>تم الإنشاء في: ${new Date().toLocaleString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}</p>
+                <p>خدمة توصيل موثوقة وسريعة</p>
+            </div>
+        </body>
+        </html>
+        `;
+    };
+
+    // Print format options
+    const printFormats = [
+        {
+            id: 'A4',
+            name: translations[language]?.tabs?.orders?.order?.printFormats?.a4 || 'A4 Full Page',
+            description: translations[language]?.tabs?.orders?.order?.printFormats?.a4Desc || 'Standard A4 size with complete order details',
+            icon: 'description',
+            size: 'A4',
+            colorMode: 'blackwhite'
+        },
+        {
+            id: 'waybill_10x10',
+            name: translations[language]?.tabs?.orders?.order?.printFormats?.waybill10 || 'Waybill 10×10 cm',
+            description: translations[language]?.tabs?.orders?.order?.printFormats?.waybill10Desc || 'Medium waybill format for shipping labels',
+            icon: 'local-shipping',
+            size: 'waybill_10x10',
+            colorMode: 'blackwhite'
+        },
+        {
+            id: 'waybill_5x5',
+            name: translations[language]?.tabs?.orders?.order?.printFormats?.waybill5 || 'Waybill 5×5 cm',
+            description: translations[language]?.tabs?.orders?.order?.printFormats?.waybill5Desc || 'Compact waybill for small packages',
+            icon: 'label',
+            size: 'waybill_5x5',
+            colorMode: 'blackwhite'
+        },
+        {
+            id: 'receipt',
+            name: translations[language]?.tabs?.orders?.order?.printFormats?.receipt || 'Receipt (80mm)',
+            description: translations[language]?.tabs?.orders?.order?.printFormats?.receiptDesc || 'Thermal receipt format',
+            icon: 'receipt',
+            size: 'receipt',
+            colorMode: 'blackwhite'
+        },
+        {
+            id: 'label',
+            name: translations[language]?.tabs?.orders?.order?.printFormats?.label || 'Address Label',
+            description: translations[language]?.tabs?.orders?.order?.printFormats?.labelDesc || 'Address label format (100×50mm)',
+            icon: 'bookmark',
+            size: 'label',
+            colorMode: 'blackwhite'
+        }
+    ];
+
+    // Handle print format selection
+    const handlePrintFormatSelect = (format) => {
+        setSelectedPrintFormat(format);
+        setShowPrintOptionsModal(false);
+        generateOrderPDF(format);
+    };
+
+    // Generate PDF using expo-print with format options
+    const generateOrderPDF = async (printFormat = null) => {
+        try {
+            setIsPdfLoading(true);
+            
+            // Use selected format or default to A4
+            const format = printFormat || { size: 'A4', colorMode: 'blackwhite' };
+            
+            // Generate HTML content with format options
+            const htmlContent = generateOrderHTML(order, language, {
+                size: format.size,
+                colorMode: format.colorMode,
+                format: 'full'
+            });
+            
+            // Size configurations for PDF generation
+            const pdfConfigs = {
+                'A4': { width: 612, height: 792, margins: { left: 20, top: 20, right: 20, bottom: 20 } },
+                'waybill_10x10': { width: 283, height: 283, margins: { left: 8, top: 8, right: 8, bottom: 8 } },
+                'waybill_5x5': { width: 142, height: 142, margins: { left: 4, top: 4, right: 4, bottom: 4 } },
+                'receipt': { width: 226, height: 600, margins: { left: 5, top: 5, right: 5, bottom: 5 } },
+                'label': { width: 283, height: 142, margins: { left: 3, top: 3, right: 3, bottom: 3 } }
+            };
+            
+            const config = pdfConfigs[format.size] || pdfConfigs['A4'];
+            
+            // Generate PDF from HTML
+            const { uri } = await Print.printToFileAsync({
+                html: htmlContent,
+                base64: false,
+                width: config.width,
+                height: config.height,
+                margins: config.margins,
+                fileName: `Tayar_Order_${order.order_id}_${format.size}_${new Date().toISOString().split('T')[0]}.pdf`
+            });
+            
+            // Print directly without sharing
+            await Print.printAsync({
+                uri: uri,
+                printerUrl: uri
+            });
+            
+        } catch (error) {
+            Alert.alert(
+                translations[language]?.common?.error || "Error",
+                translations[language]?.common?.pdfGenerationError || "Failed to generate PDF. Please try again."
+            );
+        } finally {
+            setIsPdfLoading(false);
+        }
+    };
+
+    // Show print options modal
+    const showPrintOptions = () => {
+        setShowPrintOptionsModal(true);
+    };
+
     // Get status color based on status key
     const getStatusColor = (statusKey) => {
         const statusColors = {
@@ -1262,7 +1827,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <MaterialIcons 
                                         name="expand-more" 
                                         size={24} 
-                                        color={showExpandHint ? "#FFFFFF" : "#F59994"} 
+                                        color={showExpandHint ? "#FFFFFF" : "#4361EE"} 
                                     />
                                 </Animated.View>
                             </TouchableOpacity>
@@ -1387,6 +1952,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
                                                 userName: order.receiver_name,
+                                                companyType: order.company_type || "taiar",
+                                                deliveryDate: order.delivery_date || "اليوم",
+                                                senderName: order.sender || "طيار للتوصيل",
+                                                receiverCity: order.receiver_city || "",
+                                                receiverAddress: order.receiver_address || "",
                                                 msg: "",
                                                 orderId: order.order_id,
                                                 businessName: order.sender || "طيار للتوصيل",
@@ -1398,9 +1968,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         <Contact
                                             contact={{
                                                 type: "msg",
-                                                label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
+                                                label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
                                                 userName: order.receiver_name,
+                                                companyType: order.company_type || "taiar",
+                                                deliveryDate: order.delivery_date || "اليوم",
+                                                senderName: order.sender || "طيار للتوصيل",
+                                                receiverCity: order.receiver_city || "",
+                                                receiverAddress: order.receiver_address || "",
                                                 msg: "",
                                                 orderId: order.order_id,
                                                 businessName: order.sender || "طيار للتوصيل",
@@ -1426,8 +2001,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
                                     <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:"#FFA500"}]}>
-                                        {order.order_type}
-                                        {order.received_items ? ` (${order.received_items})` : ''}
+                                    {order.order_type}
+                                    {order.quantity > 1 && (
+                                    <> | {translations[language].tabs.orders.order.quantity || 'Quantity'}: {order.quantity}</>
+                                    )}                                     
+                                       {order.received_items ? ` (${order.received_items})` : ''}
                                         {order.received_quantity ? ` - ${order.received_quantity}` : ''}
                                     </Text>
                                 </View>
@@ -2106,8 +2684,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
                         {["business"].includes(authUserRole) && <TouchableOpacity 
                             style={[
-                                styles.controlOption, 
-                                styles.noBorder
+                                styles.controlOption
                             ]} 
                             onPress={() => {
                                 setShowControl(false);
@@ -2132,6 +2709,69 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         }),
                                     }]}>
                                 {translations[language].tabs.orders.track.openCase}
+                            </Text>
+                        </TouchableOpacity>}
+
+                        {["business"].includes(authUserRole) && order.status_key === 'waiting' && <TouchableOpacity 
+                            style={[
+                                styles.controlOption
+                            ]} 
+                            onPress={() => {
+                                setShowControl(false);
+                                handleCancelOrder();
+                            }}
+                        >
+                            <View style={[
+                                styles.controlIconContainer, 
+                                { backgroundColor: '#DC2626' }
+                            ]}>
+                                <MaterialIcons name="cancel" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[styles.controlText,{
+                                color: colors.text,
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                {translations[language]?.tabs?.orders?.order?.cancelOrder || "Cancel Order"}
+                            </Text>
+                        </TouchableOpacity>}
+
+                        {/* Print Order button for business users */}
+                        {["business"].includes(authUserRole) && <TouchableOpacity 
+                            style={[
+                                styles.controlOption, 
+                                styles.noBorder
+                            ]} 
+                            onPress={() => {
+                                setShowControl(false);
+                                showPrintOptions();
+                            }}
+                            disabled={isPdfLoading}
+                        >
+                            <View style={[
+                                styles.controlIconContainer, 
+                                { backgroundColor: isPdfLoading ? '#94A3B8' : '#059669' }
+                            ]}>
+                                {isPdfLoading ? (
+                                    <ActivityIndicator size="small" color="#ffffff" />
+                                ) : (
+                                    <MaterialIcons name="print" size={18} color="#ffffff" />
+                                )}
+                            </View>
+                            <Text style={[styles.controlText,{
+                                color: isPdfLoading ? colors.textSecondary : colors.text,
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign:isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                {isPdfLoading 
+                                    ? (translations[language]?.common?.generating || "Generating PDF...")
+                                    : (translations[language]?.tabs?.orders?.order?.printOrder || "Print Order")}
                             </Text>
                         </TouchableOpacity>}
 
@@ -2489,6 +3129,83 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </Text>
                         </TouchableOpacity>
                     </View>
+                </ModalPresentation>
+            )}
+
+            {/* Print Options Modal */}
+            {showPrintOptionsModal && (
+                <ModalPresentation
+                    showModal={showPrintOptionsModal}
+                    setShowModal={setShowPrintOptionsModal}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.modalHeader}>
+                        <Text style={[styles.modalHeaderText,{
+                                color: colors.text,
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign:isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
+                            {translations[language]?.tabs?.orders?.order?.selectPrintFormat || "Select Print Format"}
+                        </Text>
+                    </View>
+                    
+                    <ScrollView 
+                        style={styles.reasonScrollContainer}
+                        contentContainerStyle={styles.reasonContainer}
+                        showsVerticalScrollIndicator={true}
+                    >
+                        {printFormats.map((format) => (
+                            <TouchableOpacity
+                                key={format.id}
+                                style={[
+                                    styles.reasonOption,
+                                    selectedPrintFormat?.id === format.id && styles.selectedReasonOption,
+                                    { backgroundColor: selectedPrintFormat?.id === format.id ? colors.primary + '20' : colors.surface }
+                                ]}
+                                onPress={() => handlePrintFormatSelect(format)}
+                            >
+                                <View style={styles.reasonOptionContent}>
+                                    <Text style={[
+                                        styles.reasonOptionText,
+                                        {
+                                            color: selectedPrintFormat?.id === format.id ? colors.primary : colors.text,
+                                            fontWeight: selectedPrintFormat?.id === format.id ? '600' : '400',
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign:isRTL ? "left" : ""
+                                                }
+                                            }),
+                                        }
+                                    ]}>
+                                        {format.name}
+                                    </Text>
+                                    <Text style={[
+                                        styles.reasonOptionDescription,
+                                        {
+                                            color: colors.textSecondary,
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign:isRTL ? "left" : ""
+                                                }
+                                            }),
+                                        }
+                                    ]}>
+                                        {format.description}
+                                    </Text>
+                                </View>
+                                {selectedPrintFormat?.id === format.id && (
+                                    <Ionicons 
+                                        name="checkmark-circle" 
+                                        size={20} 
+                                        color={colors.primary} 
+                                    />
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
                 </ModalPresentation>
             )}
 
@@ -3339,6 +4056,11 @@ const styles = StyleSheet.create({
     clearErrorsButton: {
         backgroundColor: '#64748B',
         shadowColor: '#64748B',
+    },
+    reasonOptionDescription: {
+        fontSize: 12,
+        marginTop: 2,
+        opacity: 0.7,
     },
 });
 

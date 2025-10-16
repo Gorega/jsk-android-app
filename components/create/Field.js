@@ -738,12 +738,25 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         setShowModal={setShowPickerModal}
                         setSelectedValue={setSelectedValue}
                         field={field}
-                        loadMoreData={loadMoreData}
-                        loadingMore={loadingMore}
+                        loadMoreData={field.loadMoreData || loadMoreData}
+                        loadingMore={field.loadingMore || loadingMore}
                         prickerSearchValue={prickerSearchValue}
-                        setPickerSearchValue={setPickerSearchValue}
+                        setPickerSearchValue={field.apiConfig ? undefined : setPickerSearchValue}
                         setFieldErrors={setFieldErrors}
                         searchLoading={searchLoading}
+                        onSearchClear={field.onSearchClear}
+                        keyExtractor={field.keyExtractor}
+                        apiConfig={field.apiConfig || (field.name === 'city' ? {
+                            endpoint: `${process.env.EXPO_PUBLIC_API_URL}/api/addresses/cities`,
+                            searchParam: 'name',
+                            params: {
+                                language_code: language,
+                                all: 'false'
+                            },
+                            dataPath: 'data',
+                            totalPagesPath: 'pagination.total_pages',
+                            currentPagePath: 'pagination.current_page'
+                        } : null)}
                     />
                 )}
 

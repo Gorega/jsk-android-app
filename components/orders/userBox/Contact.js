@@ -9,12 +9,14 @@ import { useAuth } from '../../../RootLayout';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
 
-export default function Contact({ contact, orderId }) {
+export default function Contact({ contact, orderId, companyType = 'jsk' }) {
     const { language } = useLanguage();
     const { user } = useAuth();
     const isRTL = language === 'ar' || language === 'he';
     const [showContactModal, setShowContactModal] = useState(false);
     const [showWhatsappOptions, setShowWhatsappOptions] = useState(false);
+    const [showMessageOptions, setShowMessageOptions] = useState(false);
+    const [deliveryDay, setDeliveryDay] = useState('today');
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
     
@@ -46,7 +48,6 @@ export default function Contact({ contact, orderId }) {
             });
             const data = await response.json();
         } catch (error) {
-            console.error('Error recording contact history:', error);
         }
     };
 
@@ -55,19 +56,121 @@ export default function Contact({ contact, orderId }) {
         // Extract all available data with fallbacks
         const receiverName = contact.userName || '';
         const orderReference = contact.orderId || contact.reference || '';
-        const businessName = contact.businessName || user?.business?.name || 'JSK';
+        const businessName = contact.businessName || user?.business?.name || 'طيار للتوصيل';
+        const receiverCity = contact.receiverCity || '';
+        const receiverAddress = contact.receiverAddress || '';
         const codValue = contact.codValue || contact.cod_value || '';
-        const currency = contact.currency || '';
-        const deliveryDate = contact.deliveryDate || 'اليوم';
-        const senderName = contact.senderName || contact.sender?.name || '';
+        const driverName = user?.name || '';
         
-        // Create message based on language
+        // Get company display name
+        const companyDisplayName = companyType.toLowerCase() === 'jsk' ? 'JSK Logistics' : 'طيار';
+        
+        // For JSK company, always show both Arabic and Hebrew messages
+        if (companyType.toLowerCase() === 'jsk') {
+            // Arabic day format
+            const arDay = deliveryDay === 'today' ? 'اليوم' : 'غدا';
+            
+            // Hebrew day format
+            const heDay = deliveryDay === 'today' ? 'היום' : 'מחר';
+            
+            // Format address for Arabic
+            const arAddress = `${receiverCity}, ${receiverAddress}`;
+            
+            // Format address for Hebrew - reverse order for RTL
+            const heAddress = `${receiverAddress}, ${receiverCity}`;
+            
+            // Arabic message
+            const arMessage = `${companyDisplayName} – إشعار توصيل – في الطريق إليك\n\n` +
+                `مرحباً،\n` +
+                `معك ${companyDisplayName} للتوصيل 🚚\n\n` +
+                `نود إعلامك بأن طلبيتك في طريقها إليك حالياً 🚗💨\n\n` +
+                `👤 الاسم: ${receiverName}\n` +
+                `📍 المنطقة: ${arAddress}\n` +
+                `💰 سعر الطلبية: ${codValue}\n` +
+                `🔢 رقم الباركود: ${orderReference}\n\n` +
+                `✨ ملاحظة: سأكون في منطقتكم ${arDay}، وسأرسل لكم رسالة قبل الوصول بـ 30 دقيقة لطلب موقعكم.\n` +
+                `نرجو التعاون معنا وإرسال موقعكم لتسهيل وصول المندوب إليكم.\n\n` +
+                `شكراً لاختياركم خدماتنا.\n` +
+                `مع تحياتي،\n` +
+                `${companyDisplayName}`;
+            
+            // Hebrew message
+            const heMessage = `${companyDisplayName} – הודעת משלוח – בדרך אליך\n\n` +
+                `שלום,\n` +
+                `עם ${companyDisplayName} למשלוחים 🚚\n\n` +
+                `נשמח להודיעך שההזמנה שלך בדרך אליך 🚗💨\n\n` +
+                `👤 שם: ${receiverName}\n` +
+                `📍 אזור: ${heAddress}\n` +
+                `💰 מחיר ההזמנה: ${codValue}\n` +
+                `🔢 מספר ברקוד: ${orderReference}\n\n` +
+                `✨ הערה: אהיה באזורכם ${heDay}, ואשלח הודעה 30 דקות לפני ההגעה כדי לבקש את מיקומכם.\n` +
+                `נודה לשיתוף הפעולה ושליחת מיקומכם להקל על הגעת השליח.\n\n` +
+                `תודה שבחרתם בשירותינו.\n` +
+                `${companyDisplayName}`;
+            
+            // Combine both messages with a separator
+            return `${arMessage}\n\n---\n\n${heMessage}`;
+        }
+        
+        // For other companies, use language-specific templates
         if (language === 'ar') {
-            return `مرحبا ${receiverName}، منحكي معك من شركة JSK للتوصيل سنقوم بتوصيل طردكم (${orderReference})${codValue ? ` بقيمة ${codValue}${currency}` : ''} من (${businessName}) ${deliveryDate}... الرجاء ارسال موقعكم واسم البلد لتاكيد وصول طلبكم (لا يمكن تحديد ساعات لوصول الطلبيه بسبب حركه السير وظروف اخرى) عدم الرد على هذه الرساله يؤدي الى تاجيل`;
-        }else if (language === 'he') {
-            return `שלום ${receiverName}, זה JSK שירות משלוח. אנחנו נשלם את החבילה (${orderReference})${codValue ? ` עם ערך ${codValue}${currency}` : ''} מ (${businessName}) ${deliveryDate}. נא לשלוח את המיקום ושם העיר כדי לאשר שהחבילה תגיע ליעדה (זמן המשלוח לא יכול להיות מוגדר בגלל תנועה בסטרה ומגוון תנאים אחרים). תגובה להודעה תגרום להתקדמות.`;
-        }else {
-            return `Hello ${receiverName}, this is JSK delivery service. We will deliver your package (${orderReference})${codValue ? ` with value ${codValue}${currency}` : ''} from (${businessName}) ${deliveryDate}. Please send your location and city name to confirm your order delivery (delivery time cannot be specified due to traffic and other conditions). Not responding to this message will lead to postponement.`;
+            // Arabic day format
+            const arDay = deliveryDay === 'today' ? 'اليوم' : 'غدا';
+            
+            // Format address for Arabic
+            const arAddress = `${receiverCity}, ${receiverAddress}`;
+            
+            return `${companyDisplayName} – إشعار توصيل – في الطريق إليك\n\n` +
+                `مرحباً،\n` +
+                `معك ${companyDisplayName} للتوصيل 🚚\n\n` +
+                `نود إعلامك بأن طلبيتك في طريقها إليك حالياً 🚗💨\n\n` +
+                `👤 الاسم: ${receiverName}\n` +
+                `📍 المنطقة: ${arAddress}\n` +
+                `💰 سعر الطلبية: ${codValue}\n` +
+                `🔢 رقم الباركود: ${orderReference}\n\n` +
+                `✨ ملاحظة: سأكون في منطقتكم ${arDay}، وسأرسل لكم رسالة قبل الوصول بـ 30 دقيقة لطلب موقعكم.\n` +
+                `نرجو التعاون معنا وإرسال موقعكم لتسهيل وصول المندوب إليكم.\n\n` +
+                `شكراً لاختياركم خدماتنا.\n` +
+                `مع تحياتي،\n` +
+                `${companyDisplayName}`;
+        } else if (language === 'he') {
+            // Hebrew day format
+            const heDay = deliveryDay === 'today' ? 'היום' : 'מחר';
+            
+            // Format address for Hebrew - reverse order for RTL
+            const heAddress = `${receiverAddress}, ${receiverCity}`;
+            
+            return `${companyDisplayName} – הודעת משלוח – בדרך אליך\n\n` +
+                `שלום,\n` +
+                `עם ${companyDisplayName} למשלוחים 🚚\n\n` +
+                `נשמח להודיעך שההזמנה שלך בדרך אליך 🚗💨\n\n` +
+                `👤 שם: ${receiverName}\n` +
+                `📍 אזור: ${heAddress}\n` +
+                `💰 מחיר ההזמנה: ${codValue}\n` +
+                `🔢 מספר ברקוד: ${orderReference}\n\n` +
+                `✨ הערה: אהיה באזורכם ${heDay}, ואשלח הודעה 30 דקות לפני ההגעה כדי לבקש את מיקומכם.\n` +
+                `נודה לשיתוף הפעולה ושליחת מיקומכם להקל על הגעת השליח.\n\n` +
+                `תודה שבחרתם בשירותינו.\n` +
+                `${companyDisplayName}`;
+        } else { // English
+            // English day format
+            const enDay = deliveryDay === 'today' ? 'today' : 'tomorrow';
+            
+            // Format address for English
+            const enAddress = `${receiverCity}, ${receiverAddress}`;
+            
+            return `${companyDisplayName} - Delivery Notification - On the way to you\n\n` +
+                `Hello,\n` +
+                `This is ${companyDisplayName} Delivery 🚚\n\n` +
+                `We would like to inform you that your order is on its way to you now 🚗💨\n\n` +
+                `👤 Name: ${receiverName}\n` +
+                `📍 Area: ${enAddress}\n` +
+                `💰 Order price: ${codValue}\n` +
+                `🔢 Barcode number: ${orderReference}\n\n` +
+                `✨ Note: I will be in your area ${enDay}, and will send you a message 30 minutes before arrival to request your location.\n` +
+                `Please cooperate with us and send your location to facilitate the driver's arrival.\n\n` +
+                `Thank you for choosing our services.\n` +
+                `${companyDisplayName}`;
         }
     };
 
@@ -79,14 +182,27 @@ export default function Contact({ contact, orderId }) {
         return contact.msg || '';
     };
 
-    // Handle phone call
+    // Show call options when clicking phone icon
     const handlePhoneCall = () => {
-        recordContactHistory('اتصال هاتفي');
-        Linking.openURL(`tel:${contact.phone}`);
+        setShowContactModal(true);
     };
 
+    // Track which message option was selected (SMS or WhatsApp)
+    const [selectedMessageType, setSelectedMessageType] = useState(null);
+    
     // Handle SMS
     const handleSMS = () => {
+        setSelectedMessageType('sms');
+        setShowContactModal(false);
+        
+        // Show delivery day options
+        setTimeout(() => {
+            setShowMessageOptions(true);
+        }, 300);
+    };
+    
+    // Handle actual SMS sending after day selection
+    const sendSMS = () => {
         recordContactHistory('رسالة SMS');
         Linking.openURL(`sms:${contact.phone}?body=${encodeURIComponent(getMessageContent())}`);
     };
@@ -94,25 +210,69 @@ export default function Contact({ contact, orderId }) {
     // Handle WhatsApp with 972 prefix
     const handleWhatsApp972 = () => {
         recordContactHistory('whatsapp_972');
-        Linking.openURL(`https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
+        
+        // For phone type, don't include auto-message
+        // For message type, include auto-message
+        if (contact.type === "phone") {
+            Linking.openURL(`https://wa.me/${`+972${contact.phone}`}`);
+        } else {
+            Linking.openURL(`https://wa.me/${`+972${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
+        }
     };
 
     // Handle WhatsApp with 970 prefix
     const handleWhatsApp970 = () => {
         recordContactHistory('whatsapp_970');
-        Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
-    };
-
-    // Handle transition to WhatsApp options modal
-    const handleOpenWhatsappOptions = () => {
-        // First close the contact modal, then open WhatsApp options modal
-        setShowContactModal(false);
         
-        // Add a small delay before showing the WhatsApp options modal
-        // This ensures the first modal has time to close properly
+        // For phone type, don't include auto-message
+        // For message type, include auto-message
+        if (contact.type === "phone") {
+            Linking.openURL(`https://wa.me/${`+970${contact.phone}`}`);
+        } else {
+            Linking.openURL(`https://wa.me/${`+970${contact.phone}`}?text=${encodeURIComponent(getMessageContent())}`);
+        }
+    };
+    
+    // Handle selecting delivery day and then showing WhatsApp options
+    const selectDayAndShowWhatsapp = (day) => {
+        setDeliveryDay(day);
+        setShowMessageOptions(false);
+        
         setTimeout(() => {
             setShowWhatsappOptions(true);
         }, 300);
+    };
+    
+
+    // Handle selecting delivery day and then sending SMS
+    const selectDayAndSendSMS = (day) => {
+        setDeliveryDay(day);
+        setShowMessageOptions(false);
+        
+        setTimeout(() => {
+            sendSMS();
+        }, 300);
+    };
+    
+    // Handle transition to WhatsApp options modal
+    const handleOpenWhatsappOptions = () => {
+        // First close the contact modal
+        setShowContactModal(false);
+        
+        // For phone type, directly show WhatsApp options without day selection
+        // For message type, show day selection first
+        if (contact.type === "phone") {
+            setTimeout(() => {
+                // Show WhatsApp options directly without auto-message
+                setShowWhatsappOptions(true);
+            }, 300);
+        } else {
+            // For message type, set selected message type and show day selection first
+            setSelectedMessageType('whatsapp');
+            setTimeout(() => {
+                setShowMessageOptions(true);
+            }, 300);
+        }
     };
 
     return (
@@ -149,34 +309,55 @@ export default function Contact({ contact, orderId }) {
                             {contact.label}
                         </Text>
                         
-                        <TouchableOpacity
-                            style={[styles.modalOption,{
-                                borderBottomColor: colors.border
-                            }]}
-                            onPress={() => {
-                                if (contact.type === "phone") {
-                                    handlePhoneCall();
-                                } else {
-                                    handleSMS();
-                                }
-                                setShowContactModal(false);
-                            }}
-                        >
-                            <View style={[styles.modalIconContainer,{
-                                backgroundColor: colors.primary
-                            }]}>
-                                {contact.type === "phone" 
-                                    ? <FontAwesome name="phone" size={20} color={colors.textInverse} /> 
-                                    : <Feather name="message-square" size={20} color={colors.textInverse} />
-                                }
-                            </View>
-                            <Text style={[styles.modalOptionText,{
-                                color: colors.text
-                            }]}>
-                                {translations[language].tabs.orders.order.contactPhone} {contact.label}
-                            </Text>
-                        </TouchableOpacity>
+                        {/* For phone type: direct call */}
+                        {contact.type === "phone" && (
+                            <TouchableOpacity
+                                style={[styles.modalOption,{
+                                    borderBottomColor: colors.border
+                                }]}
+                                onPress={() => {
+                                    recordContactHistory('اتصال هاتفي');
+                                    Linking.openURL(`tel:${contact.phone}`);
+                                    setShowContactModal(false);
+                                }}
+                            >
+                                <View style={[styles.modalIconContainer,{
+                                    backgroundColor: colors.primary
+                                }]}>
+                                    <FontAwesome name="phone" size={20} color={colors.textInverse} />
+                                </View>
+                                <Text style={[styles.modalOptionText,{
+                                    color: colors.text
+                                }]}>
+                                {contact.label}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
                         
+                        {/* For message type: SMS with day selection */}
+                        {contact.type === "message" && (
+                            <TouchableOpacity
+                                style={[styles.modalOption,{
+                                    borderBottomColor: colors.border
+                                }]}
+                                onPress={() => {
+                                    handleSMS();
+                                }}
+                            >
+                                <View style={[styles.modalIconContainer,{
+                                    backgroundColor: colors.primary
+                                }]}>
+                                    <Feather name="message-square" size={20} color={colors.textInverse} />
+                                </View>
+                                <Text style={[styles.modalOptionText,{
+                                    color: colors.text
+                                }]}>
+                                    {translations[language].tabs.orders.order.contactWhatsapp}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+                        
+                        {/* WhatsApp option - different behavior based on contact type */}
                         <TouchableOpacity
                             style={[styles.modalOption, styles.withoutBorder,{
                                 borderBottomColor: colors.border
@@ -189,13 +370,90 @@ export default function Contact({ contact, orderId }) {
                             <Text style={[styles.modalOptionText,{
                                 color: colors.text
                             }]}>
-                                {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
+                                {translations[language].tabs.orders.order.contactWhatsapp}
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </ModalPresentation>
             )}
 
+            {/* Delivery Day Selection Modal */}
+            {showMessageOptions && (
+                <ModalPresentation
+                    showModal={showMessageOptions}
+                    setShowModal={setShowMessageOptions}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={[styles.modalContent, {
+                        backgroundColor: colors.card
+                    }]}>
+                        <Text style={[styles.modalTitle,{
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign:isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
+                            {translations[language]?.routes?.selectDeliveryDay || "Select Delivery Day"}
+                        </Text>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalOption,{
+                                borderBottomColor: colors.border
+                            }]}
+                            onPress={() => {
+                                // Handle based on which message option was selected
+                                if (selectedMessageType === 'sms') {
+                                    // If SMS was selected, send SMS with today
+                                    selectDayAndSendSMS('today');
+                                } else if (selectedMessageType === 'whatsapp') {
+                                    // If WhatsApp was selected, show WhatsApp options with today
+                                    selectDayAndShowWhatsapp('today');
+                                }
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, {
+                                backgroundColor: colors.primary
+                            }]}>
+                                <Feather name="sun" size={20} color={colors.textInverse} />
+                            </View>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
+                                {language === 'he' ? 'היום' : language === 'ar' ? 'اليوم' : 'Today'}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity
+                            style={[styles.modalOption, styles.withoutBorder]}
+                            onPress={() => {
+                                // Handle based on which message option was selected
+                                if (selectedMessageType === 'sms') {
+                                    // If SMS was selected, send SMS with tomorrow
+                                    selectDayAndSendSMS('tomorrow');
+                                } else if (selectedMessageType === 'whatsapp') {
+                                    // If WhatsApp was selected, show WhatsApp options with tomorrow
+                                    selectDayAndShowWhatsapp('tomorrow');
+                                }
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, {
+                                backgroundColor: colors.primary
+                            }]}>
+                                <Feather name="sunrise" size={20} color={colors.textInverse} />
+                            </View>
+                            <Text style={[styles.modalOptionText,{
+                                color: colors.text
+                            }]}>
+                                {language === 'he' ? 'מחר' : language === 'ar' ? 'غدا' : 'Tomorrow'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ModalPresentation>
+            )}
+            
+            {/* WhatsApp Options Modal */}
             {showWhatsappOptions && (
                 <ModalPresentation
                     showModal={showWhatsappOptions}
@@ -213,7 +471,7 @@ export default function Contact({ contact, orderId }) {
                             }
                         }),
                     }]}>
-                            {translations[language].tabs.orders.order.contactWhatsapp} {contact.label}
+                            {translations[language].tabs.orders.order.whatsapp} {contact.label}
                         </Text>
                         
                         <TouchableOpacity

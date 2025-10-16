@@ -93,13 +93,6 @@ function Collections({ showModal, setShowModal }) {
                 iconBackground: isDark ? 'rgba(108, 142, 255, 0.15)' : "#EEF2FF",
                 iconColor: colors.primary
             },
-            !["business","entery","support_agent","sales_representative"].includes(user.role) ? {
-                label: ["driver","delivery_company"].includes(user.role) ? translations[language].tabs.collections.options.driver_own_sent_collections : translations[language].tabs.collections.options.sent_collections,
-                link: "(collection)?type=sent",
-                icon: <FontAwesome6 name="money-bill-trend-up" size={22} color={colors.primary} />,
-                iconBackground: isDark ? 'rgba(108, 142, 255, 0.15)' : "#EEF2FF",
-                iconColor: colors.primary
-            } : { visibility: "hidden" },
             ["business","accountant","entery","support_agent","sales_representative"].includes(user.role) ? { visibility: "hidden" } : {
                 label:  ["driver","delivery_company"].includes(user.role) ? translations[language].tabs.collections.options.my_returned_collections : translations[language].tabs.collections.options.driver_returned_collections,
                 link: "(collection)?type=driver_returned",

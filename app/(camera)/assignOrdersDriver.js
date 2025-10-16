@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView, Platform, StatusBar, Animated } from 'react-native';
+import { Text, View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator, SafeAreaView, Platform, StatusBar, Animated, Vibration } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -142,42 +142,62 @@ export default function CameraScanner() {
     ).start();
   }, []);
 
-  // Simple vibration function instead of sound to avoid file errors
+  // Use vibration instead of sound to avoid audio focus issues
   const vibrate = (pattern) => {
-    if (pattern === 'success') {
-      // Short vibration for success
+    if (Platform.OS === 'android' || Platform.OS === 'ios') {
       try {
-        Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const soundObject = new Audio.Sound();
-        soundObject.setOnPlaybackStatusUpdate(null);
-        soundObject.loadAsync(require('../../assets/sound/success.mp3')).then(() => {
-          soundObject.playAsync();
-        }).catch(error => {
-        });
+        if (pattern === 'success') {
+          // Short vibration for success
+          if (Platform.OS === 'android') {
+            // Android specific vibration
+            Vibration.vibrate(100);
+          } else {
+            // iOS specific vibration (shorter)
+            Vibration.vibrate(50);
+          }
+        } else if (pattern === 'error') {
+          // Pattern vibration for error (vibrate-pause-vibrate)
+          Vibration.vibrate([0, 100, 100, 100]);
+        }
       } catch (error) {
-      }
-    } else if (pattern === 'error') {
-      // Longer vibration for error
-      try {
-        Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-        const soundObject = new Audio.Sound();
-        soundObject.setOnPlaybackStatusUpdate(null);
-        soundObject.loadAsync(require('../../assets/sound/failure.mp3')).then(() => {
-          soundObject.playAsync();
-        }).catch(error => {
-        });
-      } catch (error) {
+        console.log('Vibration error:', error);
       }
     }
   };
 
+  // Try to play sound, but fall back to vibration if it fails
+  const playSound = async (type) => {
+    try {
+      // First attempt to play sound
+      const soundFile = type === 'success' 
+        ? require('../../assets/sound/success.mp3') 
+        : require('../../assets/sound/failure.mp3');
+      
+      const { sound } = await Audio.Sound.createAsync(soundFile, 
+        { shouldPlay: true },
+        (status) => {
+          if (status.didJustFinish) {
+            sound.unloadAsync();
+          }
+        }
+      );
+      
+      // If sound creation was successful but we can't play it, use vibration as fallback
+      sound.playAsync().catch(() => {
+        vibrate(type);
+      });
+    } catch (error) {
+      // If sound creation fails, fall back to vibration
+      vibrate(type);
+    }
+  };
 
   const playSuccessSound = async () => {
-    vibrate('success');
+    vibrate('success'); // Just use vibration directly to avoid audio issues
   };
 
   const playErrorSound = async () => {
-    vibrate('error');
+    vibrate('error'); // Just use vibration directly to avoid audio issues
   };
 
   const createDispatchedCollection = async () => {
@@ -405,13 +425,26 @@ export default function CameraScanner() {
   const handleManualOrderAdd = async () => {
     if (!manualOrderId.trim()) return;
 
-    const stringifiedItem = String(manualOrderId);
-    const isDuplicate = scannedItems.some(item => 
-      String(item.order_id) === stringifiedItem || String(item.reference_id) === stringifiedItem
-    );
+    const stringifiedItem = String(manualOrderId).trim();
+    
+    // Enhanced duplicate detection - check multiple fields and variations
+    const isDuplicate = scannedItems.some(item => {
+      const itemOrderId = String(item.order_id || '').trim();
+      const itemReferenceId = String(item.reference_id || '').trim();
+      const itemId = String(item.id || '').trim();
+      
+      // Check exact matches with the entered data
+      return itemOrderId === stringifiedItem || 
+             itemReferenceId === stringifiedItem ||
+             itemId === stringifiedItem ||
+             // Also check if the entered item matches any of the stored identifiers
+             stringifiedItem === itemOrderId ||
+             stringifiedItem === itemReferenceId ||
+             stringifiedItem === itemId;
+    });
 
     if (isDuplicate) {
-      setError(translations[language].camera.scanDuplicateTextError);
+      setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
       playErrorSound();
       setTimeout(() => setError(null), 5000);
       return;
@@ -424,9 +457,31 @@ export default function CameraScanner() {
     const orderDetails = await fetchOrderDetails(manualOrderId);
     
     if (orderDetails) {
-      setScannedItems(prev => [...prev, orderDetails]);
-      setManualOrderId(""); // Clear input after adding
-      playSuccessSound();
+      // Final duplicate check with the fetched order details
+      const finalDuplicateCheck = scannedItems.some(item => {
+        const itemOrderId = String(item.order_id || '').trim();
+        const itemReferenceId = String(item.reference_id || '').trim();
+        const itemId = String(item.id || '').trim();
+        
+        const detailsOrderId = String(orderDetails.order_id || '').trim();
+        const detailsReferenceId = String(orderDetails.reference_id || '').trim();
+        const detailsId = String(orderDetails.id || '').trim();
+        
+        // Check if any identifier matches
+        return (itemOrderId && (itemOrderId === detailsOrderId || itemOrderId === detailsReferenceId || itemOrderId === detailsId)) ||
+               (itemReferenceId && (itemReferenceId === detailsOrderId || itemReferenceId === detailsReferenceId || itemReferenceId === detailsId)) ||
+               (itemId && (itemId === detailsOrderId || itemId === detailsReferenceId || itemId === detailsId));
+      });
+      
+      if (finalDuplicateCheck) {
+        setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
+        playErrorSound();
+        setTimeout(() => setError(null), 5000);
+      } else {
+        setScannedItems(prev => [...prev, orderDetails]);
+        setManualOrderId(""); // Clear input after adding
+        playSuccessSound();
+      }
     } else {
       playErrorSound();
     }
@@ -463,10 +518,10 @@ export default function CameraScanner() {
   
   // Update order status
   const updateOrderStatus = async () => {
-    // For driver or delivery_company roles, automatically set status to with_driver
+    // For driver or delivery_company roles, use the selected status or default to with_driver
     if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
-      // Set status directly to with_driver without requiring selection
-      const autoStatus = 'with_driver';
+      // Use selectedStatus if available, otherwise default to with_driver
+      const driverStatus = selectedStatus || 'with_driver';
       
       // Check if we have any orders to update
       if (scannedItems.length === 0) {
@@ -479,7 +534,7 @@ export default function CameraScanner() {
       
       setFormSpinner({ status: true });
       
-      // Process orders with automatic driver assignment
+      // Process orders with driver assignment
       try {
         // First create a collection to assign the driver_id
         // Format orders array
@@ -518,7 +573,7 @@ export default function CameraScanner() {
           
           return {
             order_id: orderId,
-            status: autoStatus,
+            status: driverStatus,
             note_content: note
           };
         });
@@ -721,13 +776,26 @@ export default function CameraScanner() {
       }
 
       // Convert to string for comparison
-      const stringifiedItem = String(itemToAdd);
-      const isDuplicate = scannedItems.some(item => 
-        String(item.order_id) === stringifiedItem || String(item.reference_id) === stringifiedItem
-      );
+      const stringifiedItem = String(itemToAdd).trim();
+      
+      // Enhanced duplicate detection - check multiple fields and variations
+      const isDuplicate = scannedItems.some(item => {
+        const itemOrderId = String(item.order_id || '').trim();
+        const itemReferenceId = String(item.reference_id || '').trim();
+        const itemId = String(item.id || '').trim();
+        
+        // Check exact matches with the scanned data
+        return itemOrderId === stringifiedItem || 
+               itemReferenceId === stringifiedItem ||
+               itemId === stringifiedItem ||
+               // Also check if the scanned item matches any of the stored identifiers
+               stringifiedItem === itemOrderId ||
+               stringifiedItem === itemReferenceId ||
+               stringifiedItem === itemId;
+      });
 
       if (isDuplicate) {
-        setError(translations[language].camera.scanDuplicateTextError);
+        setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
         playErrorSound();
         setTimeout(() => setError(null), 5000);
         setProcessingBarcode(false);
@@ -735,28 +803,52 @@ export default function CameraScanner() {
         return;
       }
 
-      // Temporarily set scanned to true while we fetch order details
+      // Set scanned to true to disable camera and show rescan button
       setScanned(true);
       
       // Fetch order details
       const orderDetails = await fetchOrderDetails(stringifiedItem);
       
       if (orderDetails) {
-        setScannedItems(prev => [...prev, orderDetails]);
-        playSuccessSound();
+        // Final duplicate check with the fetched order details
+        const finalDuplicateCheck = scannedItems.some(item => {
+          const itemOrderId = String(item.order_id || '').trim();
+          const itemReferenceId = String(item.reference_id || '').trim();
+          const itemId = String(item.id || '').trim();
+          
+          const detailsOrderId = String(orderDetails.order_id || '').trim();
+          const detailsReferenceId = String(orderDetails.reference_id || '').trim();
+          const detailsId = String(orderDetails.id || '').trim();
+          
+          // Check if any identifier matches
+          return (itemOrderId && (itemOrderId === detailsOrderId || itemOrderId === detailsReferenceId || itemOrderId === detailsId)) ||
+                 (itemReferenceId && (itemReferenceId === detailsOrderId || itemReferenceId === detailsReferenceId || itemReferenceId === detailsId)) ||
+                 (itemId && (itemId === detailsOrderId || itemId === detailsReferenceId || itemId === detailsId));
+        });
+        
+        if (finalDuplicateCheck) {
+          setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
+          playErrorSound();
+          setTimeout(() => setError(null), 5000);
+          setScanned(false);
+        } else {
+          setScannedItems(prev => [...prev, orderDetails]);
+          playSuccessSound();
+        }
       } else {
         playErrorSound();
+        // If order details fetch fails, allow immediate rescan
+        setScanned(false);
       }
     } catch (err) {
       setError(translations[language].camera.scanInvalidTextError);
       playErrorSound();
       setTimeout(() => setError(null), 5000);
+      // If there's an error, allow immediate rescan
+      setScanned(false);
     } finally {
-      // Allow new scan after a short delay and reset scanned state
-      setTimeout(() => {
-        setProcessingBarcode(false);
-        setScanned(false); // Reset scanned to false to enable automatic rescanning
-      }, 1000);
+      // Only reset processing flag, keep scanned state to require manual rescan
+      setProcessingBarcode(false);
     }
   };
 
@@ -961,7 +1053,7 @@ export default function CameraScanner() {
           </View>
         </CameraView>
       
-        {showStatusSelection && showCreateDispatchedCollectionModal ? (
+        {showCreateDispatchedCollectionModal ? (
           <Animated.View 
             style={[
               styles.modalContainer, 
@@ -974,7 +1066,11 @@ export default function CameraScanner() {
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.divider }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {selectedStatus ? `${translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}: ${statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus}` : translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}
+                {user && (user.role === 'driver' || user.role === 'delivery_company') 
+                  ? (translations[language]?.tabs?.orders?.order?.selectStatus || 'Select Status')
+                  : (selectedStatus 
+                      ? `${translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}: ${statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus}` 
+                      : translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status')}
               </Text>
               <TouchableOpacity 
                 style={[styles.backButton, isRTL && { left: 16 }]} 
@@ -990,157 +1086,208 @@ export default function CameraScanner() {
             
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalContent}>
-                {/* Status selection */}
-                <View style={styles.fieldContainer}>
-                  <Text style={[
-                    styles.fieldLabel,
-                    { color: colors.textSecondary },
-                    {
-                      ...Platform.select({
-                        ios: {
-                          textAlign: isRTL ? "left" : "right"
-                        }
-                      }),
-                    }
-                  ]}>
-                    {translations[language]?.tabs?.orders?.order?.status || "Status"}
-                  </Text>
-                  <View style={styles.pickerWithClearButton}>
-                    <TouchableOpacity 
+                {/* Special options for driver or delivery_company roles */}
+                {user && (user.role === 'driver' || user.role === 'delivery_company') ? (
+                  <View style={styles.driverOptionsContainer}>
+                    <TouchableOpacity
                       style={[
-                        styles.pickerButton, 
+                        styles.driverOptionButton,
                         { 
-                          borderColor: selectedStatus ? colors.primary : colors.inputBorder,
-                          backgroundColor: colors.inputBg,
-                          flex: 1,
-                          height: 50,
-                          borderRadius: 12
+                          backgroundColor: selectedStatus === 'with_driver' ? colors.primary : colors.inputBg,
+                          borderColor: selectedStatus === 'with_driver' ? colors.primary : colors.inputBorder,
                         }
-                      ]} 
-                      onPress={() => {
-                        setShowPickerModal(true);
-                        setCurrentField("status");
-                      }}
+                      ]}
+                      onPress={() => setSelectedStatus('with_driver')}
                     >
-                      <Text style={[
-                        styles.pickerButtonText, 
-                        selectedStatus 
-                          ? [styles.pickerSelectedText, { color: colors.text }] 
-                          : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
-                      ]}>
-                        {selectedStatus ? statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus : translations[language]?.tabs?.orders?.order?.selectStatus || "Select Status"}
-                      </Text>
-                      <Feather name="chevron-down" size={18} color={selectedStatus ? colors.primary : colors.textSecondary} />
-                    </TouchableOpacity>
-                    {selectedStatus && (
-                      <TouchableOpacity
-                        style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
-                        onPress={() => {
-                          setSelectedStatus(null);
-                          setShowStatusReason(false);
-                          setSelectedReason(null);
-                          setShowDriverField(false);
-                          setShowBranchField(false);
-                        }}
-                      >
-                        <Feather name="x" size={18} color={colors.error} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-                
-                {/* Reason selection for statuses that require it */}
-                {showStatusReason && (
-                  <View style={styles.fieldContainer}>
-                    <Text style={[
-                      styles.fieldLabel,
-                      { color: colors.textSecondary },
-                      {
-                        ...Platform.select({
-                          ios: {
-                            textAlign: isRTL ? "left" : "right"
-                          }
-                        }),
-                      }
-                    ]}>
-                      {translations[language]?.tabs?.orders?.order?.reason || "Reason"}
-                    </Text>
-                    <View style={styles.pickerWithClearButton}>
-                      <TouchableOpacity 
-                        style={[
-                          styles.pickerButton, 
-                          { 
-                            borderColor: selectedReason ? colors.primary : colors.inputBorder,
-                            backgroundColor: colors.inputBg,
-                            flex: 1,
-                            height: 50,
-                            borderRadius: 12
-                          }
-                        ]} 
-                        onPress={() => {
-                          setShowPickerModal(true);
-                          setCurrentField("reason");
-                        }}
-                      >
-                        <Text style={[
-                          styles.pickerButtonText, 
-                          selectedReason 
-                            ? [styles.pickerSelectedText, { color: colors.text }] 
-                            : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                      <View style={styles.driverOptionContent}>
+                        <View style={[
+                          styles.driverOptionIconContainer,
+                          { backgroundColor: selectedStatus === 'with_driver' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(67, 97, 238, 0.1)' }
                         ]}>
-                          {selectedReason ? suspendReasons.find(r => r.value === selectedReason)?.label || selectedReason : translations[language]?.tabs?.orders?.order?.selectReason || "Select Reason"}
-                        </Text>
-                        <Feather name="chevron-down" size={18} color={selectedReason ? colors.primary : colors.textSecondary} />
-                      </TouchableOpacity>
-                      {selectedReason && (
-                        <TouchableOpacity
-                          style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
-                          onPress={() => setSelectedReason(null)}
-                        >
-                          <Feather name="x" size={18} color={colors.error} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                )}
-                
-                {/* Note field */}
-                <View style={styles.fieldContainer}>
-                  {/* <Text style={[
-                    styles.fieldLabel,
-                    { color: colors.textSecondary },
-                    {
-                      ...Platform.select({
-                        ios: {
-                          textAlign: isRTL ? "left" : "right"
+                          <MaterialIcons 
+                            name="person" 
+                            size={24} 
+                            color={selectedStatus === 'with_driver' ? colors.buttonText : colors.primary} 
+                          />
+                        </View>
+                        <View style={styles.driverOptionTextContainer}>
+                          <Text style={[
+                            styles.driverOptionTitle,
+                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.text }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.with_driver || 'With Driver'}
+                          </Text>
+                          <Text style={[
+                            styles.driverOptionDescription,
+                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.textSecondary }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.withDriverDescription || 'Assign orders to yourself'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.driverOptionButton,
+                        { 
+                          backgroundColor: selectedStatus === 'on_the_way' ? colors.primary : colors.inputBg,
+                          borderColor: selectedStatus === 'on_the_way' ? colors.primary : colors.inputBorder,
                         }
-                      }),
-                    }
-                  ]}>
-                    {translations[language].camera.note}
-                  </Text> */}
-                  {/* <TextInput
-                    style={[
-                      styles.textInput, 
-                      { 
-                        borderColor: colors.inputBorder,
-                        backgroundColor: colors.inputBg,
-                        color: colors.inputText,
-                        borderRadius: 12,
-                        padding: 14,
-                        textAlignVertical: "top"
-                      }
-                    ]}
-                    placeholder={translations[language].camera.notePlaceholder || "Add a note..."}
-                    placeholderTextColor={colors.textTertiary}
-                    value={note}
-                    onChangeText={(input) => setNote(input)}
-                    multiline={true}
-                    numberOfLines={4}
-                    textAlignVertical="top"
-                  /> */}
-                </View>
-                
+                      ]}
+                      onPress={() => setSelectedStatus('on_the_way')}
+                    >
+                      <View style={styles.driverOptionContent}>
+                        <View style={[
+                          styles.driverOptionIconContainer,
+                          { backgroundColor: selectedStatus === 'on_the_way' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}>
+                          <MaterialIcons 
+                            name="local-shipping" 
+                            size={24} 
+                            color={selectedStatus === 'on_the_way' ? colors.buttonText : colors.primary} 
+                          />
+                        </View>
+                        <View style={styles.driverOptionTextContainer}>
+                          <Text style={[
+                            styles.driverOptionTitle,
+                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.text }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.on_the_way_assign_driver || 'On The Way'}
+                          </Text>
+                          <Text style={[
+                            styles.driverOptionDescription,
+                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.textSecondary }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.onTheWayDescription || 'Orders are out for delivery'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                ) : showStatusSelection ? (
+                  <>
+                    {/* Status selection */}
+                    <View style={styles.fieldContainer}>
+                      <Text style={[
+                        styles.fieldLabel,
+                        { color: colors.textSecondary },
+                        {
+                          ...Platform.select({
+                            ios: {
+                              textAlign: isRTL ? "left" : "right"
+                            }
+                          }),
+                        }
+                      ]}>
+                        {translations[language]?.tabs?.orders?.order?.status || "Status"}
+                      </Text>
+                      <View style={styles.pickerWithClearButton}>
+                        <TouchableOpacity 
+                          style={[
+                            styles.pickerButton, 
+                            { 
+                              borderColor: selectedStatus ? colors.primary : colors.inputBorder,
+                              backgroundColor: colors.inputBg,
+                              flex: 1,
+                              height: 50,
+                              borderRadius: 12
+                            }
+                          ]} 
+                          onPress={() => {
+                            setShowPickerModal(true);
+                            setCurrentField("status");
+                          }}
+                        >
+                          <Text style={[
+                            styles.pickerButtonText, 
+                            selectedStatus 
+                              ? [styles.pickerSelectedText, { color: colors.text }] 
+                              : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                          ]}>
+                            {selectedStatus ? statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus : translations[language]?.tabs?.orders?.order?.selectStatus || "Select Status"}
+                          </Text>
+                          <Feather name="chevron-down" size={18} color={selectedStatus ? colors.primary : colors.textSecondary} />
+                        </TouchableOpacity>
+                        {selectedStatus && (
+                          <TouchableOpacity
+                            style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                            onPress={() => {
+                              setSelectedStatus(null);
+                              setShowStatusReason(false);
+                              setSelectedReason(null);
+                              setShowDriverField(false);
+                              setShowBranchField(false);
+                            }}
+                          >
+                            <Feather name="x" size={18} color={colors.error} />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                    
+                    {/* Reason selection for statuses that require it */}
+                    {showStatusReason && (
+                      <View style={styles.fieldContainer}>
+                        <Text style={[
+                          styles.fieldLabel,
+                          { color: colors.textSecondary },
+                          {
+                            ...Platform.select({
+                              ios: {
+                                textAlign: isRTL ? "left" : "right"
+                              }
+                            }),
+                          }
+                        ]}>
+                          {translations[language]?.tabs?.orders?.order?.reason || "Reason"}
+                        </Text>
+                        <View style={styles.pickerWithClearButton}>
+                          <TouchableOpacity 
+                            style={[
+                              styles.pickerButton, 
+                              { 
+                                borderColor: selectedReason ? colors.primary : colors.inputBorder,
+                                backgroundColor: colors.inputBg,
+                                flex: 1,
+                                height: 50,
+                                borderRadius: 12
+                              }
+                            ]} 
+                            onPress={() => {
+                              setShowPickerModal(true);
+                              setCurrentField("reason");
+                            }}
+                          >
+                            <Text style={[
+                              styles.pickerButtonText, 
+                              selectedReason 
+                                ? [styles.pickerSelectedText, { color: colors.text }] 
+                                : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                            ]}>
+                              {selectedReason ? suspendReasons.find(r => r.value === selectedReason)?.label || selectedReason : translations[language]?.tabs?.orders?.order?.selectReason || "Select Reason"}
+                            </Text>
+                            <Feather name="chevron-down" size={18} color={selectedReason ? colors.primary : colors.textSecondary} />
+                          </TouchableOpacity>
+                          {selectedReason && (
+                            <TouchableOpacity
+                              style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                              onPress={() => setSelectedReason(null)}
+                            >
+                              <Feather name="x" size={18} color={colors.error} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                    )}
+                    
+                    {/* Note field */}
+                    <View style={styles.fieldContainer}>
+                      {/* Note field is currently disabled */}
+                    </View>
+                  </>
+                ) : null}
+
                 {/* Show driver selection based on status */}
                 {(showDriverSelection || showDriverField) && (
                   <View style={styles.fieldContainer}>
@@ -1336,8 +1483,9 @@ export default function CameraScanner() {
                     )}
                   </View>
                 </View>
-                )} */}
                 
+                
+                {/* Action buttons - shown for all user types */}
                 <View style={styles.actionButtons}>
                   <TouchableOpacity 
                     style={[styles.cancelButton, { borderColor: colors.border }]} 
@@ -1352,10 +1500,16 @@ export default function CameraScanner() {
                     style={[
                       styles.confirmButton, 
                       { backgroundColor: colors.primary },
-                      formSpinner.status && { opacity: 0.7 }
+                      formSpinner.status && { opacity: 0.7 },
+                      // For driver/delivery_company, disable if no status is selected
+                      (user && (user.role === 'driver' || user.role === 'delivery_company') && !selectedStatus) && { opacity: 0.5 }
                     ]} 
-                    onPress={showStatusSelection ? updateOrderStatus : createDispatchedCollection}
-                    disabled={formSpinner.status || (showStatusSelection && !selectedStatus)}
+                    onPress={updateOrderStatus}
+                    disabled={
+                      formSpinner.status || 
+                      (showStatusSelection && !selectedStatus) ||
+                      (user && (user.role === 'driver' || user.role === 'delivery_company') && !selectedStatus)
+                    }
                   >
                     {formSpinner.status ? (
                       <ActivityIndicator size="small" color={colors.buttonText} />
@@ -1397,22 +1551,9 @@ export default function CameraScanner() {
                   <TouchableOpacity 
                     style={[styles.nextButton, { backgroundColor: colors.primary }]} 
                     onPress={() => {
-                      // For driver or delivery_company roles, show confirmation alert first
+                      // For driver or delivery_company roles, show options modal instead of confirmation
                       if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
-                        Alert.alert(
-                          translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status',
-                          translations[language]?.tabs?.orders?.order?.confirmStatusChange || 'Are you sure you want to change the status of these orders?',
-                          [
-                            {
-                              text: translations[language]?.camera?.cancel || 'Cancel',
-                              style: 'cancel'
-                            },
-                            {
-                              text: translations[language]?.camera?.confirm || 'Confirm',
-                              onPress: () => updateOrderStatus()
-                            }
-                          ]
-                        );
+                        setShowCreateDispatchedCollectionModal(true);
                       } else {
                         setShowCreateDispatchedCollectionModal(true);
                       }
@@ -1709,6 +1850,40 @@ export default function CameraScanner() {
 }
 
 const styles = StyleSheet.create({
+  // Driver option styles
+  driverOptionsContainer: {
+    marginBottom: 20,
+    gap: 16,
+  },
+  driverOptionButton: {
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  driverOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 16,
+  },
+  driverOptionIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  driverOptionTextContainer: {
+    flex: 1,
+  },
+  driverOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  driverOptionDescription: {
+    fontSize: 14,
+  },
   container: {
     flex: 1,
   },

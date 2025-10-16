@@ -146,15 +146,14 @@ export default function ScanCollectionConfirm() {
         collectionId = collectionId.replace(/\D/g, '');
       }
       
-      
       if (!collectionId) {
         throw new Error("Could not extract a valid collection ID from scan");
       }
       
       setScanned(true);
       
-      // First try to fetch all sent collections and find the one we need
-      let response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm`, {
+      // Directly fetch the collection by ID
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collectionId}`, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -164,97 +163,32 @@ export default function ScanCollectionConfirm() {
         credentials: 'include',
       });
       
-      let allCollections = [];
-      let collectionData = null;
-      
-      try {
-        const responseText = await response.text();
-        try {
-          // Try to parse as JSON
-          const responseData = JSON.parse(responseText);
-          
-          // Extract collections from the nested data structure
-          let collections = [];
-          if (responseData.data && Array.isArray(responseData.data)) {
-            collections = responseData.data;
-          } else if (Array.isArray(responseData)) {
-            collections = responseData;
-          }
-          
-          allCollections = collections;
-          
-          if (collections.length > 0) {
-            // Find the collection with matching ID
-            const numericId = parseInt(collectionId, 10);
-            const stringId = String(collectionId);
-            
-            collectionData = collections.find(c => {
-              const cId = String(c.collection_id);
-              return cId === stringId || cId === String(numericId);
-            });
-            
-          }
-        } catch (jsonError) {
-          allCollections = [];
-        }
-      } catch (error) {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      // If not found directly, try to find it as a connected collection
-      if (!response.ok || !collectionData) {
-        
-        
-        if (Array.isArray(allCollections) && allCollections.length > 0) {
-          // Convert scanned ID to both number and string formats for comparison
-          const numericId = parseInt(collectionId, 10);
-          const stringId = String(collectionId);
-          
-          
-          // Find the collection that has the scanned ID in its connected_collection_ids
-          for (const collection of allCollections) {
-            if (!collection.connected_collection_ids) {
-              continue;
-            }
-            
-            
-            // Ensure connected_collection_ids is an array
-            let connectedIds = collection.connected_collection_ids;
-            if (!Array.isArray(connectedIds)) {
-              try {
-                // Try to convert to array if it's a string
-                if (typeof connectedIds === 'string') {
-                  connectedIds = connectedIds.split(',').map(id => id.trim()).filter(id => id);
-                } else {
-                  continue;
-                }
-              } catch (e) {
-                continue;
-              }
-            }
-            
-            // Now check each connected ID
-            for (const connectedId of connectedIds) {
-              const connectedIdStr = String(connectedId);
-              
-              if (connectedIdStr === stringId || connectedIdStr === String(numericId)) {
-                collectionData = collection;
-                break;
-              }
-            }
-            
-            if (collectionData) break;
-          }
-        } else {
-        }
-      }
-            
+      const responseData = await response.json();
+      
+      // Extract the collection from the nested response structure and merge with other data
+      const collectionData = responseData.collection || responseData;
+      
       if (collectionData && collectionData.collection_id) {
-        setScannedCollection(collectionData);
+        // Merge collection data with financials, orders, and other arrays from the response
+        const fullCollectionData = {
+          ...collectionData,
+          financials: responseData.financials || [],
+          orders: responseData.orders || [],
+          received_amounts: responseData.received_amounts || [],
+          expenses: responseData.expenses || [],
+          status_history: responseData.status_history || [],
+          cod_totals: responseData.cod_totals || []
+        };
+        setScannedCollection(fullCollectionData);
         playSuccessSound();
         
         // Auto confirm after a short delay
         setTimeout(() => {
-          handleConfirmCollection(collectionData);
+          handleConfirmCollection(fullCollectionData);
         }, 1000);
       } else {
         setError(translations[language]?.collections?.collection?.collectionNotFound || 'Collection not found');
@@ -262,7 +196,7 @@ export default function ScanCollectionConfirm() {
         setTimeout(() => setError(null), 3000);
       }
     } catch (err) {
-      setError(translations[language]?.camera?.scanInvalidTextError || 'Invalid scan data');
+      setError(translations[language]?.collections?.collection?.collectionNotFound || 'Collection not found');
       playFailureSound();
       setTimeout(() => setError(null), 3000);
     } finally {
@@ -279,118 +213,67 @@ export default function ScanCollectionConfirm() {
 
     setConfirming(true);
     try {      
-      const collectionIds = [collection.collection_id];
       // Check delivery_type instead of type
-      const collectionType = collection.delivery_type;      
+      const collectionType = collection.status_key;      
       // Set status based on delivery_type
-      const status = collectionType === 'money' ? 'paid' : 'returned_delivered';
+      const status = collectionType === 'money_out' ? 'paid' : 'returned_delivered';
       
-      const connectedCollectionIds = collection?.connected_collection_ids || [];
+      const collectionId = collection.collection_id;
       
-      const updates = {
-        collection_ids: collectionIds,
-        status: status,
-        note_content: null
-      };
-
-      // Create an array of promises for parallel requests
-      const promises = [];
-      
-      // Update sent collection status
-      promises.push(
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/status`, {
-          method: 'PUT',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-            'Accept-Language': language,
-          },
-          credentials: 'include',
-          body: JSON.stringify({ updates })
+      // Create the API request for the collection
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collectionId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': language,
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: status,
+          note_content: null
         })
-      );
+      });
       
-      // If connected collection IDs exist, add requests to update each one
-      if (Array.isArray(connectedCollectionIds) && connectedCollectionIds.length > 0) {
-        // Add a request for each connected collection ID
-        connectedCollectionIds.forEach(connectedId => {
-          if (connectedId) {
-            promises.push(
-              fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${connectedId}/status`, {
-                method: 'PUT',
-                headers: {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                  'Accept-Language': language,
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                  status: status,
-                  note_content: "Status updated via connected sent money collection"
-                })
-              })
-            );
-          }
-        });
-      }
+      const data = await response.json();
       
-      // Execute all requests in parallel
-      const responses = await Promise.all(promises);
-      
-      // Handle the response from the first request
-      let data;
-      try {
-        const responseText = await responses[0].text();
-        
-        try {
-          data = JSON.parse(responseText);
-        } catch (jsonError) {
-          data = { 
-            successes: [], 
-            failures: [{ 
-              collectionId: collection.collection_id, 
-              error: "Failed to parse server response" 
-            }] 
-          };
-        }
-      } catch (error) {
-        data = { 
-          successes: [], 
-          failures: [{ 
-            collectionId: collection.collection_id, 
-            error: "Failed to read server response" 
-          }] 
-        };
-      }
-
-      if (data.failures?.length > 0 && data.successes?.length > 0) {
+      // Check if the response is ok
+      if (!response.ok) {
+        // Handle error responses from backend
+        const errorMessage = data.message || `HTTP error! status: ${response.status}`;
         Alert.alert(
-          translations[language]?.collections?.collection?.partialSuccess,
-          `${translations[language]?.collections?.collection?.updatedCollections}: ${data.successes.join(', ')}\n\n${translations[language]?.collections?.collection?.failedCollections}: ${data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')}`
-        );
-      } else if (data.failures?.length > 0) {
-        Alert.alert(
-          translations[language]?.collections?.collection?.error,
-          data.failures.map(f => `#${f.collectionId}: ${f.error}`).join('\n')
+          translations[language]?.collections?.collection?.error || "Error",
+          errorMessage
         );
         playFailureSound();
       } else {
+        // Handle successful response
+        const successMessage = data.message || translations[language]?.collections?.collection?.statusUpdatedSuccessfully || "Status updated successfully";
         Alert.alert(
-          translations[language]?.collections?.collection?.success,
-          `${translations[language]?.collections?.collection?.statusUpdated}: ${data.successes.join(', ')}`
+          translations[language]?.collections?.collection?.success || "Success",
+          successMessage
         );
         playSuccessSound();
+        
+        // Return to main screen after confirmation
+        setTimeout(() => {
+          router.replace('/(tabs)');
+        }, 2000);
       }
-
-      // Return to previous screen after confirmation
-      setTimeout(() => {
-        router.back();
-      }, 2000);
       
-    } catch (err) {
+    } catch (err) {      
+      // Handle different types of errors
+      let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
+      
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        errorMessage = translations[language]?.collections?.collection?.networkError || 'Network error. Please check your connection.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       Alert.alert(
-        translations[language]?.collections?.collection?.error,
-        err.message || translations[language]?.collections?.collection?.tryAgainLater
+        translations[language]?.collections?.collection?.error || "Error",
+        errorMessage
       );
       playFailureSound();
     } finally {
@@ -406,7 +289,7 @@ export default function ScanCollectionConfirm() {
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.replace('/(tabs)')}
           >
             <Text style={styles.backButtonText}>
               {translations[language]?.back || 'Back'}
@@ -463,7 +346,7 @@ export default function ScanCollectionConfirm() {
             styles.backButtonContainer,
             isRTL ? { right: 20 } : { left: 20 }
           ]}
-          onPress={() => router.back()}
+          onPress={() => router.replace('/(tabs)')}
         >
           <View style={styles.backButtonCircle}>
             <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
@@ -550,23 +433,46 @@ export default function ScanCollectionConfirm() {
               </Text>
             </View>
             
-            <View style={[styles.collectionDetail, { borderColor: colors.border }]}>
-              <Text style={[styles.detailLabel, { color: colors.text }]}>
-                {translations[language]?.collections?.collection?.totalNetValue}:
-              </Text>
-              <Text style={[styles.detailValue, { color: colors.success }]}>
-                {scannedCollection.total_net_value}
-              </Text>
-            </View>
+            {/* Financial Information */}
+            {scannedCollection.financials && scannedCollection.financials.length > 0 && (
+              <>
+                <View style={[styles.collectionDetail, { borderColor: colors.border }]}>
+                  <Text style={[styles.detailLabel, { color: colors.text }]}>
+                    {translations[language]?.collections?.collection?.totalCodValue || 'Total COD Value'}:
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.text }]}>
+                    {scannedCollection.financials[0].currency_symbol}{scannedCollection.financials[0].total_cod_value}
+                  </Text>
+                </View>
+                
+                <View style={[styles.collectionDetail, { borderColor: colors.border }]}>
+                  <Text style={[styles.detailLabel, { color: colors.text }]}>
+                    {translations[language]?.collections?.collection?.finalAmount || 'Final Amount'}:
+                  </Text>
+                  <Text style={[styles.detailValue, { color: colors.success }]}>
+                    {scannedCollection.financials[0].currency_symbol}{scannedCollection.financials[0].final_amount}
+                  </Text>
+                </View>
+                
+                {scannedCollection.financials[0].total_deductions > 0 && (
+                  <View style={[styles.collectionDetail, { borderColor: colors.border }]}>
+                    <Text style={[styles.detailLabel, { color: colors.text }]}>
+                      {translations[language]?.collections?.collection?.totalDeductions || 'Total Deductions'}:
+                    </Text>
+                    <Text style={[styles.detailValue, { color: colors.error }]}>
+                      {scannedCollection.financials[0].currency_symbol}{scannedCollection.financials[0].total_deductions}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
             
             <View style={[styles.collectionDetail, { borderColor: colors.border }]}>
               <Text style={[styles.detailLabel, { color: colors.text }]}>
-                {translations[language]?.collections?.collection?.orderIds}:
+                {translations[language]?.collections?.collection?.orderCount || 'Order Count'}:
               </Text>
               <Text style={[styles.detailValue, { color: colors.text }]}>
-                {Array.isArray(scannedCollection.order_ids) 
-                  ? scannedCollection.order_ids.join(', ') 
-                  : scannedCollection.order_ids || '-'}
+                {scannedCollection.orders ? scannedCollection.orders.length : (scannedCollection.order_count || 0)}
               </Text>
             </View>
             

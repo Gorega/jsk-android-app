@@ -18,7 +18,7 @@ return <Stack>
       header:()=>{
         return <FixedHeader title={translations[language].users.title}>
         <TouchableOpacity onPressIn={()=> router.push("(create_user)")}>
-          <MaterialIcons name="person-add-alt-1" size={24} color="#4361EE" />
+          <MaterialIcons name="person-add-alt-1" size={24} color="#E1251B" />
         </TouchableOpacity>
       </FixedHeader>
       }

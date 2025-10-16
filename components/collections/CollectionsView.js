@@ -19,7 +19,6 @@ const CollectionItem = React.memo(function CollectionItem({ item, type }) {
     // Custom comparison function to prevent unnecessary re-renders
     // Only re-render if the collection_id or status changes
     return prevProps.item.collection_id === nextProps.item.collection_id && 
-           prevProps.item.status_key === nextProps.item.status_key &&
            prevProps.type === nextProps.type;
 });
 

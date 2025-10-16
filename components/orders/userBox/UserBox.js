@@ -32,7 +32,6 @@ export default function BusinessBox({ box, orderId }) {
                 const data = await res.json();
                 setOrderData(data);
             } catch (error) {
-                console.error("Error fetching order data:", error);
             }
         };
         
@@ -77,6 +76,8 @@ export default function BusinessBox({ box, orderId }) {
                             msg: "",
                             orderId: orderId,
                             businessName: orderData?.sender || "طيار للتوصيل",
+                            receiverCity: orderData?.receiver_city || "",
+                            receiverAddress: orderData?.receiver_address || "",
                             codValue: orderData?.cod_values?.[0]?.value || "",
                             currency: orderData?.cod_values?.[0]?.currency || "₪"
                         }}
@@ -84,12 +85,14 @@ export default function BusinessBox({ box, orderId }) {
                     />
                     <Contact
                         contact={{
-                            type: "msg",
+                            type: "message",
                             label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                             phone: box.phone,
                             userName: box.userName,
                             msg: "",
                             orderId: orderId,
+                            receiverCity: orderData?.receiver_city || "",
+                            receiverAddress: orderData?.receiver_address || "",
                             businessName: orderData?.sender || "طيار للتوصيل",
                             codValue: orderData?.cod_values?.[0]?.value || "",
                             currency: orderData?.cod_values?.[0]?.currency || "₪"
