@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   Animated,
   KeyboardAvoidingView,
-  ScrollView
+  ScrollView,
+  TextInput
 } from "react-native";
 import { Link, useRouter, Redirect, router } from "expo-router";
 import { Feather, MaterialIcons } from '@expo/vector-icons';
@@ -28,6 +29,8 @@ import { translations } from '../../utils/languageContext';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import ModalPresentation from '../../components/ModalPresentation';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
 // Get screen dimensions
 const { height } = Dimensions.get('window');
@@ -44,6 +47,20 @@ export default function SignIn() {
   const scrollViewRef = useRef(null);
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [trackInput, setTrackInput] = useState('');
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackError, setTrackError] = useState('');
+
+  useEffect(() => {
+    const unsub = eventEmitter.on(EVENTS.REFERENCE_SCANNED, (value) => {
+      try {
+        setTrackInput(String(value || '').trim());
+        setShowTrackModal(true);
+      } catch (e) {}
+    });
+    return () => { try { unsub && unsub(); } catch (e) {} };
+  }, []);
   
   
   const router = useRouter();
@@ -542,6 +559,15 @@ export default function SignIn() {
               </Text>
             )}
           </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.trackButton, { borderColor: colors.primary }]}
+            onPress={() => setShowTrackModal(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.trackButtonText, { color: colors.primary }]}>
+              {translations[language]?.tabs?.orders?.track?.orderTrack || 'Track Order Details'}
+            </Text>
+          </TouchableOpacity>
           
           {/* Register link */}
           <View style={styles.registerLinkContainer}>
@@ -558,6 +584,62 @@ export default function SignIn() {
           </View>
         </View>
       </KeyboardAvoidingView>
+      {showTrackModal && (
+        <ModalPresentation
+          showModal={showTrackModal}
+          setShowModal={setShowTrackModal}
+          customStyles={{ bottom: 15 }}
+          position="bottom"
+        >
+          <View style={{ padding: 16, gap: 12 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>
+              {translations[language]?.tabs?.orders?.track?.orderTrack || 'Track Order Details'}
+            </Text>
+            {trackError ? (
+              <Text style={{ color: '#EF4444', fontSize: 14 }}>
+                {trackError}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.surface }}>
+                <TextInput
+                  style={{ fontSize: 15, color: colors.text }}
+                  placeholder={translations[language]?.tabs?.orders?.track?.enterOrderId || 'Enter Order ID or Reference ID'}
+                  placeholderTextColor={colors.textSecondary}
+                  value={trackInput}
+                  onChangeText={(v) => { setTrackError(''); setTrackInput(v); }}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity
+                style={{ paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 }}
+                onPress={() => { setShowTrackModal(false); router.push('/(camera)/lookupOrder?for=public_track'); }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="qr-code-scanner" size={22} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={{ paddingVertical: 10, paddingHorizontal: 18, backgroundColor: colors.primary, borderRadius: 10, alignItems: 'center' }}
+              onPress={() => {
+                if (!trackInput.trim()) { setTrackError(translations[language]?.common?.required || 'Required'); return; }
+                setShowTrackModal(false);
+                router.push({ pathname: "(track)", params: { orderId: trackInput.trim(), public: '1' } });
+              }}
+              disabled={trackLoading}
+              activeOpacity={0.8}
+            >
+              {trackLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={{ color: '#FFFFFF', fontWeight: '700' }}>
+                  {translations[language]?.tabs?.orders?.track?.track || 'Track'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ModalPresentation>
+      )}
     </SafeAreaView>
   );
 }
@@ -701,6 +783,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10
+  },
+  trackButton: {
+    marginTop: 7,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  trackButtonText: {
+    fontWeight: '700'
   },
   registerText: {
     color: '#64748B',

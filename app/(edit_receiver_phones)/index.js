@@ -230,6 +230,7 @@ export default function EditReceiverDetailsScreen() {
             });
 
         } catch (err) {
+            console.log(err);
             console.error("Error updating COD value:", err);
             setSubmitting(false);
             setShowAlert({
@@ -277,6 +278,7 @@ export default function EditReceiverDetailsScreen() {
             );
 
             const data = await response.json();
+            console.log(data);
 
             if (!response.ok) {
                 setSubmitting(false);
@@ -336,6 +338,7 @@ export default function EditReceiverDetailsScreen() {
             });
 
         } catch (err) {
+            console.log(err)
             console.error("Error submitting form:", err);
             setSubmitting(false);
             

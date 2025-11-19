@@ -4,8 +4,6 @@ import Order from './Order';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import Ionicons from '@expo/vector-icons/Ionicons';
 import { RTLWrapper } from '@/utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
@@ -249,17 +247,7 @@ const OrdersView = React.memo(function OrdersView({
             // Silent fail for AsyncStorage errors
         }
     };
-    
-    // Function to reset onboarding tutorial (for testing or if user wants to see it again)
-    // This can be exposed through a developer menu or settings screen
-    const resetOnboardingTutorial = async () => {
-        try {
-            await AsyncStorage.removeItem('orders_onboarding_seen');
-            setShowOnboarding(true);
-        } catch (error) {
-            // Silent fail for AsyncStorage errors
-        }
-    };
+
 
     // Memoize the renderOrderItem function to prevent recreating it on each render
     const renderOrderItem = React.useCallback(({ item }) => {
@@ -267,19 +255,20 @@ const OrdersView = React.memo(function OrdersView({
     }, [metadata, onStatusChange]);
 
     // Memoize the keyExtractor function
-    const keyExtractor = React.useCallback((item) => 
-        item?.order_id?.toString() || `item-${Math.random().toString(36).substr(2, 9)}`
-    , []);
+    const keyExtractor = React.useCallback((item, index) => {
+        const id = item?.order_id;
+        return id != null ? `order-${id}-${index}` : `idx-${index}`;
+    }, []);
 
     // Memoize FlatList optimization props
     const flatListProps = useMemo(() => ({
-        removeClippedSubviews: true,
-        maxToRenderPerBatch: 8,
-        updateCellsBatchingPeriod: 30,
-        windowSize: 7,
-        initialNumToRender: 6,
+        removeClippedSubviews: false,
+        maxToRenderPerBatch: 10,
+        updateCellsBatchingPeriod: 50,
+        windowSize: 5,
+        initialNumToRender: 10,
         refreshing: refreshControl?.props?.refreshing || false,
-        onRefresh: refreshControl?.props?.onRefresh
+        onRefresh: refreshControl?.props?.onRefresh,
     }), [refreshControl?.props?.refreshing, refreshControl?.props?.onRefresh]);
 
     // Loading state - show loading indicator when isLoading is true

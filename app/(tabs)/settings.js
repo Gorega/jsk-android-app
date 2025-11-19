@@ -192,20 +192,20 @@ export default function Settings() {
     // First, modify the settings array to organize options by section and remove the duplicate
     const settings = {
         preferences: [
-            (["admin", "manager"].includes(user?.role)) ? {
+            (!["business","driver","delivery_company"].includes(user?.role)) ? {
                 label: translations[language].tabs.settings.options.users,
                 onPress: () => router.push("(users)"),
-                icon: <FontAwesome name="user-o" size={22} color="#F59994" />
+                icon: <FontAwesome name="user-o" size={22} color="#4361EE" />
             } : null,
             (["manager", "admin", "business"].includes(user?.role)) ? {
                 label: translations[language].tabs.settings.options.complaints,
                 onPress: () => router.push("(complaints)"),
-                icon: <MaterialIcons name="fmd-bad" size={22} color="#F59994" />
+                icon: <MaterialIcons name="fmd-bad" size={22} color="#4361EE" />
             } : null,
             (["driver", "delivery_company"].includes(user?.role)) ? {
                 label: translations[language]?.tabs.settings.options.driverStats || "Driver Statistics",
                 onPress: () => router.push("(driver_stats)"),
-                icon: <MaterialCommunityIcons name="chart-bar" size={22} color="#F59994" />
+                icon: <MaterialCommunityIcons name="chart-bar" size={22} color="#4361EE" />
             } : null,
             {
                 label: translations[language].tabs.settings.options.language.title,
@@ -214,7 +214,7 @@ export default function Settings() {
                     if (modalTransitionInProgress.current) return;
                     setShowLanguageModal(true);
                 },
-                icon: <MaterialIcons name="language" size={22} color="#F59994" />,
+                icon: <MaterialIcons name="language" size={22} color="#4361EE" />,
                 value: language.toUpperCase()
             },
             {
@@ -227,7 +227,7 @@ export default function Settings() {
                 icon: <MaterialCommunityIcons 
                         name={isDark ? "moon-waning-crescent" : "white-balance-sunny"} 
                         size={22} 
-                        color="#F59994" 
+                        color="#4361EE" 
                       />,
                 value: theme === 'system' 
                     ? (translations[language].tabs.settings.options.theme?.options?.system || 'System') 
@@ -241,17 +241,17 @@ export default function Settings() {
             {
                 label: translations[language].tabs.settings.options.changePassword,
                 onPress: () => router.push("(change_password)"),
-                icon: <AntDesign name="lock" size={22} color="#F59994" />
+                icon: <AntDesign name="lock" size={22} color="#4361EE" />
             },
             {
                 label: translations[language].tabs.settings.options.contactUs,
                 onPress: () => router.push("(contact_us)"),
-                icon: <Entypo name="phone" size={22} color="#F59994" />
+                icon: <Entypo name="phone" size={22} color="#4361EE" />
             },
             {
                 label: translations[language].tabs.settings.options.aboutUs,
                 onPress: () => router.push("(info)"),
-                icon: <MaterialCommunityIcons name="information-outline" size={22} color="#F59994" />
+                icon: <MaterialCommunityIcons name="information-outline" size={22} color="#4361EE" />
             }
         ],
         
@@ -264,7 +264,7 @@ export default function Settings() {
                     if (modalTransitionInProgress.current) return;
                     setShowAccountsModal(true);
                 },
-                icon: <MaterialIcons name="switch-account" size={22} color="#F59994" />
+                icon: <MaterialIcons name="switch-account" size={22} color="#4361EE" />
             },
             {
                 label: translations[language].tabs.settings.options.deleteAccount,

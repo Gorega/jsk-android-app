@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, StatusBar, Platform, Clipboard, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, Linking, StatusBar, Platform, Clipboard, Alert, Pressable } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
@@ -12,12 +12,14 @@ import { useSocket } from '../../utils/socketContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import axios from 'axios';
 
 const TrackingOrder = () => {
   const socket = useSocket();
   const { user: authUser } = useAuth();
   const params = useLocalSearchParams();
-  const { orderId } = params;
+  const { orderId, public: publicMode } = params;
+  const isPublic = !!publicMode;
   const [order, setOrder] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -33,48 +35,98 @@ const TrackingOrder = () => {
       setError(null);
       await fetchOrderData();
     } catch (error) {
+      console.error(' [track/index.js] onRefresh - Error:', error.message);
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [fetchOrderData]);
 
   const fetchOrderData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Ensure orderId is properly formatted for the API request
       const formattedOrderId = String(orderId).trim();
-            
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${formattedOrderId}?language_code=${language}`, {
-        method: "GET",
-        credentials: "include",
+      const baseStripped = formattedOrderId.replace(/-(B|R)$/i, '');
+      const numericOnly = (formattedOrderId.match(/\d+/) || [formattedOrderId])[0];
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL || '';
+
+      const candidates = [
+        baseStripped,
+        numericOnly,
+        formattedOrderId,
+        formattedOrderId.endsWith('-B') ? formattedOrderId : `${formattedOrderId}-B`,
+        formattedOrderId.endsWith('-R') ? formattedOrderId : `${formattedOrderId}-R`
+      ].filter(Boolean).filter((v, idx, arr) => arr.indexOf(v) === idx);
+
+      const commonOpts = {
+        params: { language_code: language },
         headers: {
           'Accept': 'application/json',
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true
+      };
+      const attempts = [];
+
+      const tryFetch = async (endpointLabel, id) => {
+        const endpoint = endpointLabel === 'public' 
+          ? `/api/orders/${encodeURIComponent(id)}/public_info` 
+          : `/api/orders/${encodeURIComponent(id)}`;
+        const url = `${baseUrl}${endpoint}`;
+        try {
+          const res = await axios.get(url, commonOpts);
+          attempts.push({ endpointLabel, id, url, status: res.status, ok: true });
+          return res.data;
+        } catch (e) {
+          const status = e.response?.status;
+          const msg = e.response?.data?.message || e.message || '';
+          attempts.push({ endpointLabel, id, url, status, ok: false, msg });
+          throw e;
         }
-      });
-      
-      if (!res.ok) {
-        // Handle server errors with proper error message
-        const errorText = await res.text();
-        throw new Error(errorText || `Error ${res.status}: Order could not be loaded`);
+      };
+
+      const sequence = [];
+      if (publicMode) {
+        candidates.forEach(id => sequence.push(['public', id]));
+        candidates.forEach(id => sequence.push(['private', id]));
+      } else {
+        candidates.forEach(id => sequence.push(['private', id]));
+        candidates.forEach(id => sequence.push(['public', id]));
       }
-      
-      const data = await res.json();
-      try {
-        // Try to parse the JSON response
-        setOrder(data);
-      } catch (parseError) {
-        // If JSON parsing fails, throw a more specific error
-        throw new Error(`Invalid response format: ${parseError.message}`);
+
+      let lastError = null;
+      for (const [label, id] of sequence) {
+        try {
+          const data = await tryFetch(label, id);
+          setOrder(data);
+          lastError = null;
+          break;
+        } catch (e) {
+          lastError = e;
+          const status = e.response?.status;
+          const msg = e.response?.data?.message || e.message || '';
+          const recoverable = status === 404 || /not found/i.test(msg) || status === 401;
+          if (!recoverable) {
+            break;
+          }
+        }
+      }
+
+      if (lastError) {
+        const errorMessage = lastError.response?.data?.message || lastError.message || 'Could not load order data';
+        const isExpected = /not found/i.test(errorMessage) || /authorization token required/i.test(errorMessage);
+        (isExpected ? console.warn : console.error)(' [track/index.js] fetchOrderData - Error:', errorMessage);
+        setError(errorMessage);
       }
     } catch (error) {
-      setError(error.message || 'Could not load order data');
+      const errorMessage = error.response?.data?.message || error.message || 'Could not load order data';
+      const isExpected = /not found/i.test(errorMessage) || /authorization token required/i.test(errorMessage);
+      (isExpected ? console.warn : console.error)(' [track/index.js] fetchOrderData - Error:', errorMessage);
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, [orderId, language]);
+  }, [orderId, language, publicMode]);
 
   const getStatusInfo = (statusKey) => {
     const statusMap = {
@@ -280,34 +332,33 @@ const TrackingOrder = () => {
         >
           <View style={styles.heroContent}>
             <View style={styles.orderBadge}>
-              <Text style={styles.orderIdLabel}>#{orderId}</Text>
+              <Pressable onPress={() => Clipboard.setString(order.order_id.toString())}>
+                <Text style={styles.orderIdLabel}>#{orderId}</Text>
+              </Pressable>
             </View>
             <Text style={styles.heroTitle}>{translations[language].tabs.orders.track.orderTracking}</Text>
             
             {/* Current Status */}
             <LinearGradient
-              colors={getStatusInfo(order.status_key)?.gradient || ['#64748B', '#475569']}
+              colors={(getStatusInfo(order.status_key)?.gradient) || ['#64748B', '#475569']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.currentStatusBadge}
             >
               <Feather 
-                name={getStatusInfo(order.status_key)?.icon || 'help-circle'} 
+                name={(getStatusInfo(order.status_key)?.icon) || 'help-circle'} 
                 size={18} 
                 color="#ffffff" 
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.currentStatusText}>{order.status} {order.status_reason ? ` | ${order.status_reason}` : ''}</Text>
+              <Text style={styles.currentStatusText}>{order.status || '-'} {order.status_reason ? ` | ${order.status_reason}` : ''}</Text>
             </LinearGradient>
             
             {/* Edit Receiver Phone Button */}
             {(
-              // For driver and delivery_company
-              (["driver", "delivery_company"].includes(authUser?.role) && 
+              (!isPublic && ["driver", "delivery_company"].includes(authUser?.role) && 
                ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
-              
-              // For business users
-              (authUser?.role === "business" && 
+              (!isPublic && authUser?.role === "business" && 
                ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
                 "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
             ) && (
@@ -336,11 +387,8 @@ const TrackingOrder = () => {
             
             {/* Edit Button */}
             {(
-              // For business users, only show on "waiting" status
-              (authUser?.role === "business" && order.status_key === "waiting") ||
-              
-              // For driver and delivery_company, never show
-              (!["driver", "delivery_company", "business"].includes(authUser?.role) && 
+              (!isPublic && authUser?.role === "business" && order.status_key === "waiting") ||
+              (!isPublic && !["driver", "delivery_company", "business"].includes(authUser?.role) && 
                ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way", 
                 "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
                 "return_before_delivered_initiated", "return_after_delivered_initiated", 
@@ -371,18 +419,22 @@ const TrackingOrder = () => {
             
             {/* Order created info */}
             <View style={styles.heroInfoContainer}>
-              <View style={styles.heroInfoItem}>
-                <Feather name="user" size={14} color="#E0E7FF" style={styles.heroInfoIcon} />
-                <Text style={styles.heroInfoText}>
-                  {order.order_created_by}
-                </Text>
-              </View>
-              <View style={styles.heroInfoItem}>
-                <Feather name="calendar" size={14} color="#E0E7FF" style={styles.heroInfoIcon} />
-                <Text style={styles.heroInfoText}>
-                  {formatDate(order.created_at)}
-                </Text>
-              </View>
+              {order.order_created_by ? (
+                <View style={styles.heroInfoItem}>
+                  <Feather name="user" size={14} color="#E0E7FF" style={styles.heroInfoIcon} />
+                  <Text style={styles.heroInfoText}>
+                    {order.order_created_by}
+                  </Text>
+                </View>
+              ) : null}
+              {order.created_at ? (
+                <View style={styles.heroInfoItem}>
+                  <Feather name="calendar" size={14} color="#E0E7FF" style={styles.heroInfoIcon} />
+                  <Text style={styles.heroInfoText}>
+                    {formatDate(order.created_at)}
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </View>
         </LinearGradient>
@@ -400,8 +452,8 @@ const TrackingOrder = () => {
               <View style={[styles.cardIconContainer]}>
                 <Ionicons name="person" size={22} color="#ffffff" />
               </View>
-              <Text style={[styles.cardHeaderText]}>
-                {translations[language].tabs.orders.track.receiverInfo || 'Receiver Information'}
+                  <Text style={[styles.cardHeaderText]}>
+                {(translations[language].tabs.orders.track.receiverInfo) || 'Receiver Information'}
               </Text>
             </LinearGradient>
             
@@ -436,31 +488,31 @@ const TrackingOrder = () => {
                 </View>
               </View>
               
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
-                <View style={[styles.labelContainer]}>
-                  <Feather name="phone" size={16} color={colors.primary} style={styles.labelIcon} />
-                  <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
-                    {translations[language].tabs.orders.track.mobile}
-                  </Text>
-                </View>
-                <View style={styles.infoValueContainer}>
-                  <TouchableOpacity 
-                    style={[styles.phoneButton, { flex: 1 }]}
-                    onPress={() => handlePhoneCall(order.receiver_mobile)}
-                  >
-                    <Text style={styles.phoneButtonText}>{order.receiver_mobile || '-'}</Text>
-                    <Feather name="phone-call" size={14} color="#ffffff" />
-                  </TouchableOpacity>
-                  {order.receiver_mobile && order.receiver_mobile !== '-' && (
+              {order.receiver_mobile ? (
+                <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+                  <View style={[styles.labelContainer]}>
+                    <Feather name="phone" size={16} color={colors.primary} style={styles.labelIcon} />
+                    <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
+                      {translations[language].tabs.orders.track.mobile}
+                    </Text>
+                  </View>
+                  <View style={styles.infoValueContainer}>
+                    <TouchableOpacity 
+                      style={[styles.phoneButton, { flex: 1 }]}
+                      onPress={() => handlePhoneCall(order.receiver_mobile)}
+                    >
+                      <Text style={styles.phoneButtonText}>{order.receiver_mobile}</Text>
+                      <Feather name="phone-call" size={14} color="#ffffff" />
+                    </TouchableOpacity>
                     <TouchableOpacity 
                       style={styles.copyButton}
                       onPress={() => handleCopyToClipboard(order.receiver_mobile, translations[language].tabs.orders.track.mobile)}
                     >
                       <Feather name="copy" size={16} color={colors.primary} />
                     </TouchableOpacity>
-                  )}
+                  </View>
                 </View>
-              </View>
+              ) : null}
               
               {order.receiver_second_mobile && (
                 <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
@@ -588,7 +640,7 @@ const TrackingOrder = () => {
                       }
                     }),
                   }]}>
-                    {order.sender || '-'}
+                    {order.sender || order.sender_name || '-'}
                   </Text>
                   {order.sender && order.sender !== '-' && (
                     <TouchableOpacity 
@@ -601,7 +653,7 @@ const TrackingOrder = () => {
                 </View>
               </View>
               
-              <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
+              {order.sender_mobile ? (<View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
                 <View style={[styles.labelContainer]}>
                   <Feather name="phone" size={16} color="#7C3AED" style={styles.labelIcon} />
                   <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>
@@ -613,19 +665,17 @@ const TrackingOrder = () => {
                     style={[styles.phoneButton, { backgroundColor: '#7C3AED', flex: 1 }]}
                     onPress={() => handlePhoneCall(order.sender_mobile)}
                   >
-                    <Text style={[styles.phoneButtonText]}>{order.sender_mobile || '-'}</Text>
+                    <Text style={[styles.phoneButtonText]}>{order.sender_mobile}</Text>
                     <Feather name="phone-call" size={14} color="#ffffff" />
                   </TouchableOpacity>
-                  {order.sender_mobile && order.sender_mobile !== '-' && (
-                    <TouchableOpacity 
-                      style={styles.copyButton}
-                      onPress={() => handleCopyToClipboard(order.sender_mobile, translations[language].tabs.orders.track.mobile)}
-                    >
-                      <Feather name="copy" size={16} color="#7C3AED" />
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity 
+                    style={styles.copyButton}
+                    onPress={() => handleCopyToClipboard(order.sender_mobile, translations[language].tabs.orders.track.mobile)}
+                  >
+                    <Feather name="copy" size={16} color="#7C3AED" />
+                  </TouchableOpacity>
                 </View>
-              </View>
+              </View>) : null}
               
               {order.sender_second_mobile && (
                 <View style={[styles.infoRow, { borderBottomColor: colors.border }]}>
@@ -717,15 +767,17 @@ const TrackingOrder = () => {
                   <Text style={[styles.detailsValue, { color: colors.text }]}>{order.order_type || '-'}</Text>
                 </View>
                 
-                <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
-                  <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
-                    <Feather name="credit-card" size={18} color="#F97316" />
+                {order.payment_type ? (
+                  <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                    <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
+                      <Feather name="credit-card" size={18} color="#F97316" />
+                    </View>
+                    <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
+                      {translations[language].tabs.orders.track.paymentType}
+                    </Text>
+                    <Text style={[styles.detailsValue, { color: colors.text }]}>{order.payment_type}</Text>
                   </View>
-                  <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
-                    {translations[language].tabs.orders.track.paymentType}
-                  </Text>
-                  <Text style={[styles.detailsValue, { color: colors.text }]}>{order.payment_type || '-'}</Text>
-                </View>
+                ) : null}
                 
                 {order.reference_id ? (
                   <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
@@ -739,18 +791,20 @@ const TrackingOrder = () => {
                   </View>
                 ) : <></>}
                 
-                <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
-                  <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
-                    <Feather name="box" size={18} color="#F97316" />
+                {order.items_type ? (
+                  <View style={[styles.detailsGridItem, { backgroundColor: colorScheme === 'dark' ? colors.cardAlt : '#F9FAFB' }]}>
+                    <View style={[styles.detailsIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
+                      <Feather name="box" size={18} color="#F97316" />
+                    </View>
+                    <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
+                      {translations[language].tabs.orders.track.itemType}
+                    </Text>
+                    <Text style={[styles.detailsValue, { color: colors.text }]}>{order.items_type}</Text>
                   </View>
-                  <Text style={[styles.detailsLabel, { color: colors.textSecondary }]}>
-                    {translations[language].tabs.orders.track.itemType}
-                  </Text>
-                  <Text style={[styles.detailsValue, { color: colors.text }]}>{order.items_type || '-'}</Text>
-                </View>
+                ) : null}
               </View>
               
-              {order.driver ? (
+              {!isPublic && order.driver ? (
                 <View style={[styles.driverContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.1)' : 'rgba(249, 115, 22, 0.05)' }]}>
                   <View style={styles.driverHeader}>
                     <View style={[styles.driverIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : 'rgba(249, 115, 22, 0.1)' }]}>
@@ -774,11 +828,12 @@ const TrackingOrder = () => {
                     )}
                   </View>
                 </View>
-              ) : <></>}
+              ) : null}
             </View>
           </View>
 
           {/* Financial Details Card */}
+          {(!isPublic && (order.total_cod_value || order.delivery_fee || order.total_net_value || (order.checks && order.checks.length > 0))) ? (
           <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
               colors={['#10B981', '#059669']} 
@@ -796,7 +851,7 @@ const TrackingOrder = () => {
             
             <View style={styles.cardContent}>
               <View style={styles.financialSummary}>
-                {!["business"].includes(authUser.role) && (<View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
+                <View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="dollar-sign" size={18} color="#10B981" />
                   </View>
@@ -810,10 +865,10 @@ const TrackingOrder = () => {
                   }]}>
                     {translations[language].tabs.orders.track.codValue}
                   </Text>
-                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.total_cod_value || '0'}</Text>
-                </View>)}
+                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.total_cod_value}</Text>
+                </View>
                 
-                {!["driver","delivery_company","business"].includes(authUser.role) && (<View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
+                {!["driver","delivery_company"].includes(authUser?.role) && (<View style={[styles.financialItem, { borderBottomColor: colors.border }]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.1)' }]}>
                     <Feather name="truck" size={18} color="#10B981" />
                   </View>
@@ -827,10 +882,10 @@ const TrackingOrder = () => {
                   }]}>
                     {translations[language].tabs.orders.track.deliveryFee}
                   </Text>
-                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.delivery_fee || '0'}</Text>
+                  <Text style={[styles.financialValue, { color: colors.text }]}>{order.delivery_fee}</Text>
                 </View>)}
                 
-                {!["driver","delivery_company"].includes(authUser.role) && (<View style={[styles.financialItem, styles.highlightedFinancialItem, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
+                {!["driver","delivery_company"].includes(authUser?.role) && (<View style={[styles.financialItem, styles.highlightedFinancialItem, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(16, 185, 129, 0.05)' }]}>
                   <View style={[styles.financialIconContainer, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(16, 185, 129, 0.15)' }]}>
                     <Feather name="check-circle" size={18} color="#10B981" />
                   </View>
@@ -843,7 +898,7 @@ const TrackingOrder = () => {
                   }]}>
                     {translations[language].tabs.orders.track.netValue}
                   </Text>
-                  <Text style={styles.financialValueHighlight}>{order.total_net_value || '0'}</Text>
+                  <Text style={styles.financialValueHighlight}>{order.total_net_value}</Text>
                 </View>)}
               </View>
               
@@ -897,9 +952,10 @@ const TrackingOrder = () => {
               )}
             </View>
           </View>
+          ) : null}
 
           {/* Notes Section if applicable */}
-          {order.note_content ? (
+          {!isPublic && order.note_content ? (
             <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
               <LinearGradient 
                 colors={['#F59E0B', '#D97706']} 
@@ -931,9 +987,10 @@ const TrackingOrder = () => {
                 </View>
               </View>
             </View>
-          ) : <></>}
+          ) : null}
 
           {/* Package Info Card */}
+          {(!isPublic && (order?.order_items || order?.number_of_items || order?.order_weight || order?.received_items || order?.received_quantity)) ? (
           <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
             <LinearGradient 
               colors={colorScheme === 'dark' ? ['#3B82F6', '#2563EB'] : ['#4361EE', '#3730A3']} 
@@ -1060,6 +1117,7 @@ const TrackingOrder = () => {
               </View>
             </View>
           </View>
+          ) : null}
 
           {/* Delivery Status Timeline */}
           <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
@@ -1156,7 +1214,7 @@ const TrackingOrder = () => {
           </View>
 
           {/* Support Section */}
-          {authUser.role === "business" && (
+          {!isPublic && authUser?.role === "business" && (
             <View style={[styles.modernCard, { backgroundColor: colors.card, shadowColor: colors.cardShadow }]}>
               <LinearGradient 
                 colors={['#EF4444', '#DC2626']} 

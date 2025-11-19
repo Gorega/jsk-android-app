@@ -6,8 +6,6 @@ import CheckReceiver from "../../components/CheckReceiver";
 import Feather from '@expo/vector-icons/Feather';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import FontAwesome from '@expo/vector-icons/FontAwesome';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { useCallback, useEffect, useState, useRef } from "react";
 import useFetch from "../../utils/useFetch";
 import { router } from "expo-router";
@@ -22,7 +20,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
 import * as SecureStore from 'expo-secure-store';
-
+import axios from 'axios';
 
 export default function HomeScreen() {
   const socket = useSocket();
@@ -30,7 +28,6 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const { language } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
-  const [userBalances, setUserBalances] = useState(null);
   const [showMoneyModal, setShowMoneyModal] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -49,6 +46,7 @@ export default function HomeScreen() {
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
   const [activeTab, setActiveTab] = useState('track');
+  const [statusViewMode, setStatusViewMode] = useState('grid'); // 'grid' or 'list'
   
   // Modern onboarding system
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -236,17 +234,15 @@ export default function HomeScreen() {
   // const fetchUserBalance = async () => {
   //   try {
   //     // const token = await getToken("userToken");
-  //     const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/balances`, {
-  //       method: "GET",
-  //       credentials: "include",
+  //     const res = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.userId}/balances`, {
   //       headers: {
   //           'Accept': 'application/json',
   //           "Content-Type": "application/json",
   //           // "Cookie": token ? `token=${token}` : ""
   //       }
-  //   });
-  //   const data = await res.json();
-  //   setUserBalances(data.data);
+  //     });
+  //     const data = res.data;
+  //     setUserBalances(data.data);
   //   } catch (error) {
   //   }
   // };
@@ -260,11 +256,11 @@ export default function HomeScreen() {
         checkWaitingOrders()
       ]);
     } catch (error) {
+      console.error('❌ [index.js] onRefresh - Error:', error.message);
     } finally {
       setRefreshing(false);
     }
-  }, [language,user]);
-
+  }, [language,user, getRequest, checkWaitingOrders]);
 
   function formatMoney(codValue) {
     if (!codValue || typeof codValue !== 'object') return '';
@@ -274,7 +270,6 @@ export default function HomeScreen() {
     if ('USD' in codValue && codValue.USD !== 0) parts.push(`$${codValue.USD}`);
     return parts.join(' | ');
   }
-
 
   const columnBoxes = [{
     label: translations[language].tabs.index.boxes.todayOrders,
@@ -319,14 +314,7 @@ export default function HomeScreen() {
     numberOfOrders: data?.on_the_way_orders?.count,
     money: formatMoney(data?.on_the_way_orders?.cod_value),
     orderIds: data?.on_the_way_orders?.order_ids
-  },user.role === "business" ? {
-    label: translations[language].tabs.index.boxes.replacedDeliveredOrders,
-    icon: <MaterialCommunityIcons name="package-variant-closed" size={22} color="white" />,
-    gradientColors: ['#4361EE', '#3F37C9'],
-    numberOfOrders: data?.replaced_delivered_orders?.count,
-    money: formatMoney(data?.replaced_delivered_orders?.cod_value),
-    orderIds: data?.replaced_delivered_orders?.order_ids
-  } : {
+  },{
     label: translations[language].tabs.index.boxes.withDriver,
     icon: <MaterialCommunityIcons name="truck-delivery" size={22} color="white" />,
     gradientColors: ['#4361EE', '#3F37C9'],
@@ -399,30 +387,28 @@ export default function HomeScreen() {
 
   useEffect(() => {
     getRequest("/api/orders/status/totals");
-    // fetchUserBalance();
   }, [user]);
 
   const handleGeneralCollectRequest = async (type, action) => {
     setIsProcessing(true);
     try {
-      // const token = await getToken("userToken");
-      const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
-        method: "POST",
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'Accept-Language': language,
-          // "Cookie": token ? `token=${token}` : ""
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          action
-        })
-      });
-      const data = await res.json();
-      Alert.alert(data.message);
+      const res = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request`,
+        { action },
+        {
+          params: { requestType: type },
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Accept-Language': language,
+          },
+          withCredentials: true
+        }
+      );
+      Alert.alert(res.data.message);
     } catch (err) {
-      Alert.alert(err.message || "Something went wrong");
+      const errorMessage = err.response?.data?.message || err.message || "Something went wrong";
+      Alert.alert(errorMessage);
     } finally {
       setIsProcessing(false);
       setShowMoneyModal(false);
@@ -446,48 +432,49 @@ export default function HomeScreen() {
 
   const checkWaitingOrders = async () => {
     try {
-      // const token = await getToken("userToken");
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/orders?status_key=waiting&sender_id=${user.userId}`,
+      const res = await axios.get(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/orders`,
         {
-          credentials: "include",
+          params: {
+            status_key: 'waiting',
+            sender_id: user.userId
+          },
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
           },
+          withCredentials: true
         }
       );
-      const response = await res.json();
-      if (response.data && response?.data?.length > 0) {
+      if (res.data.data && res.data?.data?.length > 0) {
         setHasWaitingOrders(true);
       }
     } catch (error) {
+      console.error('❌ [index.js] checkWaitingOrders - Error:', error.message);
     }
   };
 
   const fetchDrivers = async () => {
     try {
-      // const token = await getToken("userToken");
-      const res = await fetch(
-        `${process.env.EXPO_PUBLIC_API_URL}/api/users/business/drivers?business_ids=${user.userId}`,
+      const res = await axios.get(
+        `${process.env.EXPO_PUBLIC_API_URL}/api/users/business/drivers`,
         {
-          credentials: "include",
+          params: { business_ids: user.userId },
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
           },
+          withCredentials: true
         }
       );
-      const response = await res.json();
-      if (response.status === "success") {
-        const currentBusiness = response.data.find(
+      if (res.data.status === "success") {
+        const currentBusiness = res.data.data.find(
           biz => biz.business_id === user.userId
         );
         if (currentBusiness) setDrivers(currentBusiness.drivers || []);
       }
     } catch (error) {
+      console.error('❌ [index.js] fetchDrivers - Error:', error.message);
     }
   };
 
@@ -516,24 +503,21 @@ export default function HomeScreen() {
 
     setSendingNotification(true);
     try {
-      // const token = await getToken("userToken");
-      const res = await fetch(
+      const res = await axios.post(
         `${process.env.EXPO_PUBLIC_API_URL}/api/users/notify/drivers`,
         {
-          method: 'POST',
-          credentials: "include",
+          business_id: user.userId,
+          driver_ids: selectedDrivers,
+        },
+        {
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
           },
-          body: JSON.stringify({
-            business_id: user.userId,
-            driver_ids: selectedDrivers,
-          }),
+          withCredentials: true
         }
       );
-      const data = await res.json();
+      const data = res.data;
 
       if (data.message && data.notified_drivers) {
         Alert.alert(
@@ -549,6 +533,7 @@ export default function HomeScreen() {
         );
       }
     } catch (error) {
+      console.error('❌ [index.js] handleSendNotification - Error:', error.message);
       Alert.alert(
         translations[language]?.driverNotification?.error,
         translations[language]?.driverNotification?.errorMessage
@@ -568,32 +553,29 @@ export default function HomeScreen() {
   const fetchCollections = async () => {
     try {
       setIsLoadingCollections(true);
-      // const token = await getToken("userToken");
       const [moneyRes, packageRes] = await Promise.all([
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=4&status=money_out`, {
-          credentials: 'include',
+        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+          params: { type_id: 4, status: 'money_out' },
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
-          }
+          },
+          withCredentials: true
         }),
-        fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=5&status=returned_out`, {
-          credentials: 'include',
+        axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
+          params: { type_id: 5, status: 'returned_out' },
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // "Cookie": token ? `token=${token}` : ""
-          }
+          },
+          withCredentials: true
         })
       ]);
 
-      const moneyData = await moneyRes.json();
-      const packageData = await packageRes.json();
-
-      setMoneyCollections(moneyData.collections || []);
-      setPackageCollections(packageData.collections || []);
+      setMoneyCollections(moneyRes.data.collections || []);
+      setPackageCollections(packageRes.data.collections || []);
     } catch (error) {
+      console.error('❌ [index.js] fetchCollections - Error:', error.message);
       Alert.alert("Error", error.message || "Failed to fetch collections");
     } finally {
       setIsLoadingCollections(false);
@@ -631,26 +613,28 @@ export default function HomeScreen() {
       for (const collectionId of selectedCollections) {
         try {
           // Create the API request for individual collection
-          const apiRequest = fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collectionId}/status`, {
-            method: 'PUT',
-            headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Accept-Language': language,
-            },
-            credentials: 'include',
-            body: JSON.stringify({
+          const response = await axios.put(
+            `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collectionId}/status`,
+            {
               status: status,
               note_content: "Status updated via connected sent money collection"
-            })
-          });
+            },
+            {
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'Accept-Language': language,
+              },
+              withCredentials: true,
+              validateStatus: () => true // Don't throw on any status
+            }
+          );
           
-          // Execute the request and get response
-          const response = await apiRequest;
-          const data = await response.json();
+          const data = response.data;
           
           // Check if the response is ok
-          if (!response.ok) {
+          if (response.status >= 400) {
+            console.error('❌ [index.js] handleCollectionConfirm - Error for collection:', collectionId);
             // Handle error responses from backend
             const errorMessage = data.message || `HTTP error! status: ${response.status}`;
             results.push({ collectionId, success: false, error: errorMessage });
@@ -662,7 +646,7 @@ export default function HomeScreen() {
           results.push({ collectionId, success: true, data });
           
         } catch (err) {
-          console.error(`Error updating collection ${collectionId}:`, err);
+          console.error(`❌ [index.js] handleCollectionConfirm - Error updating collection ${collectionId}:`, err.message);
           
           // Handle different types of errors
           let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
@@ -985,121 +969,6 @@ export default function HomeScreen() {
           ))}
         </View>}
 
-        {/* Balance Section */}
-        {/* {["driver","delivery_company","business"].includes(user.role) && <>
-          <View 
-          style={[styles.sectionHeader]}
-        >
-          <Text style={[styles.sectionTitle,{color:colors.text}]}>
-            {translations[language]?.tabs.index.balanceTitle || 'Your Balance'}
-          </Text>
-        </View>
-
-        <View style={[styles.balanceContainer]}>
-          {userBalances?.ILS !== undefined && (
-            <TouchableOpacity
-              style={styles.balanceCardStretch}
-              activeOpacity={0.8}
-              onPress={() => router.push({
-                pathname: "/(balance)",
-                params: { currency: 'ILS',value:userBalances?.ILS }
-              })}
-            >
-              <LinearGradient
-                 colors={isDark ? ['#4CC9F0', '#4361EE'] : ['#4CC9F0', '#4361EE']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.balanceGradient}
-              >
-                <View style={[styles.balanceHeader]}>
-                  <View style={styles.currencyIconContainer}>
-                    <FontAwesome name="shekel" size={24} color="white" />
-                  </View>
-                  <Text style={styles.balanceCurrencyText}>ILS</Text>
-                </View>
-                <Text style={styles.balanceAmount}>₪{userBalances?.ILS || 0}</Text>
-                <View style={styles.balanceFooter}>
-                  <Text style={styles.balanceLabel}>
-                    {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
-                  </Text>
-                  <View style={styles.arrowContainer}>
-                    <AntDesign name={rtl ? "arrowleft" : "arrowright"} size={16} color="white" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-          
-          {userBalances?.USD !== undefined && (
-            <TouchableOpacity
-              style={styles.balanceCard}
-              activeOpacity={0.8}
-              onPress={() => router.push({
-                pathname: "/(balance)",
-                params: { currency: 'USD',value:userBalances?.USD }
-              })}
-            >
-              <LinearGradient
-                 colors={isDark ? ['#3A0CA3', '#480CA8'] : ['#3A0CA3', '#480CA8']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.balanceGradient}
-              >
-                <View style={[styles.balanceHeader]}>
-                  <View style={styles.currencyIconContainer}>
-                    <FontAwesome name="dollar" size={24} color="white" />
-                  </View>
-                  <Text style={styles.balanceCurrencyText}>USD</Text>
-                </View>
-                <Text style={styles.balanceAmount}>${userBalances?.USD || 0}</Text>
-                <View style={styles.balanceFooter}>
-                  <Text style={styles.balanceLabel}>
-                    {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
-                  </Text>
-                  <View style={styles.arrowContainer}>
-                    <AntDesign name={rtl.isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-          
-          {userBalances?.JOD !== undefined && (
-            <TouchableOpacity
-              style={styles.balanceCard}
-              activeOpacity={0.8}
-              onPress={() => router.push({
-                pathname: "/(balance)",
-                params: { currency: 'JOD',value:userBalances?.JOD }
-              })}
-            >
-              <LinearGradient
-                 colors={isDark ? ['#7209B7', '#F72585'] : ['#7209B7', '#F72585']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.balanceGradient}
-              >
-                <View style={[styles.balanceHeader]}>
-                  <View style={styles.currencyIconContainer}>
-                    <Text style={styles.currencyCustomText}>JD</Text>
-                  </View>
-                  <Text style={styles.balanceCurrencyText}>JOD</Text>
-                </View>
-                <Text style={styles.balanceAmount}>JD{userBalances?.JOD || 0}</Text>
-                <View style={styles.balanceFooter}>
-                  <Text style={styles.balanceLabel}>
-                    {translations[language]?.tabs?.index?.balance?.available || 'Available Balance'}
-                  </Text>
-                  <View style={styles.arrowContainer}>
-                    <AntDesign name={rtl.isRTL ? "arrowleft" : "arrowright"} size={16} color="white" />
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          )}
-        </View>
-        </>} */}
-
         {/* Collections Section */}
         {user.role === "business" && (
           <>
@@ -1329,15 +1198,45 @@ export default function HomeScreen() {
         {/* Status Section */}
         {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && 
         <View 
-          style={[styles.sectionHeader]}
+          style={[styles.sectionHeader, styles.sectionHeaderWithToggle]}
         >
           <Text style={[styles.sectionTitle,{color:colors.text}]}>
             {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
           </Text>
+          <View style={styles.viewToggleContainer}>
+            <TouchableOpacity 
+              onPress={() => setStatusViewMode('grid')}
+              style={[
+                styles.viewToggleButton, 
+                statusViewMode === 'grid' && styles.viewToggleButtonActive,
+                { backgroundColor: statusViewMode === 'grid' ? colors.primary : colors.card }
+              ]}
+            >
+              <Ionicons 
+                name="grid" 
+                size={18} 
+                color={statusViewMode === 'grid' ? '#fff' : colors.text} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setStatusViewMode('list')}
+              style={[
+                styles.viewToggleButton, 
+                statusViewMode === 'list' && styles.viewToggleButtonActive,
+                { backgroundColor: statusViewMode === 'list' ? colors.primary : colors.card }
+              ]}
+            >
+              <Ionicons 
+                name="list" 
+                size={18} 
+                color={statusViewMode === 'list' ? '#fff' : colors.text} 
+              />
+            </TouchableOpacity>
+          </View>
         </View>}
         
         {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && (
-          <View style={styles.statusCirclesContainer}>
+          <View style={statusViewMode === 'grid' ? styles.statusCirclesContainer : styles.statusListContainer}>
             {(boxes)?.map((box, index) => {
               if (box.visibility === "hidden") return null;
               
@@ -1380,7 +1279,7 @@ export default function HomeScreen() {
               return (
                 <TouchableOpacity 
                   key={index}
-                  style={styles.statusCircleItem}
+                  style={statusViewMode === 'grid' ? styles.statusCircleItem : styles.statusListItem}
                   onPress={() => {
                     // First reset all filters
                     // DeviceEventEmitter.emit('resetOrdersFilters');
@@ -1411,68 +1310,134 @@ export default function HomeScreen() {
                     }}
                   activeOpacity={0.9}
                 >
-                  <View style={styles.circleOuterContainer}>
-                    {/* Circular progress track (background) */}
-                    <View style={styles.progressTrack} />
-                    
-                    {/* Circular progress background */}
-                    <View style={[
-                      styles.progressBackground,
-                      { backgroundColor: box.gradientColors[0] + '20' }
-                    ]} />
-                    
-                    {/* Circular progress indicator */}
-                    <View style={[
-                      styles.progressIndicator,
-                      { 
-                        borderColor: box.gradientColors[0],
-                        borderWidth: 2, // Thinner border
-                        width: 80,
-                        height: 80,
-                        borderRadius: 40,
-                        borderTopColor: 'transparent',
-                        transform: [
-                          { rotateZ: `${progressPercentage * 3.6}deg` }
-                        ]
-                      }
-                    ]} />
-                    
-                    {/* Inner circle with gradient background */}
-                    <LinearGradient
-                      colors={box.gradientColors}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.circleContent}
-                    >
-                      <View style={styles.circleIcon}>
-                        {box.icon}
+                  {statusViewMode === 'grid' ? (
+                    // Grid View (Original Circular Design)
+                    <>
+                      <View style={styles.circleOuterContainer}>
+                        {/* Circular progress track (background) */}
+                        <View style={styles.progressTrack} />
+                        
+                        {/* Circular progress background */}
+                        <View style={[
+                          styles.progressBackground,
+                          { backgroundColor: box.gradientColors[0] + '20' }
+                        ]} />
+                        
+                        {/* Circular progress indicator */}
+                        <View style={[
+                          styles.progressIndicator,
+                          { 
+                            borderColor: box.gradientColors[0],
+                            borderWidth: 2, // Thinner border
+                            width: 80,
+                            height: 80,
+                            borderRadius: 40,
+                            borderTopColor: 'transparent',
+                            transform: [
+                              { rotateZ: `${progressPercentage * 3.6}deg` }
+                            ]
+                          }
+                        ]} />
+                        
+                        {/* Inner circle with gradient background */}
+                        <LinearGradient
+                          colors={box.gradientColors}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.circleContent}
+                        >
+                          <View style={styles.circleIcon}>
+                            {box.icon}
+                          </View>
+                          <Text style={styles.circleCount}>{box.numberOfOrders || 0}</Text>
+                        </LinearGradient>
+                        
+                        {/* Percentage badge */}
+                        <Animated.View style={[
+                          styles.percentageBadge,
+                          { 
+                            backgroundColor: `${box.gradientColors[0]}`,
+                            transform: [{ scale: pulseAnim }]
+                          }
+                        ]}>
+                          <Text style={styles.percentageText}>
+                            <Text style={styles.percentageValue}>{Math.round(progressPercentage)}</Text>
+                            <Text style={styles.percentageSymbol}>%</Text>
+                          </Text>
+                        </Animated.View>
                       </View>
-                      <Text style={styles.circleCount}>{box.numberOfOrders || 0}</Text>
-                    </LinearGradient>
-                    
-                    {/* Percentage badge */}
-                    <Animated.View style={[
-                      styles.percentageBadge,
-                      { 
-                        backgroundColor: `${box.gradientColors[0]}`,
-                        transform: [{ scale: pulseAnim }]
-                      }
-                    ]}>
-                      <Text style={styles.percentageText}>
-                        <Text style={styles.percentageValue}>{Math.round(progressPercentage)}</Text>
-                        <Text style={styles.percentageSymbol}>%</Text>
+                      
+                      <Text style={[styles.circleTitle,{color:colors.text}]} numberOfLines={1}>
+                        {box.label}
                       </Text>
-                    </Animated.View>
-                  </View>
-                  
-                  <Text style={[styles.circleTitle,{color:colors.text}]} numberOfLines={1}>
-                    {box.label}
-                  </Text>
-                  
-                  {box.money && (
-                    <Text style={[styles.circleMoney,{color:colors.success}]} numberOfLines={1}>
-                      {box.money}
-                    </Text>
+                      
+                      {box.money && (
+                        <Text style={[styles.circleMoney,{color:colors.success}]} numberOfLines={1}>
+                          {box.money}
+                        </Text>
+                      )}
+                    </>
+                  ) : (
+                    // List View (Row Design)
+                    <View style={[styles.listItemCard, { backgroundColor: colors.card }]}>
+                      <View style={[styles.listItemAccent, { backgroundColor: box.gradientColors[0] + '25' }]} />
+                      
+                      <View style={styles.listItemContent}>
+                        <View style={styles.listItemLeft}>
+                          <View style={[styles.listItemIconWrapper, { backgroundColor: box.gradientColors[0] + '12' }]}>
+                            <LinearGradient
+                              colors={[box.gradientColors[0] + 'DD', box.gradientColors[1] + 'DD']}
+                              start={{ x: 0, y: 0 }}
+                              end={{ x: 1, y: 1 }}
+                              style={styles.listItemIconContainer}
+                            >
+                              {box.icon}
+                            </LinearGradient>
+                          </View>
+                          
+                          <View style={styles.listItemTextContainer}>
+                            <Text style={[styles.listItemTitle, {color: colors.text}]} numberOfLines={1}>
+                              {box.label}
+                            </Text>
+                            {box.money && (
+                              <View style={styles.listItemMoneyContainer}>
+                                <Ionicons name="cash-outline" size={14} color={colors.success} />
+                                <Text style={[styles.listItemMoney, {color: colors.success}]} numberOfLines={1}>
+                                  {box.money}
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                        
+                        <View style={styles.listItemRight}>
+                          <View style={[styles.listItemCountContainer, { backgroundColor: box.gradientColors[0] + '15' }]}>
+                            <Text style={[styles.listItemCount, { color: box.gradientColors[0] }]}>
+                              {box.numberOfOrders || 0}
+                            </Text>
+                          </View>
+                          
+                          <View style={styles.listItemProgressContainer}>
+                            <View style={styles.listItemProgressInfo}>
+                              <Text style={[styles.listItemPercentage, { color: box.gradientColors[0] }]}>
+                                {Math.round(progressPercentage)}%
+                              </Text>
+                            </View>
+                            <View style={[styles.listItemProgressBar, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                              <LinearGradient
+                                colors={[box.gradientColors[0] + 'CC', box.gradientColors[1] + 'CC']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={[
+                                  styles.listItemProgressFill,
+                                  { width: `${progressPercentage}%` }
+                                ]} 
+                              />
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
                   )}
                 </TouchableOpacity>
               );
@@ -1856,13 +1821,41 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginTop: 25,
-    marginBottom: 15,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  sectionHeaderWithToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#1F2937',
+  },
+  viewToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    borderRadius: 12,
+    padding: 4,
+    gap: 6,
+  },
+  viewToggleButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 46,
+    transition: 'all 0.2s ease',
+  },
+  viewToggleButtonActive: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardsSection: {
     paddingHorizontal: 20,
@@ -2003,6 +1996,130 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: 2,
+  },
+  // List View Styles
+  statusListContainer: {
+    paddingHorizontal: 15,
+    gap: 10,
+  },
+  statusListItem: {
+    width: '100%',
+    marginBottom: 10,
+  },
+  listItemCard: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    position: 'relative',
+  },
+  listItemAccent: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 5,
+  },
+  listItemContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    paddingLeft: 18,
+    minHeight: 90,
+  },
+  listItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+    paddingRight: 12,
+  },
+  listItemIconWrapper: {
+    padding: 6,
+    borderRadius: 14,
+  },
+  listItemIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listItemTextContainer: {
+    flex: 1,
+    gap: 6,
+  },
+  listItemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    letterSpacing: 0.2,
+  },
+  listItemMoneyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  listItemMoney: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  listItemRight: {
+    alignItems: 'flex-end',
+    gap: 10,
+    minWidth: 100,
+  },
+  listItemCountContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 14,
+    minWidth: 70,
+    alignItems: 'center',
+    gap: 2,
+  },
+  listItemCount: {
+    fontSize: 22,
+    fontWeight: '800',
+    letterSpacing: -0.5,
+  },
+  listItemCountLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  listItemProgressContainer: {
+    width: '100%',
+    gap: 6,
+  },
+  listItemProgressInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  listItemProgressLabel: {
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  listItemProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  listItemProgressFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  listItemPercentage: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   balanceContainer: {
     flexDirection: 'row',

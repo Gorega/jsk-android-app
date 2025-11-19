@@ -1,6 +1,6 @@
-import { View, StyleSheet, ScrollView, Text, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
+import { View, StyleSheet, ScrollView, Text, ActivityIndicator, TouchableOpacity, Platform, KeyboardAvoidingView } from "react-native";
 import Section from "../../components/create/Section";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
@@ -51,9 +51,11 @@ export default function HomeScreen() {
     });
     const scrollViewRef = useRef(null);
 
-    const sections = [{
+    const sortedCities = useMemo(() => ([...cities]).sort((a, b) => a.name.localeCompare(b.name)), [cities]);
+
+    const sections = useMemo(() => ([{
         label: translations[language].users.create.sections.user.title,
-        icon: <FontAwesome name="user-o" size={24} color="#E1251B" />,
+        icon: <FontAwesome name="user-o" size={24} color="#4361EE" />,
         fields: [{
             label: translations[language].users.create.sections.user.fields.name,
             name: "name",
@@ -89,10 +91,7 @@ export default function HomeScreen() {
             type: "select",
             name: "city_id",
             value: selectedValue.city_id.name || form.city,
-            list: cities
-            .slice(2) // Skip first two cities
-            .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically
-            .filter(city => 
+            list: sortedCities.filter(city => 
                 !prickerSearchValue || 
                 city.name.toLowerCase().includes(prickerSearchValue.toLowerCase())
             ),
@@ -106,7 +105,7 @@ export default function HomeScreen() {
         }]
     }, ["admin","manager"].includes(user.role) ? {
         label: translations[language].users.create.sections.details.title,
-        icon: <MaterialIcons name="admin-panel-settings" size={24} color="#E1251B" />,
+        icon: <MaterialIcons name="admin-panel-settings" size={24} color="#4361EE" />,
         fields: [["admin","manager"].includes(user.role) ? {
             label: translations[language].users.create.sections.details.fields.branch,
             type: "select",
@@ -120,7 +119,7 @@ export default function HomeScreen() {
             value: selectedValue.pricelist_id.name || form.priceList,
             list: pricelists
         } : { visibility: "hidden" }]
-    } : {visibility: "hidden"}];
+    } : {visibility: "hidden"}]), [language, form, selectedValue, sortedCities, prickerSearchValue, roles, branches, pricelists, user.role]);
 
     const scrollToError = (fieldName) => {
         const sectionWithError = sections.find(section =>
@@ -295,7 +294,7 @@ export default function HomeScreen() {
         }
     };
 
-    const loadMoreData = async () => {
+    const loadMoreData = useCallback(async () => {
         if (!loadingMore && managers?.length > 0) {
             setLoadingMore(true);
             const nextPage = page + 1;
@@ -308,7 +307,7 @@ export default function HomeScreen() {
                 setLoadingMore(false);
             }
         }
-    };
+    }, [loadingMore, managers, page, language]);
 
     useEffect(() => {
         if (userId) {
@@ -378,7 +377,10 @@ export default function HomeScreen() {
     };
 
     return (
-        <View style={[
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 64 : insets.top}
+            style={[
             styles.container, 
             { 
                 backgroundColor: colors.background,
@@ -421,7 +423,7 @@ export default function HomeScreen() {
                             disabled={formSpinner.status}
                         >
                             <LinearGradient
-                                colors={['#E1251B', '#B81C15']}
+                                colors={['#4361EE', '#3A0CA3']}
                                 style={styles.gradientButton}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
@@ -499,7 +501,7 @@ export default function HomeScreen() {
                     }}
                 />
             )}
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

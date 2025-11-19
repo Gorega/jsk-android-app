@@ -275,6 +275,7 @@ export const translations = {
       close:"Close",
       edit:"Edit",
       view:"View",
+      required:"Required",
       success:"Success",
       error:"Error",
       loadingOrders:"Loading available orders...",
@@ -316,6 +317,7 @@ export const translations = {
           moneyInBranch:"Money in Branch",
           moneyWithDrivers:"Money With Drivers",
           moneyWithDriver:"Money With Driver",
+          moneyInProcess:"Money in Process",
           inWaiting:"In Waiting",
           inBranch:"In Branch",
           onTheWay:"On the Way",
@@ -360,6 +362,7 @@ export const translations = {
           moneyInBranch:"money In Branch",
           moneyOut:"money Out",
           businessPaid:"Business Paid",
+          moneyInProcess:"Money In Process",
           completed:"completed",
           received:"Received",
           "delivered/received":"Delivered / Received",
@@ -384,6 +387,9 @@ export const translations = {
         },
         track:{
           orderTracking:"Order Tracking",
+          orderTrack:"Order Track",
+          track:"Track",
+          enterOrderId:"Enter Order ID",
           copySuccess:"Copied!",
           copiedToClipboard:"copied to clipboard",
           order:"Order",
@@ -522,6 +528,7 @@ export const translations = {
           "userClientBoxLabel": "Client",
           "userDriverBoxLabel": "Driver",
           "userBoxPhoneContactLabel": "Call",
+          "userBoxPhoneContactLabel_2": "Call Phone 2",
           "userBoxMessageContactLabel": "Message",
           "contactPhone": "Phone",
           "contactWhatsapp": "WhatsApp",
@@ -789,6 +796,7 @@ export const translations = {
         title:"Settings",
         options:{
           users:"Users",
+          sales_clients:"Sales Clients",
           language:{
             title:"Language",
             options:{
@@ -945,7 +953,8 @@ export const translations = {
         orderCount:"Order Count",
         whatsappOptions:"Whatsapp Options",
         sentMoney:"Sent Money",
-        sentPackages:"Sent Packages"
+        sentPackages:"Sent Packages",
+        statusUpdatedSuccessfully:"Status Updated Successfully"
       }
     },
 
@@ -982,6 +991,9 @@ export const translations = {
         role:"Role",
         edit:"Edit",
         location:"Location",
+        activity:"Activity",
+        contact:"Contact",
+        note:"Note",
       },
       //(create_user)
       create:{
@@ -1130,6 +1142,8 @@ export const translations = {
       routeName: "Route Name",
       enterRouteName: "Enter route name",
       orders: "Orders",
+      contactPhone: "Call",
+      contactMessage: "Message",
       optimized: "Optimized",
       completed: "Completed",
       addOrders: "Add Orders",
@@ -1142,6 +1156,7 @@ export const translations = {
       markAsCompleted: "Mark as Completed",
       saveRoute: "Save Route",
       removeOrder: "Remove Order",
+      selectLanguage:"Select Language",
       removeOrderConfirm: "Are you sure you want to remove this order from the route?",
       errorLoadingRoute: "Error loading route details",
       cannotModifyCompleted: "Cannot modify a completed route",
@@ -1268,8 +1283,8 @@ export const translations = {
     // (about_us)
     about:{
       title:"About Us",
-      aboutLabel:"About Tayar Company",
-      aboutDesc:"At Tayar, we specialize in high-quality package delivery across the West Bank, Jerusalem, and the land of 48. Our mission is to provide fast, reliable, and secure shipping solutions tailored to your needs. Whether it's business deliveries or personal shipments, we ensure every package reaches its destination safely and on time.With a commitment to excellence and customer satisfaction, Tayar is your trusted partner for seamless logistics. Experience hassle-free delivery with a team that prioritizes efficiency and care.",
+      aboutLabel:"About JSK Company",
+      aboutDesc:"At JSK, we specialize in high-quality package delivery across the West Bank, Jerusalem, and the land of 48. Our mission is to provide fast, reliable, and secure shipping solutions tailored to your needs. Whether it's business deliveries or personal shipments, we ensure every package reaches its destination safely and on time.With a commitment to excellence and customer satisfaction, JSK is your trusted partner for seamless logistics. Experience hassle-free delivery with a team that prioritizes efficiency and care.",
     },
 
     // (locations)
@@ -1380,6 +1395,7 @@ export const translations = {
       loading: "جاري التحميل...",
       retry: "إعادة المحاولة",
       cancel: "إلغاء",
+      required:"مطلوب",
       save: "حفظ",
       delete: "حذف",
       edit: "تعديل",
@@ -1677,6 +1693,7 @@ export const translations = {
       navigation: "التنقل في المسار",
       activeTabs: "المسارات النشطة",
       completedTabs: "المكتملة",
+      selectLanguage:"اختر لغة الرسالة",
       noActiveRoutes: "لا توجد مسارات نشطة",
       noCompletedRoutes: "لا توجد مسارات مكتملة",
       createRoutePrompt: "قم بإنشاء مسار جديد لتنظيم عمليات التوصيل الخاصة بك",
@@ -1684,6 +1701,8 @@ export const translations = {
       create: "إنشاء مسار",
       edit: "تعديل",
       navigate: "تنقل",
+      contactPhone: "اتصال",
+      contactMessage: "رسالة",
       routeName: "اسم المسار",
       enterRouteName: "أدخل اسم المسار",
       orders: "الطلبات",
@@ -1753,6 +1772,7 @@ export const translations = {
       createNew:"إنشاء طرد",
       delete:"حذف",
       cancel:"إلغاء",
+      required:"مطلوب",
       confirm:"تأكيد",
       save:"حفظ",
       close:"اغلاق",
@@ -1804,6 +1824,7 @@ export const translations = {
           moneyInBranch: "المال في الفرع",
           moneyWithDrivers: "المال مع السائقين",
           moneyWithDriver: "المال التي بحوزتي",
+          moneyInProcess:"تم نقل المال",
           inWaiting: "في الانتظار",
           inBranch: "في الفرع",
           onTheWay: "في الطريق",
@@ -1842,6 +1863,7 @@ export const translations = {
           replacedDeliveredOrders: "تم تبديلها",
           driverResponsibilityOrders: "بعهدة السائق",
           rescheduled: "مؤجل",
+          moneyInProcess: "تم نقل المال",
           returnBeforeDeliveredInitiated: "مرجع قبل الوصول",
           returnAfterDeliveredInitiated: "مرجع بعد الوصول",
           returned: "مرتجع",
@@ -1876,6 +1898,9 @@ export const translations = {
         },
         track: {
           orderTracking: "تتبع الطرد",
+          enterOrderId:"أدخل رقم الطرد",
+          track:"تتبع",
+          orderTrack:"تتبع طردك",
           order: "الطرد",
           package: "الحزمة",
           quantity: "الكمية",
@@ -2031,6 +2056,7 @@ export const translations = {
           "userClientBoxLabel": "العميل",
           "userDriverBoxLabel": "السائق",
           "userBoxPhoneContactLabel": "اتصال",
+          "userBoxPhoneContactLabel_2": "اتصال الهاتف 2",
           "userBoxMessageContactLabel": "رسالة",
           "contactPhone": "الهاتف",
           "contactWhatsapp": "واتساب",
@@ -2310,6 +2336,7 @@ export const translations = {
         title: "الإعدادات",
         options: {
           users: "المستخدمون",
+          sales_clients: "عملاء مندوب المبيعات",
           language: {
             title: "اللغة",
             options: {
@@ -2446,7 +2473,7 @@ export const translations = {
         confirmTitle:"تأكيد الاستلام",
         pendingConfirmations:"التأكيدات المعلقة",
         moneyCollections:"التحصيلات المالية",
-        packageCollections:"تحصيلات الطرود",
+        packageCollections:"الطرود المرجعة",
         noCollectionsToConfirm:"لا توجد تجميعات لتأكيدها",
         collectionId:"معرف التجميعة",
         orderIds:"معرفات الطرود",
@@ -2464,13 +2491,15 @@ export const translations = {
         orderCount:"عدد الطرود",
         whatsappOptions:"خيارات واتساب",
         sentMoney:"تحصيلات مرسلة للتجار",
-        sentPackages:"تجميعات مرتجع / تبديل مرسلة للتجار "
+        sentPackages:"تجميعات مرتجع / تبديل مرسلة للتجار ",
+        statusUpdatedSuccessfully:"تم التأكيد بنجاح"
       }
     },
 
     // (users)
     users: {
       title: "المستخدمون",
+      sales_clients:"عملاء مندوب المبيعات",
       emptyArray: "لا توجد مستخدمين لعرضهم",
       filters: {
         // filterByGroup
@@ -2500,7 +2529,13 @@ export const translations = {
         name: "الاسم",
         role: "الدور",
         edit: "تعديل",
-        location:"الموقع"
+        location:"الموقع",
+        activity:"النشاط التجاري",
+        contact:"وسيلة اتصال بديلة",
+        note:"ملاحظة",
+        email:"البريد الالكتروني",
+        active:"تفعيل",
+        inactive:"الغاء التفعيل"
       },
       // (create_user)
       create: {
@@ -2524,7 +2559,11 @@ export const translations = {
               affillator: "التوقيع",
               city: "المدينة",
               area: "المنطقة",
-              address: "العنوان"
+              address: "العنوان",
+              willingness:"الرغبة",
+              low:"ضعيف",
+              medium:"متوسط",
+              high:"عالية"
             }
           },
           details: {
@@ -2737,7 +2776,7 @@ export const translations = {
     about: {
       title: "عنّا",
       aboutLabel: "عن شركة JSK",
-      aboutDesc: "في JSK, نحن متخصصون في توصيل الحزم عالية الجودة عبر الضفة الغربية والقدس وأراضي 48. مهمتنا هي تقديم حلول شحن سريعة وموثوقة وآمنة مصممة حسب احتياجاتك. سواء كانت توصيلات تجارية أو شحنات شخصية، نحن نضمن وصول كل حزمة إلى وجهتها بأمان وفي الوقت المحدد. مع التزامنا بالتميز ورضا الزبائن، JSK هو شريكك الموثوق لتجربة لوجستية سلسة. جرب التوصيل بدون متاعب مع  فريق يعطي الأولوية للكفاءة والعناية."
+      aboutDesc: "في JSK, نحن متخصصون في توصيل الحزم عالية الجودة عبر الضفة الغربية والقدس وأراضي 48. مهمتنا هي تقديم حلول شحن سريعة وموثوقة وآمنة مصممة حسب احتياجاتك. سواء كانت توصيلات تجارية أو شحنات شخصية، نحن نضمن وصول كل حزمة إلى وجهتها بأمان وفي الوقت المحدد. مع التزامنا بالتميز ورضا الزبائن،JSK هو شريكك الموثوق لتجربة لوجستية سلسة. جرب التوصيل بدون متاعب مع فريق يعطي الأولوية للكفاءة والعناية."
     },
 
     // (locations)
@@ -2847,6 +2886,7 @@ export const translations = {
     "loading": "טוען...",
     "retry": "נסה שוב",
     "cancel": "בטל",
+    "required":"נדרש",
     "save": "שמור",
     "delete": "מחק",
     "edit": "ערוך",
@@ -3077,13 +3117,16 @@ export const translations = {
     "errorMessage": "שליחת ההודעה נכשלה",
     "notificationSent": "ההודעה נשלחה בהצלחה"
   },
-  "routes": {
+ "routes": {
     "title": "מסלולים",
     "routeDetails": "פרטי המסלול",
     "navigation": "ניווט במסלול",
     "activeTabs": "מסלולים פעילים",
     "completedTabs": "הושלמו",
     "noActiveRoutes": "אין מסלולים פעילים",
+    "selectLanguage":"בחר שפה",
+    "contactPhone": "קֶשֶׁר",
+    "contactMessage": "הודעה",
     "selectDeliveryDay": "בחר יום משלוח",
     "noCompletedRoutes": "אין מסלולים שהושלמו",
     "createRoutePrompt": "צור מסלול חדש כדי לארגן את המשלוחים שלך",
@@ -3160,6 +3203,7 @@ export const translations = {
     "delete": "מחק",
     "cancel": "בטל",
     "confirm": "אשר",
+    "required":"נדרש",
     "save": "שמור",
     "close": "סגור",
     "edit": "ערוך",
@@ -3207,6 +3251,7 @@ export const translations = {
         "moneyInBranch": "כסף בסניף",
         "moneyWithDrivers": "כסף עם הנהגים",
         "moneyWithDriver": "הכסף שברשותי",
+        "moneyInProcess":"הכסף שברשותי",
         "inWaiting": "בהמתנה",
         "inBranch": "בסניף",
         "onTheWay": "בדרך",
@@ -3250,6 +3295,7 @@ export const translations = {
         "delivered": "נמסר",
         "moneyInBranch": "כסף בסניף",
         "moneyOut": "בהעברת כסף",
+        "moneyInProcess":"הכסף שברשותי",
         "businessPaid": "שולם",
         "completed": "הושלם",
         "received": "נאסף",
@@ -3273,6 +3319,9 @@ export const translations = {
       },
       "track": {
         "orderTracking": "מעקב חבילה",
+        "track":"מַסלוּל",
+        "enterOrderId":"הזן את מספר החבילה",
+        "orderTrack":"מעקב אחר החבילה שלך",
         "order": "חבילה",
         "package": "חבילה",
         "quantity": "כמות",
@@ -3424,6 +3473,7 @@ export const translations = {
         "userClientBoxLabel": "לקוח",
         "userDriverBoxLabel": "נהג",
         "userBoxPhoneContactLabel": "צור קשר",
+          "userBoxPhoneContactLabel_2": "צור קשר 2",
         "userBoxMessageContactLabel": "הודעה",
         "contactPhone": "טלפון",
         "contactWhatsapp": "ווטסאפ",
@@ -3700,6 +3750,7 @@ export const translations = {
       },
       "settings": {
     "title": "הגדרות",
+      "sales_clients": "לקוחות נציגי מכירות",
     "options": {
       "users": "משתמשים",
       "language": {
@@ -3850,7 +3901,8 @@ export const translations = {
       "orderCount": "מספר חבילות",
       "whatsappOptions": "אפשרויות ווטסאפ",
       "sentMoney": "גבייה שנשלחה לסוחרים",
-      "sentPackages": "אוספי החזר/החלפה שנשלחו לסוחרים"
+      "sentPackages": "אוספי החזר/החלפה שנשלחו לסוחרים",
+      "statusUpdatedSuccessfully":"הסטטוס עודכן בהצלחה"
     }
     },
 
@@ -3883,7 +3935,10 @@ export const translations = {
       "name": "שם",
       "role": "תפקיד",
       "edit": "ערוך",
-      "location": "מיקום"
+      "location": "מיקום",
+      "activity": "פעילות",
+      "contact": "צור קשר",
+      "note": "הערה"
     },
       // (create_user)
     "create": {

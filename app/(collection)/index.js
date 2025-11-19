@@ -8,6 +8,7 @@ import { useLanguage } from '../../utils/languageContext';
 import { useSocket } from '../../utils/socketContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import axios from 'axios';
 
 export default function HomeScreen() {
     const socket = useSocket();
@@ -64,35 +65,60 @@ export default function HomeScreen() {
                     return;
                 }
                 
+                // Determine type_id based on collection type (same logic as fetchData)
+                let typeId;
+                switch(currentType) {
+                    case "business_money":
+                        typeId = 4;
+                        break;
+                    case "driver_money":
+                        typeId = 1;
+                        break;
+                    case "business_returned":
+                        typeId = 5;
+                        break;
+                    case "driver_returned":
+                        typeId = 2;
+                        break;
+                    case "dispatched":
+                        typeId = 3;
+                        break;
+                    default:
+                        typeId = 1; // Default to type 1 if unknown
+                }
+                
                 const queryParams = new URLSearchParams();
+                queryParams.append('type_id', typeId);
                 queryParams.append('collection_id', collectionId);
                 queryParams.append('page', 1);
                 queryParams.append('language_code', language);
-                
-                if (activeFilter) {
-                    queryParams.append(currentType === "sent" ? "status" : "status_key", activeFilter);
-                }
-                
-                const apiPath = currentType === "sent" ? "sent/sm" : currentType;
-                const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${apiPath}?${queryParams.toString()}`;
-                
+                                
                 setIsLoading(true);
-                const res = await fetch(url, {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        'Accept': 'application/json',
-                        "Content-Type": "application/json",
-                        "Accept-Language": language
+                const res = await axios.get(
+                    `${process.env.EXPO_PUBLIC_API_URL}/api/collections`,
+                    {
+                        params: Object.fromEntries(queryParams),
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept-Language': language
+                        },
+                        withCredentials: true
                     }
-                });
+                );
                 
-                const newData = await res.json();
+                const response = res.data;
+                
+                // Handle the response data structure consistently
+                const newData = {
+                    data: response.data || response.collections || [],
+                    metadata: response.metadata || response.pagination || {}
+                };
                 
                 setData(newData);
                 setPage(1);
             } catch (err) {
-                console.error("Error fetching scanned data:", err);
+                console.error(" [collection/index.js] fetchScannedData - Error:", err.message);
             } finally {
                 setIsLoading(false);
             }
@@ -154,42 +180,6 @@ export default function HomeScreen() {
             const queryParams = new URLSearchParams();
             let typeId;
             
-            // Build query parameters
-            if (!activeSearchBy && searchValue) {
-                queryParams.append('search', searchValue);
-            }
-            
-            if (collectionIds && collectionIds !== 'undefined') {
-                try {
-                    const parsedCollectionIds = JSON.parse(collectionIds);
-                    if (Array.isArray(parsedCollectionIds) && parsedCollectionIds.length > 0) {
-                        queryParams.append('collection_ids', parsedCollectionIds.join(','));
-                    }
-                } catch (err) {
-                    console.error("Error parsing collection IDs:", err);
-                }
-            }
-            
-            if (activeFilter) {
-                queryParams.append(type === "sent" ? "status" : "status_key", activeFilter);
-            }
-            
-            if (activeSearchBy && searchValue) {
-                queryParams.append(activeSearchBy.action, searchValue);
-            }
-            
-            if (activeDate) {
-                queryParams.append("date_range", activeDate.action);
-            }
-            
-            if (activeDate && activeDate.action === "custom") {
-                queryParams.append("start_date", selectedDate);
-                queryParams.append("end_date", selectedDate);
-            }
-            
-            queryParams.append('page', pageNumber);
-            queryParams.append('language_code', language);
-
             // Determine type_id based on collection type
             switch(type) {
                 case "business_money":
@@ -207,54 +197,60 @@ export default function HomeScreen() {
                 case "dispatched":
                     typeId = 3;
                     break;
-                case "sent":
-                    // Special case for sent collections - uses different endpoint
-                    const sentUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/collections/sent/sm?${queryParams.toString()}`;
-                    const sentRes = await fetch(sentUrl, {
-                        method: "GET",
-                        credentials: "include",
-                        headers: {
-                            'Accept': 'application/json',
-                            "Content-Type": "application/json",
-                            "Accept-Language": language
-                        }
-                    });
-                    const response = await sentRes.json();
-                    
-                    const sentData = {
-                        data: response.data || [],
-                        metadata: response.metadata || {}
-                    };
-                    
-                    if (isLoadMore) {
-                        setData(prevData => ({
-                            ...prevData,
-                            data: [...(prevData.data || []), ...(sentData.data || [])],
-                        }));
-                    } else {
-                        setData(sentData);
-                    }
-                    return;
                 default:
                     typeId = 1; // Default to type 1 if unknown
             }
             
-            // Construct URL with type_id for non-sent collections
-            const url = `${process.env.EXPO_PUBLIC_API_URL}/api/collections?type_id=${typeId}&${queryParams.toString()}`;
+            // Always add type_id as the primary filter
+            queryParams.append('type_id', typeId);
+            queryParams.append('page', pageNumber);
+            queryParams.append('language_code', language);
             
-            const res = await fetch(url, {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    'Accept': 'application/json',
-                    "Content-Type": "application/json",
-                    "Accept-Language": language
+            // Build additional query parameters only if they exist
+            if (!activeSearchBy && searchValue) {
+                queryParams.append('search', searchValue);
+            }
+            
+            if (collectionIds && collectionIds !== 'undefined') {
+                try {
+                    const parsedCollectionIds = JSON.parse(collectionIds);
+                    if (Array.isArray(parsedCollectionIds) && parsedCollectionIds.length > 0) {
+                        queryParams.append('collection_id', parsedCollectionIds.join(','));
+                    }
+                } catch (err) {
+                    console.error("Error parsing collection IDs:", err);
                 }
-            });
+            }
             
-            const response = await res.json();
+            if (activeSearchBy && searchValue) {
+                queryParams.append(activeSearchBy.action, searchValue);
+            }
             
-            // Handle the new data structure
+            if (activeDate) {
+                queryParams.append("date_range", activeDate.action);
+            }
+            
+            if (activeDate && activeDate.action === "custom") {
+                queryParams.append("start_date", selectedDate);
+                queryParams.append("end_date", selectedDate);
+            }
+                        
+            const res = await axios.get(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/collections`,
+                {
+                    params: Object.fromEntries(queryParams),
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Accept-Language': language
+                    },
+                    withCredentials: true
+                }
+            );
+            
+            const response = res.data;
+            
+            // Handle the response data structure consistently
             const newData = {
                 data: response.data || response.collections || [],
                 metadata: response.metadata || response.pagination || {}
@@ -269,7 +265,7 @@ export default function HomeScreen() {
                 setData(newData);
             }
         } catch(err) {
-            console.error("Error fetching data:", err);
+            console.error(" [collection/index.js] fetchData - Error:", err.message);
         } finally {
             setLoadingMore(false);
             setIsLoading(false);
@@ -278,8 +274,8 @@ export default function HomeScreen() {
 
     const loadMoreData = async () => {
         if (!loadingMore) {
-            const currentData = type === "sent" ? data.collections : data.data;
-            const totalRecords = type === "sent" ? data.metadata?.total_records : data.metadata?.total_records;
+            const currentData = data.data || [];
+            const totalRecords = data.metadata?.total_records || 0;
             
             if (!currentData?.length > 0) return;
             
@@ -307,9 +303,9 @@ export default function HomeScreen() {
         fetchData(1, false);
         if(collectionIds && collectionIds !== 'undefined'){
             setActiveSearchBy(searchByGroup[0]);
-            // Set default type to sent if not already specified
+            // Set default type to driver_money if not already specified
             if (!type) {
-                router.setParams({ type: "sent" });
+                router.setParams({ type: "driver_money" });
             }
         }
     }, [type, searchValue, activeFilter, activeDate, collectionIds]);

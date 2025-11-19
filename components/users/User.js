@@ -20,14 +20,23 @@ function User({ user }) {
     const colors = Colors[colorScheme];
     
     const [showControl, setShowControl] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
     const socket = useSocket();
     const [isOnline, setIsOnline] = useState(false);
     const [lastSeen, setLastSeen] = useState(null);
     const pulseAnim = useRef(new Animated.Value(1)).current;
     const isRTL = language === 'ar' || language === 'he';
     
-    // Use active_status directly from user prop
-    const isActiveAccount = user?.active_status === 1;
+    const isActiveAccount = (
+        typeof user?.active_status_key !== 'undefined' ? (user.active_status_key === 1) :
+        typeof user?.activeStatus !== 'undefined' ? (user.activeStatus === 1 || user.activeStatus === true) :
+        typeof user?.active_status !== 'undefined' ? (user.active_status === 1 || user.active_status === translations[language]?.users?.user?.active) :
+        false
+    );
+    const [localActive, setLocalActive] = useState(isActiveAccount);
+    useEffect(() => {
+        setLocalActive(isActiveAccount);
+    }, [user?.active_status_key, user?.activeStatus, user?.active_status, isActiveAccount]);
 
     // Pulse animation for online status
     useEffect(() => {
@@ -150,10 +159,10 @@ function User({ user }) {
     const statusText = useMemo(() => {
         return isOnline ? 
             translations[language].users.user.online : 
-            isActiveAccount ? 
+            localActive ? 
                 (lastSeen ? formatLastSeen() : translations[language].users.user.active) : 
                 translations[language].users.user.inactive;
-    }, [isOnline, isActiveAccount, lastSeen, formatLastSeen, language]);
+    }, [isOnline, localActive, lastSeen, formatLastSeen, language]);
 
     // Memoize the handleEditPress function
     const handleEditPress = useCallback(() => {
@@ -163,6 +172,57 @@ function User({ user }) {
             params: { userId: user.user_id }
         });
     }, [user.user_id]);
+
+    const handleToggleActive = useCallback(async () => {
+        if (updatingStatus) return;
+        setUpdatingStatus(true);
+        const targetStatus = !localActive;
+        try {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/status/update`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language,
+                },
+                body: JSON.stringify({
+                    updates: [{ userIds: String(user.user_id), active_status: targetStatus }]
+                })
+            });
+            const body = await res.json();
+            if (res.ok) {
+                setLocalActive(targetStatus);
+                try {
+                    const verifyRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.user_id}?language_code=${language}`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const verifyBody = await verifyRes.json();
+                    const resolved = typeof verifyBody?.activeStatus !== 'undefined' ? verifyBody.activeStatus : verifyBody?.active_status_key;
+                    if (typeof resolved !== 'undefined') {
+                        setLocalActive(resolved === 1 || resolved === true);
+                    }
+                } catch (ve) {
+                }
+            }
+        } catch (e) {
+        } finally {
+            setUpdatingStatus(false);
+            setShowControl(false);
+        }
+    }, [language, user.user_id, localActive, updatingStatus]);
+
+    const toggleLabel = useMemo(() => {
+        const t = translations[language];
+        const inactiveText = t?.users?.user?.inactive || 'Inactive';
+        const activeText = t?.users?.user?.active || 'Active';
+        return localActive ? inactiveText : activeText;
+    }, [language, localActive]);
 
     return (
         <>
@@ -188,7 +248,7 @@ function User({ user }) {
                             }
                         ]}>
                             <Text style={[styles.idText, { color: colors.primary }]}>#{user?.user_id}</Text>
-                            {isActiveAccount && (
+                            {localActive && (
                                 <View style={styles.activeStatusIndicator} />
                             )}
                         </View>
@@ -196,22 +256,22 @@ function User({ user }) {
                         <LinearGradient
                             colors={isOnline ? 
                                 ['#10B981', '#059669'] : 
-                                isActiveAccount ? ['#3B82F6', '#2563EB'] : ['#EF4444', '#DC2626']}
+                                localActive ? ['#3B82F6', '#2563EB'] : ['#EF4444', '#DC2626']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.statusBadge}
                         >
-                            <View style={styles.statusIndicator}>
+                            {/* <View style={styles.statusIndicator}>
                                 <Animated.View style={[
                                     styles.statusDot,
                                     isOnline ? styles.onlineDot : 
-                                    isActiveAccount ? styles.activeDot : styles.inactiveDot,
+                                    localActive ? styles.activeDot : styles.inactiveDot,
                                     { transform: [{ scale: isOnline ? pulseAnim : 1 }] }
                                 ]} />
                                 <Text style={styles.statusText}>
                                     {statusText}
                                 </Text>
-                            </View>
+                            </View> */}
                         </LinearGradient>
                     </View>
 
@@ -316,6 +376,22 @@ function User({ user }) {
                         </View>
                         <Text style={[styles.modalItemText, { color: colors.text }]}>
                             {translations[language].users.user.edit}
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                        style={[styles.modalItem, { borderBottomColor: colors.border }]} 
+                        onPress={handleToggleActive}
+                        disabled={updatingStatus}
+                    >
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF' }
+                        ]}>
+                            <MaterialIcons name={localActive ? "toggle-off" : "toggle-on"} size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.modalItemText, { color: colors.text }]}> 
+                            {toggleLabel}
                         </Text>
                     </TouchableOpacity>
                 </ModalPresentation>

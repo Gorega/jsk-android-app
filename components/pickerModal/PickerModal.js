@@ -1,4 +1,5 @@
-import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, Dimensions, ActivityIndicator, KeyboardAvoidingView, SafeAreaView } from "react-native";
+import { StyleSheet, Modal, View, Text, TouchableOpacity, TextInput, Platform, Dimensions, ActivityIndicator, KeyboardAvoidingView } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from '@expo/vector-icons';
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -34,6 +35,7 @@ export default function PickerModal({
     const { name } = field;
     const [modalHeight, setModalHeight] = useState(Dimensions.get('window').height * 0.7);
     const isRTL = language === 'ar' || language === 'he';
+    const insets = useSafeAreaInsets();
     
     // Internal state for API-based search
     const [internalSearchValue, setInternalSearchValue] = useState("");
@@ -292,6 +294,7 @@ export default function PickerModal({
                         backgroundColor: colors.background,
                         borderTopLeftRadius: 20,
                         borderTopRightRadius: 20,
+                        paddingBottom: insets.bottom,
                     }]}>
                         {/* Header */}
                         <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -371,12 +374,12 @@ export default function PickerModal({
                                 loading={isLoading}
                                 loadingMore={isLoadingMore}
                                 onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.1}
-            onLayout={(event) => {
-                const { height } = event.nativeEvent.layout;
-            }}
-            onContentSizeChange={(contentWidth, contentHeight) => {
-            }}
+                                onEndReachedThreshold={0.1}
+                                onLayout={(event) => {
+                                    const { height } = event.nativeEvent.layout;
+                                }}
+                                onContentSizeChange={(contentWidth, contentHeight) => {
+                                }}
                                 keyExtractor={keyExtractor}
                                 renderItem={({ item }) => (
                                     <TouchableOpacity
@@ -398,7 +401,7 @@ export default function PickerModal({
                                     </TouchableOpacity>
                                 )}
                                 showsVerticalScrollIndicator={false}
-                                contentContainerStyle={{ paddingBottom: 20 }}
+                                contentContainerStyle={{ paddingBottom: 20 + insets.bottom }}
                             />
                         </View>
                     </View>

@@ -48,11 +48,101 @@ export default function CameraScanner() {
     fromDriver: null
   });
   const [processingBarcode, setProcessingBarcode] = useState(false);
+  const [scannedBarcodes, setScannedBarcodes] = useState(new Set());
+  const [lastScanTime, setLastScanTime] = useState(0);
+  const SCAN_COOLDOWN = 2000; // 2 seconds between scans
+  
+  // Use refs for immediate tracking to prevent race conditions
+  const processingRef = useRef(false);
+  const lastScanTimeRef = useRef(0);
+  const scannedBarcodesRef = useRef(new Set());
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scanLineAnim = useRef(new Animated.Value(0)).current;
+  
+  // Helper function to normalize barcode data
+  const normalizeBarcode = (data) => {
+    return String(data).trim().toLowerCase();
+  };
+  
+  // Helper function to check if barcode was already scanned
+  const isBarcodeAlreadyScanned = (barcode) => {
+    const normalized = normalizeBarcode(barcode);
+    const inState = scannedBarcodes.has(normalized);
+    const inRef = scannedBarcodesRef.current.has(normalized);
+    
+    return inState || inRef;
+  };
+  
+  // Helper function to check if order is already in scanned items
+  const isOrderAlreadyScanned = (orderDetails) => {
+    if (!orderDetails) return false;
+    
+    const isDuplicate = scannedItems.some(item => {
+      // Only check fields that actually exist and have values
+      const orderIdMatch = orderDetails.order_id && item.order_id && item.order_id === orderDetails.order_id;
+      const referenceIdMatch = orderDetails.reference_id && item.reference_id && item.reference_id === orderDetails.reference_id;
+      const idMatch = orderDetails.id && item.id && item.id === orderDetails.id;
+      const qrIdMatch = orderDetails.qr_id && item.qr_id && item.qr_id === orderDetails.qr_id;
+      
+      return orderIdMatch || referenceIdMatch || idMatch || qrIdMatch;
+    });
+    
+    return isDuplicate;
+  };
+  
+  // Helper function to add barcode to scanned list
+  const addScannedBarcode = (barcode) => {
+    const normalized = normalizeBarcode(barcode);
+    // Update both state and ref immediately
+    scannedBarcodesRef.current.add(normalized);
+    setScannedBarcodes(prev => new Set([...prev, normalized]));
+  };
+  
+  // Helper function to clear all scan history (for debugging)
+  const clearAllScanHistory = () => {
+    setScannedItems([]);
+    setScannedBarcodes(new Set());
+    scannedBarcodesRef.current = new Set();
+    setLastScanTime(0);
+    lastScanTimeRef.current = 0;
+    processingRef.current = false;
+    setProcessingBarcode(false);
+    setScanned(false);
+    setError(null);
+  };
+  
+  // Helper function to validate single order response
+  const validateSingleOrderResponse = (orderDetails, scannedBarcode) => {
+    
+    // Ensure we got exactly one order
+    if (!orderDetails) {
+      return { isValid: false, error: 'Order not found' };
+    }
+    
+    // If orderDetails is an array, reject it
+    if (Array.isArray(orderDetails)) {
+      return { isValid: false, error: `Multiple orders found (${orderDetails.length}) for this barcode. Please scan individual order barcodes.` };
+    }
+    
+    // Ensure the order has required fields
+    if (!orderDetails.order_id && !orderDetails.reference_id && !orderDetails.id) {
+      return { isValid: false, error: 'Invalid order data received' };
+    }
+    
+    return { isValid: true, error: null };
+  };
+  
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (processingRef.current) {
+        processingRef.current = false;
+      }
+    };
+  }, []);
   
   // Define status options
   const suspendReasons = useMemo(() => [
@@ -160,7 +250,6 @@ export default function CameraScanner() {
           Vibration.vibrate([0, 100, 100, 100]);
         }
       } catch (error) {
-        console.log('Vibration error:', error);
       }
     }
   };
@@ -378,6 +467,7 @@ export default function CameraScanner() {
   const fetchOrderDetails = async (orderId) => {
     try {
       setLoading(true);
+      
       // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/basic_info?language_code=${language}`, {
         method: "GET",
@@ -388,7 +478,7 @@ export default function CameraScanner() {
           // "Cookie": token ? `token=${token}` : ""
         }
       });
-      
+            
       // Check for non-JSON responses first
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -427,24 +517,9 @@ export default function CameraScanner() {
 
     const stringifiedItem = String(manualOrderId).trim();
     
-    // Enhanced duplicate detection - check multiple fields and variations
-    const isDuplicate = scannedItems.some(item => {
-      const itemOrderId = String(item.order_id || '').trim();
-      const itemReferenceId = String(item.reference_id || '').trim();
-      const itemId = String(item.id || '').trim();
-      
-      // Check exact matches with the entered data
-      return itemOrderId === stringifiedItem || 
-             itemReferenceId === stringifiedItem ||
-             itemId === stringifiedItem ||
-             // Also check if the entered item matches any of the stored identifiers
-             stringifiedItem === itemOrderId ||
-             stringifiedItem === itemReferenceId ||
-             stringifiedItem === itemId;
-    });
-
-    if (isDuplicate) {
-      setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
+    // Check if this exact input was already processed
+    if (isBarcodeAlreadyScanned(stringifiedItem)) {
+      setError(translations[language].camera.scanDuplicateTextError || "This barcode has already been scanned");
       playErrorSound();
       setTimeout(() => setError(null), 5000);
       return;
@@ -453,41 +528,44 @@ export default function CameraScanner() {
     // Set processing flag to show loading state
     setProcessingBarcode(true);
     
-    // Fetch order details
-    const orderDetails = await fetchOrderDetails(manualOrderId);
-    
-    if (orderDetails) {
-      // Final duplicate check with the fetched order details
-      const finalDuplicateCheck = scannedItems.some(item => {
-        const itemOrderId = String(item.order_id || '').trim();
-        const itemReferenceId = String(item.reference_id || '').trim();
-        const itemId = String(item.id || '').trim();
-        
-        const detailsOrderId = String(orderDetails.order_id || '').trim();
-        const detailsReferenceId = String(orderDetails.reference_id || '').trim();
-        const detailsId = String(orderDetails.id || '').trim();
-        
-        // Check if any identifier matches
-        return (itemOrderId && (itemOrderId === detailsOrderId || itemOrderId === detailsReferenceId || itemOrderId === detailsId)) ||
-               (itemReferenceId && (itemReferenceId === detailsOrderId || itemReferenceId === detailsReferenceId || itemReferenceId === detailsId)) ||
-               (itemId && (itemId === detailsOrderId || itemId === detailsReferenceId || itemId === detailsId));
-      });
+    try {
+      // Fetch order details
+      const orderDetails = await fetchOrderDetails(stringifiedItem);
       
-      if (finalDuplicateCheck) {
+      // Validate single order response
+      const validation = validateSingleOrderResponse(orderDetails, stringifiedItem);
+      if (!validation.isValid) {
+        setError(validation.error);
+        playErrorSound();
+        setTimeout(() => setError(null), 5000);
+        return;
+      }
+      
+      // Check if this order is already scanned
+      if (isOrderAlreadyScanned(orderDetails)) {
         setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
         playErrorSound();
         setTimeout(() => setError(null), 5000);
-      } else {
-        setScannedItems(prev => [...prev, orderDetails]);
-        setManualOrderId(""); // Clear input after adding
-        playSuccessSound();
+        return;
       }
-    } else {
+      
+      // Add single order to scanned items (last inserted first)
+      setScannedItems(prev => {
+        const newItems = [orderDetails, ...prev];
+        return newItems;
+      });
+      addScannedBarcode(stringifiedItem);
+      setManualOrderId(""); // Clear input after adding
+      playSuccessSound();
+      
+    } catch (error) {
+      setError(translations[language].camera.orderLookupError || "Error looking up order");
       playErrorSound();
+      setTimeout(() => setError(null), 5000);
+    } finally {
+      // Reset processing flag
+      setProcessingBarcode(false);
     }
-    
-    // Reset processing flag
-    setProcessingBarcode(false);
   };
   
   // Handle status change
@@ -755,11 +833,18 @@ export default function CameraScanner() {
   };
 
   const handleBarCodeScanned = async ({ type, data }) => {
-    // Prevent duplicate scans by checking if we're already processing a barcode
-    if (processingBarcode) return;
+    const currentTime = Date.now();
     
-    // Set processing flag to prevent duplicate scans
+    // Use refs for immediate checking to prevent race conditions
+    if (processingRef.current || (currentTime - lastScanTimeRef.current) < SCAN_COOLDOWN) {
+      return;
+    }
+    
+    // Set processing flags immediately in both state and ref
+    processingRef.current = true;
+    lastScanTimeRef.current = currentTime;
     setProcessingBarcode(true);
+    setLastScanTime(currentTime);
     
     try {
       let itemToAdd = data;
@@ -778,76 +863,57 @@ export default function CameraScanner() {
       // Convert to string for comparison
       const stringifiedItem = String(itemToAdd).trim();
       
-      // Enhanced duplicate detection - check multiple fields and variations
-      const isDuplicate = scannedItems.some(item => {
-        const itemOrderId = String(item.order_id || '').trim();
-        const itemReferenceId = String(item.reference_id || '').trim();
-        const itemId = String(item.id || '').trim();
-        
-        // Check exact matches with the scanned data
-        return itemOrderId === stringifiedItem || 
-               itemReferenceId === stringifiedItem ||
-               itemId === stringifiedItem ||
-               // Also check if the scanned item matches any of the stored identifiers
-               stringifiedItem === itemOrderId ||
-               stringifiedItem === itemReferenceId ||
-               stringifiedItem === itemId;
-      });
-
-      if (isDuplicate) {
-        setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
+      // Check if this exact barcode was already scanned
+      if (isBarcodeAlreadyScanned(stringifiedItem)) {
+        setError(translations[language].camera.scanDuplicateTextError || "This barcode has already been scanned");
         playErrorSound();
         setTimeout(() => setError(null), 5000);
-        setProcessingBarcode(false);
-        // Don't set scanned to true for duplicates, so we can scan again immediately
         return;
       }
 
       // Set scanned to true to disable camera and show rescan button
       setScanned(true);
       
-      // Fetch order details
+      // Fetch order details with strict validation
       const orderDetails = await fetchOrderDetails(stringifiedItem);
       
-      if (orderDetails) {
-        // Final duplicate check with the fetched order details
-        const finalDuplicateCheck = scannedItems.some(item => {
-          const itemOrderId = String(item.order_id || '').trim();
-          const itemReferenceId = String(item.reference_id || '').trim();
-          const itemId = String(item.id || '').trim();
-          
-          const detailsOrderId = String(orderDetails.order_id || '').trim();
-          const detailsReferenceId = String(orderDetails.reference_id || '').trim();
-          const detailsId = String(orderDetails.id || '').trim();
-          
-          // Check if any identifier matches
-          return (itemOrderId && (itemOrderId === detailsOrderId || itemOrderId === detailsReferenceId || itemOrderId === detailsId)) ||
-                 (itemReferenceId && (itemReferenceId === detailsOrderId || itemReferenceId === detailsReferenceId || itemReferenceId === detailsId)) ||
-                 (itemId && (itemId === detailsOrderId || itemId === detailsReferenceId || itemId === detailsId));
-        });
-        
-        if (finalDuplicateCheck) {
-          setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
-          playErrorSound();
-          setTimeout(() => setError(null), 5000);
-          setScanned(false);
-        } else {
-          setScannedItems(prev => [...prev, orderDetails]);
-          playSuccessSound();
-        }
-      } else {
+      // Validate single order response
+      const validation = validateSingleOrderResponse(orderDetails, stringifiedItem);
+      if (!validation.isValid) {
+        setError(validation.error);
         playErrorSound();
-        // If order details fetch fails, allow immediate rescan
+        setTimeout(() => setError(null), 5000);
         setScanned(false);
+        return;
       }
+      
+      // Check if this order is already in our scanned items
+      if (isOrderAlreadyScanned(orderDetails)) {
+        setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
+        playErrorSound();
+        setTimeout(() => setError(null), 5000);
+        setScanned(false);
+        return;
+      }
+      
+      // Success: Add exactly one order to scanned items (last inserted first)
+      
+      setScannedItems(prev => {
+        const newItems = [orderDetails, ...prev];
+        return newItems;
+      });
+      
+      addScannedBarcode(stringifiedItem);
+      playSuccessSound();
+      
     } catch (err) {
-      setError(translations[language].camera.scanInvalidTextError);
+      setError(translations[language].camera.scanInvalidTextError || "Invalid barcode format");
       playErrorSound();
       setTimeout(() => setError(null), 5000);
-      // If there's an error, allow immediate rescan
       setScanned(false);
     } finally {
-      // Only reset processing flag, keep scanned state to require manual rescan
+      // Reset processing flags in both state and ref
+      processingRef.current = false;
       setProcessingBarcode(false);
     }
   };
@@ -1034,8 +1100,21 @@ export default function CameraScanner() {
                       elevation: 5,
                     }]}
                     onPress={() => {
-                      setScanned(false);
-                      setProcessingBarcode(false);
+                      // For debugging: double-tap to clear all history
+                      const now = Date.now();
+                      if (now - (window.lastRescanTap || 0) < 1000) {
+                        clearAllScanHistory();
+                        window.lastRescanTap = 0;
+                      } else {
+                        setScanned(false);
+                        setProcessingBarcode(false);
+                        setError(null);
+                        // Reset scan time in both state and ref to allow immediate scanning
+                        setLastScanTime(0);
+                        lastScanTimeRef.current = 0;
+                        processingRef.current = false;
+                        window.lastRescanTap = now;
+                      }
                     }}
                   >
                     <Feather name="refresh-cw" size={18} color={colors.buttonText} style={{marginRight: 10}} />
@@ -1113,13 +1192,27 @@ export default function CameraScanner() {
                         <View style={styles.driverOptionTextContainer}>
                           <Text style={[
                             styles.driverOptionTitle,
-                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.text }
+                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.text },
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : "right"
+                                    }
+                                }),
+                            }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.with_driver || 'With Driver'}
                           </Text>
                           <Text style={[
                             styles.driverOptionDescription,
-                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.textSecondary }
+                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.textSecondary },
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : "right"
+                                    }
+                                }),
+                            }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.withDriverDescription || 'Assign orders to yourself'}
                           </Text>
@@ -1151,13 +1244,27 @@ export default function CameraScanner() {
                         <View style={styles.driverOptionTextContainer}>
                           <Text style={[
                             styles.driverOptionTitle,
-                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.text }
+                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.text },
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : "right"
+                                    }
+                                }),
+                            }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.on_the_way_assign_driver || 'On The Way'}
                           </Text>
                           <Text style={[
                             styles.driverOptionDescription,
-                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.textSecondary }
+                            { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.textSecondary },
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : "right"
+                                    }
+                                }),
+                            }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.onTheWayDescription || 'Orders are out for delivery'}
                           </Text>

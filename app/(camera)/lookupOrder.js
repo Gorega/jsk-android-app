@@ -3,7 +3,8 @@ import { Text, View, StyleSheet, TouchableOpacity, ActivityIndicator, SafeAreaVi
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -20,6 +21,8 @@ export default function CameraScanner() {
   const [loading, setLoading] = useState(false);
   const { colorScheme } = useTheme();
   const colors = Colors[colorScheme];
+  const params = useLocalSearchParams();
+  const mode = params?.for;
   
   // Add animation value for scan line
   const scanLineAnim = React.useRef(new Animated.Value(0)).current;
@@ -76,20 +79,13 @@ export default function CameraScanner() {
       }
       
       setScanned(true);
-      
-      // First navigate to orders tab without parameters to clear existing filters
-      router.replace({
-        pathname: "/(tabs)/orders"
-      });
-      
-      // Then after a small delay, set only the multi_id parameter
-      // This avoids conflicts between different filter types
-      setTimeout(() => {
-        router.setParams({
-          multi_id: orderId,
-          reset: "true"
-        });
-      }, 50);
+      if (mode === 'public_track') {
+        eventEmitter.emit(EVENTS.REFERENCE_SCANNED, orderId);
+        router.back();
+        return;
+      }
+      router.replace({ pathname: "/(tabs)/orders" });
+      setTimeout(() => { router.setParams({ multi_id: orderId, reset: "true" }); }, 50);
       
     } catch (err) {
       setError(translations[language].camera.scanInvalidTextError || 'Invalid scan data');

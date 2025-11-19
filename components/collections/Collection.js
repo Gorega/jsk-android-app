@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert, ActivityIndicator, Share } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert,Pressable, ActivityIndicator, Share, Clipboard } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -18,6 +18,7 @@ import React from 'react';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import tayarLogo from '../../assets/images/tayar_logo_dark.png';
+import axios from 'axios';
 
 function Collection({ type, collection }) {
     const { language } = useLanguage();
@@ -446,30 +447,27 @@ function Collection({ type, collection }) {
             
             if (collection.order_ids) {
                 try {
-                    const apiUrl = `${process.env.EXPO_PUBLIC_API_URL}/api/orders?order_ids=${collection.order_ids}`;
-                    
-                    // Fetch real order details from API with proper authentication
-                    const response = await fetch(apiUrl, {
-                        method: "GET",
-                        credentials: "include",
-                        headers: {
-                            'Accept': 'application/json',
-                            "Content-Type": "application/json",
+                    const response = await axios.get(
+                        `${process.env.EXPO_PUBLIC_API_URL}/api/orders`,
+                        {
+                            params: { order_ids: collection.order_ids },
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            withCredentials: true
                         }
-                    });
-                    const result = await response.json();
+                    );
                     
-                    if (response.ok && result.data && Array.isArray(result.data)) {
-                        ordersData = result.data;
+                    if (response.data?.data && Array.isArray(response.data.data)) {
+                        ordersData = response.data.data;
                     } else {
                         ordersData = [];
                     }
                 } catch (error) {
-                    console.error('PDF Generation: Fetch error:', error);
+                    console.error('❌ [Collection.js] generatePDF - Error fetching orders:', error.message);
                     ordersData = [];
                 }
-            } else {
-                console.log('PDF Generation: No order_ids found in collection');
             }
             
             // Generate HTML content
@@ -533,10 +531,24 @@ function Collection({ type, collection }) {
             ]}>
                 <View style={styles.idSection}>
                     <View style={[styles.idContainer]}>
-                        <Text style={[
-                            styles.idText,
-                            { color: colors.primary }
-                        ]}>#{collection.collection_id}</Text>
+                        <Pressable onPress={() => Clipboard.setString(collection.collection_id.toString())}>
+                            <Text style={[
+                                styles.idText,
+                                { color: colors.primary }
+                            ]}>#{collection.collection_id}</Text>
+                        </Pressable>
+                        
+                        {/* Status badge for business_money collections */}
+                        {type === "business_money" && collection.status && (
+                            <View style={[
+                                styles.statusBadge,
+                                { backgroundColor: getStatusColor(collection.status_key) }
+                            ]}>
+                                <Text style={styles.statusText}>
+                                    {collection.status}
+                                </Text>
+                            </View>
+                        )}
                     </View>
                 </View>
                 

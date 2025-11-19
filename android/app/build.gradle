@@ -92,8 +92,8 @@ android {
         applicationId 'com.expressjsk'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.4.0"
+        versionCode 10
+        versionName "1.7.0"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -105,7 +105,7 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('release.keystore')
+            storeFile file('../../@expressjsk__jsk-keystore-backup/@expressjsk__jsk-keystore.bak.jks')
             storePassword '1e885994a8bd1f54deca7b946af932ca'
             keyAlias 'ba5a0a31e2cccae1d36c8e4d038b7436'
             keyPassword '0415b834c20c6dd57bab4db5331340b9'

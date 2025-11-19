@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, Platform, ActivityIndicator, TextInput, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, Platform, ActivityIndicator, TextInput, ScrollView, Alert, Clipboard } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -23,6 +23,7 @@ import { Colors } from '@/constants/Colors';
 import { useReferenceModal } from '@/contexts/ReferenceModalContext';
 import React from 'react';
 import * as Print from 'expo-print';
+import axios from 'axios';
 
 function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = true, onStatusChange }) {
     const { language } = useLanguage();
@@ -95,6 +96,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         
         checkFirstTimeUser();
     }, []);
+
 
     // Helper function to format currency values
     const formatCurrencyValue = (value, currency) => {
@@ -287,18 +289,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     const fetchBranches = async () => {
         try {
-            // const token = await getToken("userToken");
-            const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/branches?language_code=${language}`, {
-                method: "GET",
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/branches`, {
+                params: { language_code: language },
                 headers: {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json',
-                    // "Cookie": token ? `token=${token}` : ""
                 },
-                credentials: "include"
+                withCredentials: true
             });
             
-            const data = await response.json();
+            const data = response.data;
             if (data && data.data) {
                 const branchOptions = data.data.map(branch => ({
                     label: branch.name,
@@ -307,6 +307,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 setBranches(branchOptions);
             }
         } catch (error) {
+            console.error('❌ [Order.js] fetchBranches - Error:', error.message);
         }
     };
 
@@ -384,30 +385,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 }
                 
                 // Attempt to send the update to the server
-                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
-                    method: "PUT",
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'Accept-Language': language,
-                    },
-                    credentials: "include",
-                    body: JSON.stringify({ updates: update })
-                });
+                const res = await axios.put(
+                    `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
+                    { updates: update },
+                    {
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Accept-Language': language,
+                        },
+                        withCredentials: true
+                    }
+                );
                 
-                // Get the response text for debugging
-                const responseText = await res.text();
-                
-                // Try to parse the response as JSON
-                let data;
-                try {
-                    data = JSON.parse(responseText);
-                } catch (parseError) {
-                    // Add to failed updates with order ID for error reporting
-                    failedUpdates.push(update);
-                    failedOrderIds.push(update.order_id);
-                    continue;
-                }
+                const data = res.data;
                 
                 if (data.error) {
                     // Check if this is the "already has status" error
@@ -734,29 +725,21 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             
             if (isOnline) {
                 // We're online, send the update directly
-                try {
+                try {                    
+                    const res = await axios.put(
+                        `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
+                        { updates },
+                        {
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'Accept-Language': language,
+                            },
+                            withCredentials: true
+                        }
+                    );
                     
-                    const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
-                        method: "PUT",
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json',
-                            'Accept-Language': language,
-                        },
-                        credentials: "include",
-                        body: JSON.stringify({ updates }) // This is the expected format by the API
-                    });
-                    
-                    // Log the raw response for debugging
-                    const responseText = await res.text();
-                    
-                    // Try to parse the response
-                    let data;
-                    try {
-                        data = JSON.parse(responseText);
-                    } catch (parseError) {
-                        throw new Error('Invalid server response');
-                    }
+                    const data = res.data;
                     
                     if (!data.error) {
                         // Update was successful
@@ -920,24 +903,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             };
 
                            // We're online, send the update directly
-                                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
-                                    method: "PUT",
-                                    headers: {
-                                        'Accept': 'application/json',
-                                        'Content-Type': 'application/json',
-                                        'Accept-Language': language,
-                                    },
-                                    credentials: "include",
-                                    body: JSON.stringify({ updates })
-                                });
+                                const res = await axios.put(
+                                    `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
+                                    { updates },
+                                    {
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json',
+                                            'Accept-Language': language,
+                                        },
+                                        withCredentials: true
+                                    }
+                                );
 
-                                const responseText = await res.text();
-                                let data;
-                                try {
-                                    data = JSON.parse(responseText);
-                                } catch (parseError) {
-                                    throw new Error('Invalid server response');
-                                }
+                                const data = res.data;
 
                                 if (!data.error) {
                                     // Update was successful
@@ -1062,8 +1041,6 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Order #${order.order_id}</title>
             <style>
-                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
-                
                 * {
                     margin: 0;
                     padding: 0;
@@ -1076,7 +1053,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 }
                 
                 body {
-                    font-family: ${isRTL ? "'Noto Sans Arabic', Arial, sans-serif" : "'Roboto', Arial, sans-serif"};
+                    font-family: ${isRTL ? '-apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif' : '-apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif'};
                     direction: ${direction};
                     text-align: ${textAlign};
                     line-height: ${isSmallFormat ? '1.1' : '1.2'};
@@ -1090,6 +1067,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     display: flex;
                     flex-direction: column;
                     page-break-inside: avoid;
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
                 }
                 
                 .header {
@@ -1435,16 +1414,58 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 fileName: `Tayar_Order_${order.order_id}_${format.size}_${new Date().toISOString().split('T')[0]}.pdf`
             });
             
-            // Print directly without sharing
-            await Print.printAsync({
-                uri: uri,
-                printerUrl: uri
-            });
+            // Platform-specific printing behavior
+            if (Platform.OS === 'ios') {
+                // On iOS, use the system print dialog with additional error handling
+                try {
+                    await Print.printAsync({
+                        uri: uri,
+                        // iOS-specific options
+                        orientation: Print.Orientation.portrait,
+                        useMarkupFormatter: false
+                    });
+                } catch (printError) {
+                    // Handle iOS-specific print errors
+                    const isPrintCancellation = 
+                        printError.message?.includes('Printing did not complete') ||
+                        printError.message?.includes('cancelled') ||
+                        printError.message?.includes('User cancelled') ||
+                        printError.code === 'ERR_PRINT_CANCELLED';
+                    
+                    if (isPrintCancellation) {
+                        return; // Silent return for cancellation
+                    }
+                    
+                    // Re-throw other errors to be handled by outer catch
+                    throw printError;
+                }
+            } else {
+                // Android behavior (original code)
+                await Print.printAsync({
+                    uri: uri,
+                    printerUrl: uri
+                });
+            }
             
         } catch (error) {
+            console.error('PDF Generation Error:', error);
+            
+            // More detailed error handling for actual errors
+            let errorMessage = translations[language]?.common?.pdfGenerationError || "Failed to generate PDF. Please try again.";
+            
+            if (Platform.OS === 'ios') {
+                if (error.message?.includes('no printer')) {
+                    errorMessage = translations[language]?.common?.noPrinterError || "No printer available. Please check your printer settings.";
+                } else if (error.message?.includes('permission')) {
+                    errorMessage = translations[language]?.common?.printPermissionError || "Print permission denied. Please allow printing in settings.";
+                } else if (error.message?.includes('network')) {
+                    errorMessage = translations[language]?.common?.networkError || "Network error. Please check your connection and try again.";
+                }
+            }
+            
             Alert.alert(
                 translations[language]?.common?.error || "Error",
-                translations[language]?.common?.pdfGenerationError || "Failed to generate PDF. Please try again."
+                errorMessage
             );
         } finally {
             setIsPdfLoading(false);
@@ -1844,7 +1865,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         
                         <View style={[styles.orderIdSection]}>
                             <View style={[styles.orderIdContainer]}>
-                             <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
+                             <Pressable onPress={() => Clipboard.setString(order.order_id.toString())}>
+                                <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
+                             </Pressable>
                                 {!isConnected && pendingStatusUpdates.some(update => update.order_id === order.order_id) && (
                                     <View style={styles.pendingIndicator}>
                                         <MaterialIcons name="sync" size={14} color="#F59E0B" />
@@ -1945,16 +1968,18 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     })
                                 }]]}>
                                     <Text style={[styles.phoneText,{color:colors.success}]}>{order.receiver_mobile}</Text>
+                                    <Text style={[styles.phoneText,{color:colors.success}]}>{order.receiver_second_mobile}</Text>
                                     <View style={styles.phoneActions}>
                                         <Contact
                                             contact={{
                                                 type: "phone",
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
+                                                phone_2:order.receiver_second_mobile,
                                                 userName: order.receiver_name,
                                                 companyType: order.company_type || "taiar",
                                                 deliveryDate: order.delivery_date || "اليوم",
-                                                senderName: order.sender || "طيار للتوصيل",
+                                                senderName: order.external_sender_name ? order.external_sender_name : order.sender,
                                                 receiverCity: order.receiver_city || "",
                                                 receiverAddress: order.receiver_address || "",
                                                 msg: "",
@@ -1970,10 +1995,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                 type: "msg",
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
+                                                phone_2:order.receiver_second_mobile,
                                                 userName: order.receiver_name,
                                                 companyType: order.company_type || "taiar",
                                                 deliveryDate: order.delivery_date || "اليوم",
-                                                senderName: order.sender || "طيار للتوصيل",
+                                                senderName: order.external_sender_name ? order.external_sender_name : order.sender,
                                                 receiverCity: order.receiver_city || "",
                                                 receiverAddress: order.receiver_address || "",
                                                 msg: "",
@@ -2001,12 +2027,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
                                     <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:"#FFA500"}]}>
-                                    {order.order_type}
-                                    {order.quantity > 1 && (
-                                    <> | {translations[language].tabs.orders.order.quantity || 'Quantity'}: {order.quantity}</>
-                                    )}                                     
-                                       {order.received_items ? ` (${order.received_items})` : ''}
-                                        {order.received_quantity ? ` - ${order.received_quantity}` : ''}
+                                        {order.order_type}
+                                        {order.quantity > 1 && (
+                                            <Text>{` | ${(translations[language].tabs.orders.order.quantity || 'Quantity')}: ${order.quantity}`}</Text>
+                                        )}
+                                        {order.received_items ? (
+                                            <Text>{` (${order.received_items})`}</Text>
+                                        ) : null}
+                                        {order.received_quantity ? (
+                                            <Text>{` - ${order.received_quantity}`}</Text>
+                                        ) : null}
                                     </Text>
                                 </View>
                             </View>
@@ -2133,6 +2163,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             phone: order.sender_mobile
                                         }} 
                                         orderId={order.order_id}
+                                        orderData={order}
                                     />
                                 )}
                                 
@@ -2140,9 +2171,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     box={{
                                         label: translations[language].tabs.orders.order.userClientBoxLabel,
                                         userName: order.receiver_name,
-                                        phone: order.receiver_mobile
+                                        phone: order.receiver_mobile,
+                                        phone_2: order.receiver_second_mobile
                                     }} 
                                     orderId={order.order_id}
+                                    orderData={order}
                                 />
                                 
                                 {!["driver","delivery_company"].includes(authUserRole) && (
@@ -2153,6 +2186,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             phone: order.driver_mobile ? order.driver_mobile : ""
                                         }} 
                                         orderId={order.order_id}
+                                        orderData={order}
                                     />
                                 )}
                             </View>
@@ -2271,9 +2305,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                     </Text>
                                                 )}
                                             </View>
-                                        ) : (
-                                            <></>
-                                        )}
+                                        ) : null}
                                     </View>
                                 </View>
                             </View>
@@ -2286,14 +2318,15 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         ios: {
                                             textAlign:isRTL ? "left" : ""
                                         }
-                                    }),
+                                    })
                                 }]}>
                                     {translations[language].tabs.orders.order.financialDetails || 'Financial Details'}
                                 </Text>
                                 
                                 <View style={[styles.costSection]}>
-                                    {!["business"].includes(authUserRole) && (<View style={[
-                                        styles.costCard,{
+                                    <View style={[
+                                        styles.costCard,
+                                        {
                                             backgroundColor: colors.surface
                                         }
                                     ]}>
@@ -2317,12 +2350,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             </Text>
                                             {formatCurrencyValue(order.total_cod_value, order.currency)}
                                         </View>
-                                    </View>)}
+                                    </View>
                                     
-                                    {/* Only show delivery fee for non-driver/delivery_company roles */}
-                                    {!["driver", "delivery_company","business"].includes(authUserRole) && (
+                                    {!["driver", "delivery_company"].includes(authUserRole) && (
                                         <View style={[
-                                            styles.costCard,{
+                                            styles.costCard,
+                                            {
                                                 backgroundColor: colors.surface
                                             }
                                         ]}>
@@ -2572,7 +2605,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     styles.controlIconContainer, 
                                     { backgroundColor: '#4361EE' }
                                 ]}>
-                                    <Feather name="phone" size={18} color="#ffffff" />
+                                    <Feather name="edit" size={18} color="#ffffff" />
                                 </View>
                                 <Text style={[styles.controlText,{
                                     color: colors.text,
@@ -2649,7 +2682,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         </TouchableOpacity>
 
                         {/* Re send button for all roles except driver and delivery_company */}
-                        {!["driver", "delivery_company"].includes(authUserRole) && ["rejected","stuck","returned_in_branch","in_branch"].includes(order.status_key) && (
+                        {/* {!["driver", "delivery_company"].includes(authUserRole) && ["rejected","stuck","returned_in_branch","in_branch"].includes(order.status_key) && (
                             <TouchableOpacity 
                                 style={[
                                     styles.controlOption, 
@@ -2680,7 +2713,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     {translations[language].tabs.orders.order.resend || "Re send"}
                                 </Text>
                             </TouchableOpacity>
-                        )}
+                        )} */}
 
                         {["business"].includes(authUserRole) && <TouchableOpacity 
                             style={[

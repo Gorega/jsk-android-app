@@ -3,14 +3,14 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 
 // Store URLs
-const APP_STORE_URL = 'https://apps.apple.com/us/app/taiar/id6746768193'; // Replace with your App Store ID
+const APP_STORE_URL = 'https://apps.apple.com/us/app/jsk/id6752381240'; // Replace with your App Store ID
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.taiar&pli=1'; // Replace with your app's package name
 
 // Check if the app needs to be updated by comparing versions
 export const checkForUpdates = async (language = 'ar') => {
   try {
     // Get current app version from Constants
-    const currentVersion = Constants.expoConfig?.version || '2.3.0';
+    const currentVersion = Constants.expoConfig?.version || '1.7.0';
     
     // Get the latest version from your API
     const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/app-version`, {

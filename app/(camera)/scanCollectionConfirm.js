@@ -248,7 +248,7 @@ export default function ScanCollectionConfirm() {
         playFailureSound();
       } else {
         // Handle successful response
-        const successMessage = data.message || translations[language]?.collections?.collection?.statusUpdatedSuccessfully || "Status updated successfully";
+        const successMessage = translations[language]?.collections?.collection?.statusUpdatedSuccessfully || "Status updated successfully";
         Alert.alert(
           translations[language]?.collections?.collection?.success || "Success",
           successMessage
@@ -326,7 +326,7 @@ export default function ScanCollectionConfirm() {
       <CameraView
         style={StyleSheet.absoluteFillObject}
         facing='back'
-        onBarcodeScanned={scanned && !scannedCollection ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
         barCodeScannerSettings={{
           barCodeTypes: [
             'qr',

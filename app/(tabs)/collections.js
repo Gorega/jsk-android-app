@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Feather from '@expo/vector-icons/Feather';
 import Octicons from '@expo/vector-icons/Octicons';
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
@@ -84,7 +83,7 @@ function Collections({ showModal, setShowModal }) {
                 iconBackground: isDark ? 'rgba(108, 142, 255, 0.15)' : "#EEF2FF",
                 iconColor: colors.primary
             },
-            ["driver","delivery_company","entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(user.role) ? { visibility: "hidden" } : {
+            ["entery","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(user.role) ? { visibility: "hidden" } : {
                 label: ["business"].includes(user.role) ? 
                     translations[language].tabs.collections.options.my_money_collections : 
                     translations[language].tabs.collections.options.business_money_collections,

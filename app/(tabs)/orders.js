@@ -3,14 +3,14 @@ import Search from '../../components/search/Search';
 import OrdersView from '../../components/orders/OrdersView';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocalSearchParams, usePathname, useRouter } from "expo-router";
-import { translations } from '../../utils/languageContext';
-import { useLanguage } from '../../utils/languageContext';
+import { useLanguage, translations } from '../../utils/languageContext';
 import { useAuth } from "../../RootLayout";
 import { useSocket } from '../../utils/socketContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
+import axios from 'axios';
 
 export default function Orders() {
     const socket = useSocket();
@@ -19,8 +19,9 @@ export default function Orders() {
     const router = useRouter();
     const [data, setData] = useState([]);
     const [page, setPage] = useState(1);
+    const ORDERS_LIMIT = 50; // STRICT LIMIT - only 50 orders per page
     const [loadingMore, setLoadingMore] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [searchValue, setSearchValue] = useState("");
     const [activeFilter, setActiveFilter] = useState("");
     const [activeSearchBy, setActiveSearchBy] = useState("");
@@ -28,7 +29,7 @@ export default function Orders() {
     const [selectedDate, setSelectedDate] = useState("");
     const params = useLocalSearchParams();
     const { user } = useAuth();
-    const { orderIds, reset, multi_id } = params;
+    const { orderIds, reset, multi_id, active_orders } = params;
     const [refreshing, setRefreshing] = useState(false);
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
@@ -97,7 +98,12 @@ export default function Orders() {
     }, [reset]);
 
     // Function to reset all filters
-    const resetAllFilters = useCallback(() => {
+    const resetAllFilters = useCallback(() => {        
+        // PREVENT calling this before initial fetch completes
+        if (!hasCompletedInitialFetch.current) {
+            return;
+        }
+                
         setSearchValue("");
         setActiveFilter("");
         setActiveSearchBy("");
@@ -121,26 +127,22 @@ export default function Orders() {
         };
     }, [resetAllFilters]);
 
-    const onRefresh = useCallback(async () => {
+    const onRefresh = useCallback(async () => {        
+        // DON'T clear filters on refresh - just refetch with current filters
+        // Clearing filters triggers the main effect which causes double fetch
         try {
             setRefreshing(true);
             setPage(1);
-            // Clear all filters when refreshing
-            setSearchValue("");
-            setActiveFilter("");
-            setActiveSearchBy("");
-            setActiveDate("");
-            setSelectedDate("");
             
             // Refresh based on current view mode
             if (activeSearchBy?.action === "group_by_city") {
                 await fetchCityGroups();
             } else {
-                // Fetch all orders and explicitly ignore any orderIds from params
-                await fetchData(1, false, { ignoreOrderIds: true });
+                // Just refetch - don't change any filters
+                await fetchData(1, false);
             }
         } catch (error) {
-            console.error("Refresh error:", error);
+            console.error("❌ [onRefresh] Error:", error);
         } finally {
             setRefreshing(false);
         }
@@ -311,21 +313,35 @@ export default function Orders() {
     }], [language, translations]);
 
     const fetchOrdersData = async (queryParams, signal) => {
+        const url = `${process.env.EXPO_PUBLIC_API_URL}/api/orders`;
+        const params = Object.fromEntries(queryParams);
+        
         try {
-            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`, {
-                method: "GET",
-                credentials: "include",
+            
+            // Use Axios for better performance
+            const response = await axios.get(url, {
+                params: params,
                 headers: {
                     'Accept': 'application/json',
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                 },
-                signal // Support for aborting requests
+                withCredentials: true, // Same as credentials: "include"
+                signal, // AbortController support
+                timeout: 30000, // 30 second timeout
             });
-            return await res.json();
+            
+            const data = response.data;
+            
+            
+            return data;
         } catch (err) {
-            if (err.name === 'AbortError') {
-                // Request was aborted, which is expected behavior
+            if (axios.isCancel(err)) {
                 return null;
+            }
+            console.error('❌ [AXIOS] Error:', err.message);
+            if (err.response) {
+                console.error('   Response status:', err.response.status);
+                console.error('   Response data:', err.response.data);
             }
             throw err;
         }
@@ -354,62 +370,52 @@ export default function Orders() {
             // Create a new abort controller for this request
             abortControllerRef.current = new AbortController();
             
-            const queryParams = new URLSearchParams();
+            // Build filters object
+            const filters = {};
             
-            // Explicitly set group_by parameter for receiver_city
-            queryParams.append('group_by', 'receiver_city');
-            
-            // Add language code
-            queryParams.append('language_code', language);
+            // Add search parameter if available
+            if (searchValue && searchValue.trim() !== '') {
+                filters.search = searchValue;
+            }
             
             // Add any active filters
-            if (activeFilter) queryParams.append('status_key', activeFilter);
-            if (activeDate) queryParams.append("date_range", activeDate.action);
+            if (activeFilter) filters.status_key = activeFilter;
+            if (activeDate) filters.date_range = activeDate.action;
             if (activeDate && activeDate.action === "custom") {
-                queryParams.append("start_date", selectedDate);
-                queryParams.append("end_date", selectedDate);
+                filters.start_date = selectedDate;
+                filters.end_date = selectedDate;
             }
-                        
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
+            
+            const response = await axios.post(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders/grouped-summary`,
                 {
-                    method: "GET",
-                    credentials: "include",
+                    groupBy: 'receiver_city',
+                    language_code: language,
+                    filters: filters
+                },
+                {
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
                     },
+                    withCredentials: true,
                     signal: abortControllerRef.current.signal
                 }
             );
+                        
+            const result = response.data;
             
-            // Check if response is ok before trying to parse JSON
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            
-            // Log the full response for debugging
-            const responseText = await response.text();
-            
-            let result;
-            try {
-                result = JSON.parse(responseText);
-                
-                // Check if the data is in the expected format
-                if (result && result.data && Array.isArray(result.data)) {
-                    setCityGroups(result.data);
-                } else if (result && result.data) {
-                    // If data exists but is not an array, try to handle it anyway
-                    const dataArray = Array.isArray(result.data) ? result.data : [result.data];
-                    setCityGroups(dataArray);
-                } else {
-                    setCityGroups([]);
-                }
-            } catch (parseError) {
+            // Check if the data is in the expected format
+            if (result && result.data && Array.isArray(result.data)) {
+                setCityGroups(result.data);
+            } else {
+                console.error('❌ [orders.js] fetchCityGroups - Invalid response format:', result);
                 setCityGroups([]);
             }
         } catch (error) {
-            if (error.name !== 'AbortError') {
+            if (axios.isCancel(error)) {
+            } else {
+                console.error('❌ [orders.js] fetchCityGroups - Error:', error.message);
                 setCityGroups([]);
             }
         } finally {
@@ -420,7 +426,8 @@ export default function Orders() {
         language, 
         activeFilter, 
         activeDate, 
-        selectedDate
+        selectedDate,
+        searchValue
     ]);
     
     // Fetch orders for a specific city
@@ -443,40 +450,34 @@ export default function Orders() {
         }));
         
         try {
-            // Create query params with order_id list
-            // Limit to 50 orders at a time to prevent URL length issues
-            const orderIds = cityGroup.order_ids.slice(0, 50);
+            // Limit to 100 orders at a time (backend limit)
+            const orderIds = cityGroup.order_ids.slice(0, 100);
             
-            const queryParams = new URLSearchParams();
-            queryParams.append('order_id', orderIds.join(','));
-            queryParams.append('language_code', language);
-                        
-            const response = await fetch(
-                `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
+            const response = await axios.post(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders/fetch-by-ids`,
                 {
-                    method: "GET",
-                    credentials: "include",
+                    orderIds: orderIds,
+                    language_code: language,
+                    includeDetails: true
+                },
+                {
                     headers: {
                         'Accept': 'application/json',
                         "Content-Type": "application/json",
-                    }
+                    },
+                    withCredentials: true
                 }
             );
             
-            // Check if response is ok before trying to parse JSON
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const result = response.data;
             
-            const result = await response.json();
-            
-            if (result && result.data) {
+            if (result && result.data && Array.isArray(result.data)) {
                 setCityOrdersMap(prev => ({
                     ...prev,
                     [cityKey]: result.data
                 }));
             } else {
-                console.error('Invalid orders data format for city:', cityKey, result);
+                console.error('❌ [orders.js] fetchCityOrders - Invalid orders data format for city:', cityKey, result);
                 // Set empty array for this city to prevent repeated fetch attempts
                 setCityOrdersMap(prev => ({
                     ...prev,
@@ -484,7 +485,7 @@ export default function Orders() {
                 }));
             }
         } catch (error) {
-            console.error('Error fetching city orders:', error);
+            console.error('❌ [orders.js] fetchCityOrders - Error:', error.message);
             // Set empty array for this city to prevent repeated fetch attempts
             setCityOrdersMap(prev => ({
                 ...prev,
@@ -500,7 +501,9 @@ export default function Orders() {
 
 
     const fetchData = useCallback(async (pageNumber = 1, isLoadMore = false, options = {}) => {
+        
         const { ignoreOrderIds = false } = options;
+        
         // Cancel any ongoing fetch
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
@@ -509,43 +512,63 @@ export default function Orders() {
         // Create a new abort controller for this request
         abortControllerRef.current = new AbortController();
         
-        if (!isLoadMore) setIsLoading(true);
+        // Only show loading on initial load or when not loading more
+        if (!isLoadMore && pageNumber === 1) {
+            setIsLoading(true);
+        }
         
         try {
             const queryParams = new URLSearchParams();
-            
-            // Clear orderIds and use a clean request if:
-            // 1. User explicitly selected a status filter (including "All" which is empty string) AND it's not from a predefined filter with orderIds
-            // 2. User is using search or other filtering methods
-            const isFilterSelected = (typeof activeFilter === 'string'); // Any string value means filter was selected
+                        
+            const isFilterSelected = (typeof activeFilter === 'string' && activeFilter !== '');
             const isUsingSearch = activeSearchBy || (searchValue && searchValue.trim() !== '');
+            const shouldUseOrderIds = orderIds && !ignoreOrderIds && !isFilterSelected && !isUsingSearch;
+                        
+            // Add search if present
+            if (!activeSearchBy && searchValue) {
+                queryParams.append('search', searchValue);
+            }
             
-            // Use orderIds if:
-            // - We have orderIds parameter AND
-            // - We're not ignoring orderIds AND
-            // - Either no filter is selected OR we have a date filter (like "today") which should work with orderIds
-            const shouldUseOrderIds = orderIds && !ignoreOrderIds && (!isFilterSelected || activeDate) && !isUsingSearch;
-            
-            if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            
-            // Only include orderIds if no explicit filter is selected (including "All")
+            // Only include orderIds if conditions are met
             if (shouldUseOrderIds && orderIds) {
                 queryParams.append('order_id', orderIds);
             }
             
-            if (multi_id && multi_id.trim() !== "") queryParams.append('multi_id', multi_id);
+            if (multi_id && multi_id.trim() !== "") {
+                queryParams.append('multi_id', multi_id);
+            }
             
-            // Include status_key only if activeFilter has a value (not empty string)
+            // Include status_key only if activeFilter has a value
             if (typeof activeFilter === 'string' && activeFilter !== '') {
                 queryParams.append('status_key', activeFilter);
             }
             
-            if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue);
-            if (activeDate) queryParams.append("date_range", activeDate.action);
-            if (activeDate && activeDate.action === "custom") queryParams.append("start_date", selectedDate);
-            if (activeDate && activeDate.action === "custom") queryParams.append("end_date", selectedDate);
-            queryParams.append('page', pageNumber);
+            if (activeSearchBy) {
+                queryParams.append(activeSearchBy.action, searchValue);
+            }
+            
+            if (activeDate) {
+                queryParams.append("date_range", activeDate.action);
+            }
+            
+            if (activeDate && activeDate.action === "custom") {
+                queryParams.append("start_date", selectedDate);
+                queryParams.append("end_date", selectedDate);
+            }
+            
+            queryParams.append('page', String(pageNumber));
+            queryParams.append('limit', String(ORDERS_LIMIT));
             queryParams.append('language_code', language);
+                        
+            // Add active_orders filter if present
+            if (active_orders) {
+                queryParams.append('active_orders', active_orders);
+            }
+                        
+            const finalLimit = queryParams.get('limit');
+            if (!finalLimit || finalLimit === 'undefined' || finalLimit === 'null') {
+                queryParams.set('limit', String(ORDERS_LIMIT));
+            }
                         
             // Store the fetch promise in the ref
             pendingFetchRef.current = fetchOrdersData(queryParams, abortControllerRef.current.signal);
@@ -553,18 +576,27 @@ export default function Orders() {
             
             // Only update state if the component is still mounted and the request wasn't aborted
             if (isMountedRef.current && newData) {
+                
                 if (isLoadMore) {
-                    setData(prevData => ({
-                        ...prevData,
-                        data: [...prevData.data, ...newData.data],
-                    }));
+                    setData(prevData => {
+                        const newTotal = prevData.data.length + newData.data.length;
+                        return {
+                            ...prevData,
+                            data: [...prevData.data, ...newData.data],
+                            metadata: newData.metadata
+                        };
+                    });
                 } else {
                     setData(newData);
+                    
+                    // Mark initial fetch as completed
+                    if (!hasCompletedInitialFetch.current) {
+                        hasCompletedInitialFetch.current = true;
+                    }
                 }
                 setIsLoading(false);
             }
         } catch (err) {
-            // Handle errors silently
             if (isMountedRef.current) {
                 setIsLoading(false);
             }
@@ -573,24 +605,33 @@ export default function Orders() {
                 setLoadingMore(false);
             }
         }
-    }, [activeDate, activeFilter, activeSearchBy, language, orderIds, multi_id, searchValue, selectedDate]);
+    }, [activeDate, activeFilter, activeSearchBy, language, orderIds, multi_id, searchValue, selectedDate, active_orders]);
 
     const loadMoreData = useCallback(async () => {
-        if (!loadingMore && data.data?.length > 0) {
-            // Check if there's more data to load
-            if (data?.data?.length >= data.metadata.total_records) {
-                return;
-            }
+        // Prevent multiple simultaneous loads
+        if (loadingMore) return;
+        
+        // Check if we have data
+        if (!data?.data || data.data.length === 0) return;
+        
+        // Check if there's more data to load based on metadata
+        const totalRecords = data?.metadata?.total_records || 0;
+        const currentCount = data.data.length;
+        
+        if (currentCount >= totalRecords) {
+            return; // All data loaded
+        }
 
-            setLoadingMore(true);
-            const nextPage = page + 1;
-            setPage(nextPage);
-            try {
-                await fetchData(nextPage, true);
-            } catch (error) {
-            } finally {
-                setLoadingMore(false);
-            }
+        setLoadingMore(true);
+        const nextPage = page + 1;
+        setPage(nextPage);
+        
+        try {
+            await fetchData(nextPage, true);
+        } catch (error) {
+            console.error('Error loading more data:', error);
+        } finally {
+            setLoadingMore(false);
         }
     }, [loadingMore, data, page, fetchData]);
 
@@ -734,7 +775,7 @@ export default function Orders() {
     }, [socket, fetchData, handleOrderStatusUpdate, activeFilter, data]);
 
     // Main data fetching effect
-    // Create a ref to track previous filter values
+    // Create a ref to track previous filter values and initial mount
     const prevFiltersRef = useRef({
         searchValue: '',
         activeFilter: '',
@@ -743,8 +784,34 @@ export default function Orders() {
         activeSearchBy: null,
         orderIds: []
     });
+    const isInitialMount = useRef(true);
+    const hasCompletedInitialFetch = useRef(false); // Track if first fetch completed
     
-    useEffect(() => {
+    useEffect(() => {        
+        // On initial mount, always fetch
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            setPage(1);
+            
+            if (activeSearchBy?.action === "group_by_city") {
+                fetchCityGroups();
+            } else {
+                fetchData(1, false);
+            }
+            
+            // Set initial values
+            prevFiltersRef.current = {
+                searchValue,
+                activeFilter,
+                activeDate: activeDate?.action || '',
+                selectedDate,
+                activeSearchBy: activeSearchBy?.action || '',
+                orderIds,
+                language
+            };
+            return;
+        }
+        
         // Skip unnecessary fetches by comparing with previous values
         const shouldFetch = 
             prevFiltersRef.current.searchValue !== searchValue ||
@@ -753,7 +820,7 @@ export default function Orders() {
             prevFiltersRef.current.orderIds !== orderIds ||
             prevFiltersRef.current.language !== language ||
             prevFiltersRef.current.activeSearchBy !== (activeSearchBy?.action || '');
-        
+                
         if (!shouldFetch) {
             return;
         }
@@ -761,6 +828,12 @@ export default function Orders() {
         setPage(1);
         
         if (activeSearchBy?.action === "group_by_city") {
+            // Clear city orders when search changes to force re-fetch with new groups
+            if (prevFiltersRef.current.searchValue !== searchValue) {
+                setCityOrdersMap({});
+                setExpandedCities({});
+            }
+            
             // Only fetch if not already loading
             if (!isFetchingCityGroupsRef.current) {
                 fetchCityGroups();
@@ -780,13 +853,6 @@ export default function Orders() {
             language
         };
     }, [searchValue, activeFilter, activeDate, orderIds, language, fetchData, activeSearchBy, fetchCityGroups]);
-    
-    // Initial load effect - only runs once on component mount
-    useEffect(() => {
-        // Initial data load
-        fetchData(1, false);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     // Reset all filters when re-entering the orders route or when params change
     useEffect(() => {
@@ -861,10 +927,10 @@ export default function Orders() {
             // Set active search by to group_by_city
             setActiveSearchBy(searchBy);
             
-            // Clear search value
-            setSearchValue("");
+            // Don't clear search value - allow searching within city groups
+            // setSearchValue(""); // Removed this line
             
-            // Clear other filters
+            // Clear other filters but keep search
             setActiveFilter("");
             setActiveDate("");
             setSelectedDate("");
@@ -901,6 +967,11 @@ export default function Orders() {
     // Function to clear all filters and params
     const clearAllFilters = useCallback(() => {
         
+        // PREVENT calling this before initial fetch completes
+        if (!hasCompletedInitialFetch.current) {
+            return;
+        }
+                
         // Clear all state
         setSearchValue("");
         setActiveFilter("");
@@ -999,65 +1070,7 @@ export default function Orders() {
                                                 
                                                 // Load orders if expanding and no orders loaded yet
                                                 if (newExpandedState && cityOrders.length === 0 && !isLoading) {
-                                                    // Set loading state
-                                                    setLoadingCityOrdersMap(prev => ({
-                                                        ...prev,
-                                                        [cityKey]: true
-                                                    }));
-                                                    
-                                                    // Get order IDs
-                                                    const orderIds = cityGroup.order_ids || [];
-                                                    if (orderIds.length > 0) {
-                                                        // Create query params
-                                                        const queryParams = new URLSearchParams();
-                                                        queryParams.append('order_id', orderIds.slice(0, 50).join(','));
-                                                        queryParams.append('language_code', language);
-                                                        
-                                                        // Fetch orders
-                                                        fetch(
-                                                            `${process.env.EXPO_PUBLIC_API_URL}/api/orders?${queryParams.toString()}`,
-                                                            {
-                                                                method: "GET",
-                                                                credentials: "include",
-                                                                headers: {
-                                                                    'Accept': 'application/json',
-                                                                    "Content-Type": "application/json",
-                                                                }
-                                                            }
-                                                        )
-                                                        .then(response => {
-                                                            if (!response.ok) {
-                                                                throw new Error(`HTTP error! status: ${response.status}`);
-                                                            }
-                                                            return response.json();
-                                                        })
-                                                        .then(result => {
-                                                            if (result && result.data) {
-                                                                setCityOrdersMap(prev => ({
-                                                                    ...prev,
-                                                                    [cityKey]: result.data
-                                                                }));
-                                                            } else {
-                                                                setCityOrdersMap(prev => ({
-                                                                    ...prev,
-                                                                    [cityKey]: []
-                                                                }));
-                                                            }
-                                                        })
-                                                        .catch(error => {
-                                                            console.error('Error fetching city orders:', error);
-                                                            setCityOrdersMap(prev => ({
-                                                                ...prev,
-                                                                [cityKey]: []
-                                                            }));
-                                                        })
-                                                        .finally(() => {
-                                                            setLoadingCityOrdersMap(prev => ({
-                                                                ...prev,
-                                                                [cityKey]: false
-                                                            }));
-                                                        });
-                                                    }
+                                                    fetchCityOrders(cityGroup);
                                                 }
                                             }}
                                         >
@@ -1099,8 +1112,8 @@ export default function Orders() {
                                                     </View>
                                                 ) : cityOrders.length > 0 ? (
                                                     <View style={styles.ordersContainer}>
-                                                        {cityOrders.map(order => (
-                                                            <View key={order.order_id} style={styles.orderItem}>
+                                                        {cityOrders.map((order, idx) => (
+                                                            <View key={`${order.order_id}-${idx}`} style={styles.orderItem}>
                                                                 <OrdersView
                                                                     data={[order]}
                                                                     metadata={data?.metadata}

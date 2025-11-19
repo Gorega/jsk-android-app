@@ -423,11 +423,13 @@ export default function HomeScreen() {
         fields: [
             (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
             (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
-            (selectedValue.paymentType?.value || form.paymentTypeId) === "check"
+            (selectedValue.paymentType?.value || form.paymentTypeId) === "check" ||
+            (orderId && !selectedValue.paymentType?.value && !form.paymentTypeId)
             ? [
                 // Only show COD amount fields and Add Currency button for cash or cash/check
                 ...((selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
-                (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" 
+                (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
+                (orderId && !selectedValue.paymentType?.value && !form.paymentTypeId)
                 ? [
                     ...codAmounts.map((item, index) => ({
                         label: selectedValue.orderType?.value !== "payment" 

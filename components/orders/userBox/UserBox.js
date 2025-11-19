@@ -6,37 +6,18 @@ import { useLanguage } from '../../../utils/languageContext';
 import { RTLWrapper } from '../../../utils/RTLWrapper';
 import { useTheme } from '@/utils/themeContext';
 import { Colors } from '@/constants/Colors';
-import { useEffect, useState } from "react";
 
-export default function BusinessBox({ box, orderId }) {
+/**
+ * UserBox component - displays user contact information
+ * @param {object} box - Contains label, userName, phone
+ * @param {string} orderId - Order ID for contact context
+ * @param {object} orderData - Full order data (passed from parent to avoid extra API calls)
+ */
+export default function BusinessBox({ box, orderId, orderData }) {
     const { language } = useLanguage();
     const isRTL = language === 'ar' || language === 'he';
     const { colorScheme } = useTheme();
     const colors = Colors[colorScheme];
-    const [orderData, setOrderData] = useState(null);
-
-    // Fetch order data if orderId is available
-    useEffect(() => {
-        const fetchOrderData = async () => {
-            if (!orderId) return;
-            
-            try {
-                const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
-                    method: "GET",
-                    credentials: "include",
-                    headers: {
-                        'Accept': 'application/json',
-                        "Content-Type": "application/json"
-                    }
-                });
-                const data = await res.json();
-                setOrderData(data);
-            } catch (error) {
-            }
-        };
-        
-        fetchOrderData();
-    }, [orderId, language]);
 
     return (
         <RTLWrapper>
@@ -72,10 +53,11 @@ export default function BusinessBox({ box, orderId }) {
                             type: "phone",
                             label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                             phone: box.phone,
+                            phone_2: box.phone_2,
                             userName: box.userName,
                             msg: "",
                             orderId: orderId,
-                            businessName: orderData?.sender || "طيار للتوصيل",
+                            senderName: orderData?.external_sender_name ? orderData?.external_sender_name : orderData?.sender,
                             receiverCity: orderData?.receiver_city || "",
                             receiverAddress: orderData?.receiver_address || "",
                             codValue: orderData?.cod_values?.[0]?.value || "",
@@ -88,12 +70,13 @@ export default function BusinessBox({ box, orderId }) {
                             type: "message",
                             label: translations[language].tabs.orders.order.userBoxMessageContactLabel,
                             phone: box.phone,
+                            phone_2: box.phone_2,
                             userName: box.userName,
                             msg: "",
                             orderId: orderId,
                             receiverCity: orderData?.receiver_city || "",
                             receiverAddress: orderData?.receiver_address || "",
-                            businessName: orderData?.sender || "طيار للتوصيل",
+                            senderName: orderData?.external_sender_name ? orderData?.external_sender_name : orderData?.sender,
                             codValue: orderData?.cod_values?.[0]?.value || "",
                             currency: orderData?.cod_values?.[0]?.currency || "₪"
                         }}

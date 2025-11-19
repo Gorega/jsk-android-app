@@ -27,7 +27,7 @@ const googleMapsAndroidApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY || envVa
 export default {
   name: 'JSK',
   slug: 'jsk',
-  version: '1.4.0',
+  version: '1.7.0',
   orientation: 'portrait',
   icon: './assets/images/tayar_logo.png',
   scheme: 'myapp',
@@ -63,7 +63,6 @@ export default {
     edgeToEdgeEnabled: true,
     softwareKeyboardLayoutMode: 'pan',
     // Enable system UI adjustments
-    windowSoftInputMode: 'adjustResize',
     googleServicesFile: './google-services.json',
     config: {
       googleMaps: {
