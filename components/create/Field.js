@@ -13,25 +13,6 @@ import { getToken } from "../../utils/secureStore";
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 
-// Function to convert Arabic/Persian numerals to English
-const convertToEnglishNumerals = (input) => {
-    if (!input) return input;
-    const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
-    const persianNumerals = '۰۱۲۳۴۵۶۷۸۹';
-    const englishNumerals = '0123456789';
-    
-    return input.replace(/[٠-٩۰-۹]/g, (char) => {
-        const arabicIndex = arabicNumerals.indexOf(char);
-        const persianIndex = persianNumerals.indexOf(char);
-        
-        if (arabicIndex !== -1) {
-            return englishNumerals[arabicIndex];
-        } else if (persianIndex !== -1) {
-            return englishNumerals[persianIndex];
-        }
-        return char;
-    });
-};
 
 export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
     // Add safety check for undefined field
@@ -398,6 +379,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             )}
                         </Pressable>
                     </View>
+               
                 )}
 
                 {field.type === "addCurrencyButton" && (

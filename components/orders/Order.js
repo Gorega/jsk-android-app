@@ -50,10 +50,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false);
     const [selectedPrintFormat, setSelectedPrintFormat] = useState(null);
-    
+
+    // Category organization state
+    const [showCategoryModal, setShowCategoryModal] = useState(false);
+    const [categoryName, setCategoryName] = useState(order.category_name || '');
+    const [categoryOrder, setCategoryOrder] = useState(order.category_order?.toString() || '');
+    const [isUpdatingCategory, setIsUpdatingCategory] = useState(false);
+    const [isEditingOrderNumber, setIsEditingOrderNumber] = useState(false);
+    const [tempOrderNumber, setTempOrderNumber] = useState('');
+    const [isEditingCategoryName, setIsEditingCategoryName] = useState(false);
+    const [tempCategoryName, setTempCategoryName] = useState('');
+
     // Safely access authUser role with a default value
     const authUserRole = authUser?.role || "user";
-    
+
     // Animation value for smooth transition
     const heightAnim = useRef(new Animated.Value(1)).current;
     const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -67,7 +77,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 // If onboarding hasn't been seen, show the expand hint
                 if (!hasSeenOnboarding) {
                     setShowExpandHint(true);
-                    
+
                     // Create a pulsing animation for the expand button
                     Animated.loop(
                         Animated.sequence([
@@ -83,7 +93,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             })
                         ])
                     ).start();
-                    
+
                     // Auto-hide the hint after 5 seconds
                     setTimeout(() => {
                         setShowExpandHint(false);
@@ -93,7 +103,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 // Silent fail for AsyncStorage errors
             }
         };
-        
+
         checkFirstTimeUser();
     }, []);
 
@@ -107,14 +117,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             return (
                 <View style={[styles.currencyContainer]}>
                     {currencies.map((curr, idx) => (
-                        <Text key={idx} style={[styles.currencyText,{color:colors.text},isRTL && {textAlign: 'left'}]}>{curr}</Text>
+                        <Text key={idx} style={[styles.currencyText, { color: colors.text }, isRTL && { textAlign: 'left' }]}>{curr}</Text>
                     ))}
                 </View>
             );
         }
-        
+
         // Regular display for simple values
-        return <Text style={[styles.costText,{color:colors.text},isRTL && {textAlign: 'left'}]}>{value} {currency}</Text>;
+        return <Text style={[styles.costText, { color: colors.text }, isRTL && { textAlign: 'left' }]}>{value} {currency}</Text>;
     };
 
     // Toggle minimize/expand state with animation
@@ -131,9 +141,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 useNativeDriver: true
             })
         ]).start();
-        
+
         setIsMinimized(!isMinimized);
-        
+
         // Hide the expand hint after first use
         if (showExpandHint) {
             setShowExpandHint(false);
@@ -146,78 +156,81 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         outputRange: ['0deg', '180deg']
     });
 
-    const suspendReasons =  [
-        { value: 'closed', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.closed},
-        { value: 'no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.no_response},
-        { value: 'cancelled_from_office', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.cancelled_from_office},
-        { value: 'address_changed', label: translations[language].tabs?.orders.order?.states?.suspendReasons?.address_changed},
-        { value: 'not_compatible', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_compatible},
-        { value: 'delivery_fee_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.delivery_fee_issue},
-        { value: 'duplicate_reschedule', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.duplicate_reschedule },
-        { value: 'receive_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_issue},
-        { value: 'sender_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.sender_cancelled},
-        { value: 'reschedule_request', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.reschedule_request},
-        { value: 'incorrect_number', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.incorrect_number},
-        { value: 'not_existing', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_existing},
-        { value: 'cod_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.cod_issue},
-        { value: 'death_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.death_issue},
-        { value: 'not_exist_in_address', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.not_exist_in_address},
-        { value: 'receiver_cancelled', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_cancelled},
-        { value: 'receiver_no_response', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receiver_no_response},
-        { value: 'order_incomplete', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.order_incomplete},
-        { value: 'receive_request_issue', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue},
-        { value: 'other', label: translations[language].tabs?.orders?.order?.states?.suspendReasons?.other}
+    const reasonsStuck = [
+        { value: 'مغلق او لا يوجد رد', label: 'مغلق او لا يوجد رد' },
+        { value: 'تم تغيير العنوان', label: 'تم تغيير العنوان' },
+        { value: 'رقم غير صحيح', label: 'رقم غير صحيح' },
+        { value: 'تأجيل متكرر', label: 'تأجيل متكرر' }
+    ];
+    const reasonsRejected = [
+        { value: 'غير مطابق للمواصفات', label: 'غير مطابق للمواصفات' },
+        { value: 'لا يريد الاستلام', label: 'لا يريد الاستلام' },
+        { value: 'ملغي من المرسل', label: 'ملغي من المرسل' }
+    ];
+    const defaultOther = [
+        { value: 'other', label: 'سبب اخر' }
     ];
 
     const statusOptions = authUserRole === "driver" || authUserRole === "delivery_company" ? [{
         label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
         requiresReason: true,
-        reasons: suspendReasons
-        },{
+        reasons: defaultOther
+    }, {
         label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
         requiresReason: true,
-        reasons: suspendReasons
-        }, {
+        reasons: [...reasonsRejected, ...defaultOther]
+    }, {
         label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
         requiresReason: true,
-        reasons: suspendReasons
-        },{
+        reasons: [...reasonsStuck, ...defaultOther]
+    },{
         label: translations[language].tabs.orders.order.states.on_the_way_back, value: "on_the_way"
-        },{
+    }, {
         label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
         requiresReason: true,
-        reasons: suspendReasons
-    },{
+        reasons: defaultOther
+    }, {
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_initiated, value: "return_after_delivered_initiated",
         requiresReason: true,
-        reasons: suspendReasons
-    },{
+        reasons: defaultOther
+    }, {
         label: translations[language].tabs?.orders?.order?.states?.return_after_delivered_fee_received, value: "return_after_delivered_fee_received",
         requiresReason: true,
-        reasons: suspendReasons
-    }, ["receive","delivery/receive"].includes(order.order_type_key) ? {
+        reasons: defaultOther
+    }, ["receive", "delivery/receive"].includes(order.order_type_key) ? {
         label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
-    }: {
+    } : {
         label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }]
-    :
-    [{
-        label: translations[language].tabs.orders.order?.states?.waiting, value: "waiting"
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.inBranch, value: "in_branch",
-        requiresBranch: true
-    },{
-        label: translations[language].tabs?.orders?.order?.states?.cancelled, value: "cancelled",
-        requiresReason: true,
-        reasons: suspendReasons
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
-        requiresReason: true,
-        reasons: suspendReasons
-    }, {
-        label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
-        requiresReason: true,
-        reasons: suspendReasons
+        :
+        [{
+            label: translations[language]?.tabs?.orders?.order?.states?.on_the_way || "On The Way", value: "on_the_way",
+            requiresDriver: true
+        },{
+            label: translations[language].tabs.orders.order?.states?.waiting, value: "waiting"
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.inBranch, value: "in_branch",
+            requiresBranch: true
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.cancelled, value: "cancelled",
+            requiresReason: true,
+            reasons: defaultOther
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.rejected, value: "rejected",
+            requiresReason: true,
+            reasons: [...reasonsRejected, ...defaultOther]
+            },{
+            label: translations[language].tabs.orders.order.states.rescheduled, value: "reschedule",
+            requiresReason: true,
+            reasons: defaultOther
+        }, {
+            label: translations[language].tabs?.orders?.order?.states?.stuck, value: "stuck",
+            requiresReason: true,
+            reasons: [...reasonsStuck, ...defaultOther]
+        },["receive", "delivery/receive"].includes(order.order_type_key) ? {
+        label: translations[language].tabs?.orders?.order?.states?.received, value: "received"
+    } : {
+        label: translations[language].tabs?.orders?.order?.states?.delivered, value: "delivered"
     }];
 
     const [selectedReason, setSelectedReason] = useState(null);
@@ -225,64 +238,87 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const [branches, setBranches] = useState([]);
     const [showReasonModal, setShowReasonModal] = useState(false);
     const [showBranchModal, setShowBranchModal] = useState(false);
+    const [drivers, setDrivers] = useState([]);
+    const [showDriverModal, setShowDriverModal] = useState(false);
+    const [selectedDriver, setSelectedDriver] = useState(null);
     const [isUpdating, setIsUpdating] = useState(false);
 
     // Add this state to track which error messages have been shown
     const [shownErrorOrderIds, setShownErrorOrderIds] = useState([]);
     const [syncMessageShown, setSyncMessageShown] = useState(false);
-    
+
     const handleStatusUpdate = (newStatusOrUpdater) => {
         // First close any open modals
         setShowStatusUpdateModal(false);
-        
+        resetStatusFlow();
+
         // Check if the input is a function (updater) or direct value
         if (typeof newStatusOrUpdater === 'function') {
             // Call the updater function with the current selectedValue
             const updatedValue = newStatusOrUpdater(selectedValue);
             setSelectedValue(updatedValue);
-            
+
             // Get the selected status from the updated value
             const selectedStatus = updatedValue.status?.value;
-            
+
             if (!selectedStatus) {
                 return;
             }
-            
-            // Check if the selected status requires a branch or reason
+
             const statusOption = statusOptions.find(option => option.value === selectedStatus);
-            
-            if (statusOption?.requiresBranch) {
-                // Fetch branches and show branch selection modal
+
+            if (statusOption?.requiresDriver) {
+                fetchDrivers();
+                setTimeout(() => setShowDriverModal(true), 100);
+            } else if (statusOption?.requiresBranch) {
                 fetchBranches();
-                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
+                setTimeout(() => setShowBranchModal(true), 100);
             } else if (statusOption?.requiresReason) {
-                // Show reason selection modal
-                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
+                const reasons = statusOption?.reasons || [];
+                const onlyOther = reasons.length === 1 && reasons[0].value === 'other';
+                if (reasons.length === 0) {
+                    setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
+                } else if (onlyOther) {
+                    setSelectedReason(reasons[0]);
+                    setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
+                } else {
+                    setTimeout(() => setShowReasonModal(true), 100);
+                }
             } else {
-                // Directly show confirmation modal if no branch or reason needed
-                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
             }
         } else {
             // Direct value (not a function updater)
             setSelectedValue(newStatusOrUpdater);
-            
+
             // Handle the direct value case
             const selectedStatus = newStatusOrUpdater.status?.value;
-            
+
             if (!selectedStatus) {
                 return;
             }
-            
-            // Continue with the same logic as above
+
             const statusOption = statusOptions.find(option => option.value === selectedStatus);
-            
-            if (statusOption?.requiresBranch) {
+
+            if (statusOption?.requiresDriver) {
+                fetchDrivers();
+                setTimeout(() => setShowDriverModal(true), 100);
+            } else if (statusOption?.requiresBranch) {
                 fetchBranches();
-                setTimeout(() => setShowBranchModal(true), 100); // Add delay to ensure previous modal closes
+                setTimeout(() => setShowBranchModal(true), 100);
             } else if (statusOption?.requiresReason) {
-                setTimeout(() => setShowReasonModal(true), 100); // Add delay to ensure previous modal closes
+                const reasons = statusOption?.reasons || [];
+                const onlyOther = reasons.length === 1 && reasons[0].value === 'other';
+                if (reasons.length === 0) {
+                    setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
+                } else if (onlyOther) {
+                    setSelectedReason(reasons[0]);
+                    setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
+                } else {
+                    setTimeout(() => setShowReasonModal(true), 100);
+                }
             } else {
-                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100); // Add delay to ensure previous modal closes
+                setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 100);
             }
         }
     };
@@ -297,7 +333,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 },
                 withCredentials: true
             });
-            
+
             const data = response.data;
             if (data && data.data) {
                 const branchOptions = data.data.map(branch => ({
@@ -310,6 +346,43 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             console.error('❌ [Order.js] fetchBranches - Error:', error.message);
         }
     };
+
+    const fetchDrivers = async () => {
+        try {
+            const response = await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/api/users`, {
+                params: { role_id: '4,9', language_code: language },
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                withCredentials: true
+            });
+            const data = response.data;
+            if (data && Array.isArray(data.data)) {
+                setDrivers(data.data);
+            }
+        } catch (error) {
+        }
+    };
+
+    const resetStatusFlow = () => {
+        setSelectedReason(null);
+        setSelectedBranch(null);
+        setSelectedDriver(null);
+        setUpdatedStatusNote("");
+        setShowReasonModal(false);
+        setShowBranchModal(false);
+        setShowDriverModal(false);
+    };
+
+    useEffect(() => {
+        if (!showStatusUpdateModal) {
+            setSelectedReason(null);
+            setSelectedBranch(null);
+            setSelectedDriver(null);
+            setUpdatedStatusNote("");
+        }
+    }, [showStatusUpdateModal]);
 
     const handleReasonSelect = (reasonOption) => {
         setSelectedReason(reasonOption);
@@ -325,6 +398,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
     };
 
+    const handleDriverSelect = (driver) => {
+        setSelectedDriver(driver);
+        setShowDriverModal(false);
+        setTimeout(() => setShowConfirmStatusChangeUpdateModal(true), 300);
+    };
+
     // Add this function to manually retry pending updates
     const retryPendingUpdates = async () => {
         if (pendingStatusUpdates.length === 0) {
@@ -332,27 +411,27 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             setShowErrorModal(true);
             return;
         }
-        
+
         const networkState = await NetInfo.fetch();
         if (!networkState.isConnected || !networkState.isInternetReachable) {
             setErrorMessage(translations[language]?.common?.noInternetConnection || "No internet connection");
             setShowErrorModal(true);
             return;
         }
-        
+
         // Show loading indicator
         setIsUpdating(true);
-        
+
         try {
             const result = await processPendingStatusUpdates();
             // If we still have failed updates, show an error with details if available
             if (result && result.failedUpdates && result.failedUpdates.length > 0) {
                 // Check if we have specific error details from any of the failed updates
                 const errorDetails = result.failedUpdates.find(update => update.errorDetails)?.errorDetails;
-                
+
                 setErrorMessage(
-                    errorDetails || 
-                    translations[language]?.common?.someUpdatesFailed || 
+                    errorDetails ||
+                    translations[language]?.common?.someUpdatesFailed ||
                     "Some updates failed. Please try again later."
                 );
                 setShowErrorModal(true);
@@ -370,20 +449,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         if (!updates || updates.length === 0) {
             return { successCount: 0, failedUpdates: [] };
         }
-                
+
         // Make a copy of the updates to avoid any state mutation issues
         const updatesToProcess = [...updates];
         const failedUpdates = [];
         let successCount = 0;
         let failedOrderIds = [];
-        
+
         for (const update of updatesToProcess) {
             try {
                 // Skip if this order ID has already had an error shown
                 if (shownErrorOrderIds.includes(update.order_id)) {
                     continue;
                 }
-                
+
                 // Attempt to send the update to the server
                 const res = await axios.put(
                     `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
@@ -397,37 +476,25 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         withCredentials: true
                     }
                 );
-                
+
                 const data = res.data;
-                
-                if (data.error) {
-                    // Check if this is the "already has status" error
-                    const alreadyHasStatusRegex = /لديه بالفعل الحالة|already has the status/i;
-                    
-                    if (alreadyHasStatusRegex.test(data.details || '')) {
-                        successCount++;
-                        
-                        // Update the cached order with the status (to be safe)
-                        await updateCachedOrder(update);
-                        
-                        // Call the onStatusChange callback to update the parent component
-                        if (typeof onStatusChange === 'function' && update.order_id === order.order_id) {
-                            // Find the status label from the options
-                            const statusOption = statusOptions.find(option => option.value === update.status);
-                            onStatusChange(update.order_id, statusOption?.label || update.status, update.status);
-                        }
-                    } else {
-                        // It's a real error - store the error details with the update for better error reporting
-                        update.errorDetails = data.details || data.error;
-                        failedUpdates.push(update);
-                        failedOrderIds.push(update.order_id);
-                    }
+
+                const failedOrders = Array.isArray(data?.failed_orders) ? data.failed_orders : [];
+                const failureDetails = Array.isArray(data?.failure_details) ? data.failure_details : [];
+                const thisOrderId = update.order_id;
+                const thisOrderFailed = failedOrders.includes(thisOrderId);
+
+                if (thisOrderFailed || data.error) {
+                    const detail = failureDetails.find(f => f && (f.orderId === thisOrderId || f.order_id === thisOrderId));
+                    update.errorDetails = detail?.reason || data.details || data.error;
+                    failedUpdates.push(update);
+                    failedOrderIds.push(thisOrderId);
                 } else {
                     successCount++;
-                    
+
                     // Update the cached order with the new status
                     await updateCachedOrder(update);
-                    
+
                     // Call the onStatusChange callback to update the parent component
                     if (typeof onStatusChange === 'function' && update.order_id === order.order_id) {
                         // Find the status label from the options
@@ -442,11 +509,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 failedOrderIds.push(update.order_id);
             }
         }
-        
+
         // Add shown error order IDs to the list
         if (failedOrderIds.length > 0) {
             setShownErrorOrderIds(prev => [...new Set([...prev, ...failedOrderIds])]);
-            
+
             // Save shown error IDs to AsyncStorage to persist across app refreshes
             try {
                 const userId = authUser?.id || authUser?.user_id || await getToken("userId");
@@ -461,39 +528,39 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 // Silent fail for AsyncStorage errors
             }
         }
-                
+
         // Remove all successful updates from pending updates
         // We need to keep only the updates that failed
         const remainingUpdates = [];
-        
+
         // Add each failed update to the remaining updates
         for (const failedUpdate of failedUpdates) {
             // Check if this update is already in remainingUpdates
             const alreadyExists = remainingUpdates.some(
                 update => update.order_id === failedUpdate.order_id && update.status === failedUpdate.status
             );
-            
+
             // Only add if not already in the array
             if (!alreadyExists) {
                 remainingUpdates.push(failedUpdate);
             }
         }
-                
+
         // Update state and storage with remaining failed updates
         setPendingStatusUpdates(remainingUpdates);
         await savePendingStatusUpdates(remainingUpdates);
-        
+
         // If there were successful updates and showSuccessMessage is true, show a success message
-        if (successCount > 0 && showSuccessMessage) {
+        if (successCount > 0 && failedUpdates.length === 0 && showSuccessMessage) {
             setSuccessMessage(
-                successCount === 1 
-                    ? (translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully") 
+                successCount === 1
+                    ? (translations[language].tabs.orders.order.statusChangeSuccess || "Status updated successfully")
                     : (translations[language].tabs.orders.order.multipleStatusesUpdated || `${successCount} statuses updated successfully`)
             );
             setShowSuccessModal(true);
             setTimeout(() => setShowSuccessModal(false), 2500);
         }
-        
+
         // If there were failed updates that haven't been shown before, show an error message with the order IDs
         const newFailedOrderIds = failedOrderIds.filter(id => !shownErrorOrderIds.includes(id));
         if (newFailedOrderIds.length > 0 && showSuccessMessage && !syncMessageShown) {
@@ -503,13 +570,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 `${translations[language]?.tabs?.orders?.order?.states?.failedToUpdate} ${uniqueFailedIds.length} ${translations[language]?.tabs?.orders?.order?.states?.forOrders}: ${uniqueFailedIds.join(', ')}`
             );
             setShowErrorModal(true);
-            
+
             // Automatically clear error history after showing the error message
             setTimeout(() => {
                 setShowErrorModal(false);
             }, 5000);
         }
-        
+
         return { successCount, failedUpdates };
     };
 
@@ -518,40 +585,40 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         try {
             // Get user ID from multiple possible sources
             let userId = null;
-            
+
             // Try from authUser first
             if (authUser?.id) {
                 userId = authUser.id;
             } else if (authUser?.user_id) {
                 userId = authUser.user_id;
             }
-            
+
             // If not found, try from secure storage
             if (!userId) {
                 userId = await getToken("userId");
             }
-            
+
             if (!userId) {
                 return;
             }
-            
+
             const cachedOrdersJson = await AsyncStorage.getItem(`cached_orders_${userId}`);
             if (!cachedOrdersJson) return;
-            
+
             const cachedOrders = JSON.parse(cachedOrdersJson);
             if (!cachedOrders[update.order_id]) return;
-            
+
             // Find the status label from the options
             const statusOption = statusOptions.find(option => option.value === update.status);
             const statusLabel = statusOption?.label || update.status;
-            
+
             // Update the cached order
             cachedOrders[update.order_id] = {
                 ...cachedOrders[update.order_id],
                 status: statusLabel,
                 status_key: update.status
             };
-            
+
             // Save back to storage
             await AsyncStorage.setItem(`cached_orders_${userId}`, JSON.stringify(cachedOrders));
         } catch (error) {
@@ -564,34 +631,34 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             // Get user ID from multiple possible sources
             const userId = authUser?.id || authUser?.user_id || await getToken("userId");
             if (!userId) return;
-            
+
             // Try to get pending updates from storage
             const storageKey = `pending_status_updates_${userId}`;
             const pendingUpdatesJson = await AsyncStorage.getItem(storageKey);
             if (!pendingUpdatesJson) return;
-            
+
             try {
                 const pendingUpdates = JSON.parse(pendingUpdatesJson);
-                
+
                 // Validate the structure of each update
-                const validUpdates = pendingUpdates.filter(update => 
-                    update && 
-                    update.order_id && 
-                    update.status && 
-                    typeof update.order_id === 'string' && 
+                const validUpdates = pendingUpdates.filter(update =>
+                    update &&
+                    update.order_id &&
+                    update.status &&
+                    typeof update.order_id === 'string' &&
                     typeof update.status === 'string'
                 );
-                
+
                 if (validUpdates.length === 0) return;
-                
+
                 // Filter out updates for order IDs that have already had errors shown
                 // and sort by timestamp to ensure oldest updates are processed first
                 const filteredUpdates = validUpdates
                     .filter(update => !shownErrorOrderIds.includes(update.order_id))
                     .sort((a, b) => new Date(a.timestamp || 0) - new Date(b.timestamp || 0));
-                
+
                 setPendingStatusUpdates(filteredUpdates);
-                
+
                 // Update UI for any pending updates for the current order
                 const currentOrderUpdates = filteredUpdates.filter(update => update.order_id === order.order_id);
                 if (currentOrderUpdates.length > 0 && typeof onStatusChange === 'function') {
@@ -600,13 +667,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     const statusOption = statusOptions.find(option => option.value === latestUpdate.status);
                     if (statusOption) {
                         onStatusChange(
-                            order.order_id, 
-                            `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`, 
+                            order.order_id,
+                            `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`,
                             latestUpdate.status
                         );
                     }
                 }
-                
+
                 // If we're connected, try to process them with a delay to ensure network stability
                 const networkState = await NetInfo.fetch();
                 if (networkState.isConnected && networkState.isInternetReachable && filteredUpdates.length > 0) {
@@ -622,57 +689,57 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             // Silent fail for AsyncStorage errors
         }
     };
-    
+
     // Save pending status updates to AsyncStorage
     const savePendingStatusUpdates = async (updates) => {
         try {
             // Get user ID from multiple possible sources
             let userId = null;
-            
+
             // Try from authUser first
             if (authUser?.id) {
                 userId = authUser.id;
             } else if (authUser?.user_id) {
                 userId = authUser.user_id;
             }
-            
+
             // If not found, try from secure storage
             if (!userId) {
                 userId = await getToken("userId");
             }
-            
+
             if (!userId) {
                 return;
             }
-            
+
             const storageKey = `pending_status_updates_${userId}`;
             await AsyncStorage.setItem(storageKey, JSON.stringify(updates));
         } catch (error) {
         }
     };
-    
+
     // Cache orders for offline viewing
     const cacheOrder = async (orderData) => {
         try {
             const userId = authUser?.id || authUser?.user_id;
             if (!userId) return;
-            
+
             // Get existing cached orders
             const cachedOrdersJson = await AsyncStorage.getItem(`cached_orders_${userId}`);
             let cachedOrders = cachedOrdersJson ? JSON.parse(cachedOrdersJson) : {};
-            
+
             // Update or add the order to the cache
             cachedOrders[orderData.order_id] = {
                 ...orderData,
                 cached_at: new Date().toISOString()
             };
-            
+
             // Save back to storage
             await AsyncStorage.setItem(`cached_orders_${userId}`, JSON.stringify(cachedOrders));
         } catch (error) {
         }
     };
-    
+
     // Cache the current order when component mounts
     useEffect(() => {
         if (order) {
@@ -680,23 +747,100 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         }
     }, [order]);
 
+    // Update order sorting (category_name and category_order)
+    const updateOrderSorting = async (orderId, categoryName, categoryOrder) => {
+        try {
+            setIsUpdatingCategory(true);
+            const response = await axios.patch(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/sorting`,
+                {
+                    category_name: categoryName || null,
+                    category_order: categoryOrder || null
+                },
+                {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    withCredentials: true
+                }
+            );
+
+            // Don't show success modal for quick edits
+            return response.data;
+        } catch (error) {
+            console.error('Error updating order sorting:', error);
+            setErrorMessage(error.response?.data?.message || translations[language]?.tabs?.orders?.order?.categorySortingError || 'Failed to update category');
+            setShowErrorModal(true);
+            throw error;
+        } finally {
+            setIsUpdatingCategory(false);
+        }
+    };
+
+    const handleOrderNumberSubmit = async () => {
+        setIsEditingOrderNumber(false);
+        if (tempOrderNumber !== order.category_order?.toString()) {
+            try {
+                await updateOrderSorting(
+                    order.order_id,
+                    order.category_name,
+                    tempOrderNumber ? parseInt(tempOrderNumber) : null
+                );
+                // Trigger refresh
+                if (typeof onStatusChange === 'function') {
+                    onStatusChange(order.order_id, order.status, order.status_key);
+                }
+            } catch (e) {
+                // Error handled in updateOrderSorting
+            }
+        }
+    };
+
+    const handleCategoryNameSubmit = async () => {
+        setIsEditingCategoryName(false);
+        if (tempCategoryName !== order.category_name) {
+            try {
+                await updateOrderSorting(
+                    order.order_id,
+                    tempCategoryName || null,
+                    order.category_order
+                );
+                // Trigger refresh
+                if (typeof onStatusChange === 'function') {
+                    onStatusChange(order.order_id, order.status, order.status_key);
+                }
+            } catch (e) {
+                // Error handled in updateOrderSorting
+            }
+        }
+    };
+
     // Modified changeStatusHandler with validation for "other" reason
     const changeStatusHandler = async () => {
         // Prevent multiple rapid clicks
         if (isUpdating) return;
-        
+
         try {
             setIsUpdating(true);
-            
+
+            const selectedStatus = selectedValue?.status?.value;
+            const statusOption = statusOptions.find(option => option.value === selectedStatus);
+            const manualReason = (UpdatedStatusNote || '').trim();
+            const isOther = selectedReason?.value === 'other';
+            const finalReason = selectedReason
+                ? (isOther ? manualReason : selectedReason.value)
+                : (statusOption?.requiresReason ? manualReason : undefined);
+
             const updates = {
                 order_id: order.order_id,
-                status: selectedValue.status?.value,
-                note_content: UpdatedStatusNote,
+                status: selectedStatus,
                 ...(selectedBranch && { current_branch: selectedBranch.value }),
-                ...(selectedReason && { reason: selectedReason.value }),
-                timestamp: new Date().toISOString() // Add timestamp for ordering
+                ...(finalReason ? { reason: finalReason } : {}),
+                ...(isOther ? {} : (manualReason ? { note_content: manualReason } : {})),
+                timestamp: new Date().toISOString()
             };
-            
+
             if (!updates.status) {
                 // Close current modal first, then show error
                 setShowConfirmStatusChangeUpdateModal(false);
@@ -707,7 +851,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 setIsUpdating(false);
                 return;
             }
-            
+
+            if (statusOption?.requiresReason && !selectedReason && !manualReason) {
+                setErrorMessage(translations[language]?.tabs?.orders?.order?.selectReason || 'Reason is required');
+                setShowErrorModal(true);
+                setIsUpdating(false);
+                return;
+            }
+
             // Check if reason is "other" and note is empty
             if (selectedReason?.value === 'other' && !UpdatedStatusNote.trim()) {
                 setErrorMessage(translations[language]?.tabs?.orders?.order?.noteRequiredForOther);
@@ -715,17 +866,37 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 setIsUpdating(false);
                 return;
             }
-            
+
             // Close current modal first
             setShowConfirmStatusChangeUpdateModal(false);
-            
+
             // Check if we're online
             const networkState = await NetInfo.fetch();
             const isOnline = networkState.isConnected && networkState.isInternetReachable;
-            
+
             if (isOnline) {
                 // We're online, send the update directly
-                try {                    
+                try {
+                    if (selectedValue?.status?.value === 'on_the_way') {
+                        if (!selectedDriver) {
+                            setErrorMessage(translations[language]?.tabs?.orders?.order?.selectDriver || 'Select driver');
+                            setShowErrorModal(true);
+                            setIsUpdating(false);
+                            return;
+                        }
+                        await axios.put(
+                            `${process.env.EXPO_PUBLIC_API_URL}/api/orders/${order.order_id}`,
+                            { driver_id: selectedDriver.user_id },
+                            {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json',
+                                    'Accept-Language': language,
+                                },
+                                withCredentials: true
+                            }
+                        );
+                    }
                     const res = await axios.put(
                         `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
                         { updates },
@@ -738,12 +909,22 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             withCredentials: true
                         }
                     );
-                    
+
                     const data = res.data;
-                    
-                    if (!data.error) {
-                        // Update was successful
-                        
+
+                    const failedOrders = Array.isArray(data?.failed_orders) ? data.failed_orders : [];
+                    const failureDetails = Array.isArray(data?.failure_details) ? data.failure_details : [];
+                    const thisOrderId = updates.order_id || order.order_id;
+                    const thisOrderFailed = failedOrders.includes(thisOrderId);
+
+                    if (thisOrderFailed || data.error) {
+                        const detail = failureDetails.find(f => f && (f.orderId === thisOrderId || f.order_id === thisOrderId));
+                        const message = detail?.reason || data.details || data.error || translations[language].tabs.orders.order.statusChangeError;
+                        setErrorMessage(message);
+                        setShowErrorModal(true);
+                    } else {
+                        // Update was successful for this order
+
                         // Update the cached order with the new status
                         const updatedOrder = {
                             ...order,
@@ -751,17 +932,18 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             status_key: selectedValue.status?.value
                         };
                         await cacheOrder(updatedOrder);
-                        
+
                         // Call the onStatusChange callback to update the parent component
                         if (typeof onStatusChange === 'function') {
                             onStatusChange(order.order_id, selectedValue.status?.label, selectedValue.status?.value);
                         }
-                        
+
                         // Reset state values
                         setSelectedReason(null);
                         setSelectedBranch(null);
+                        setSelectedDriver(null);
                         setUpdatedStatusNote("");
-                        
+
                         // Show success message
                         setTimeout(() => {
                             setSuccessMessage(translations[language].tabs.orders.order.statusChangeSuccess);
@@ -776,12 +958,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     onSuccess: (updatedOrder, successMessage) => {
                                         // Update cached order
                                         updateCachedOrder(updatedOrder.order_id, updatedOrder.status, updatedOrder.status_key);
-                                        
+
                                         // Show success message
                                         setSuccessMessage(successMessage);
                                         setShowSuccessModal(true);
                                         setTimeout(() => setShowSuccessModal(false), 2500);
-                                        
+
                                         // Trigger status change callback if provided
                                         if (onStatusChange) {
                                             onStatusChange(updatedOrder.order_id, updatedOrder.status, updatedOrder.status_key);
@@ -794,26 +976,25 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 });
                             }, 200);
                         }
-                        } else {
-                        // Show error message with the actual error details from backend
-                        setTimeout(() => {
-                            // Normalize possible object/array error shapes
-                            const rawErr = data.details || data.error;
-                            let normalized = null;
-                            if (typeof rawErr === 'string') {
-                                normalized = rawErr;
-                            } else if (Array.isArray(rawErr)) {
-                                normalized = rawErr.map(e => (typeof e === 'string' ? e : `${e.field ? e.field + ': ' : ''}${e.message || ''}`)).join('\n');
-                            } else if (rawErr && typeof rawErr === 'object') {
-                                normalized = rawErr.message || `${rawErr.field ? rawErr.field + ': ' : ''}${rawErr.message || ''}`;
-                            }
-                            setErrorMessage(normalized || translations[language].tabs.orders.order.statusChangeError);
-                            setShowErrorModal(true);
-                        }, 100);
                     }
                 } catch (error) {
-                    // Network error while trying to update - fall back to offline mode
-                    handleOfflineStatusUpdate(updates);
+                    const response = error && error.response;
+                    if (response && typeof response === 'object') {
+                        const serverData = response.data || {};
+                        const rawErr = serverData.details || serverData.error || serverData.message || error.message;
+                        let normalized = null;
+                        if (typeof rawErr === 'string') {
+                            normalized = rawErr;
+                        } else if (Array.isArray(rawErr)) {
+                            normalized = rawErr.map(e => (typeof e === 'string' ? e : `${e.field ? e.field + ': ' : ''}${e.message || ''}`)).join('\n');
+                        } else if (rawErr && typeof rawErr === 'object') {
+                            normalized = rawErr.message || `${rawErr.field ? rawErr.field + ': ' : ''}${rawErr.message || ''}`;
+                        }
+                        setErrorMessage(normalized || translations[language].tabs.orders.order.statusChangeError);
+                        setShowErrorModal(true);
+                    } else {
+                        handleOfflineStatusUpdate(updates);
+                    }
                 }
             } else {
                 // We're offline, store the update for later
@@ -822,7 +1003,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         } catch (error) {
             // Close current modal first
             setShowConfirmStatusChangeUpdateModal(false);
-            
+
             // Show error modal
             setTimeout(() => {
                 setErrorMessage(translations[language].tabs.orders.order.statusChangeError);
@@ -832,7 +1013,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             setIsUpdating(false);
         }
     };
-    
+
     // Handle status updates when offline
     const handleOfflineStatusUpdate = async (updates) => {
         try {
@@ -841,34 +1022,34 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 ...updates,
                 timestamp: new Date().toISOString()
             }];
-            
+
             // Sort by timestamp to ensure oldest updates are processed first
             updatedPendingUpdates.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-            
+
             // Update state and storage
             setPendingStatusUpdates(updatedPendingUpdates);
             await savePendingStatusUpdates(updatedPendingUpdates);
-            
+
             // Reset state values
             setSelectedReason(null);
             setSelectedBranch(null);
             setUpdatedStatusNote("");
-            
+
             // Show offline pending message
             setTimeout(() => {
                 setSuccessMessage(translations[language].tabs.orders.order.statusChangeOffline || "Status update saved for when you're back online");
                 setShowSuccessModal(true);
                 setTimeout(() => setShowSuccessModal(false), 2500);
             }, 100);
-            
+
             // Update local UI to show pending status
             if (typeof onStatusChange === 'function') {
                 // Find the status label from the options
                 const statusOption = statusOptions.find(option => option.value === updates.status);
                 if (statusOption) {
                     onStatusChange(
-                        order.order_id, 
-                        `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`, 
+                        order.order_id,
+                        `${statusOption.label} (${translations[language]?.common?.pending || "Pending"})`,
                         updates.status
                     );
                 }
@@ -902,44 +1083,44 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 timestamp: new Date().toISOString()
                             };
 
-                           // We're online, send the update directly
-                                const res = await axios.put(
-                                    `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
-                                    { updates },
-                                    {
-                                        headers: {
-                                            'Accept': 'application/json',
-                                            'Content-Type': 'application/json',
-                                            'Accept-Language': language,
-                                        },
-                                        withCredentials: true
-                                    }
-                                );
-
-                                const data = res.data;
-
-                                if (!data.error) {
-                                    // Update was successful
-                                    const updatedOrder = {
-                                        ...order,
-                                        status: "cancelled",
-                                    };
-                                    await cacheOrder(updatedOrder);
-
-                                    // Call the onStatusChange callback to update the parent component
-                                    if (typeof onStatusChange === 'function') {
-                                        onStatusChange(order.order_id, translations[language]?.tabs?.orders?.order?.states?.cancelled || "Cancelled", 'cancelled');
-                                    }
-
-                                    // Show success message
-                                    setSuccessMessage(translations[language]?.tabs?.orders?.order?.orderCancelledSuccess || "Order cancelled successfully");
-                                    setShowSuccessModal(true);
-                                    setTimeout(() => setShowSuccessModal(false), 2500);
-                                } else {
-                                    // Show error message
-                                    setErrorMessage(data.details || data.error || translations[language]?.tabs?.orders?.order?.cancelOrderError || "Failed to cancel order");
-                                    setShowErrorModal(true);
+                            // We're online, send the update directly
+                            const res = await axios.put(
+                                `${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`,
+                                { updates },
+                                {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'Content-Type': 'application/json',
+                                        'Accept-Language': language,
+                                    },
+                                    withCredentials: true
                                 }
+                            );
+
+                            const data = res.data;
+
+                            if (!data.error) {
+                                // Update was successful
+                                const updatedOrder = {
+                                    ...order,
+                                    status: "cancelled",
+                                };
+                                await cacheOrder(updatedOrder);
+
+                                // Call the onStatusChange callback to update the parent component
+                                if (typeof onStatusChange === 'function') {
+                                    onStatusChange(order.order_id, translations[language]?.tabs?.orders?.order?.states?.cancelled || "Cancelled", 'cancelled');
+                                }
+
+                                // Show success message
+                                setSuccessMessage(translations[language]?.tabs?.orders?.order?.orderCancelledSuccess || "Order cancelled successfully");
+                                setShowSuccessModal(true);
+                                setTimeout(() => setShowSuccessModal(false), 2500);
+                            } else {
+                                // Show error message
+                                setErrorMessage(data.details || data.error || translations[language]?.tabs?.orders?.order?.cancelOrderError || "Failed to cancel order");
+                                setShowErrorModal(true);
+                            }
                         } catch (error) {
                             // Show error message
                             setErrorMessage(error.message || translations[language]?.tabs?.orders?.order?.cancelOrderError || "Failed to cancel order");
@@ -953,69 +1134,69 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     // Helper function to generate HTML template for PDF with size and color options
     const generateOrderHTML = (order, language, options = {}) => {
-        const { 
-            size = 'A4', 
+        const {
+            size = 'A4',
             colorMode = 'blackwhite',
-            format = 'full' 
+            format = 'full'
         } = options;
-        
+
         const isRTL = language === 'ar' || language === 'he';
         const direction = isRTL ? 'rtl' : 'ltr';
         const textAlign = isRTL ? 'right' : 'left';
-        
+
         // Size configurations with optimized settings for single page
         const sizeConfigs = {
-            'A4': { 
-                width: '210mm', 
-                height: '297mm', 
-                padding: '15px', 
+            'A4': {
+                width: '210mm',
+                height: '297mm',
+                padding: '15px',
                 fontSize: '11px',
                 headerSize: '16px',
                 titleSize: '12px',
                 spacing: '8px'
             },
-            'waybill_10x10': { 
-                width: '10cm', 
-                height: '10cm', 
-                padding: '5px', 
+            'waybill_10x10': {
+                width: '10cm',
+                height: '10cm',
+                padding: '5px',
                 fontSize: '7px',
                 headerSize: '10px',
                 titleSize: '8px',
                 spacing: '3px'
             },
-            'waybill_5x5': { 
-                width: '5cm', 
-                height: '5cm', 
-                padding: '3px', 
+            'waybill_5x5': {
+                width: '5cm',
+                height: '5cm',
+                padding: '3px',
                 fontSize: '5px',
                 headerSize: '7px',
                 titleSize: '6px',
                 spacing: '2px'
             },
-            'receipt': { 
-                width: '80mm', 
-                height: '200mm', 
-                padding: '4px', 
+            'receipt': {
+                width: '80mm',
+                height: '200mm',
+                padding: '4px',
                 fontSize: '8px',
                 headerSize: '12px',
                 titleSize: '9px',
                 spacing: '4px'
             },
-            'label': { 
-                width: '100mm', 
-                height: '50mm', 
-                padding: '2px', 
+            'label': {
+                width: '100mm',
+                height: '50mm',
+                padding: '2px',
                 fontSize: '6px',
                 headerSize: '8px',
                 titleSize: '7px',
                 spacing: '2px'
             }
         };
-        
+
         const config = sizeConfigs[size] || sizeConfigs['A4'];
         const isSmallFormat = ['waybill_5x5', 'label'].includes(size);
         const isMediumFormat = ['waybill_10x10', 'receipt'].includes(size);
-        
+
         // Color mode styles
         const colorStyles = colorMode === 'blackwhite' ? {
             primaryColor: '#000000',
@@ -1032,7 +1213,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             gradients: 'linear-gradient(135deg, #4361EE, #3B82F6)',
             shadows: '0 2px 8px rgba(67, 97, 238, 0.3)'
         };
-        
+
         return `
         <!DOCTYPE html>
         <html dir="${direction}">
@@ -1256,7 +1437,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         <body>
             <div class="header">
                 <div class="status-badge">${order.status || 'N/A'}</div>
-                <div class="company-name">JSK للخدمات اللوجستية والبريد السريع</div>
+                <div class="company-name">طيار للخدمات اللوجستية والبريد السريع</div>
                 <h1>طلب #${order.order_id}</h1>
                 <div class="meta">
                     تاريخ الإنشاء: ${new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}
@@ -1318,7 +1499,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             </div>
 
             <div class="footer">
-                <div class="company-info">JSK للخدمات اللوجستية والبريد السريع</div>
+                <div class="company-info">طيار للخدمات اللوجستية والبريد السريع</div>
                 <p>تم الإنشاء في: ${new Date().toLocaleString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}</p>
                 <p>خدمة توصيل موثوقة وسريعة</p>
             </div>
@@ -1382,17 +1563,17 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const generateOrderPDF = async (printFormat = null) => {
         try {
             setIsPdfLoading(true);
-            
+
             // Use selected format or default to A4
             const format = printFormat || { size: 'A4', colorMode: 'blackwhite' };
-            
+
             // Generate HTML content with format options
             const htmlContent = generateOrderHTML(order, language, {
                 size: format.size,
                 colorMode: format.colorMode,
                 format: 'full'
             });
-            
+
             // Size configurations for PDF generation
             const pdfConfigs = {
                 'A4': { width: 612, height: 792, margins: { left: 20, top: 20, right: 20, bottom: 20 } },
@@ -1401,9 +1582,9 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 'receipt': { width: 226, height: 600, margins: { left: 5, top: 5, right: 5, bottom: 5 } },
                 'label': { width: 283, height: 142, margins: { left: 3, top: 3, right: 3, bottom: 3 } }
             };
-            
+
             const config = pdfConfigs[format.size] || pdfConfigs['A4'];
-            
+
             // Generate PDF from HTML
             const { uri } = await Print.printToFileAsync({
                 html: htmlContent,
@@ -1413,7 +1594,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 margins: config.margins,
                 fileName: `Tayar_Order_${order.order_id}_${format.size}_${new Date().toISOString().split('T')[0]}.pdf`
             });
-            
+
             // Platform-specific printing behavior
             if (Platform.OS === 'ios') {
                 // On iOS, use the system print dialog with additional error handling
@@ -1426,16 +1607,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     });
                 } catch (printError) {
                     // Handle iOS-specific print errors
-                    const isPrintCancellation = 
+                    const isPrintCancellation =
                         printError.message?.includes('Printing did not complete') ||
                         printError.message?.includes('cancelled') ||
                         printError.message?.includes('User cancelled') ||
                         printError.code === 'ERR_PRINT_CANCELLED';
-                    
+
                     if (isPrintCancellation) {
                         return; // Silent return for cancellation
                     }
-                    
+
                     // Re-throw other errors to be handled by outer catch
                     throw printError;
                 }
@@ -1446,13 +1627,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     printerUrl: uri
                 });
             }
-            
+
         } catch (error) {
             console.error('PDF Generation Error:', error);
-            
+
             // More detailed error handling for actual errors
             let errorMessage = translations[language]?.common?.pdfGenerationError || "Failed to generate PDF. Please try again.";
-            
+
             if (Platform.OS === 'ios') {
                 if (error.message?.includes('no printer')) {
                     errorMessage = translations[language]?.common?.noPrinterError || "No printer available. Please check your printer settings.";
@@ -1462,7 +1643,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     errorMessage = translations[language]?.common?.networkError || "Network error. Please check your connection and try again.";
                 }
             }
-            
+
             Alert.alert(
                 translations[language]?.common?.error || "Error",
                 errorMessage
@@ -1502,14 +1683,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             "business_paid": "#10B981",
             "completed": "#10B981"
         };
-        
+
         return statusColors[statusKey] || "#64748B";
     };
 
     // Add a small indicator for offline mode in the header
     const renderConnectivityStatus = () => {
         if (isConnected || hideSyncUI) return null;
-        
+
         return (
             <View style={styles.offlineIndicator}>
                 <MaterialIcons name="cloud-off" size={16} color="#FFFFFF" />
@@ -1526,22 +1707,22 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         if (globalOfflineMode !== undefined) {
             setIsConnected(!globalOfflineMode);
         }
-        
+
         // Track reconnection state
         let reconnectionAttemptInProgress = false;
         let lastConnectionState = isConnected;
-        
+
         // Set up network listener with debounced reconnection handling
         const unsubscribe = NetInfo.addEventListener(async (state) => {
             const wasConnected = lastConnectionState;
             const nowConnected = state.isConnected && state.isInternetReachable;
-            
+
             // Update last known connection state
             lastConnectionState = nowConnected;
-            
+
             // Update connection state
             setIsConnected(nowConnected);
-            
+
             // If we just came back online and have pending updates, try to sync
             if (!wasConnected && nowConnected && !reconnectionAttemptInProgress) {
                 // Force reload pending updates to ensure we have the latest data
@@ -1554,7 +1735,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             const storedUpdates = JSON.parse(pendingUpdatesJson);
                             if (storedUpdates && storedUpdates.length > 0) {
                                 reconnectionAttemptInProgress = true;
-                                
+
                                 // Add a small delay to ensure network is stable before attempting sync
                                 setTimeout(async () => {
                                     try {
@@ -1572,13 +1753,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 }
             }
         });
-        
+
         // Initial check
         NetInfo.fetch().then(state => {
             lastConnectionState = state.isConnected && state.isInternetReachable;
             setIsConnected(lastConnectionState);
         });
-        
+
         // Cleanup subscription
         return () => {
             unsubscribe();
@@ -1589,24 +1770,24 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     useEffect(() => {
         let syncTimeout = null;
         let syncInProgress = false;
-        
+
         // Function to attempt sync with throttling
         const attemptThrottledSync = async () => {
             // Don't start a new sync if one is already in progress
             if (syncInProgress) return;
-            
+
             // Clear any existing timeout
             if (syncTimeout) {
                 clearTimeout(syncTimeout);
             }
-            
+
             // Set a new timeout to prevent rapid successive syncs
             syncTimeout = setTimeout(async () => {
                 try {
                     // Check if we're online and have updates to process
                     if (isConnected && pendingStatusUpdates.length > 0) {
                         syncInProgress = true;
-                        
+
                         // Force reload pending updates from storage to ensure we have the latest data
                         const userId = authUser?.id || authUser?.user_id || await getToken("userId");
                         if (userId) {
@@ -1626,12 +1807,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 }
             }, 2000); // 2-second throttle
         };
-        
+
         // Attempt sync when component mounts or dependencies change
         if (isConnected && pendingStatusUpdates.length > 0) {
             attemptThrottledSync();
         }
-        
+
         // Set up a sync interval when online
         let syncInterval;
         if (isConnected) {
@@ -1641,7 +1822,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 }
             }, 30000); // Check every 30 seconds when online
         }
-        
+
         // Clean up
         return () => {
             if (syncTimeout) clearTimeout(syncTimeout);
@@ -1655,25 +1836,25 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         if (globalOfflineMode !== undefined) {
             setIsConnected(!globalOfflineMode);
         }
-        
+
         // Only set up network listener if we're not using global offline mode
         let unsubscribe;
         if (globalOfflineMode === undefined) {
-        // Function to handle connectivity change
-        const handleConnectivityChange = async (state) => {
-            const connected = state.isConnected && state.isInternetReachable;
-            setIsConnected(connected);
-        };
-        
-        // Subscribe to network state changes
+            // Function to handle connectivity change
+            const handleConnectivityChange = async (state) => {
+                const connected = state.isConnected && state.isInternetReachable;
+                setIsConnected(connected);
+            };
+
+            // Subscribe to network state changes
             unsubscribe = NetInfo.addEventListener(handleConnectivityChange);
-        
-        // Initial check
-        NetInfo.fetch().then(state => {
-            setIsConnected(state.isConnected && state.isInternetReachable);
-        });
+
+            // Initial check
+            NetInfo.fetch().then(state => {
+                setIsConnected(state.isConnected && state.isInternetReachable);
+            });
         }
-        
+
         // Cleanup subscription
         return () => {
             if (unsubscribe) unsubscribe();
@@ -1683,14 +1864,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     // Add this effect to periodically check for pending updates
     useEffect(() => {
         let syncInterval;
-        
+
         // Only set up the interval if we have pending updates and are connected
         if (isConnected && pendingStatusUpdates.length > 0) {
             syncInterval = setInterval(async () => {
                 await processPendingStatusUpdates();
             }, 60000); // Check every minute
         }
-        
+
         // Clean up the interval
         return () => {
             if (syncInterval) {
@@ -1724,11 +1905,11 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
     const renderPendingStatusIndicator = () => {
         // Only show the indicator if there are pending updates for this order
         // AND they haven't been shown in an error message yet
-        const hasPendingUpdate = pendingStatusUpdates.some(update => 
-            update.order_id === order.order_id && 
+        const hasPendingUpdate = pendingStatusUpdates.some(update =>
+            update.order_id === order.order_id &&
             !shownErrorOrderIds.includes(update.order_id)
         );
-        
+
         if (hasPendingUpdate) {
             return (
                 <View style={styles.pendingStatusIndicator}>
@@ -1739,7 +1920,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                 </View>
             );
         }
-        
+
         return null;
     };
 
@@ -1786,7 +1967,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     setReferenceIdInput(global.scannedReferenceId);
                     global.scannedReferenceId = null;
                 }
-            } catch (_) {}
+            } catch (_) { }
         }, 300);
         return () => clearInterval(interval);
     }, [showReferenceModal]);
@@ -1805,18 +1986,18 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
     return (
         <RTLWrapper>
-            <Pressable 
+            <Pressable
                 onPress={() => router.push({
                     pathname: "(track)",
                     params: { orderId: order.order_id }
-                })} 
+                })}
                 onLongPress={() => setShowControl(true)}
                 style={({ pressed }) => [
                     styles.pressable,
                     pressed && styles.pressablePressed
                 ]}
             >
-                <View style={[styles.orderCard,{
+                <View style={[styles.orderCard, {
                     backgroundColor: colors.card
                 }]}>
                     {/* Header section with order ID and status */}
@@ -1825,7 +2006,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         borderBottomColor: colors.border,
                     }]}>
                         {/* Minimize/Expand toggle button with hint animation */}
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.toggleButtonContainer,
                                 showExpandHint && {
@@ -1834,7 +2015,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 }
                             ]}
                         >
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 onPress={toggleMinimize}
                                 style={[
                                     styles.toggleButton,
@@ -1842,17 +2023,17 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 ]}
                                 activeOpacity={0.7}
                             >
-                                <Animated.View style={{ 
+                                <Animated.View style={{
                                     transform: [{ rotate: rotateInterpolation }],
                                 }}>
-                                    <MaterialIcons 
-                                        name="expand-more" 
-                                        size={24} 
-                                        color={showExpandHint ? "#FFFFFF" : "#4361EE"} 
+                                    <MaterialIcons
+                                        name="expand-more"
+                                        size={24}
+                                        color={showExpandHint ? "#FFFFFF" : "#4361EE"}
                                     />
                                 </Animated.View>
                             </TouchableOpacity>
-                            
+
                             {/* Hint tooltip */}
                             {showExpandHint && (
                                 <View style={styles.expandHintTooltip}>
@@ -1862,12 +2043,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 </View>
                             )}
                         </Animated.View>
-                        
+
                         <View style={[styles.orderIdSection]}>
                             <View style={[styles.orderIdContainer]}>
-                             <Pressable onPress={() => Clipboard.setString(order.order_id.toString())}>
-                                <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
-                             </Pressable>
+                                <Pressable onPress={() => Clipboard.setString(order.order_id.toString())}>
+                                    <Text style={[styles.orderIdText, { color: colors.primary }]}>#{order.order_id}</Text>
+                                </Pressable>
                                 {!isConnected && pendingStatusUpdates.some(update => update.order_id === order.order_id) && (
                                     <View style={styles.pendingIndicator}>
                                         <MaterialIcons name="sync" size={14} color="#F59E0B" />
@@ -1875,37 +2056,177 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 )}
                             </View>
                             {order.qr_id && !isMinimized && (
-                               <Text style={[styles.referenceId, { color: colors.textSecondary, textAlign: isRTL ? "left" : "left" },{
-                                
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>
+                                <Text style={[styles.referenceId, { color: colors.textSecondary, textAlign: isRTL ? "left" : "left" }, {
+
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     Ref: {order.qr_id}
                                 </Text>
                             )}
+
+                            {/* Category Badge - Only for drivers and delivery_company */}
+                            {['driver', 'delivery_company'].includes(authUserRole) && (
+                                <View style={styles.categoryBadgeContainer}>
+                                    {order.category_name ? (
+                                        isEditingCategoryName ? (
+                                            <TextInput
+                                                style={[styles.categoryBadge, {
+                                                    backgroundColor: colors.card,
+                                                    borderColor: colors.primary,
+                                                    minWidth: 80,
+                                                    paddingVertical: 4,
+                                                    paddingHorizontal: 8,
+                                                    color: colors.text
+                                                }]}
+                                                value={tempCategoryName}
+                                                onChangeText={setTempCategoryName}
+                                                onBlur={handleCategoryNameSubmit}
+                                                onSubmitEditing={handleCategoryNameSubmit}
+                                                placeholder="Category"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setTempCategoryName(order.category_name);
+                                                    setIsEditingCategoryName(true);
+                                                }}
+                                                style={[styles.categoryBadge, { backgroundColor: colors.primary + '20', borderColor: colors.primary }]}
+                                            >
+                                                <MaterialIcons name="folder" size={14} color={colors.primary} />
+                                                <Text style={[styles.categoryBadgeText, { color: colors.primary }]}>
+                                                    {order.category_name}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    ) : (
+                                        isEditingCategoryName ? (
+                                            <TextInput
+                                                style={[styles.categoryBadge, {
+                                                    backgroundColor: colors.card,
+                                                    borderColor: colors.primary,
+                                                    minWidth: 80,
+                                                    paddingVertical: 4,
+                                                    paddingHorizontal: 8,
+                                                    color: colors.text
+                                                }]}
+                                                value={tempCategoryName}
+                                                onChangeText={setTempCategoryName}
+                                                onBlur={handleCategoryNameSubmit}
+                                                onSubmitEditing={handleCategoryNameSubmit}
+                                                placeholder="Category"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setTempCategoryName('');
+                                                    setIsEditingCategoryName(true);
+                                                }}
+                                                style={[styles.categoryBadge, { backgroundColor: colors.border + '40', borderColor: colors.border, borderStyle: 'dashed' }]}
+                                            >
+                                                <MaterialIcons name="folder-open" size={14} color={colors.textSecondary} />
+                                                <Text style={[styles.categoryBadgeText, { color: colors.textSecondary }]}>
+                                                    {translations[language]?.common?.tapToAdd || "Tap to add"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
+                                    {order.category_order ? (
+                                        isEditingOrderNumber ? (
+                                            <TextInput
+                                                style={[styles.categoryOrderBadge, {
+                                                    backgroundColor: colors.card,
+                                                    borderColor: colors.success,
+                                                    minWidth: 40,
+                                                    paddingVertical: 0,
+                                                    textAlign: 'center',
+                                                    color: colors.text
+                                                }]}
+                                                value={tempOrderNumber}
+                                                onChangeText={setTempOrderNumber}
+                                                onBlur={handleOrderNumberSubmit}
+                                                onSubmitEditing={handleOrderNumberSubmit}
+                                                keyboardType="number-pad"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setTempOrderNumber(order.category_order.toString());
+                                                    setIsEditingOrderNumber(true);
+                                                }}
+                                                style={[styles.categoryOrderBadge, { backgroundColor: colors.success + '20', borderColor: colors.success }]}
+                                            >
+                                                <Text style={[styles.categoryOrderText, { color: colors.success }]}>
+                                                    #{order.category_order}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    ) : (
+                                        isEditingOrderNumber ? (
+                                            <TextInput
+                                                style={[styles.categoryOrderBadge, {
+                                                    backgroundColor: colors.card,
+                                                    borderColor: colors.success,
+                                                    minWidth: 40,
+                                                    paddingVertical: 0,
+                                                    textAlign: 'center',
+                                                    color: colors.text
+                                                }]}
+                                                value={tempOrderNumber}
+                                                onChangeText={setTempOrderNumber}
+                                                onBlur={handleOrderNumberSubmit}
+                                                onSubmitEditing={handleOrderNumberSubmit}
+                                                keyboardType="number-pad"
+                                                placeholder="#"
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    setTempOrderNumber('');
+                                                    setIsEditingOrderNumber(true);
+                                                }}
+                                                style={[styles.categoryOrderBadge, { backgroundColor: colors.border + '40', borderColor: colors.border, borderStyle: 'dashed' }]}
+                                            >
+                                                <Text style={[styles.categoryOrderText, { color: colors.textSecondary }]}>
+                                                    #?
+                                                </Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
+                                </View>
+                            )}
                         </View>
-                        
-                        <View style={{alignItems: 'center', flexDirection: 'row' }}>
+
+                        <View style={{ alignItems: 'center', flexDirection: 'row' }}>
                             {renderConnectivityStatus()}
-                            <TouchableOpacity 
-                                onPress={() => !["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && setShowStatusUpdateModal(true)} 
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (!["business", "accountant", "support_agent", "sales_representative", "warehouse_admin", "warehouse_staff"].includes(authUserRole)) {
+                                        resetStatusFlow();
+                                        setShowStatusUpdateModal(true);
+                                    }
+                                }}
                                 style={[
-                                    styles.statusBadge, 
-                                    { 
+                                    styles.statusBadge,
+                                    {
                                         backgroundColor: getStatusColor(order.status_key)
                                     }
                                 ]}
-                                activeOpacity={!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) ? 0.7 : 1}
+                                activeOpacity={!["business", "accountant", "support_agent", "sales_representative", "warehouse_admin", "warehouse_staff"].includes(authUserRole) ? 0.7 : 1}
                             >
-                                {!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
-                                    <MaterialIcons 
-                                        name="published-with-changes" 
-                                        size={18} 
-                                        color="white" 
-                                        style={styles.statusIcon} 
+                                {!["business", "accountant", "support_agent", "sales_representative", "warehouse_admin", "warehouse_staff"].includes(authUserRole) && (
+                                    <MaterialIcons
+                                        name="published-with-changes"
+                                        size={18}
+                                        color="white"
+                                        style={styles.statusIcon}
                                     />
                                 )}
                                 <Text style={styles.statusText}>{order.status}</Text>
@@ -1916,7 +2237,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
 
                     {/* Compact View for minimized state - only shows essential details */}
                     {isMinimized ? (
-                         <View style={[styles.minimizedContainer, { 
+                        <View style={[styles.minimizedContainer, {
                             backgroundColor: isDark ? colors.card : 'rgba(249, 250, 251, 0.8)',
                         }]}>
                             <View style={[styles.minimizedRow]}>
@@ -1925,66 +2246,67 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         })
                                     }
                                 ]}>
-                                     <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
+
+                                    <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                         {translations[language].tabs.orders.order.userClientBoxLabel || 'Client'}
                                     </Text>
                                     <Text style={[styles.minimizedValue, { color: colors.text }]}>
                                         {order.receiver_name}
                                     </Text>
                                 </View>
-                                
+
                                 <View style={[
-                                    styles.minimizedSection, 
+                                    styles.minimizedSection,
                                     styles.locationMinimized,
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         })
                                     }
                                 ]}>
-                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
+                                    <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue,{color:colors.text}]} >
+                                    <Text style={[styles.minimizedValue, { color: colors.text }]} >
                                         {["business"].includes(authUserRole) ? order.total_net_value : order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>
-                            
+
                             {/* Receiver phone with call and message icons */}
                             {order.receiver_mobile && (
-                                <View style={[[styles.minimizedRow, styles.phoneRow,{
+                                <View style={[[styles.minimizedRow, styles.phoneRow, {
                                     ...Platform.select({
                                         ios: {
-                                            alignItems:isRTL ? "flex-start" : ""
+                                            alignItems: isRTL ? "flex-start" : ""
                                         }
                                     })
                                 }]]}>
-                                    <Text style={[styles.phoneText,{color:colors.success}]}>{order.receiver_mobile}</Text>
-                                    <Text style={[styles.phoneText,{color:colors.success}]}>{order.receiver_second_mobile}</Text>
+                                    <Text style={[styles.phoneText, { color: colors.success }]}>{order.receiver_mobile}</Text>
+                                    <Text style={[styles.phoneText, { color: colors.success }]}>{order.receiver_second_mobile}</Text>
                                     <View style={styles.phoneActions}>
                                         <Contact
                                             contact={{
                                                 type: "phone",
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
-                                                phone_2:order.receiver_second_mobile,
+                                                phone_2: order.receiver_second_mobile,
                                                 userName: order.receiver_name,
-                                                companyType: order.company_type || "taiar",
+                                                companyType: order.company_type || "JSK",
                                                 deliveryDate: order.delivery_date || "اليوم",
                                                 senderName: order.external_sender_name ? order.external_sender_name : order.sender,
                                                 receiverCity: order.receiver_city || "",
                                                 receiverAddress: order.receiver_address || "",
                                                 msg: "",
                                                 orderId: order.order_id,
-                                                businessName: order.sender || "طيار للتوصيل",
+                                                businessName: order.sender || "JSK للتوصيل",
                                                 codValue: order.total_cod_value || "",
                                                 currency: order.currency || ""
                                             }}
@@ -1995,16 +2317,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                                 type: "msg",
                                                 label: translations[language].tabs.orders.order.userBoxPhoneContactLabel,
                                                 phone: order.receiver_mobile,
-                                                phone_2:order.receiver_second_mobile,
+                                                phone_2: order.receiver_second_mobile,
                                                 userName: order.receiver_name,
-                                                companyType: order.company_type || "taiar",
+                                                companyType: order.company_type || "JSK",
                                                 deliveryDate: order.delivery_date || "اليوم",
                                                 senderName: order.external_sender_name ? order.external_sender_name : order.sender,
                                                 receiverCity: order.receiver_city || "",
                                                 receiverAddress: order.receiver_address || "",
                                                 msg: "",
                                                 orderId: order.order_id,
-                                                businessName: order.sender || "طيار للتوصيل",
+                                                businessName: order.sender || "JSK للتوصيل",
                                                 codValue: order.total_cod_value || "",
                                                 currency: order.currency || ""
                                             }}
@@ -2013,20 +2335,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>
                                 </View>
                             )}
-                            
+
                             {/* Display order type if it's receive or delivery/receive */}
                             <View style={[styles.minimizedRow]}>
-                                <View style={[styles.minimizedSection,{
-                                        ...Platform.select({
-                                            ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
-                                            }
-                                        }),
-                                    }]}>
-                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
+                                <View style={[styles.minimizedSection, {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }]}>
+                                    <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                         {translations[language].tabs.orders.order.orderType || 'Order Type'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue, styles.highlightOrderType,{color:"#FFA500"}]}>
+                                    <Text style={[styles.minimizedValue, styles.highlightOrderType, { color: "#FFA500" }]}>
                                         {order.order_type}
                                         {order.quantity > 1 && (
                                             <Text>{` | ${(translations[language].tabs.orders.order.quantity || 'Quantity')}: ${order.quantity}`}</Text>
@@ -2040,7 +2362,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </Text>
                                 </View>
                             </View>
-                            
+
                             {/* Additional minimized info - location with area and address */}
                             <View style={[styles.minimizedRow]}>
                                 <View style={[
@@ -2048,69 +2370,69 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }
                                 ]}>
-                                    <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
+                                    <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                         {translations[language].tabs.orders.order.location || 'Location'}
                                     </Text>
-                                    <Text style={[styles.minimizedValue,{color:colors.text}]} >
+                                    <Text style={[styles.minimizedValue, { color: colors.text }]} >
                                         {order.receiver_city} {order.receiver_address ? `, ${order.receiver_address}` : ''}
                                     </Text>
                                 </View>
                             </View>
-                            
+
                             {/* Show note if available */}
                             {order.note && (
                                 <View style={[styles.minimizedRow,]}>
-                                    <View style={[styles.minimizedSection, styles.noteMinimized,{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
-                                                    }
-                                                }),
-                                            }]}>
-                                        <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
+                                    <View style={[styles.minimizedSection, styles.noteMinimized, {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                        <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                             {translations[language].tabs.orders.order.note || 'Note'}
                                         </Text>
-                                        <Text style={[styles.minimizedValue, styles.noteText,{color:colors.text}]} >
+                                        <Text style={[styles.minimizedValue, styles.noteText, { color: colors.text }]} >
                                             {order.note}
                                         </Text>
                                     </View>
                                 </View>
                             )}
-                            
+
                             {/* Show checks if exist with navigation */}
                             {order.checks_value > 0 && (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={[styles.minimizedRow]}
                                     onPress={() => router.push({
                                         pathname: "(order_checks)",
                                         params: { orderId: order.order_id }
                                     })}
                                 >
-                                    <View style={[styles.minimizedSection, styles.checksMinimized,{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
-                                                    }
-                                                }),
-                                            }]}>
+                                    <View style={[styles.minimizedSection, styles.checksMinimized, {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }]}>
                                         <View style={styles.checksMinimizedHeader}>
-                                            <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
+                                            <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
                                             <MaterialIcons name="chevron-right" size={18} color="#EF4444" />
                                         </View>
-                                        <Text style={[styles.minimizedValue, styles.checksValueText,{color:colors.text}]} >
+                                        <Text style={[styles.minimizedValue, styles.checksValueText, { color: colors.text }]} >
                                             {order.checks_value} {order.currency}
                                         </Text>
                                     </View>
                                 </TouchableOpacity>
                             )}
-                            
+
                             {/* Show to_branch or to_driver if not null */}
                             {(order.to_branch || order.to_driver) && (
                                 <View style={[styles.minimizedRow, { marginTop: 10 }]}>
@@ -2119,27 +2441,27 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {
                                             ...Platform.select({
                                                 ios: {
-                                                    alignItems:isRTL ? "flex-start" : ""
+                                                    alignItems: isRTL ? "flex-start" : ""
                                                 }
                                             }),
                                         }
                                     ]}>
-                                        <Text style={[styles.minimizedLabel,{color:colors.textSecondary}]}>
-                                            {order.to_branch ? 
-                                                (translations[language].tabs.orders.order.to_branch || 'To Branch') : 
+                                        <Text style={[styles.minimizedLabel, { color: colors.textSecondary }]}>
+                                            {order.to_branch ?
+                                                (translations[language].tabs.orders.order.to_branch || 'To Branch') :
                                                 (translations[language].tabs.orders.order.to_driver || 'To Driver')}
                                         </Text>
-                                        <Text style={[styles.minimizedValue,{color:colors.text}]} >
+                                        <Text style={[styles.minimizedValue, { color: colors.text }]} >
                                             {order.to_branch || order.to_driver}
                                         </Text>
                                     </View>
                                 </View>
                             )}
-                            
+
                             {/* Order date/time info if available */}
                             {order.created_at && (
                                 <View style={styles.minimizedDateContainer}>
-                                    <Text style={[styles.dateTimeText,{color:colors.textSecondary}]}>
+                                    <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
                                         {new Date(order.created_at).toLocaleString('en-US')}
                                     </Text>
                                 </View>
@@ -2147,7 +2469,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         </View>
                     ) : (
                         // Full expanded view
-                        <Animated.View 
+                        <Animated.View
                             style={[
                                 styles.contentContainer,
                                 { opacity: heightAnim }
@@ -2156,100 +2478,100 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             {/* User information sections */}
                             <View style={[styles.userInfoSection]}>
                                 {authUserRole !== "business" && (
-                                    <UserBox 
+                                    <UserBox
                                         box={{
                                             label: translations[language].tabs.orders.order.userSenderBoxLabel,
                                             userName: order.sender,
                                             phone: order.sender_mobile
-                                        }} 
+                                        }}
                                         orderId={order.order_id}
                                         orderData={order}
                                     />
                                 )}
-                                
-                                <UserBox 
+
+                                <UserBox
                                     box={{
                                         label: translations[language].tabs.orders.order.userClientBoxLabel,
                                         userName: order.receiver_name,
                                         phone: order.receiver_mobile,
                                         phone_2: order.receiver_second_mobile
-                                    }} 
+                                    }}
                                     orderId={order.order_id}
                                     orderData={order}
                                 />
-                                
-                                {!["driver","delivery_company"].includes(authUserRole) && (
-                                    <UserBox 
+
+                                {!["driver", "delivery_company"].includes(authUserRole) && (
+                                    <UserBox
                                         box={{
                                             label: translations[language].tabs.orders.order.userDriverBoxLabel,
                                             userName: order.driver ? order.driver : translations[language].tabs.orders.order.unknown,
                                             phone: order.driver_mobile ? order.driver_mobile : ""
-                                        }} 
+                                        }}
                                         orderId={order.order_id}
                                         orderData={order}
                                     />
                                 )}
                             </View>
-                            
+
                             {/* Location section */}
-                            <View style={[styles.locationSection,{
+                            <View style={[styles.locationSection, {
                                 backgroundColor: colors.surface
                             }]}>
                                 <View style={[styles.sectionRow]}>
-                                <View style={[
-                                        styles.iconWrapper, 
+                                    <View style={[
+                                        styles.iconWrapper,
                                         { backgroundColor: '#4CC9F0' }
                                     ]}>
                                         <Ionicons name="location-outline" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.sectionContent,{
+                                    <View style={[styles.sectionContent, {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
-                                         <Text style={[styles.sectionTitle,{
+                                        <Text style={[styles.sectionTitle, {
                                             color: colors.textSecondary
                                         }]}>
                                             {translations[language].tabs.orders.order.location || 'Delivery Location'}
                                         </Text>
-                                        <Text style={[styles.locationCity,{
+                                        <Text style={[styles.locationCity, {
                                             color: colors.text
                                         }]}>
                                             {order.receiver_city}
                                         </Text>
-                                        <Text style={[styles.locationAddress,{
+                                        <Text style={[styles.locationAddress, {
                                             color: colors.text
                                         }]}>
-                                           {order.receiver_address}
+                                            {order.receiver_address}
                                         </Text>
                                     </View>
                                 </View>
                             </View>
 
                             {/* sent to branch section */}
-                            {((order.to_branch || order.to_driver) && ["driver","delivery_company"].includes(authUserRole)) && <View style={styles.orderTypeSection}>
+                            {((order.to_branch || order.to_driver) && ["driver", "delivery_company"].includes(authUserRole)) && <View style={styles.orderTypeSection}>
                                 <View style={[styles.sectionRow]}>
                                     <View style={[
-                                        styles.iconWrapper, 
-                                        {backgroundColor: colors.surface }
+                                        styles.iconWrapper,
+                                        { backgroundColor: colors.surface }
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.sectionContent,{
+                                    <View style={[styles.sectionContent, {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
-                                         <Text style={[styles.sectionTitle,{
+                                        <Text style={[styles.sectionTitle, {
                                             color: colors.textSecondary
                                         }]}>
                                             {order.to_branch ? translations[language].tabs.orders.order.to_branch : translations[language].tabs.orders.order.to_driver}
                                         </Text>
-                                        <Text style={[styles.orderTypeText,{
+                                        <Text style={[styles.orderTypeText, {
                                             color: colors.text
                                         }]}>
                                             {order.to_branch || order.to_driver}
@@ -2257,33 +2579,33 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>
                                 </View>
                             </View>}
-                            
+
                             {/* Order type section */}
-                            <View style={[styles.orderTypeSection,{
+                            <View style={[styles.orderTypeSection, {
                                 backgroundColor: colors.surface
                             }]}>
-                                <View style={[styles.sectionRow,{
+                                <View style={[styles.sectionRow, {
                                     backgroundColor: colors.surface
                                 }]}>
                                     <View style={[
-                                        styles.iconWrapper, 
+                                        styles.iconWrapper,
                                         { backgroundColor: '#7209B7' }
                                     ]}>
                                         <MaterialCommunityIcons name="package-variant" size={20} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.sectionContent,{
+                                    <View style={[styles.sectionContent, {
                                         ...Platform.select({
                                             ios: {
-                                                alignItems:isRTL ? "flex-start" : ""
+                                                alignItems: isRTL ? "flex-start" : ""
                                             }
                                         }),
                                     }]}>
-                                        <Text style={[styles.sectionTitle,{
+                                        <Text style={[styles.sectionTitle, {
                                             color: colors.textSecondary
                                         }]}>
                                             {translations[language].tabs.orders.order.orderType}
                                         </Text>
-                                        <Text style={[styles.orderTypeText,{
+                                        <Text style={[styles.orderTypeText, {
                                             color: colors.text
                                         }]}>
                                             {order.order_type}
@@ -2291,14 +2613,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {(order.received_items || order.received_quantity) ? (
                                             <View style={styles.receivedDetailsContainer}>
                                                 {order.received_items && (
-                                                     <Text style={[styles.receivedDetailsText,{
+                                                    <Text style={[styles.receivedDetailsText, {
                                                         color: colors.text
                                                     }]}>
                                                         {translations[language].tabs.orders.order.receivedItems || 'Received Items'}: {order.received_items}
                                                     </Text>
                                                 )}
                                                 {order.received_quantity && (
-                                                     <Text style={[styles.receivedDetailsText,{
+                                                    <Text style={[styles.receivedDetailsText, {
                                                         color: colors.text
                                                     }]}>
                                                         {translations[language].tabs.orders.order.receivedQuantity || 'Quantity'}: {order.received_quantity}
@@ -2309,20 +2631,20 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>
                                 </View>
                             </View>
-                            
+
                             {/* Cost information section */}
                             <View style={[styles.costSectionWrapper]}>
-                                <Text style={[styles.costSectionTitle,{
+                                <Text style={[styles.costSectionTitle, {
                                     color: colors.text,
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     })
                                 }]}>
                                     {translations[language].tabs.orders.order.financialDetails || 'Financial Details'}
                                 </Text>
-                                
+
                                 <View style={[styles.costSection]}>
                                     <View style={[
                                         styles.costCard,
@@ -2331,19 +2653,19 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         }
                                     ]}>
                                         <View style={[
-                                            styles.costIconContainer, 
+                                            styles.costIconContainer,
                                             { backgroundColor: '#4361EE' }
                                         ]}>
                                             <Feather name="package" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.costLabelContainer,{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
-                                                    }
-                                                }),
-                                            }]}>
-                                             <Text style={[styles.costLabel,{
+                                        <View style={[styles.costLabelContainer, {
+                                            ...Platform.select({
+                                                ios: {
+                                                    alignItems: isRTL ? "flex-start" : ""
+                                                }
+                                            }),
+                                        }]}>
+                                            <Text style={[styles.costLabel, {
                                                 color: colors.textSecondary
                                             }]}>
                                                 {translations[language].tabs.orders.order.codValue || 'COD Value'}
@@ -2351,7 +2673,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             {formatCurrencyValue(order.total_cod_value, order.currency)}
                                         </View>
                                     </View>
-                                    
+
                                     {!["driver", "delivery_company"].includes(authUserRole) && (
                                         <View style={[
                                             styles.costCard,
@@ -2360,24 +2682,24 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             }
                                         ]}>
                                             <View style={[
-                                                styles.costIconContainer, 
+                                                styles.costIconContainer,
                                                 { backgroundColor: '#F72585' }
                                             ]}>
                                                 <Feather name="truck" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer,{
+                                            <View style={[styles.costLabelContainer, {
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
+                                                        alignItems: isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
-                                                 <Text style={[styles.costLabel,{
+                                                <Text style={[styles.costLabel, {
                                                     color: colors.textSecondary
                                                 }]}>
                                                     {translations[language].tabs.orders.order.deliveryFee || 'Delivery Fee'}
                                                 </Text>
-                                                <Text style={[styles.costText,{
+                                                <Text style={[styles.costText, {
                                                     color: colors.text,
                                                     textAlign: isRTL ? "left" : "left"
                                                 }]}>
@@ -2386,28 +2708,28 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                             </View>
                                         </View>
                                     )}
-                                    
+
                                     {/* Only show net value for non-driver/delivery_company roles */}
                                     {!["driver", "delivery_company"].includes(authUserRole) && (
                                         <View style={[
-                                            styles.costCard,{
+                                            styles.costCard, {
                                                 backgroundColor: colors.surface
                                             }
                                         ]}>
                                             <View style={[
-                                                styles.costIconContainer, 
+                                                styles.costIconContainer,
                                                 { backgroundColor: '#3A0CA3' }
                                             ]}>
                                                 <FontAwesome name="money" size={16} color="#ffffff" />
                                             </View>
-                                            <View style={[styles.costLabelContainer,{
+                                            <View style={[styles.costLabelContainer, {
                                                 ...Platform.select({
                                                     ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
+                                                        alignItems: isRTL ? "flex-start" : ""
                                                     }
                                                 }),
                                             }]}>
-                                               <Text style={[styles.costLabel,{
+                                                <Text style={[styles.costLabel, {
                                                     color: colors.textSecondary
                                                 }]}>
                                                     {translations[language].tabs.orders.order.netValue || 'Net Value'}
@@ -2418,10 +2740,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     )}
                                 </View>
                             </View>
-                        
+
                             {/* Checks section if applicable */}
                             {order.checks_value > 0 && (
-                                <Pressable 
+                                <Pressable
                                     onPress={() => router.push({
                                         pathname: "(order_checks)",
                                         params: { orderId: order.order_id }
@@ -2439,33 +2761,33 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         ]}>
                                             <FontAwesome name="money" size={16} color="#ffffff" />
                                         </View>
-                                        <View style={[styles.checksTextContainer,{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
-                                                    }
-                                                }),
-                                            }]}>
-                                            <Text style={[styles.checksTitle,{
+                                        <View style={[styles.checksTextContainer, {
+                                            ...Platform.select({
+                                                ios: {
+                                                    alignItems: isRTL ? "flex-start" : ""
+                                                }
+                                            }),
+                                        }]}>
+                                            <Text style={[styles.checksTitle, {
                                                 color: colors.textSecondary
                                             }]}>
                                                 {translations[language].tabs.orders.order.checksAvailable || 'Checks Available'}
                                             </Text>
-                                            <Text style={[styles.checksText,{
+                                            <Text style={[styles.checksText, {
                                                 color: colors.text
                                             }]}>
                                                 {translations[language].tabs.orders.order.checksValue}: {order.checks_value} {order.currency}
                                             </Text>
                                         </View>
-                                        <MaterialIcons 
-                                            name={"chevron-right"} 
-                                            size={24} 
-                                            color="#E11D48" 
+                                        <MaterialIcons
+                                            name={"chevron-right"}
+                                            size={24}
+                                            color="#E11D48"
                                         />
                                     </View>
                                 </Pressable>
                             )}
-                            
+
                             {/* Notes section if applicable */}
                             {order.note && (
                                 <View style={[
@@ -2476,19 +2798,19 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     ]}>
                                         <FontAwesome name="sticky-note-o" size={16} color="#ffffff" />
                                     </View>
-                                    <View style={[styles.noteContent,{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        alignItems:isRTL ? "flex-start" : ""
-                                                    }
-                                                }),
-                                            }]}>
-                                        <Text style={[styles.noteTitle,{
+                                    <View style={[styles.noteContent, {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }]}>
+                                        <Text style={[styles.noteTitle, {
                                             color: colors.textSecondary
                                         }]}>
                                             {translations[language].tabs.orders.order.note || 'Notes'}
                                         </Text>
-                                        <Text style={[styles.noteText,{
+                                        <Text style={[styles.noteText, {
                                             color: colors.text
                                         }]}>
                                             {order.note}
@@ -2496,13 +2818,13 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     </View>
                                 </View>
                             )}
-                            
+
                             {/* Order date/time info if available */}
                             {order.created_at && (
                                 <View style={[
                                     styles.dateTimeContainer
                                 ]}>
-                                    <Text style={[styles.dateTimeText,{
+                                    <Text style={[styles.dateTimeText, {
                                         color: colors.textSecondary
                                     }]}>
                                         {new Date(order.created_at).toLocaleString('en-US')}
@@ -2520,141 +2842,183 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     showModal={showControl}
                     setShowModal={setShowControl}
                     customStyles={{ bottom: 15 }}
-                > 
+                >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{
-                                color: colors.text,
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>
+                        <Text style={[styles.modalHeaderText, {
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language].tabs.orders.order.orderActions || 'Order Actions'}
                         </Text>
                     </View>
-                    
+
                     <View style={styles.controlContainer}>
                         {/* Edit Order button logic */}
                         {(
                             // For business users, only show on "waiting" status
                             (authUserRole === "business" && order.status_key === "waiting") ||
-                            
+
                             // For driver and delivery_company, never show
-                            (!["driver", "delivery_company", "business"].includes(authUserRole) && 
-                             ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way", 
-                              "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
-                              "return_before_delivered_initiated", "return_after_delivered_initiated", 
-                              "business_returned_delivered", "received", "delivered/received"].includes(order.status_key))
+                            (!["driver", "delivery_company", "business"].includes(authUserRole) &&
+                                ["waiting", "in_branch", "rejected", "stuck", "delayed", "on_the_way",
+                                    "reschedule", "dispatched_to_branch", "dispatched_to_driver", "delivered",
+                                    "return_before_delivered_initiated", "return_after_delivered_initiated",
+                                    "business_returned_delivered", "received", "delivered/received"].includes(order.status_key))
                         ) && (
-                            <TouchableOpacity 
-                                style={[
-                                    styles.controlOption
-                                ]} 
-                                onPress={() => {
-                                    setShowControl(false);
-                                    router.push({
-                                        pathname: "(create)",
-                                        params: { orderId: order.order_id }
-                                    });
-                                }}
-                            >
-                                <View style={[
-                                    styles.controlIconContainer, 
-                                    { backgroundColor: '#4361EE' }
-                                ]}>
-                                    <Feather name="edit" size={18} color="#ffffff" />
-                                </View>
-                                <Text style={[styles.controlText,{
-                                    color: colors.text,
+                                <TouchableOpacity
+                                    style={[
+                                        styles.controlOption
+                                    ]}
+                                    onPress={() => {
+                                        setShowControl(false);
+                                        router.push({
+                                            pathname: "(create)",
+                                            params: { orderId: order.order_id }
+                                        });
+                                    }}
+                                >
+                                    <View style={[
+                                        styles.controlIconContainer,
+                                        { backgroundColor: '#4361EE' }
+                                    ]}>
+                                        <Feather name="edit" size={18} color="#ffffff" />
+                                    </View>
+                                    <Text style={[styles.controlText, {
+                                        color: colors.text,
                                         ...Platform.select({
                                             ios: {
-                                                textAlign:isRTL ? "left" : ""
+                                                textAlign: isRTL ? "left" : ""
                                             }
                                         }),
                                     }]}>
-                                    {translations[language].tabs.orders.order.edit}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
+                                        {translations[language].tabs.orders.order.edit}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
 
                         {/* Edit receiver phone button logic */}
                         {(
                             // For driver and delivery_company
-                            (["driver", "delivery_company"].includes(authUserRole) && 
-                             ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
-                            
+                            (["driver", "delivery_company"].includes(authUserRole) &&
+                                ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
+
                             // For business users
-                            (authUserRole === "business" && 
-                             ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
-                              "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
+                            (authUserRole === "business" &&
+                                ["in_branch", "stuck", "delayed", "on_the_way", "reschedule",
+                                    "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
                         ) && (
-                            <TouchableOpacity 
-                                style={[
-                                    styles.controlOption
-                                ]} 
-                                onPress={() => {
-                                    setShowControl(false);
-                                    router.push({
-                                        pathname: "(edit_receiver_phones)",
-                                        params: { orderId: order.order_id, editPhoneOnly: true }
-                                    });
-                                }}
-                            >
-                                <View style={[
-                                    styles.controlIconContainer, 
-                                    { backgroundColor: '#4361EE' }
-                                ]}>
-                                    <Feather name="edit" size={18} color="#ffffff" />
-                                </View>
-                                <Text style={[styles.controlText,{
-                                    color: colors.text,
+                                <TouchableOpacity
+                                    style={[
+                                        styles.controlOption
+                                    ]}
+                                    onPress={() => {
+                                        setShowControl(false);
+                                        router.push({
+                                            pathname: "(edit_receiver_phones)",
+                                            params: { orderId: order.order_id, editPhoneOnly: true }
+                                        });
+                                    }}
+                                >
+                                    <View style={[
+                                        styles.controlIconContainer,
+                                        { backgroundColor: '#4361EE' }
+                                    ]}>
+                                        <Feather name="edit" size={18} color="#ffffff" />
+                                    </View>
+                                    <Text style={[styles.controlText, {
+                                        color: colors.text,
                                         ...Platform.select({
                                             ios: {
-                                                textAlign:isRTL ? "left" : ""
+                                                textAlign: isRTL ? "left" : ""
                                             }
                                         }),
                                     }]}>
-                                    {translations[language].tabs.orders.order.editPhone || "Edit Receiver Phone"}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        
-                        {!["business","accountant","support_agent","sales_representative","warehouse_admin","warehouse_staff"].includes(authUserRole) && (
-                            <TouchableOpacity 
+                                        {translations[language].tabs.orders.order.editPhone || "Edit Receiver Phone"}
+                                    </Text>
+                                </TouchableOpacity>
+                            )}
+
+                        {!["business", "accountant", "support_agent", "sales_representative", "warehouse_admin", "warehouse_staff"].includes(authUserRole) && (
+                            <TouchableOpacity
                                 style={[
-                                    styles.controlOption, 
+                                    styles.controlOption,
                                     styles.noBorder
-                                ]} 
+                                ]}
                                 onPress={() => {
                                     setShowControl(false);
+                                    resetStatusFlow();
                                     setShowStatusUpdateModal(true);
                                 }}
                             >
                                 <View style={[
-                                    styles.controlIconContainer, 
+                                    styles.controlIconContainer,
                                     { backgroundColor: '#7209B7' }
                                 ]}>
                                     <MaterialIcons name="published-with-changes" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText,{
+                                <Text style={[styles.controlText, {
                                     color: colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {translations[language].tabs.orders.order.changeStatus}
                                 </Text>
                             </TouchableOpacity>
                         )}
-                        
-                        <TouchableOpacity 
+
+                        {/* Category Organization button - Only for drivers and delivery_company */}
+                        {['driver', 'delivery_company'].includes(authUserRole) && (
+                            <TouchableOpacity
+                                style={[
+                                    styles.controlOption
+                                ]}
+                                onPress={async () => {
+                                    setShowControl(false);
+                                    let initialCategoryName = order.category_name || '';
+                                    if (!initialCategoryName) {
+                                        try {
+                                            const lastUsed = await AsyncStorage.getItem('last_used_category_name');
+                                            if (lastUsed) initialCategoryName = lastUsed;
+                                        } catch (e) {
+                                            // ignore error
+                                        }
+                                    }
+                                    setCategoryName(initialCategoryName);
+                                    setCategoryOrder(order.category_order?.toString() || '');
+                                    setShowCategoryModal(true);
+                                }}
+                            >
+                                <View style={[
+                                    styles.controlIconContainer,
+                                    { backgroundColor: '#8B5CF6' }
+                                ]}>
+                                    <MaterialIcons name="folder-open" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.controlText, {
+                                    color: colors.text,
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
+                                    {translations[language]?.tabs?.orders?.order?.organize || 'Organize'}
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
                             style={[
-                                styles.controlOption, 
+                                styles.controlOption,
                                 styles.noBorder
-                            ]} 
+                            ]}
                             onPress={() => {
                                 setShowControl(false);
                                 router.push({
@@ -2664,19 +3028,19 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             }}
                         >
                             <View style={[
-                                styles.controlIconContainer, 
+                                styles.controlIconContainer,
                                 { backgroundColor: '#10B981' }
                             ]}>
                                 <MaterialIcons name="track-changes" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText,{
+                            <Text style={[styles.controlText, {
                                 color: colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language].tabs.orders.track.orderTracking || 'Track Order'}
                             </Text>
                         </TouchableOpacity>
@@ -2715,10 +3079,10 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </TouchableOpacity>
                         )} */}
 
-                        {["business"].includes(authUserRole) && <TouchableOpacity 
+                        {["business"].includes(authUserRole) && <TouchableOpacity
                             style={[
                                 styles.controlOption
-                            ]} 
+                            ]}
                             onPress={() => {
                                 setShowControl(false);
                                 router.push({
@@ -2728,56 +3092,56 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             }}
                         >
                             <View style={[
-                                styles.controlIconContainer, 
+                                styles.controlIconContainer,
                                 { backgroundColor: '#EF4444' }
                             ]}>
                                 <MaterialIcons name="report-problem" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText,{
+                            <Text style={[styles.controlText, {
                                 color: colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language].tabs.orders.track.openCase}
                             </Text>
                         </TouchableOpacity>}
 
-                        {["business"].includes(authUserRole) && order.status_key === 'waiting' && <TouchableOpacity 
+                        {["business"].includes(authUserRole) && order.status_key === 'waiting' && <TouchableOpacity
                             style={[
                                 styles.controlOption
-                            ]} 
+                            ]}
                             onPress={() => {
                                 setShowControl(false);
                                 handleCancelOrder();
                             }}
                         >
                             <View style={[
-                                styles.controlIconContainer, 
+                                styles.controlIconContainer,
                                 { backgroundColor: '#DC2626' }
                             ]}>
                                 <MaterialIcons name="cancel" size={18} color="#ffffff" />
                             </View>
-                            <Text style={[styles.controlText,{
+                            <Text style={[styles.controlText, {
                                 color: colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
                                 {translations[language]?.tabs?.orders?.order?.cancelOrder || "Cancel Order"}
                             </Text>
                         </TouchableOpacity>}
 
                         {/* Print Order button for business users */}
-                        {["business"].includes(authUserRole) && <TouchableOpacity 
+                        {["business"].includes(authUserRole) && <TouchableOpacity
                             style={[
-                                styles.controlOption, 
+                                styles.controlOption,
                                 styles.noBorder
-                            ]} 
+                            ]}
                             onPress={() => {
                                 setShowControl(false);
                                 showPrintOptions();
@@ -2785,7 +3149,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             disabled={isPdfLoading}
                         >
                             <View style={[
-                                styles.controlIconContainer, 
+                                styles.controlIconContainer,
                                 { backgroundColor: isPdfLoading ? '#94A3B8' : '#059669' }
                             ]}>
                                 {isPdfLoading ? (
@@ -2794,39 +3158,39 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                     <MaterialIcons name="print" size={18} color="#ffffff" />
                                 )}
                             </View>
-                            <Text style={[styles.controlText,{
+                            <Text style={[styles.controlText, {
                                 color: isPdfLoading ? colors.textSecondary : colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
-                                {isPdfLoading 
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
+                                {isPdfLoading
                                     ? (translations[language]?.common?.generating || "Generating PDF...")
                                     : (translations[language]?.tabs?.orders?.order?.printOrder || "Print Order")}
                             </Text>
                         </TouchableOpacity>}
 
                         {pendingStatusUpdates.length > 0 && (
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[
-                                    styles.controlOption, 
+                                    styles.controlOption,
                                     styles.noBorder,
                                     { backgroundColor: isConnected ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
-                                ]} 
+                                ]}
                                 onPress={retryPendingUpdates}
                             >
                                 <View style={[
-                                    styles.controlIconContainer, 
+                                    styles.controlIconContainer,
                                     { backgroundColor: isConnected ? '#F59E0B' : '#EF4444' }
                                 ]}>
                                     <MaterialIcons name="sync" size={18} color="#ffffff" />
                                 </View>
-                                <Text style={[styles.controlText,{
+                                <Text style={[styles.controlText, {
                                     color: colors.text,
                                 }]}>
-                                    {isConnected 
+                                    {isConnected
                                         ? (translations[language]?.common?.retryPendingUpdates || `Retry Pending Updates (${pendingStatusUpdates.length})`)
                                         : (translations[language]?.common?.pendingUpdatesOffline || `Pending Updates (${pendingStatusUpdates.length}) - Offline`)}
                                 </Text>
@@ -2860,26 +3224,27 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{
-                                color: colors.text,
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>
+                        <Text style={[styles.modalHeaderText, {
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language].tabs.orders.order.selectReason || "Select Reason"}
                         </Text>
                     </View>
-                    
+
                     {/* Search input for reasons */}
                     <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
                         <Ionicons name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
                         <TextInput
-                            style={[styles.searchInput, { color: colors.text,
+                            style={[styles.searchInput, {
+                                color: colors.text,
                                 ...Platform.select({
                                     ios: {
-                                        textAlign:isRTL ? "right" : ""
+                                        textAlign: isRTL ? "right" : ""
                                     }
                                 }),
                             }]}
@@ -2894,39 +3259,39 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             </TouchableOpacity>
                         ) : null}
                     </View>
-                    
+
                     {/* Scrollable reason container with fixed height */}
-                    <ScrollView 
+                    <ScrollView
                         style={styles.reasonScrollContainer}
                         contentContainerStyle={styles.reasonContainer}
                         showsVerticalScrollIndicator={true}
                     >
                         {statusOptions
                             .find(option => option.value === selectedValue.status?.value)?.reasons
-                            ?.filter(reason => 
-                                !reasonSearchQuery || 
+                            ?.filter(reason =>
+                                !reasonSearchQuery ||
                                 reason.label.toLowerCase().includes(reasonSearchQuery.toLowerCase())
                             )
                             .map((reason, index) => (
-                            <TouchableOpacity
-                                key={index}
-                                style={[
-                                    styles.reasonOption
-                                ]}
-                                onPress={() => handleReasonSelect(reason)}
-                            >
-                                <Text style={[styles.reasonText,{
-                                    color: colors.text,
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.reasonOption
+                                    ]}
+                                    onPress={() => handleReasonSelect(reason)}
+                                >
+                                    <Text style={[styles.reasonText, {
+                                        color: colors.text,
                                         ...Platform.select({
                                             ios: {
-                                                textAlign:isRTL ? "left" : ""
+                                                textAlign: isRTL ? "left" : ""
                                             }
                                         }),
                                     }]}>
-                                    {reason.label}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                                        {reason.label}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
                     </ScrollView>
                 </ModalPresentation>
             )}
@@ -2938,14 +3303,14 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{
-                                color: colors.text,
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>
+                        <Text style={[styles.modalHeaderText, {
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
                             {translations[language].tabs.orders.order.selectBranch || "Select Branch"}
                         </Text>
                     </View>
@@ -2958,19 +3323,66 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 ]}
                                 onPress={() => handleBranchSelect(branch)}
                             >
-                                <Text style={[styles.branchText,{
+                                <Text style={[styles.branchText, {
                                     color: colors.text,
-                                        ...Platform.select({
-                                            ios: {
-                                                textAlign:isRTL ? "left" : ""
-                                            }
-                                        }),
-                                    }]}>
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {branch.label}
                                 </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
+                </ModalPresentation>
+            )}
+
+            {showDriverModal && (
+                <ModalPresentation
+                    showModal={showDriverModal}
+                    setShowModal={setShowDriverModal}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={styles.modalHeader}>
+                        <Text style={[styles.modalHeaderText, {
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}> 
+                            {translations[language]?.tabs?.orders?.order?.selectDriver || "Select Driver"}
+                        </Text>
+                    </View>
+                    <ScrollView
+                        style={styles.reasonScrollContainer}
+                        contentContainerStyle={styles.reasonContainer}
+                        showsVerticalScrollIndicator={true}
+                    >
+                        <View style={styles.branchContainer}>
+                            {drivers.map((driver, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[styles.branchOption]}
+                                    onPress={() => handleDriverSelect(driver)}
+                                >
+                                    <Text style={[styles.branchText, {
+                                        color: colors.text,
+                                        ...Platform.select({
+                                            ios: {
+                                                textAlign: isRTL ? "left" : ""
+                                            }
+                                        }),
+                                    }]}> 
+                                        {driver.name} ({driver.phone})
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </ScrollView>
                 </ModalPresentation>
             )}
 
@@ -2982,61 +3394,79 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                     customStyles={{ bottom: 15 }}
                 >
                     <View style={styles.confirmModalContent}>
-                        <Text style={[styles.confirmModalTitle,{
-                                    color: colors.text,
-                                    ...Platform.select({
-                                        ios: {
-                                            textAlign:isRTL ? "left" : ""
-                                        }
-                                    }),
-                                }]}>
-                            {translations[language].tabs.orders.order.changeStatusAlert} 
-                            <Text style={[styles.highlightText,{
+                        <Text style={[styles.confirmModalTitle, {
+                            color: colors.text,
+                            ...Platform.select({
+                                ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                }
+                            }),
+                        }]}>
+                            {translations[language].tabs.orders.order.changeStatusAlert}
+                            <Text style={[styles.highlightText, {
                                 color: colors.text,
                             }]}> {statusOptions.find(option => option.value === selectedValue.status?.value)?.label || ''}</Text>
                         </Text>
-                        
+
                         {selectedBranch && (
                             <View style={[styles.selectedDetailContainer]}>
-                                <Text style={[styles.selectedDetailLabel,{
+                                <Text style={[styles.selectedDetailLabel, {
                                     color: colors.text,
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
-                                }]}>
+                                }]}> 
                                     {translations[language].tabs.orders.order.branch || "Branch"}:
                                 </Text>
-                                <Text style={[styles.selectedDetailValue,{
+                                <Text style={[styles.selectedDetailValue, {
                                     color: colors.text,
                                 }]}>{selectedBranch.label}</Text>
                             </View>
                         )}
-                        
-                        {selectedReason && (
+
+                        {selectedDriver && (
                             <View style={[styles.selectedDetailContainer]}>
-                                <Text style={[styles.selectedDetailLabel,{
+                                <Text style={[styles.selectedDetailLabel, {
                                     color: colors.text,
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}> 
+                                    {translations[language]?.tabs?.orders?.order?.userDriverBoxLabel || "Driver"}:
+                                </Text>
+                                <Text style={[styles.selectedDetailValue, {
+                                    color: colors.text,
+                                }]}>{selectedDriver.name} ({selectedDriver.phone})</Text>
+                            </View>
+                        )}
+
+                        {selectedReason && (
+                            <View style={[styles.selectedDetailContainer]}>
+                                <Text style={[styles.selectedDetailLabel, {
+                                    color: colors.text,
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
                                 }]}>
                                     {translations[language].tabs.orders.order.reason || "Reason"}:
                                 </Text>
-                                <Text style={[styles.selectedDetailValue,{
+                                <Text style={[styles.selectedDetailValue, {
                                     color: colors.text,
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>{selectedReason.label}</Text>
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                }]}>{selectedReason?.value === 'other' ? (UpdatedStatusNote || selectedReason.label) : selectedReason.label}</Text>
                             </View>
                         )}
-                        
+
                         <TextInput
                             style={[
                                 styles.noteInput,
@@ -3047,23 +3477,25 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "right" : ""
+                                            textAlign: isRTL ? "right" : ""
                                         }
                                     }),
                                 }
                             ]}
-                            placeholder={translations[language].tabs.orders.order.changeStatusAlertNote}
+                            placeholder={selectedReason?.value === 'other'
+                                ? (translations[language].tabs.orders.order.reason || "اكتب السبب")
+                                : translations[language].tabs.orders.order.changeStatusAlertNote}
                             value={UpdatedStatusNote}
                             onChangeText={(input) => setUpdatedStatusNote(input)}
                             multiline={true}
                             numberOfLines={3}
                             placeholderTextColor={colors.textSecondary}
                         />
-                        
+
                         <View style={[
                             styles.confirmActions
                         ]}>
-                            <TouchableOpacity 
+                            <TouchableOpacity
                                 style={[
                                     styles.confirmButton,
                                     isUpdating && styles.confirmButtonDisabled
@@ -3074,26 +3506,28 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                 {isUpdating ? (
                                     <ActivityIndicator size="small" color="#FFFFFF" />
                                 ) : (
-                                    <Text style={[styles.confirmButtonText,{
-                                        color: isDark ?  colors.text : "#ffff"
+                                    <Text style={[styles.confirmButtonText, {
+                                        color: isDark ? colors.text : "#ffff"
                                     }]}>
                                         {translations[language].tabs.orders.order.changeStatusAlertConfirm}
                                     </Text>
                                 )}
                             </TouchableOpacity>
-                            
-                            <TouchableOpacity 
+
+                            <TouchableOpacity
                                 style={styles.cancelButton}
                                 onPress={() => {
                                     setShowConfirmStatusChangeUpdateModal(false);
                                     setSelectedReason(null);
                                     setSelectedBranch(null);
+                                    setSelectedDriver(null);
+                                    setUpdatedStatusNote("");
                                 }}
                             >
                                 <Text style={[styles.cancelButtonText]}>
                                     {translations[language].tabs.orders.order.changeStatusAlertCancel}
                                 </Text>
-                                </TouchableOpacity>
+                            </TouchableOpacity>
                         </View>
                     </View>
                 </ModalPresentation>
@@ -3110,16 +3544,16 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         <View style={styles.successIconContainer}>
                             <FontAwesome5 name="check-circle" size={32} color="#FFFFFF" />
                         </View>
-                        <Text style={[styles.successModalTitle,{
+                        <Text style={[styles.successModalTitle, {
                             color: colors.success
                         }]}>
                             {translations[language].tabs.orders.order.success}
                         </Text>
-                        <Text style={[styles.successModalMessage,{
+                        <Text style={[styles.successModalMessage, {
                             color: colors.success,
                             ...Platform.select({
                                 ios: {
-                                    textAlign:isRTL ? "left" : ""
+                                    textAlign: isRTL ? "left" : ""
                                 }
                             }),
                         }]}>
@@ -3141,12 +3575,12 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                         <View style={styles.errorIconContainer}>
                             <FontAwesome5 name="exclamation-circle" size={32} color="#FFFFFF" />
                         </View>
-                        <Text style={[styles.errorModalTitle,{
+                        <Text style={[styles.errorModalTitle, {
                             color: colors.error
                         }]}>
                             {translations[language].tabs.orders.order.error}
                         </Text>
-                        <Text style={[styles.errorModalMessage,{
+                        <Text style={[styles.errorModalMessage, {
                             color: colors.error
                         }]}>
                             {errorMessage}
@@ -3155,95 +3589,189 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                             style={styles.errorModalButton}
                             onPress={handleErrorModalClose}
                         >
-                            <Text style={[styles.errorModalButtonText,{
-                                color: isDark ? colors.text : "#ffff"
+                            <Text style={[styles.errorModalButtonText, {
+                                color: "#FFFFFF"
                             }]}>
-                                {translations[language].tabs.orders.order.ok || "OK"}
+                                {translations[language].common.close}
                             </Text>
                         </TouchableOpacity>
                     </View>
                 </ModalPresentation>
             )}
 
-            {/* Print Options Modal */}
-            {showPrintOptionsModal && (
+            {/* Category Organization Modal */}
+            {showCategoryModal && (
                 <ModalPresentation
-                    showModal={showPrintOptionsModal}
-                    setShowModal={setShowPrintOptionsModal}
-                    customStyles={{ bottom: 15 }}
+                    showModal={showCategoryModal}
+                    setShowModal={setShowCategoryModal}
+                    title={translations[language]?.tabs?.orders?.order?.organizeCategoryTitle || 'Organize Order'}
                 >
-                    <View style={styles.modalHeader}>
-                        <Text style={[styles.modalHeaderText,{
-                                color: colors.text,
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                            }]}>
-                            {translations[language]?.tabs?.orders?.order?.selectPrintFormat || "Select Print Format"}
+                    <View style={styles.categoryModalContent}>
+                        <Text style={[styles.categoryModalLabel, { color: colors.text }]}>
+                            {translations[language]?.tabs?.orders?.order?.categoryName || 'Category Name'}
                         </Text>
-                    </View>
-                    
-                    <ScrollView 
-                        style={styles.reasonScrollContainer}
-                        contentContainerStyle={styles.reasonContainer}
-                        showsVerticalScrollIndicator={true}
-                    >
-                        {printFormats.map((format) => (
+                        <TextInput
+                            style={[styles.categoryInput, {
+                                backgroundColor: colors.card,
+                                borderColor: colors.border,
+                                color: colors.text,
+                                textAlign: isRTL ? 'right' : 'left'
+                            }]}
+                            value={categoryName}
+                            onChangeText={setCategoryName}
+                            placeholderTextColor={colors.textSecondary}
+                            maxLength={255}
+                        />
+
+                        <Text style={[styles.categoryModalLabel, { color: colors.text, marginTop: 16 }]}>
+                            {translations[language]?.tabs?.orders?.order?.categoryOrder || 'Order Number'}
+                        </Text>
+                        <TextInput
+                            style={[styles.categoryInput, {
+                                backgroundColor: colors.card,
+                                borderColor: colors.border,
+                                color: colors.text,
+                                textAlign: isRTL ? 'right' : 'left'
+                            }]}
+                            value={categoryOrder}
+                            onChangeText={setCategoryOrder}
+                            placeholderTextColor={colors.textSecondary}
+                            keyboardType="number-pad"
+                        />
+
+                        <View style={styles.categoryModalButtons}>
                             <TouchableOpacity
-                                key={format.id}
-                                style={[
-                                    styles.reasonOption,
-                                    selectedPrintFormat?.id === format.id && styles.selectedReasonOption,
-                                    { backgroundColor: selectedPrintFormat?.id === format.id ? colors.primary + '20' : colors.surface }
-                                ]}
-                                onPress={() => handlePrintFormatSelect(format)}
+                                style={[styles.categoryModalButton, styles.categoryClearButton, { borderColor: colors.border }]}
+                                onPress={() => {
+                                    setCategoryName('');
+                                    setCategoryOrder('');
+                                }}
                             >
-                                <View style={styles.reasonOptionContent}>
-                                    <Text style={[
-                                        styles.reasonOptionText,
-                                        {
-                                            color: selectedPrintFormat?.id === format.id ? colors.primary : colors.text,
-                                            fontWeight: selectedPrintFormat?.id === format.id ? '600' : '400',
-                                            ...Platform.select({
-                                                ios: {
-                                                    textAlign:isRTL ? "left" : ""
-                                                }
-                                            }),
+                                <Text style={[styles.categoryModalButtonText, { color: colors.textSecondary }]}>
+                                    {translations[language]?.common?.clear || 'Clear'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.categoryModalButton, styles.categorySaveButton, { backgroundColor: colors.primary }]}
+                                onPress={async () => {
+                                    try {
+                                        const trimmedName = categoryName.trim();
+                                        if (trimmedName) {
+                                            await AsyncStorage.setItem('last_used_category_name', trimmedName);
                                         }
-                                    ]}>
-                                        {format.name}
-                                    </Text>
-                                    <Text style={[
-                                        styles.reasonOptionDescription,
-                                        {
-                                            color: colors.textSecondary,
-                                            ...Platform.select({
-                                                ios: {
-                                                    textAlign:isRTL ? "left" : ""
-                                                }
-                                            }),
+
+                                        await updateOrderSorting(
+                                            order.order_id,
+                                            trimmedName || null,
+                                            categoryOrder ? parseInt(categoryOrder) : null
+                                        );
+                                        setShowCategoryModal(false);
+                                        // Trigger refresh to see new sorting
+                                        if (typeof onStatusChange === 'function') {
+                                            // We pass the current status to trigger a refresh without changing status
+                                            onStatusChange(order.order_id, order.status, order.status_key);
                                         }
-                                    ]}>
-                                        {format.description}
+                                    } catch (error) {
+                                        // Error already handled in updateOrderSorting
+                                    }
+                                }}
+                                disabled={isUpdatingCategory}
+                            >
+                                {isUpdatingCategory ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={[styles.categoryModalButtonText, { color: '#FFFFFF' }]}>
+                                        {translations[language]?.common?.save || 'Save'}
                                     </Text>
-                                </View>
-                                {selectedPrintFormat?.id === format.id && (
-                                    <Ionicons 
-                                        name="checkmark-circle" 
-                                        size={20} 
-                                        color={colors.primary} 
-                                    />
                                 )}
                             </TouchableOpacity>
-                        ))}
-                    </ScrollView>
+                        </View>
+                    </View>
                 </ModalPresentation>
             )}
 
+            {/* Print Options Modal */}
+            {
+                showPrintOptionsModal && (
+                    <ModalPresentation
+                        showModal={showPrintOptionsModal}
+                        setShowModal={setShowPrintOptionsModal}
+                        customStyles={{ bottom: 15 }}
+                    >
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalHeaderText, {
+                                color: colors.text,
+                                ...Platform.select({
+                                    ios: {
+                                        textAlign: isRTL ? "left" : ""
+                                    }
+                                }),
+                            }]}>
+                                {translations[language]?.tabs?.orders?.order?.selectPrintFormat || "Select Print Format"}
+                            </Text>
+                        </View>
+
+                        <ScrollView
+                            style={styles.reasonScrollContainer}
+                            contentContainerStyle={styles.reasonContainer}
+                            showsVerticalScrollIndicator={true}
+                        >
+                            {printFormats.map((format) => (
+                                <TouchableOpacity
+                                    key={format.id}
+                                    style={[
+                                        styles.reasonOption,
+                                        selectedPrintFormat?.id === format.id && styles.selectedReasonOption,
+                                        { backgroundColor: selectedPrintFormat?.id === format.id ? colors.primary + '20' : colors.surface }
+                                    ]}
+                                    onPress={() => handlePrintFormatSelect(format)}
+                                >
+                                    <View style={styles.reasonOptionContent}>
+                                        <Text style={[
+                                            styles.reasonOptionText,
+                                            {
+                                                color: selectedPrintFormat?.id === format.id ? colors.primary : colors.text,
+                                                fontWeight: selectedPrintFormat?.id === format.id ? '600' : '400',
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign: isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }
+                                        ]}>
+                                            {format.name}
+                                        </Text>
+                                        <Text style={[
+                                            styles.reasonOptionDescription,
+                                            {
+                                                color: colors.textSecondary,
+                                                ...Platform.select({
+                                                    ios: {
+                                                        textAlign: isRTL ? "left" : ""
+                                                    }
+                                                }),
+                                            }
+                                        ]}>
+                                            {format.description}
+                                        </Text>
+                                    </View>
+                                    {selectedPrintFormat?.id === format.id && (
+                                        <Ionicons
+                                            name="checkmark-circle"
+                                            size={20}
+                                            color={colors.primary}
+                                        />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </ModalPresentation>
+                )
+            }
+
             {/* Reference modal is now handled globally via GlobalReferenceModal */}
-        </RTLWrapper>
+        </RTLWrapper >
     );
 }
 
@@ -3279,7 +3807,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(67, 97, 238, 0.05)',
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
-        gap:10
+        gap: 10
     },
     orderIdSection: {
         flex: 1,
@@ -3309,7 +3837,7 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         paddingHorizontal: 12,
         paddingVertical: 6,
-        gap:4,
+        gap: 4,
         maxWidth: 150,
     },
     statusText: {
@@ -3435,7 +3963,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         borderRadius: 12,
         padding: 12,
-        gap:10
+        gap: 10
     },
     checksIconContainer: {
         width: 36,
@@ -3466,7 +3994,7 @@ const styles = StyleSheet.create({
         padding: 12,
         marginHorizontal: 16,
         marginBottom: 16,
-        gap:10
+        gap: 10
     },
     noteIconContainer: {
         width: 36,
@@ -3499,7 +4027,7 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#94A3B8',
     },
-    
+
     /* Modal Styles */
     modalHeader: {
         padding: 16,
@@ -3521,7 +4049,7 @@ const styles = StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: 'rgba(0,0,0,0.06)',
         width: '100%',
-        gap:15
+        gap: 15
     },
     controlIconContainer: {
         width: 36,
@@ -3540,7 +4068,7 @@ const styles = StyleSheet.create({
     noBorder: {
         borderBottomWidth: 0,
     },
-    
+
     /* Confirm Modal Styles */
     confirmModalContent: {
         padding: 20,
@@ -3667,7 +4195,7 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: '#333',
-        marginBottom:10
+        marginBottom: 10
     },
     locationMinimized: {
         borderLeftWidth: 1,
@@ -4094,6 +4622,72 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: 2,
         opacity: 0.7,
+    },
+
+    // Category Organization Styles
+    categoryBadgeContainer: {
+        flexDirection: 'row',
+        gap: 8,
+        marginTop: 4,
+        flexWrap: 'wrap',
+    },
+    categoryBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+        gap: 4,
+    },
+    categoryBadgeText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    categoryOrderBadge: {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 12,
+        borderWidth: 1,
+    },
+    categoryOrderText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    categoryModalContent: {
+        padding: 16,
+    },
+    categoryModalLabel: {
+        fontSize: 14,
+        fontWeight: '600',
+        marginBottom: 8,
+    },
+    categoryInput: {
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 12,
+        fontSize: 16,
+    },
+    categoryModalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        marginTop: 24,
+    },
+    categoryModalButton: {
+        flex: 1,
+        padding: 14,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    categoryClearButton: {
+        borderWidth: 1,
+    },
+    categorySaveButton: {
+        // backgroundColor set dynamically
+    },
+    categoryModalButtonText: {
+        fontSize: 16,
+        fontWeight: '600',
     },
 });
 

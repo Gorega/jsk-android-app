@@ -5,7 +5,6 @@ import { useAuth } from "../../RootLayout";
 import { translations } from '../../utils/languageContext';
 import { useLanguage } from '../../utils/languageContext';
 import ModalPresentation from "../../components/ModalPresentation";
-import { getToken } from "../../utils/secureStore";
 import Section from "../../components/create/Section";
 import Feather from '@expo/vector-icons/Feather';
 import { useTheme } from '../../utils/themeContext';
@@ -29,7 +28,8 @@ export default function EditReceiverDetailsScreen() {
         receiverAddress: '',
         codValue: '',
         codValueReason: '',
-        codCurrency: 'ILS' // Default currency
+        codCurrency: 'ILS', // Default currency
+        resolutionNote: ''
     });
     const [showCodUpdateForm, setShowCodUpdateForm] = useState(false);
     const [codValueChanged, setCodValueChanged] = useState(false);
@@ -103,7 +103,8 @@ export default function EditReceiverDetailsScreen() {
                 receiverAddress: data.receiver_address || '',
                 codValue: codValue,
                 codValueReason: '',
-                codCurrency: currency || 'ILS'
+                codCurrency: currency || 'ILS',
+                resolutionNote: ''
             });
         } catch (error) {
             Alert.alert(
@@ -272,7 +273,8 @@ export default function EditReceiverDetailsScreen() {
                         phone: form.receiverFirstPhone,
                         phone_2: form.receiverSecondPhone || null,
                         address: form.receiverAddress || null,
-                        orderId: orderId
+                        orderId: orderId,
+                        resolution_note: form.resolutionNote || ''
                     })
                 }
             );
@@ -333,7 +335,7 @@ export default function EditReceiverDetailsScreen() {
                 visible: true,
                 type: 'success',
                 title: translations[language].common.success || 'Success',
-                message: translations[language].tabs.orders.create.receiverDetailsUpdateSuccess || 'Receiver details updated successfully',
+                message: user.role === "business" ? translations[language].tabs.orders.create.businessReceiverDetailsUpdateSuccess : translations[language].tabs.orders.create.receiverDetailsUpdateSuccess,
                 onClose: () => router.back()
             });
 
@@ -409,6 +411,26 @@ export default function EditReceiverDetailsScreen() {
             ]
         }
     ];
+
+    // Resolution note for business users
+    if (user?.role === 'business') {
+        sections.push({
+            label: translations[language]?.tabs?.orders?.order?.issueResolution || 'تفاصيل حل المشكلة',
+            icon: <Feather name="check-circle" size={22} color={colors.primary} />,
+            fields: [
+                {
+                    label: translations[language]?.tabs?.orders?.order?.resolutionNoteLabel || 'كيف تم حل المشكلة؟',
+                    type: 'input',
+                    name: 'resolution_note',
+                    value: form.resolutionNote,
+                    onChange: (text) => setForm(prev => ({ ...prev, resolutionNote: text })),
+                    error: fieldErrors.resolution_note,
+                    editable: true,
+                    multiline: true
+                }
+            ]
+        });
+    }
     
     // Update the condition to check for cod_values array as well and include business users
     if (orderData && (user.role === 'driver' || user.role === 'delivery_company' || user.role === 'business') &&

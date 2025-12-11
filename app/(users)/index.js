@@ -122,7 +122,7 @@ export default function HomeScreen() {
             // const token = await getToken("userToken");
             const queryParams = new URLSearchParams();
             if (!activeSearchBy && searchValue) queryParams.append('search', searchValue);
-            if (activeFilter) queryParams.append('active_status', activeFilter);
+            if (activeFilter !== "") queryParams.append('active_status', String(activeFilter));
             if (activeSearchBy) queryParams.append(activeSearchBy.action, searchValue);
             if (activeDate) queryParams.append("date_range", activeDate.action);
             if (activeDate.action === "custom") queryParams.append("start_date", selectedDate);
@@ -255,7 +255,7 @@ export default function HomeScreen() {
                 setSelectedDate={setSelectedDate}
                 activeDate={activeDate}
                 setActiveDate={setActiveDate}
-                onClearFilters={clearFilters}
+                onClearFilters={handleClearAllFilters}
                 showScanButton={false}
                 addPaddingSpace={Platform.OS === 'ios'}
             />

@@ -25,7 +25,7 @@ import axios from 'axios';
 export default function HomeScreen() {
   const socket = useSocket();
   const { data: { data }, getRequest, isLoading } = useFetch();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { language } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
   const [showMoneyModal, setShowMoneyModal] = useState(false);
@@ -47,17 +47,17 @@ export default function HomeScreen() {
   const colors = Colors[colorScheme];
   const [activeTab, setActiveTab] = useState('track');
   const [statusViewMode, setStatusViewMode] = useState('grid'); // 'grid' or 'list'
-  
+
   // Modern onboarding system
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.9)).current;
   const scrollViewRef = useRef(null);
-  
+
   // Animation value for percentage badge
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   const rtl = useRTLStyles();
 
   // Define onboarding steps based on user role
@@ -91,7 +91,7 @@ export default function HomeScreen() {
         scrollTo: 500
       }
     ];
-    
+
     // Add collections step for business users
     if (user.role === 'business') {
       baseSteps.push({
@@ -101,7 +101,7 @@ export default function HomeScreen() {
         scrollTo: 750
       });
     }
-    
+
     // Add status overview step for all users
     baseSteps.push({
       id: 'status_overview',
@@ -109,10 +109,10 @@ export default function HomeScreen() {
       message: translations[language]?.homeHints?.statusOverview?.[`${user.role}Message`] || translations[language]?.homeHints?.statusOverview?.businessMessage,
       scrollTo: 1000
     });
-    
+
     return baseSteps;
   };
-  
+
   // Check if user has seen home screen hints
   useEffect(() => {
     const checkHomeHints = async () => {
@@ -123,13 +123,13 @@ export default function HomeScreen() {
           setTimeout(() => {
             setShowOnboarding(true);
             animateOnboardingIn();
-            
+
             // Execute the first step's action if exists
             const steps = getOnboardingSteps();
             if (steps[0]?.action) {
               steps[0].action();
             }
-            
+
             // Scroll to the appropriate position
             if (scrollViewRef.current && steps[0]?.scrollTo !== undefined) {
               scrollViewRef.current.scrollTo({
@@ -142,7 +142,7 @@ export default function HomeScreen() {
       } catch (error) {
       }
     };
-    
+
     checkHomeHints();
   }, [user]);
 
@@ -182,22 +182,22 @@ export default function HomeScreen() {
   // Handle navigation between onboarding steps
   const nextStep = () => {
     const steps = getOnboardingSteps();
-    
+
     animateOnboardingOut(() => {
       // Reset animation values
       fadeAnim.setValue(0);
       scaleAnim.setValue(0.9);
-      
+
       // Move to next step or complete onboarding
       if (currentStep < steps.length - 1) {
         const nextStepIndex = currentStep + 1;
         setCurrentStep(nextStepIndex);
-        
+
         // Execute the next step's action if exists
         if (steps[nextStepIndex]?.action) {
           steps[nextStepIndex].action();
         }
-        
+
         // Scroll to the appropriate position
         if (scrollViewRef.current && steps[nextStepIndex]?.scrollTo !== undefined) {
           scrollViewRef.current.scrollTo({
@@ -205,7 +205,7 @@ export default function HomeScreen() {
             animated: true
           });
         }
-        
+
         // Animate in the next step
         setTimeout(() => {
           animateOnboardingIn();
@@ -260,7 +260,7 @@ export default function HomeScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [language,user, getRequest, checkWaitingOrders]);
+  }, [language, user, getRequest, checkWaitingOrders]);
 
   function formatMoney(codValue) {
     if (!codValue || typeof codValue !== 'object') return '';
@@ -314,13 +314,34 @@ export default function HomeScreen() {
     numberOfOrders: data?.on_the_way_orders?.count,
     money: formatMoney(data?.on_the_way_orders?.cod_value),
     orderIds: data?.on_the_way_orders?.order_ids
-  },{
+  }, {
+    label: translations[language].tabs.index.boxes.dispatchedToBranch,
+    icon: <FontAwesome5 name="shipping-fast" size={22} color="white" />,
+    gradientColors: ['#0077B6', '#023E8A'],
+    numberOfOrders: data?.dispatched_to_branch_orders?.count,
+    money: formatMoney(data?.dispatched_to_branch_orders?.cod_value),
+    orderIds: data?.dispatched_to_branch_orders?.order_ids
+  }, user.role === "business" ? {
+    label: translations[language].tabs.index.boxes.moneyInProcess,
+    icon: <MaterialCommunityIcons name="package-variant-closed" size={22} color="white" />,
+    gradientColors: ['#4361EE', '#3F37C9'],
+    numberOfOrders: data?.money_in_process_orders?.count,
+    money: formatMoney(data?.money_in_process_orders?.cod_value),
+    orderIds: data?.money_in_process_orders?.order_ids
+  } : {
     label: translations[language].tabs.index.boxes.withDriver,
     icon: <MaterialCommunityIcons name="truck-delivery" size={22} color="white" />,
     gradientColors: ['#4361EE', '#3F37C9'],
     numberOfOrders: data?.driver_responsibility_orders?.count,
     money: formatMoney(data?.driver_responsibility_orders?.cod_value),
     orderIds: data?.driver_responsibility_orders?.order_ids
+  }, {
+    label: user.role === "business" ? translations[language].tabs.index.boxes.receivedFromMe : translations[language].tabs.index.boxes.receivedFromBusiness,
+    icon: <MaterialIcons name="published-with-changes" size={22} color="white" />,
+    gradientColors: ['#4895EF', '#4361EE'],
+    numberOfOrders: data?.received_from_business?.count,
+    money: formatMoney(data?.received_from_business?.cod_value),
+    orderIds: data?.received_from_business?.order_ids
   }, {
     label: translations[language].tabs.index.boxes.delivered,
     icon: <MaterialIcons name="done" size={22} color="white" />,
@@ -335,21 +356,21 @@ export default function HomeScreen() {
     numberOfOrders: data?.returned_orders?.count,
     money: formatMoney(data?.returned_orders?.cod_value),
     orderIds: data?.returned_orders?.order_ids
-  },{
+  }, {
     label: translations[language].tabs.index.boxes.rescheduled,
     icon: <MaterialCommunityIcons name="calendar-clock" size={22} color="white" />,
     gradientColors: ['#B5179E', '#7209B7'],
     numberOfOrders: data?.reschedule_orders?.count,
     money: formatMoney(data?.reschedule_orders?.cod_value),
     orderIds: data?.reschedule_orders?.order_ids
-  } , {
+  }, {
     label: translations[language].tabs.index.boxes.stuck,
     icon: <MaterialCommunityIcons name="alert-circle" size={22} color="white" />,
     gradientColors: ['#F72585', '#B5179E'],
     numberOfOrders: data?.stuck_orders?.count,
     money: formatMoney(data?.stuck_orders?.cod_value),
     orderIds: data?.stuck_orders?.order_ids
-  },{
+  }, {
     label: translations[language].tabs.index.boxes.rejected,
     icon: <MaterialCommunityIcons name="close-circle" size={22} color="white" />,
     gradientColors: ['#D00000', '#9D0208'],
@@ -360,7 +381,7 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!socket) return;
-  
+
     const handleOrderUpdate = (notification) => {
       switch (notification.type) {
         case 'ORDER_CREATED':
@@ -375,10 +396,10 @@ export default function HomeScreen() {
           break;
       }
     };
-  
+
     socket.on('orderUpdate', handleOrderUpdate);
     socket.on('collectionUpdate', handleOrderUpdate);
-  
+
     return () => {
       socket.off('orderUpdate', handleOrderUpdate);
       socket.off('collectionUpdate', handleOrderUpdate);
@@ -605,11 +626,11 @@ export default function HomeScreen() {
     try {
       // Set status based on collection type
       const status = selectedType === 'money' ? 'paid' : 'returned_delivered';
-      
+
       // Process each selected collection individually
       const results = [];
       let hasErrors = false;
-      
+
       for (const collectionId of selectedCollections) {
         try {
           // Create the API request for individual collection
@@ -629,9 +650,9 @@ export default function HomeScreen() {
               validateStatus: () => true // Don't throw on any status
             }
           );
-          
+
           const data = response.data;
-          
+
           // Check if the response is ok
           if (response.status >= 400) {
             console.error('❌ [index.js] handleCollectionConfirm - Error for collection:', collectionId);
@@ -641,31 +662,31 @@ export default function HomeScreen() {
             hasErrors = true;
             continue;
           }
-          
+
           // Handle successful response
           results.push({ collectionId, success: true, data });
-          
+
         } catch (err) {
           console.error(`❌ [index.js] handleCollectionConfirm - Error updating collection ${collectionId}:`, err.message);
-          
+
           // Handle different types of errors
           let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
-          
+
           if (err.name === 'TypeError' && err.message.includes('fetch')) {
             errorMessage = translations[language]?.collections?.collection?.networkError || 'Network error. Please check your connection.';
           } else if (err.message) {
             errorMessage = err.message;
           }
-          
+
           results.push({ collectionId, success: false, error: errorMessage });
           hasErrors = true;
         }
       }
-      
+
       // Show appropriate success/error messages
       const successfulCollections = results.filter(r => r.success).map(r => r.collectionId);
       const failedCollections = results.filter(r => !r.success);
-      
+
       if (successfulCollections.length > 0 && failedCollections.length > 0) {
         // Partial success
         Alert.alert(
@@ -691,11 +712,11 @@ export default function HomeScreen() {
       await Promise.all([
         // First, wait a moment to ensure API state is updated
         new Promise(resolve => setTimeout(resolve, 500)),
-        
+
         // Then refresh our local collections data
         fetchCollections()
       ]);
-      
+
       // Finally notify parent component to refresh dashboard data
       if (onRefresh && typeof onRefresh === 'function') {
         onRefresh();
@@ -703,17 +724,17 @@ export default function HomeScreen() {
 
       // Reset selections
       setSelectedCollections([]);
-      
-    } catch (err) {      
+
+    } catch (err) {
       // Handle different types of errors
       let errorMessage = translations[language]?.collections?.collection?.tryAgainLater || 'Please try again later';
-      
+
       if (err.name === 'TypeError' && err.message.includes('fetch')) {
         errorMessage = translations[language]?.collections?.collection?.networkError || 'Network error. Please check your connection.';
       } else if (err.message) {
         errorMessage = err.message;
       }
-      
+
       Alert.alert(
         translations[language]?.collections?.collection?.error || "Error",
         errorMessage
@@ -760,535 +781,131 @@ export default function HomeScreen() {
 
   return (
     <RTLWrapper>
-       <View style={[styles.container, { backgroundColor: colors.surface }]}>
-       <StatusBar barStyle={colors.statusBarStyle === 'light' ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
-      
-      <ScrollView
-        ref={scrollViewRef}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        scrollEventThrottle={16}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#4361EE"]}
-            tintColor="#4361EE"
-          />
-        }
-      >
+      <View style={[styles.container, { backgroundColor: colors.surface }]}>
+        <StatusBar barStyle={colors.statusBarStyle === 'light' ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
 
-        {/* Tabs for TrackOrder and CheckReceiver */}
-        <View 
-          style={styles.tabsContainer}
+        <ScrollView
+          ref={scrollViewRef}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#4361EE"]}
+              tintColor="#4361EE"
+            />
+          }
         >
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'track' && styles.activeTab,
-              { backgroundColor: activeTab === 'track' ? colors.buttonPrimary : colors.card }
-            ]}
-            onPress={() => setActiveTab('track')}
-          >
-            <Feather name="package" size={20} color={activeTab === 'track' ? colors.buttonText : colors.iconDefault} />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'track' ? colors.buttonText : colors.text }
-            ]}>
-              {translations[language]?.track?.title || 'Track Order'}
-            </Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[
-              styles.tab,
-              activeTab === 'check' && styles.activeTab,
-              { backgroundColor: activeTab === 'check' ? colors.buttonPrimary : colors.card }
-            ]}
-            onPress={() => setActiveTab('check')}
-          >
-            <Feather name="user" size={20} color={activeTab === 'check' ? colors.buttonText : colors.iconDefault} />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === 'check' ? colors.buttonText : colors.text }
-            ]}>
-              {translations[language]?.check?.receiver?.title || 'Check Receiver'}
-            </Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Track Order or Check Receiver Component based on active tab */}
-        <View 
-          style={styles.trackOrderContainer}
-        >
-          {activeTab === 'track' ? <TrackOrder /> : <CheckReceiver />}
-        </View>
-
-        {/* Driver Notification Button - Only show for business users with waiting orders */}
-        {user.role === "business" && hasWaitingOrders && (
-          <View style={styles.driverNotificationContainer}>
+          {/* Tabs for TrackOrder and CheckReceiver */}
+          <View
+            style={styles.tabsContainer}
+          >
             <TouchableOpacity
-              style={styles.driverNotificationButton}
-              onPress={showDriversModal}
-              disabled={sendingNotification}
+              style={[
+                styles.tab,
+                activeTab === 'track' && styles.activeTab,
+                { backgroundColor: activeTab === 'track' ? colors.buttonPrimary : colors.card }
+              ]}
+              onPress={() => setActiveTab('track')}
             >
-              <LinearGradient
-                colors={['#4361EE', '#3A0CA3']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.driverNotificationGradient}
-              >
-                <Feather name="bell" size={20} color="white" />
-                <Text style={styles.driverNotificationText}>
-                  {translations[language]?.driverNotification?.title || "Notify Drivers"}
-                </Text>
-              </LinearGradient>
+              <Feather name="package" size={20} color={activeTab === 'track' ? colors.buttonText : colors.iconDefault} />
+              <Text style={[
+                styles.tabText,
+                { color: activeTab === 'track' ? colors.buttonText : colors.text }
+              ]}>
+                {translations[language]?.track?.title || 'Track Order'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'check' && styles.activeTab,
+                { backgroundColor: activeTab === 'check' ? colors.buttonPrimary : colors.card }
+              ]}
+              onPress={() => setActiveTab('check')}
+            >
+              <Feather name="user" size={20} color={activeTab === 'check' ? colors.buttonText : colors.iconDefault} />
+              <Text style={[
+                styles.tabText,
+                { color: activeTab === 'check' ? colors.buttonText : colors.text }
+              ]}>
+                {translations[language]?.check?.receiver?.title || 'Check Receiver'}
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
 
-        {/* Summary Section */}
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && 
-        <View 
-          style={[styles.sectionHeader]}
-        >
-          <Text style={[styles.sectionTitle,{color:colors.text}]}>
-            {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
-          </Text>
-        </View>}
-        
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && <View style={styles.cardsSection}>
-          {columnBoxes?.filter(box => box !== null).map((box, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.cardTouchable}
-              onPress={() => {
+          {/* Track Order or Check Receiver Component based on active tab */}
+          <View
+            style={styles.trackOrderContainer}
+          >
+            {activeTab === 'track' ? <TrackOrder /> : <CheckReceiver />}
+          </View>
 
-                // First reset all filters
-                // DeviceEventEmitter.emit('resetOrdersFilters');
-                
-                // Then navigate to orders with the specific filter
-                const statusKey = index === 0 ? "today" : 
-                                  index === 1 ? "money_in_branch" : 
-                                  index === 2 ? "returned_in_branch" : 
-                                  index === 3 ? "sent_money" :
-                                  index === 4 ? "sent_packages" : "";
-                
-                if (box.isCollection) {
-                  // Determine if it's sent money or sent packages based on statusKey
-                  const collectionType = statusKey === "sent_money" || statusKey === "sent_packages" ? "sent" : "";
-                  
-                  router.push({
-                    pathname: "/(collection)",
-                    params: { type: collectionType }
-                  });
-                } else {
-                    // Navigate to orders page with the specific filter
-                    if (statusKey === "today") {
-                      // For today filter, use date_range parameter instead of status_key
-                      router.push({
-                        pathname: "/(tabs)/orders",
-                        params: {
-                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
-                          date_range: "today"
-                        }
-                      });
-                    }else {
-                      // For other filters, use status_key as before
-                      router.push({
-                        pathname: "/(tabs)/orders",
-                        params: {
-                          orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
-                          status_key: statusKey
-                        }
-                      });
-                    }
-                 }
-              }}
-              onLongPress={() => {
-                // Handle long press based on which card it is
-                if (index === 1 && user.role === "business") {  // Money in branch card
-                  handleMoneyLongPress();
-                } else if (index === 2 && user.role === "business") {  // Returned in branch card
-                  handlePackageLongPress();
-                }
-              }}
-              delayLongPress={500}
-              activeOpacity={0.85}
-            >
-              <View style={[
-                styles.card, 
-                { backgroundColor: colors.card, shadowColor: colors.cardShadow }
-              ]}>
-                <LinearGradient
-                  colors={box.gradientColors}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={[
-                    styles.iconContainer
-                  ]}
-                >
-                  {box.icon}
-                </LinearGradient>
-                <View style={styles.cardContent}>
-                  <Text style={[[styles.cardTitle,{
-                    ...Platform.select({
-                      ios: {
-                          textAlign:rtl.isRTL ? "left" : ""
-                      }
-                  })
-                  },{color:colors.text}]]}>
-                    {box.label}
-                  </Text>
-                  <View style={[styles.statsContainer]}>
-                    <View style={styles.statItem}>
-                      <Text style={[styles.statNumber,{
-                        textAlign: rtl.isRTL ? "left" : "left",
-                        ...Platform.select({
-                          ios: {
-                              textAlign:rtl.isRTL ? "left" : ""
-                          }
-                      })
-                      },{color:colors.text}]}
-                      >
-                        {box.numberOfOrders || 0}
-                      </Text>
-                      <Text style={[styles.statLabel,{color:colors.textSecondary}]}>
-                        {translations[language].tabs.index.boxes.ofOrders}
-                      </Text>
-                    </View>
-                    {box.money && (
-                      <Text style={[styles.moneyText,{color: colors.success}]}>
-                        {box.money}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>}
-
-        {/* Collections Section */}
-        {user.role === "business" && (
-          <>
-            <View 
-              style={[styles.sectionHeader]}
-            >
-              <Text style={[styles.sectionTitle,{color:colors.text},
-                {
-                  ...Platform.select({
-                    ios: {
-                      textAlign:rtl.isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                {translations[language]?.collections?.collection?.confirmTitle}
-              </Text>
-            </View>
-
-            <View style={styles.collectionsContainer}>
+          {/* Driver Notification Button - Only show for business users with waiting orders */}
+          {user.role === "business" && hasWaitingOrders && (
+            <View style={styles.driverNotificationContainer}>
               <TouchableOpacity
-                style={styles.collectionCard}
-                onPress={() => setShowCollectionsModal(true)}
-                activeOpacity={0.9}
+                style={styles.driverNotificationButton}
+                onPress={showDriversModal}
+                disabled={sendingNotification}
               >
                 <LinearGradient
                   colors={['#4361EE', '#3A0CA3']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
-                  style={styles.collectionGradient}
+                  style={styles.driverNotificationGradient}
                 >
-                  <View style={styles.collectionIconContainer}>
-                    <FontAwesome6 name="money-bill-trend-up" size={24} color="white" />
-                  </View>
-                  <View style={styles.collectionArrow}>
-                    <Text style={styles.collectionSubtitle}>
-                      {translations[language]?.collections?.collection?.actions}
-                    </Text>
-                  </View>
+                  <Feather name="bell" size={20} color="white" />
+                  <Text style={styles.driverNotificationText}>
+                    {translations[language]?.driverNotification?.title || "Notify Drivers"}
+                  </Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+          )}
 
-            <ModalPresentation
-              showModal={showCollectionsModal}
-              setShowModal={setShowCollectionsModal}
-              position="bottom"
-              customStyles={{ maxHeight: '90%' }}
+          {/* Summary Section */}
+          {!["entery", "sales_representative", "support_agent", "warehouse_admin", "warehouse_staff"].includes(user.role) &&
+            <View
+              style={[styles.sectionHeader]}
             >
-               <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
-                <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
-                  <Text style={[styles.modalHeaderText, { color: colors.text },
-                    {
-                      ...Platform.select({
-                        ios: {
-                          textAlign:rtl.isRTL ? "left" : ""
-                        }
-                      }),
-                    }]}>
-                    {translations[language]?.collections?.collection?.pendingConfirmations}
-                  </Text>
-                </View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {translations[language]?.tabs.index.summaryTitle || 'Order Summary'}
+              </Text>
+            </View>}
 
-                <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
-                  <TouchableOpacity
-                    style={[
-                        styles.tab,
-                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
-                        selectedType === 'money' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
-                      ]}
-                    onPress={() => {
-                      setSelectedType('money');
-                      setSelectedCollections([]);
-                    }}
-                  >
-                    <Text style={[styles.tabText,{color:colors.text}]}>
-                      {translations[language]?.collections?.collection?.moneyCollections}
-                    </Text>
-                    {moneyCollections?.length > 0 && (
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{moneyCollections?.length}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                        styles.tab,
-                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
-                        selectedType === 'package' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
-                      ]}
-                    onPress={() => {
-                      setSelectedType('package');
-                      setSelectedCollections([]);
-                    }}
-                  >
-                    <Text style={[styles.tabText,{color:colors.text}]}>
-                      {translations[language]?.collections?.collection?.packageCollections}
-                    </Text>
-                    {packageCollections?.length > 0 && (
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{packageCollections?.length}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                </View>
+          {!["entery", "sales_representative", "support_agent", "warehouse_admin", "warehouse_staff"].includes(user.role) && <View style={styles.cardsSection}>
+            {columnBoxes?.filter(box => box !== null).map((box, index) => (
+              <TouchableOpacity
+                key={index}
+                style={styles.cardTouchable}
+                onPress={() => {
 
-                {isLoadingCollections ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4361EE" />
-                  </View>
-                ) : (
-                  <ScrollView style={styles.collectionsScroll}>
-                    {(selectedType === 'money' ? moneyCollections : packageCollections)?.length === 0 ? (
-                      <View style={styles.noDataContainer}>
-                        <Ionicons name="information-circle-outline" size={48} color={colors.primary} />
-                        <Text style={[styles.noDataText,{color:colors.text}]}>
-                          {translations[language]?.collections?.collection?.noCollectionsToConfirm}
-                        </Text>
-                      </View>
-                    ) : (
-                      (selectedType === 'money' ? moneyCollections : packageCollections).map((collection) => (
-                        <TouchableOpacity
-                          key={collection.collection_id}
-                          style={[
-                            styles.collectionItem,
-                            {
-                              backgroundColor: colors.surface,
-                              borderColor: colors.border
-                            },
-                            selectedCollections.includes(collection.collection_id) && !isDark && styles.selectedCollectionItem
-                          ]}
-                          onPress={() => handleCollectionSelect(collection.collection_id)}
-                          activeOpacity={0.8}
-                        >
-                          <View style={styles.collectionItemHeader}>
-                            <View style={styles.collectionIdContainer}>
-                                <Text style={[styles.collectionIdLabel,{
-                                    color: colors.text
-                                }]}>
-                                {translations[language]?.collections?.collection?.collectionId}:
-                              </Text>
-                              <Text style={[styles.collectionId,{
-                                color: colors.text
-                              }]}>#{collection.collection_id}</Text>
-                            </View>
-                            <View style={styles.orderCountContainer}>
-                              <Text style={styles.orderCount}>
-                                {collection.order_count} {translations[language]?.collections?.collection?.orders}
-                              </Text>
-                            </View>
-                          </View>
+                  // First reset all filters
+                  // DeviceEventEmitter.emit('resetOrdersFilters');
 
-                          <View style={styles.collectionItemBody}>
-                            {collection.financials && collection.financials.length > 0 && (
-                              <>
-                                <View style={styles.valueContainer}>
-                                  <Text style={[styles.valueLabel,{
-                                      color: colors.text
-                                    }]}>
-                                      {translations[language]?.collections?.collection?.totalNetValue}:
-                                    </Text>
-                                    <Text style={[styles.value,{
-                                      color: colors.success
-                                    }]}>
-                                      {collection.financials[0].final_amount} {collection.financials[0].currency_symbol}
-                                    </Text>
-                                </View>
-                              </>
-                            )}
-                          </View>
+                  // Then navigate to orders with the specific filter
+                  const statusKey = index === 0 ? "today" :
+                    index === 1 ? "money_in_branch" :
+                      index === 2 ? "returned_in_branch" :
+                        index === 3 ? "sent_money" :
+                          index === 4 ? "sent_packages" : "";
 
-                          {selectedCollections.includes(collection.collection_id) && (
-                            <View style={styles.checkmarkContainer}>
-                              <Ionicons name="checkmark-circle" size={24} color="#4361EE" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      ))
-                    )}
-                  </ScrollView>
-                )}
+                  if (box.isCollection) {
+                    // Determine if it's sent money or sent packages based on statusKey
+                    const collectionType = statusKey === "sent_money" || statusKey === "sent_packages" ? "sent" : "";
 
-                {(selectedType === 'money' ? moneyCollections : packageCollections)?.length > 0 && (
-                  <View style={styles.modalFooter}>
-                    <View style={styles.footerButtonsContainer}>
-                      <TouchableOpacity
-                        style={[styles.confirmButton, selectedCollections?.length === 0 && styles.disabledButton]}
-                        onPress={handleCollectionConfirm}
-                        disabled={isConfirming || selectedCollections?.length === 0}
-                      >
-                        {isConfirming ? (
-                          <ActivityIndicator color="white" size="small" />
-                        ) : (
-                          <>
-                            <MaterialIcons name="cloud-done" size={20} color="white" />
-                            <Text style={styles.confirmButtonText}>
-                              {selectedType === 'money'
-                                ? translations[language]?.collections?.collection?.confirmPayment
-                                : translations[language]?.collections?.collection?.confirmDelivery}
-                              {selectedCollections.length > 0 && ` (${selectedCollections.length})`}
-                            </Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                      
-                      <TouchableOpacity
-                        style={styles.scanButton}
-                        onPress={() => {
-                          setShowCollectionsModal(false);
-                          setTimeout(() => {
-                            router.push("/(camera)/scanCollectionConfirm");
-                          }, 300);
-                        }}
-                      >
-                        <MaterialIcons name="qr-code-scanner" size={20} color="white" />
-                        <Text style={styles.scanButtonText}>
-                          {translations[language]?.collections?.collection?.scanToConfirm}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </ModalPresentation>
-          </>
-        )}
-
-        {/* Status Section */}
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && 
-        <View 
-          style={[styles.sectionHeader, styles.sectionHeaderWithToggle]}
-        >
-          <Text style={[styles.sectionTitle,{color:colors.text}]}>
-            {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
-          </Text>
-          <View style={styles.viewToggleContainer}>
-            <TouchableOpacity 
-              onPress={() => setStatusViewMode('grid')}
-              style={[
-                styles.viewToggleButton, 
-                statusViewMode === 'grid' && styles.viewToggleButtonActive,
-                { backgroundColor: statusViewMode === 'grid' ? colors.primary : colors.card }
-              ]}
-            >
-              <Ionicons 
-                name="grid" 
-                size={18} 
-                color={statusViewMode === 'grid' ? '#fff' : colors.text} 
-              />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={() => setStatusViewMode('list')}
-              style={[
-                styles.viewToggleButton, 
-                statusViewMode === 'list' && styles.viewToggleButtonActive,
-                { backgroundColor: statusViewMode === 'list' ? colors.primary : colors.card }
-              ]}
-            >
-              <Ionicons 
-                name="list" 
-                size={18} 
-                color={statusViewMode === 'list' ? '#fff' : colors.text} 
-              />
-            </TouchableOpacity>
-          </View>
-        </View>}
-        
-        {!["entery","sales_representative","support_agent","warehouse_admin","warehouse_staff"].includes(user.role) && (
-          <View style={statusViewMode === 'grid' ? styles.statusCirclesContainer : styles.statusListContainer}>
-            {(boxes)?.map((box, index) => {
-              if (box.visibility === "hidden") return null;
-              
-              // Calculate progress percentage (capped at 100%)
-              const totalOrders = data?.total_orders?.count || 100;
-              const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
-              
-              // Map box labels to status keys
-              const getStatusKey = () => {
-                switch (box.label) {
-                  case translations[language].tabs.index.boxes.todayOrders:
-                    return "today";
-                  case translations[language].tabs.index.boxes.inWaiting:
-                    return "waiting";
-                  case translations[language].tabs.index.boxes.inBranch:
-                    return "in_branch";
-                  case translations[language].tabs.index.boxes.onTheWay:
-                    return "on_the_way";
-                  case translations[language].tabs.index.boxes.withDriver:
-                    return "with_driver";
-                  case translations[language].tabs.index.boxes.replacedDeliveredOrders:
-                    return "replaced_delivered";
-                  case translations[language].tabs.index.boxes.delivered:
-                    return "delivered,received";
-                  case translations[language].tabs.index.boxes.returned:
-                    return "returned";
-                  case translations[language].tabs.index.boxes.returnedInBranch:
-                    return "returned_in_branch";
-                  case translations[language].tabs.index.boxes.rescheduled:
-                    return "reschedule";
-                  case translations[language].tabs.index.boxes.stuck:
-                    return "stuck";
-                  case translations[language].tabs.index.boxes.rejected:
-                    return "rejected";
-                  default:
-                    return "";
-                }
-              };
-              
-              return (
-                <TouchableOpacity 
-                  key={index}
-                  style={statusViewMode === 'grid' ? styles.statusCircleItem : styles.statusListItem}
-                  onPress={() => {
-                    // First reset all filters
-                    // DeviceEventEmitter.emit('resetOrdersFilters');
-                    
-                    // Then navigate to orders with the specific filter
-                    const statusKey = getStatusKey();
-                    
-                     // Navigate to orders page with the specific filter
-                     if (statusKey === "today") {
+                    router.push({
+                      pathname: "/(collection)",
+                      params: { type: collectionType }
+                    });
+                  } else {
+                    // Navigate to orders page with the specific filter
+                    if (statusKey === "today") {
                       // For today filter, use date_range parameter instead of status_key
                       router.push({
                         pathname: "/(tabs)/orders",
@@ -1307,435 +924,847 @@ export default function HomeScreen() {
                         }
                       });
                     }
-                    }}
-                  activeOpacity={0.9}
-                >
-                  {statusViewMode === 'grid' ? (
-                    // Grid View (Original Circular Design)
-                    <>
-                      <View style={styles.circleOuterContainer}>
-                        {/* Circular progress track (background) */}
-                        <View style={styles.progressTrack} />
-                        
-                        {/* Circular progress background */}
-                        <View style={[
-                          styles.progressBackground,
-                          { backgroundColor: box.gradientColors[0] + '20' }
-                        ]} />
-                        
-                        {/* Circular progress indicator */}
-                        <View style={[
-                          styles.progressIndicator,
-                          { 
-                            borderColor: box.gradientColors[0],
-                            borderWidth: 2, // Thinner border
-                            width: 80,
-                            height: 80,
-                            borderRadius: 40,
-                            borderTopColor: 'transparent',
-                            transform: [
-                              { rotateZ: `${progressPercentage * 3.6}deg` }
-                            ]
-                          }
-                        ]} />
-                        
-                        {/* Inner circle with gradient background */}
-                        <LinearGradient
-                          colors={box.gradientColors}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.circleContent}
+                  }
+                }}
+                onLongPress={() => {
+                  // Handle long press based on which card it is
+                  if (index === 1 && user.role === "business") {  // Money in branch card
+                    handleMoneyLongPress();
+                  } else if (index === 2 && user.role === "business") {  // Returned in branch card
+                    handlePackageLongPress();
+                  }
+                }}
+                delayLongPress={500}
+                activeOpacity={0.85}
+              >
+                <View style={[
+                  styles.card,
+                  { backgroundColor: colors.card, shadowColor: colors.cardShadow }
+                ]}>
+                  <LinearGradient
+                    colors={box.gradientColors}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={[
+                      styles.iconContainer
+                    ]}
+                  >
+                    {box.icon}
+                  </LinearGradient>
+                  <View style={styles.cardContent}>
+                    <Text style={[[styles.cardTitle, {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: rtl.isRTL ? "left" : ""
+                        }
+                      })
+                    }, { color: colors.text }]]}>
+                      {box.label}
+                    </Text>
+                    <View style={[styles.statsContainer]}>
+                      <View style={styles.statItem}>
+                        <Text style={[styles.statNumber, {
+                          textAlign: rtl.isRTL ? "left" : "left",
+                          ...Platform.select({
+                            ios: {
+                              textAlign: rtl.isRTL ? "left" : ""
+                            }
+                          })
+                        }, { color: colors.text }]}
                         >
-                          <View style={styles.circleIcon}>
-                            {box.icon}
-                          </View>
-                          <Text style={styles.circleCount}>{box.numberOfOrders || 0}</Text>
-                        </LinearGradient>
-                        
-                        {/* Percentage badge */}
-                        <Animated.View style={[
-                          styles.percentageBadge,
-                          { 
-                            backgroundColor: `${box.gradientColors[0]}`,
-                            transform: [{ scale: pulseAnim }]
-                          }
-                        ]}>
-                          <Text style={styles.percentageText}>
-                            <Text style={styles.percentageValue}>{Math.round(progressPercentage)}</Text>
-                            <Text style={styles.percentageSymbol}>%</Text>
-                          </Text>
-                        </Animated.View>
+                          {box.numberOfOrders || 0}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+                          {translations[language].tabs.index.boxes.ofOrders}
+                        </Text>
                       </View>
-                      
-                      <Text style={[styles.circleTitle,{color:colors.text}]} numberOfLines={1}>
-                        {box.label}
-                      </Text>
-                      
                       {box.money && (
-                        <Text style={[styles.circleMoney,{color:colors.success}]} numberOfLines={1}>
+                        <Text style={[styles.moneyText, { color: colors.success }]}>
                           {box.money}
                         </Text>
                       )}
-                    </>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>}
+
+          {/* Collections Section */}
+          {user.role === "business" && (
+            <>
+              <View
+                style={[styles.sectionHeader]}
+              >
+                <Text style={[styles.sectionTitle, { color: colors.text },
+                {
+                  ...Platform.select({
+                    ios: {
+                      textAlign: rtl.isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
+                  {translations[language]?.collections?.collection?.confirmTitle}
+                </Text>
+              </View>
+
+              <View style={styles.collectionsContainer}>
+                <TouchableOpacity
+                  style={styles.collectionCard}
+                  onPress={() => setShowCollectionsModal(true)}
+                  activeOpacity={0.9}
+                >
+                  <LinearGradient
+                    colors={['#4361EE', '#3A0CA3']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.collectionGradient}
+                  >
+                    <View style={styles.collectionIconContainer}>
+                      <FontAwesome6 name="money-bill-trend-up" size={24} color="white" />
+                    </View>
+                    <View style={styles.collectionArrow}>
+                      <Text style={styles.collectionSubtitle}>
+                        {translations[language]?.collections?.collection?.actions}
+                      </Text>
+                    </View>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+
+              <ModalPresentation
+                showModal={showCollectionsModal}
+                setShowModal={setShowCollectionsModal}
+                position="bottom"
+                customStyles={{ maxHeight: '90%' }}
+              >
+                <View style={[styles.modalContent, { backgroundColor: colors.modalBg }]}>
+                  <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                    <Text style={[styles.modalHeaderText, { color: colors.text },
+                    {
+                      ...Platform.select({
+                        ios: {
+                          textAlign: rtl.isRTL ? "left" : ""
+                        }
+                      }),
+                    }]}>
+                      {translations[language]?.collections?.collection?.pendingConfirmations}
+                    </Text>
+                  </View>
+
+                  <View style={[styles.tabsContainer, { borderBottomColor: colors.border }]}>
+                    <TouchableOpacity
+                      style={[
+                        styles.tab,
+                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
+                        selectedType === 'money' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
+                      ]}
+                      onPress={() => {
+                        setSelectedType('money');
+                        setSelectedCollections([]);
+                      }}
+                    >
+                      <Text style={[styles.tabText, { color: colors.text }]}>
+                        {translations[language]?.collections?.collection?.moneyCollections}
+                      </Text>
+                      {moneyCollections?.length > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>{moneyCollections?.length}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.tab,
+                        { backgroundColor: isDark ? colors.surface : '#F3F4F6' },
+                        selectedType === 'package' && [styles.activeTab, { backgroundColor: isDark ? '#292F45' : '#EEF2FF' }]
+                      ]}
+                      onPress={() => {
+                        setSelectedType('package');
+                        setSelectedCollections([]);
+                      }}
+                    >
+                      <Text style={[styles.tabText, { color: colors.text }]}>
+                        {translations[language]?.collections?.collection?.packageCollections}
+                      </Text>
+                      {packageCollections?.length > 0 && (
+                        <View style={styles.badge}>
+                          <Text style={styles.badgeText}>{packageCollections?.length}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+
+                  {isLoadingCollections ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#4361EE" />
+                    </View>
                   ) : (
-                    // List View (Row Design)
-                    <View style={[styles.listItemCard, { backgroundColor: colors.card }]}>
-                      <View style={[styles.listItemAccent, { backgroundColor: box.gradientColors[0] + '25' }]} />
-                      
-                      <View style={styles.listItemContent}>
-                        <View style={styles.listItemLeft}>
-                          <View style={[styles.listItemIconWrapper, { backgroundColor: box.gradientColors[0] + '12' }]}>
-                            <LinearGradient
-                              colors={[box.gradientColors[0] + 'DD', box.gradientColors[1] + 'DD']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 1 }}
-                              style={styles.listItemIconContainer}
-                            >
-                              {box.icon}
-                            </LinearGradient>
-                          </View>
-                          
-                          <View style={styles.listItemTextContainer}>
-                            <Text style={[styles.listItemTitle, {color: colors.text}]} numberOfLines={1}>
-                              {box.label}
-                            </Text>
-                            {box.money && (
-                              <View style={styles.listItemMoneyContainer}>
-                                <Ionicons name="cash-outline" size={14} color={colors.success} />
-                                <Text style={[styles.listItemMoney, {color: colors.success}]} numberOfLines={1}>
-                                  {box.money}
+                    <ScrollView style={styles.collectionsScroll}>
+                      {(selectedType === 'money' ? moneyCollections : packageCollections)?.length === 0 ? (
+                        <View style={styles.noDataContainer}>
+                          <Ionicons name="information-circle-outline" size={48} color={colors.primary} />
+                          <Text style={[styles.noDataText, { color: colors.text }]}>
+                            {translations[language]?.collections?.collection?.noCollectionsToConfirm}
+                          </Text>
+                        </View>
+                      ) : (
+                        (selectedType === 'money' ? moneyCollections : packageCollections).map((collection) => (
+                          <TouchableOpacity
+                            key={collection.collection_id}
+                            style={[
+                              styles.collectionItem,
+                              {
+                                backgroundColor: colors.surface,
+                                borderColor: colors.border
+                              },
+                              selectedCollections.includes(collection.collection_id) && !isDark && styles.selectedCollectionItem
+                            ]}
+                            onPress={() => handleCollectionSelect(collection.collection_id)}
+                            activeOpacity={0.8}
+                          >
+                            <View style={styles.collectionItemHeader}>
+                              <View style={styles.collectionIdContainer}>
+                                <Text style={[styles.collectionIdLabel, {
+                                  color: colors.text
+                                }]}>
+                                  {translations[language]?.collections?.collection?.collectionId}:
+                                </Text>
+                                <Text style={[styles.collectionId, {
+                                  color: colors.text
+                                }]}>#{collection.collection_id}</Text>
+                              </View>
+                              <View style={styles.orderCountContainer}>
+                                <Text style={styles.orderCount}>
+                                  {collection.order_count} {translations[language]?.collections?.collection?.orders}
                                 </Text>
                               </View>
+                            </View>
+
+                            <View style={styles.collectionItemBody}>
+                              {collection.financials && collection.financials.length > 0 && (
+                                <>
+                                  <View style={styles.valueContainer}>
+                                    <Text style={[styles.valueLabel, {
+                                      color: colors.text
+                                    }]}>
+                                      {translations[language]?.collections?.collection?.totalNetValue}:
+                                    </Text>
+                                    <Text style={[styles.value, {
+                                      color: colors.success
+                                    }]}>
+                                      {collection.financials[0].final_amount} {collection.financials[0].currency_symbol}
+                                    </Text>
+                                  </View>
+                                </>
+                              )}
+                            </View>
+
+                            {selectedCollections.includes(collection.collection_id) && (
+                              <View style={styles.checkmarkContainer}>
+                                <Ionicons name="checkmark-circle" size={24} color="#4361EE" />
+                              </View>
                             )}
-                          </View>
-                        </View>
-                        
-                        <View style={styles.listItemRight}>
-                          <View style={[styles.listItemCountContainer, { backgroundColor: box.gradientColors[0] + '15' }]}>
-                            <Text style={[styles.listItemCount, { color: box.gradientColors[0] }]}>
-                              {box.numberOfOrders || 0}
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </ScrollView>
+                  )}
+
+                  {(selectedType === 'money' ? moneyCollections : packageCollections)?.length > 0 && (
+                    <View style={styles.modalFooter}>
+                      <View style={styles.footerButtonsContainer}>
+                        <TouchableOpacity
+                          style={[styles.confirmButton, selectedCollections?.length === 0 && styles.disabledButton]}
+                          onPress={handleCollectionConfirm}
+                          disabled={isConfirming || selectedCollections?.length === 0}
+                        >
+                          {isConfirming ? (
+                            <ActivityIndicator color="white" size="small" />
+                          ) : (
+                            <>
+                              <MaterialIcons name="cloud-done" size={20} color="white" />
+                              <Text style={styles.confirmButtonText}>
+                                {selectedType === 'money'
+                                  ? translations[language]?.collections?.collection?.confirmPayment
+                                  : translations[language]?.collections?.collection?.confirmDelivery}
+                                {selectedCollections.length > 0 && ` (${selectedCollections.length})`}
+                              </Text>
+                            </>
+                          )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.scanButton}
+                          onPress={() => {
+                            setShowCollectionsModal(false);
+                            setTimeout(() => {
+                              router.push("/(camera)/scanCollectionConfirm");
+                            }, 300);
+                          }}
+                        >
+                          <MaterialIcons name="qr-code-scanner" size={20} color="white" />
+                          <Text style={styles.scanButtonText}>
+                            {translations[language]?.collections?.collection?.scanToConfirm}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </ModalPresentation>
+            </>
+          )}
+
+          {/* Status Section */}
+          {!["entery", "sales_representative", "support_agent", "warehouse_admin", "warehouse_staff"].includes(user.role) &&
+            <View
+              style={[styles.sectionHeader, styles.sectionHeaderWithToggle]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {translations[language]?.tabs.index.statusTitle || 'Status Overview'}
+              </Text>
+              <View style={styles.viewToggleContainer}>
+                <TouchableOpacity
+                  onPress={() => setStatusViewMode('grid')}
+                  style={[
+                    styles.viewToggleButton,
+                    statusViewMode === 'grid' && styles.viewToggleButtonActive,
+                    { backgroundColor: statusViewMode === 'grid' ? colors.primary : colors.card }
+                  ]}
+                >
+                  <Ionicons
+                    name="grid"
+                    size={18}
+                    color={statusViewMode === 'grid' ? '#fff' : colors.text}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setStatusViewMode('list')}
+                  style={[
+                    styles.viewToggleButton,
+                    statusViewMode === 'list' && styles.viewToggleButtonActive,
+                    { backgroundColor: statusViewMode === 'list' ? colors.primary : colors.card }
+                  ]}
+                >
+                  <Ionicons
+                    name="list"
+                    size={18}
+                    color={statusViewMode === 'list' ? '#fff' : colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>}
+
+          {!["entery", "sales_representative", "support_agent", "warehouse_admin", "warehouse_staff"].includes(user.role) && (
+            <View style={statusViewMode === 'grid' ? styles.statusCirclesContainer : styles.statusListContainer}>
+              {(boxes)?.map((box, index) => {
+                if (box.visibility === "hidden") return null;
+
+                // Calculate progress percentage (capped at 100%)
+                const totalOrders = data?.total_orders?.count || 100;
+                const progressPercentage = Math.min(((box.numberOfOrders || 0) / totalOrders) * 100, 100);
+
+                // Map box labels to status keys
+                const getStatusKey = () => {
+                  switch (box.label) {
+                    case translations[language].tabs.index.boxes.todayOrders:
+                      return "today";
+                    case translations[language].tabs.index.boxes.inWaiting:
+                      return "waiting";
+                    case translations[language].tabs.index.boxes.inBranch:
+                      return "in_branch";
+                    case translations[language].tabs.index.boxes.onTheWay:
+                      return "on_the_way";
+                    case translations[language].tabs.index.boxes.dispatchedToBranch:
+                      return "dispatched_to_branch";
+                    case translations[language].tabs.index.boxes.withDriver:
+                      return "with_driver";
+                    case translations[language].tabs.index.boxes.receivedFromBusiness:
+                      return "received_from_business";
+                    case translations[language].tabs.index.boxes.receivedFromMe:
+                      return "received_from_business";
+                    case translations[language].tabs.index.boxes.replacedDeliveredOrders:
+                      return "replaced_delivered";
+                    case translations[language].tabs.index.boxes.delivered:
+                      return "delivered,received";
+                    case translations[language].tabs.index.boxes.returned:
+                      return "returned";
+                    case translations[language].tabs.index.boxes.moneyInProcess:
+                      return "money_in_process";
+                    case translations[language].tabs.index.boxes.returnedInBranch:
+                      return "returned_in_branch";
+                    case translations[language].tabs.index.boxes.rescheduled:
+                      return "reschedule";
+                    case translations[language].tabs.index.boxes.stuck:
+                      return "stuck";
+                    case translations[language].tabs.index.boxes.rejected:
+                      return "rejected";
+                    default:
+                      return "";
+                  }
+                };
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={statusViewMode === 'grid' ? styles.statusCircleItem : styles.statusListItem}
+                    onPress={() => {
+                      // First reset all filters
+                      // DeviceEventEmitter.emit('resetOrdersFilters');
+
+                      // Then navigate to orders with the specific filter
+                      const statusKey = getStatusKey();
+
+                      // Navigate to orders page with the specific filter
+                      if (statusKey === "today") {
+                        // For today filter, use date_range parameter instead of status_key
+                        router.push({
+                          pathname: "/(tabs)/orders",
+                          params: {
+                            orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
+                            date_range: "today"
+                          }
+                        });
+                      } else {
+                        // For other filters, use status_key as before
+                        router.push({
+                          pathname: "/(tabs)/orders",
+                          params: {
+                            orderIds: box?.orderIds?.length > 0 ? box.orderIds.join(',') : undefined,
+                            status_key: statusKey
+                          }
+                        });
+                      }
+                    }}
+                    activeOpacity={0.9}
+                  >
+                    {statusViewMode === 'grid' ? (
+                      // Grid View (Original Circular Design)
+                      <>
+                        <View style={styles.circleOuterContainer}>
+                          {/* Circular progress track (background) */}
+                          <View style={styles.progressTrack} />
+
+                          {/* Circular progress background */}
+                          <View style={[
+                            styles.progressBackground,
+                            { backgroundColor: box.gradientColors[0] + '20' }
+                          ]} />
+
+                          {/* Circular progress indicator */}
+                          <View style={[
+                            styles.progressIndicator,
+                            {
+                              borderColor: box.gradientColors[0],
+                              borderWidth: 2, // Thinner border
+                              width: 80,
+                              height: 80,
+                              borderRadius: 40,
+                              borderTopColor: 'transparent',
+                              transform: [
+                                { rotateZ: `${progressPercentage * 3.6}deg` }
+                              ]
+                            }
+                          ]} />
+
+                          {/* Inner circle with gradient background */}
+                          <LinearGradient
+                            colors={box.gradientColors}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={styles.circleContent}
+                          >
+                            <View style={styles.circleIcon}>
+                              {box.icon}
+                            </View>
+                            <Text style={styles.circleCount}>{box.numberOfOrders || 0}</Text>
+                          </LinearGradient>
+
+                          {/* Percentage badge */}
+                          <Animated.View style={[
+                            styles.percentageBadge,
+                            {
+                              backgroundColor: `${box.gradientColors[0]}`,
+                              transform: [{ scale: pulseAnim }]
+                            }
+                          ]}>
+                            <Text style={styles.percentageText}>
+                              <Text style={styles.percentageValue}>{Math.round(progressPercentage)}</Text>
+                              <Text style={styles.percentageSymbol}>%</Text>
                             </Text>
+                          </Animated.View>
+                        </View>
+
+                        <Text style={[styles.circleTitle, { color: colors.text }]} numberOfLines={1}>
+                          {box.label}
+                        </Text>
+
+                        {box.money && (
+                          <Text style={[styles.circleMoney, { color: colors.success }]} numberOfLines={1}>
+                            {box.money}
+                          </Text>
+                        )}
+                      </>
+                    ) : (
+                      // List View (Row Design)
+                      <View style={[styles.listItemCard, { backgroundColor: colors.card }]}>
+                        <View style={[styles.listItemAccent, { backgroundColor: box.gradientColors[0] + '25' }]} />
+
+                        <View style={styles.listItemContent}>
+                          <View style={styles.listItemLeft}>
+                            <View style={[styles.listItemIconWrapper, { backgroundColor: box.gradientColors[0] + '12' }]}>
+                              <LinearGradient
+                                colors={[box.gradientColors[0] + 'DD', box.gradientColors[1] + 'DD']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.listItemIconContainer}
+                              >
+                                {box.icon}
+                              </LinearGradient>
+                            </View>
+
+                            <View style={styles.listItemTextContainer}>
+                              <Text style={[styles.listItemTitle, { color: colors.text }]} numberOfLines={1}>
+                                {box.label}
+                              </Text>
+                              {box.money && (
+                                <View style={styles.listItemMoneyContainer}>
+                                  <Ionicons name="cash-outline" size={14} color={colors.success} />
+                                  <Text style={[styles.listItemMoney, { color: colors.success }]} numberOfLines={1}>
+                                    {box.money}
+                                  </Text>
+                                </View>
+                              )}
+                            </View>
                           </View>
-                          
-                          <View style={styles.listItemProgressContainer}>
-                            <View style={styles.listItemProgressInfo}>
-                              <Text style={[styles.listItemPercentage, { color: box.gradientColors[0] }]}>
-                                {Math.round(progressPercentage)}%
+
+                          <View style={styles.listItemRight}>
+                            <View style={[styles.listItemCountContainer, { backgroundColor: box.gradientColors[0] + '15' }]}>
+                              <Text style={[styles.listItemCount, { color: box.gradientColors[0] }]}>
+                                {box.numberOfOrders || 0}
                               </Text>
                             </View>
-                            <View style={[styles.listItemProgressBar, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
-                              <LinearGradient
-                                colors={[box.gradientColors[0] + 'CC', box.gradientColors[1] + 'CC']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={[
-                                  styles.listItemProgressFill,
-                                  { width: `${progressPercentage}%` }
-                                ]} 
-                              />
+
+                            <View style={styles.listItemProgressContainer}>
+                              <View style={styles.listItemProgressInfo}>
+                                <Text style={[styles.listItemPercentage, { color: box.gradientColors[0] }]}>
+                                  {Math.round(progressPercentage)}%
+                                </Text>
+                              </View>
+                              <View style={[styles.listItemProgressBar, { backgroundColor: isDark ? colors.border : '#F1F5F9' }]}>
+                                <LinearGradient
+                                  colors={[box.gradientColors[0] + 'CC', box.gradientColors[1] + 'CC']}
+                                  start={{ x: 0, y: 0 }}
+                                  end={{ x: 1, y: 0 }}
+                                  style={[
+                                    styles.listItemProgressFill,
+                                    { width: `${progressPercentage}%` }
+                                  ]}
+                                />
+                              </View>
                             </View>
                           </View>
                         </View>
                       </View>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
-      
-      {/* Modern Onboarding System */}
-      {showOnboarding && (
-        <Animated.View
-          style={[
-            styles.onboardingModal,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
-              backgroundColor: colors.card,
-            }
-          ]}
-        >
-          <View style={styles.onboardingContent}>
-            <View style={styles.onboardingHeader}>
-              <View style={styles.stepIndicators}>
-                {getOnboardingSteps().map((step, index) => (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.stepDot,
-                      currentStep === index ? 
-                        { backgroundColor: colors.primary, width: 24 } : 
-                        { backgroundColor: colors.border }
-                    ]} 
-                  />
-                ))}
-              </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-            
-            <Text style={[styles.onboardingTitle, { color: colors.text }]}>
-              {getOnboardingSteps()[currentStep]?.title}
-            </Text>
-            
-            <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
-              {getOnboardingSteps()[currentStep]?.message}
-            </Text>
-            
-            <View style={styles.onboardingActions}>
-              <TouchableOpacity
-                style={styles.skipButton}
-                onPress={skipOnboarding}
-              >
-                <Text style={[styles.skipButtonText, { color: colors.textTertiary }]}>
-                  {translations[language]?.homeHints?.skip || 'Skip All'}
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={[styles.nextButton, { backgroundColor: colors.primary }]}
-                onPress={nextStep}
-              >
-                <Text style={styles.nextButtonText}>
-                  {currentStep === getOnboardingSteps().length - 1
-                    ? (translations[language]?.homeHints?.finish || 'Got It') 
-                    : (translations[language]?.homeHints?.next || 'Next')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Animated.View>
-      )}
-      
-      {/* Money Request Modal */}
-      <ModalPresentation 
-        showModal={showMoneyModal} 
-        setShowModal={setShowMoneyModal}
-        position="bottom"
-      >
-       <View style={[styles.modalHeader,{
-          borderBottomColor: colors.border
-        }]}>
-          <Text style={[styles.modalHeaderText,{
-            color: colors.text
-          },{
-            ...Platform.select({
-              ios: {
-                textAlign:rtl.isRTL ? "left" : ""
-              }
-            }),
-          }]}>
-            {translations[language]?.collections?.collection?.actions}
-          </Text>
-        </View>
-        
-        <TouchableOpacity
-          style={[styles.modalOption,{
-            borderBottomColor: colors.border
-          }]}
-          onPress={() => handleGeneralCollectRequest("money", "prepare")}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <ActivityIndicator color="#4361EE" size="small" />
-          ) : (
-            <>
-              <View style={[
-                styles.modalIconContainer,
-                { backgroundColor: '#4361EE' }
-              ]}>
-                <MaterialIcons name="payments" size={18} color="#ffffff" />
-              </View>
-              <Text style={[styles.modalOptionText,{
-                color: colors.text
-              },{
-                ...Platform.select({
-                  ios: {
-                    textAlign:rtl.isRTL ? "left" : ""
-                  }
-                }),
-              }]}>
-                {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
-              </Text>
-            </>
           )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.modalOption]}
-          onPress={() => handleGeneralCollectRequest("money", "send")}
-          disabled={isProcessing}
-        >
-          <View style={[
-            styles.modalIconContainer,
-            { backgroundColor: '#F72585' }
-          ]}>
-            <Feather name="send" size={18} color="#ffffff" />
-          </View>
-          <Text style={[styles.modalOptionText,{
-            color: colors.text
-          }]}>
-            {translations[language]?.collections?.collection?.send_money || 'Send Money'}
-          </Text>
-        </TouchableOpacity>
-      </ModalPresentation>
-      
-      {/* Package Request Modal */}
-      <ModalPresentation 
-        showModal={showPackageModal} 
-        setShowModal={setShowPackageModal}
-        position="bottom"
-      >
-       <View style={[styles.modalHeader,{
-          borderBottomColor: colors.border
-        }]}>
-        <Text style={[styles.modalHeaderText,{
-            color: colors.text
-          },{
-            ...Platform.select({
-              ios: {
-                textAlign:rtl.isRTL ? "left" : ""
-              }
-            }),
-          }]}>
-            {translations[language]?.collections?.collection?.actions}
-          </Text>
-        </View>
-        
-        <TouchableOpacity
-          style={[styles.modalOption]}
-          onPress={() => handleGeneralCollectRequest("package", "prepare")}
-          disabled={isProcessing}
-        >
-          {isProcessing ? (
-            <ActivityIndicator color="#4361EE" size="small" />
-          ) : (
-            <>
-              <View style={[
-                styles.modalIconContainer,
-                { backgroundColor: '#4361EE' }
-              ]}>
-                <MaterialIcons name="inventory" size={18} color="#ffffff" />
-              </View>
-              <Text style={[styles.modalOptionText,{
-                color: colors.text
-              }]}>
-                {translations[language]?.collections?.collection?.prepare_package || 'Prepare Package'}
-              </Text>
-            </>
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.modalOption]}
-          onPress={() => handleGeneralCollectRequest("package", "send")}
-          disabled={isProcessing}
-        >
-          <View style={[
-            styles.modalIconContainer,
-            { backgroundColor: '#F72585' }
-          ]}>
-            <Feather name="send" size={18} color="#ffffff" />
-          </View>
-          <Text style={[styles.modalOptionText,{
-            color: colors.text
-          }]}>
-            {translations[language]?.collections?.collection?.send_package || 'Send Package'}
-          </Text>
-        </TouchableOpacity>
-      </ModalPresentation>
-
-      {/* Driver Selection Modal */}
-      <ModalPresentation 
-        showModal={showDriverModal} 
-        setShowModal={setShowDriverModal}
-        position="bottom"
-      >
-        <View style={styles.modalHeader}>
-        <Text style={[styles.modalHeaderText,{
-            color: colors.text
-          }]}>
-            {translations[language]?.driverNotification?.title || "Notify Drivers"}
-          </Text>
-        </View>
-
-        <ScrollView style={styles.driversList}>
-          {drivers.map((driver) => (
-            <TouchableOpacity
-              key={driver.driver_id}
-              style={[
-                styles.driverItem,
-                {
-                  backgroundColor: colors.surface
-                }
-              ]}
-              onPress={() => handleDriverSelect(driver.driver_id)}
-            >
-              <View style={[
-                styles.checkboxContainer,
-                selectedDrivers.includes(driver.driver_id) && styles.checkboxSelected
-              ]}>
-                {selectedDrivers.includes(driver.driver_id) && (
-                  <Feather name="check" size={16} color="white" />
-                )}
-              </View>
-              <View style={styles.driverInfo}>
-              <Text style={[styles.driverName,{
-                  color: colors.text
-                },{
-                  ...Platform.select({
-                    ios: {
-                      textAlign:rtl.isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {driver.name}
-                </Text>
-                <Text style={[styles.driverPhone,{
-                  color: colors.textSecondary
-                },{
-                  ...Platform.select({
-                    ios: {
-                      textAlign:rtl.isRTL ? "left" : ""
-                    }
-                  }),
-                }]}>
-                  {driver.phone}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
         </ScrollView>
 
-        <View style={styles.modalActions}>
-          <TouchableOpacity
-            style={[styles.modalButton, styles.cancelButton]}
-            onPress={() => {
-              setShowDriverModal(false);
-              setSelectedDrivers([]);
-            }}
+        {/* Modern Onboarding System */}
+        {showOnboarding && (
+          <Animated.View
+            style={[
+              styles.onboardingModal,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+                backgroundColor: colors.card,
+              }
+            ]}
           >
-            <Text style={styles.cancelButtonText}>
-              {translations[language]?.driverNotification?.cancel || "Cancel"}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.modalButton, styles.sendButton]}
-            onPress={handleSendNotification}
-            disabled={sendingNotification}
-          >
-            {sendingNotification ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Text style={styles.sendButtonText}>
-                {translations[language]?.driverNotification?.send || "Send"}
+            <View style={styles.onboardingContent}>
+              <View style={styles.onboardingHeader}>
+                <View style={styles.stepIndicators}>
+                  {getOnboardingSteps().map((step, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.stepDot,
+                        currentStep === index ?
+                          { backgroundColor: colors.primary, width: 24 } :
+                          { backgroundColor: colors.border }
+                      ]}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <Text style={[styles.onboardingTitle, { color: colors.text }]}>
+                {getOnboardingSteps()[currentStep]?.title}
               </Text>
+
+              <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
+                {getOnboardingSteps()[currentStep]?.message}
+              </Text>
+
+              <View style={styles.onboardingActions}>
+                <TouchableOpacity
+                  style={styles.skipButton}
+                  onPress={skipOnboarding}
+                >
+                  <Text style={[styles.skipButtonText, { color: colors.textTertiary }]}>
+                    {translations[language]?.homeHints?.skip || 'Skip All'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.nextButton, { backgroundColor: colors.primary }]}
+                  onPress={nextStep}
+                >
+                  <Text style={styles.nextButtonText}>
+                    {currentStep === getOnboardingSteps().length - 1
+                      ? (translations[language]?.homeHints?.finish || 'Got It')
+                      : (translations[language]?.homeHints?.next || 'Next')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Money Request Modal */}
+        <ModalPresentation
+          showModal={showMoneyModal}
+          setShowModal={setShowMoneyModal}
+          position="bottom"
+        >
+          <View style={[styles.modalHeader, {
+            borderBottomColor: colors.border
+          }]}>
+            <Text style={[styles.modalHeaderText, {
+              color: colors.text
+            }, {
+              ...Platform.select({
+                ios: {
+                  textAlign: rtl.isRTL ? "left" : ""
+                }
+              }),
+            }]}>
+              {translations[language]?.collections?.collection?.actions}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.modalOption, {
+              borderBottomColor: colors.border
+            }]}
+            onPress={() => handleGeneralCollectRequest("money", "prepare")}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <ActivityIndicator color="#4361EE" size="small" />
+            ) : (
+              <>
+                <View style={[
+                  styles.modalIconContainer,
+                  { backgroundColor: '#4361EE' }
+                ]}>
+                  <MaterialIcons name="payments" size={18} color="#ffffff" />
+                </View>
+                <Text style={[styles.modalOptionText, {
+                  color: colors.text
+                }, {
+                  ...Platform.select({
+                    ios: {
+                      textAlign: rtl.isRTL ? "left" : ""
+                    }
+                  }),
+                }]}>
+                  {translations[language]?.collections?.collection?.prepare_money || 'Prepare Money'}
+                </Text>
+              </>
             )}
           </TouchableOpacity>
-        </View>
-      </ModalPresentation>
-    </View>
+
+          <TouchableOpacity
+            style={[styles.modalOption]}
+            onPress={() => handleGeneralCollectRequest("money", "send")}
+            disabled={isProcessing}
+          >
+            <View style={[
+              styles.modalIconContainer,
+              { backgroundColor: '#F72585' }
+            ]}>
+              <Feather name="send" size={18} color="#ffffff" />
+            </View>
+            <Text style={[styles.modalOptionText, {
+              color: colors.text
+            }]}>
+              {translations[language]?.collections?.collection?.send_money || 'Send Money'}
+            </Text>
+          </TouchableOpacity>
+        </ModalPresentation>
+
+        {/* Package Request Modal */}
+        <ModalPresentation
+          showModal={showPackageModal}
+          setShowModal={setShowPackageModal}
+          position="bottom"
+        >
+          <View style={[styles.modalHeader, {
+            borderBottomColor: colors.border
+          }]}>
+            <Text style={[styles.modalHeaderText, {
+              color: colors.text
+            }, {
+              ...Platform.select({
+                ios: {
+                  textAlign: rtl.isRTL ? "left" : ""
+                }
+              }),
+            }]}>
+              {translations[language]?.collections?.collection?.actions}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.modalOption]}
+            onPress={() => handleGeneralCollectRequest("package", "prepare")}
+            disabled={isProcessing}
+          >
+            {isProcessing ? (
+              <ActivityIndicator color="#4361EE" size="small" />
+            ) : (
+              <>
+                <View style={[
+                  styles.modalIconContainer,
+                  { backgroundColor: '#4361EE' }
+                ]}>
+                  <MaterialIcons name="inventory" size={18} color="#ffffff" />
+                </View>
+                <Text style={[styles.modalOptionText, {
+                  color: colors.text
+                }]}>
+                  {translations[language]?.collections?.collection?.prepare_package || 'Prepare Package'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.modalOption]}
+            onPress={() => handleGeneralCollectRequest("package", "send")}
+            disabled={isProcessing}
+          >
+            <View style={[
+              styles.modalIconContainer,
+              { backgroundColor: '#F72585' }
+            ]}>
+              <Feather name="send" size={18} color="#ffffff" />
+            </View>
+            <Text style={[styles.modalOptionText, {
+              color: colors.text
+            }]}>
+              {translations[language]?.collections?.collection?.send_package || 'Send Package'}
+            </Text>
+          </TouchableOpacity>
+        </ModalPresentation>
+
+        {/* Driver Selection Modal */}
+        <ModalPresentation
+          showModal={showDriverModal}
+          setShowModal={setShowDriverModal}
+          position="bottom"
+        >
+          <View style={styles.modalHeader}>
+            <Text style={[styles.modalHeaderText, {
+              color: colors.text
+            }]}>
+              {translations[language]?.driverNotification?.title || "Notify Drivers"}
+            </Text>
+          </View>
+
+          <ScrollView style={styles.driversList}>
+            {drivers.map((driver) => (
+              <TouchableOpacity
+                key={driver.driver_id}
+                style={[
+                  styles.driverItem,
+                  {
+                    backgroundColor: colors.surface
+                  }
+                ]}
+                onPress={() => handleDriverSelect(driver.driver_id)}
+              >
+                <View style={[
+                  styles.checkboxContainer,
+                  selectedDrivers.includes(driver.driver_id) && styles.checkboxSelected
+                ]}>
+                  {selectedDrivers.includes(driver.driver_id) && (
+                    <Feather name="check" size={16} color="white" />
+                  )}
+                </View>
+                <View style={styles.driverInfo}>
+                  <Text style={[styles.driverName, {
+                    color: colors.text
+                  }, {
+                    ...Platform.select({
+                      ios: {
+                        textAlign: rtl.isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {driver.name}
+                  </Text>
+                  <Text style={[styles.driverPhone, {
+                    color: colors.textSecondary
+                  }, {
+                    ...Platform.select({
+                      ios: {
+                        textAlign: rtl.isRTL ? "left" : ""
+                      }
+                    }),
+                  }]}>
+                    {driver.phone}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={() => {
+                setShowDriverModal(false);
+                setSelectedDrivers([]);
+              }}
+            >
+              <Text style={styles.cancelButtonText}>
+                {translations[language]?.driverNotification?.cancel || "Cancel"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.sendButton]}
+              onPress={handleSendNotification}
+              disabled={sendingNotification}
+            >
+              {sendingNotification ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Text style={styles.sendButtonText}>
+                  {translations[language]?.driverNotification?.send || "Send"}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ModalPresentation>
+      </View>
     </RTLWrapper>
   );
 }
@@ -2138,7 +2167,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  balanceCardStretch:{
+  balanceCardStretch: {
     width: '100%',
     marginBottom: 15,
     borderRadius: 20,
@@ -2182,7 +2211,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     marginVertical: 10,
-    textAlign:"center"
+    textAlign: "center"
   },
   balanceFooter: {
     flexDirection: 'row',
@@ -2295,7 +2324,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.06)',
-    gap:10
+    gap: 10
   },
   modalButton: {
     flex: 1,
@@ -2357,7 +2386,7 @@ const styles = StyleSheet.create({
   collectionSubtitle: {
     fontSize: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    color:"#fff",
+    color: "#fff",
     borderRadius: 18,
     paddingHorizontal: 10,
     marginBottom: 16,

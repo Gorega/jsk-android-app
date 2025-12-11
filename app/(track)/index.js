@@ -359,7 +359,7 @@ const TrackingOrder = () => {
               (!isPublic && ["driver", "delivery_company"].includes(authUser?.role) && 
                ["on_the_way", "reschedule", "rejected", "stuck", "delayed", "driver_responsibility"].includes(order.status_key)) ||
               (!isPublic && authUser?.role === "business" && 
-               ["in_branch", "rejected", "stuck", "delayed", "on_the_way", "reschedule", 
+               ["in_branch", "stuck", "delayed", "on_the_way", "reschedule", 
                 "dispatched_to_branch", "dispatched_to_driver"].includes(order.status_key))
             ) && (
               <TouchableOpacity 
@@ -377,9 +377,10 @@ const TrackingOrder = () => {
                   end={{ x: 1, y: 0 }}
                   style={styles.editPhoneButtonGradient}
                 >
-                  <Feather name="phone" size={16} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Feather name="edit" size={16} color="#ffffff" style={{ marginRight: 8 }} />
                   <Text style={styles.editPhoneButtonText}>
-                    {translations[language]?.tabs?.orders?.order?.editPhone || 'Edit Receiver Phone'}
+                    {authUser?.role === "business" && 
+                    ["stuck"].includes(order.status_key) ? translations[language]?.tabs?.orders?.order?.resoveIssue || 'Edit Receiver Phone' : translations[language]?.tabs?.orders?.order?.editPhone || 'Edit Receiver Phone'}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>

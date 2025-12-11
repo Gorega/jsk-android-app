@@ -438,7 +438,7 @@ export default function HomeScreen() {
                             :translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
                             : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
                         type: "currencyInput",
-                        name: "value",
+                        name: "cod_value",
                         value: item.value,
                         currency: item.currency,
                         index: index,
@@ -736,9 +736,19 @@ export default function HomeScreen() {
                 currency: item.currency || 'ILS'
             }));
 
-        // If there are no COD values and payment type is not check, add a default value
-        if (codValues.length === 0 && !["check"].includes(selectedValue.paymentType.value)) {
-            codValues.push({ value: 0, currency: 'ILS' });
+        // Require COD value: must be provided and greater than 0
+        if (codValues.length === 0 || totalCodValue <= 0) {
+            const requiredMsg = translations[language].tabs.orders.validation.required;
+            setFieldErrors(prev => ({ ...prev, cod_value: requiredMsg }));
+            setFormSpinner({ status: false });
+            setError({ status: true, msg: translations[language].tabs.orders.create.errorValidationMsg });
+            setShowAlert({
+                visible: true,
+                type: 'error',
+                title: translations[language].tabs.orders.create.error || 'Validation Error',
+                message: translations[language].tabs.orders.create.errorValidationMsg || 'Please check the form for errors'
+            });
+            return;
         }
 
         // Ensure commission exists (required field)
@@ -854,8 +864,17 @@ export default function HomeScreen() {
                 const errors = {};
                 
                 err.details.forEach(error => {
-                    // Map server field names to form field names
-                    const fieldName = mapServerFieldToFormField(error.field);
+                    let fieldKey = error.field;
+                    const msg = error.message || '';
+                    // Disambiguate nested fields when backend returns only the key name
+                    if (fieldKey === 'value') {
+                        if (msg.includes('cod_values')) {
+                            fieldKey = 'cod_value';
+                        } else if (msg.includes('checks')) {
+                            fieldKey = 'checks';
+                        }
+                    }
+                    const fieldName = mapServerFieldToFormField(fieldKey);
                     errors[fieldName] = error.message;
                 });
                 

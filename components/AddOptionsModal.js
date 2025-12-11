@@ -17,33 +17,33 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
   const { isDark, colorScheme } = useTheme();
   const colors = Colors[colorScheme];
   const { user } = useAuth();
-  
+
   // State for onboarding tutorial
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [scaleAnim] = useState(new Animated.Value(0.9));
-  
+
   // Initialize onboarding state when component mounts
   useEffect(() => {
     const initializeOnboarding = async () => {
       if (!user) return;
-      
+
       // Fix: use userId instead of id
       const userId = user.id || user.userId;
       if (!userId) return;
-      
+
       try {
         const hasSeenTutorial = await getUserData(userId, 'has_seen_add_options_tutorial');
-        
+
         // If the user hasn't seen the tutorial and has the right role, mark it for showing
-        if (hasSeenTutorial !== 'true' && ["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole)) {
+        if (hasSeenTutorial !== 'true' && ["driver", "delivery_company", "admin", "manager", "entery", "warehouse_admin", "warehouse_staff"].includes(userRole)) {
           // We don't set showOnboarding here, we'll do that when the modal becomes visible
         }
       } catch (error) {
       }
     };
-    
+
     initializeOnboarding();
   }, []);
 
@@ -54,17 +54,17 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
       message: translations[language]?.onboarding?.assignOrdersMessage || "Use this option to scan order QR codes and assign them to your route.",
       icon: <Feather name="camera" size={32} color="#FFFFFF" />
     },
-    ["driver", "delivery_company"].includes(userRole) ? 
-    {
-      title: translations[language]?.onboarding?.routesTitle || "Manage Routes",
-      message: translations[language]?.onboarding?.routesMessage || "Create and manage delivery routes to optimize your deliveries.",
-      icon: <MaterialIcons name="route" size={32} color="#FFFFFF" />
-    } : 
-    {
-      title: translations[language]?.onboarding?.createOrdersTitle || "Create Orders",
-      message: translations[language]?.onboarding?.createOrdersMessage || "Create new orders quickly and efficiently.",
-      icon: <Feather name="plus" size={32} color="#FFFFFF" />
-    }
+    ["driver", "delivery_company"].includes(userRole) ?
+      {
+        title: translations[language]?.onboarding?.routesTitle || "Manage Routes",
+        message: translations[language]?.onboarding?.routesMessage || "Create and manage delivery routes to optimize your deliveries.",
+        icon: <MaterialIcons name="route" size={32} color="#FFFFFF" />
+      } :
+      {
+        title: translations[language]?.onboarding?.createOrdersTitle || "Create Orders",
+        message: translations[language]?.onboarding?.createOrdersMessage || "Create new orders quickly and efficiently.",
+        icon: <Feather name="plus" size={32} color="#FFFFFF" />
+      }
   ];
 
   // Reset onboarding state when modal is closed
@@ -80,19 +80,19 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
   // Check if this is the first time opening the modal
   useEffect(() => {
     const checkFirstTimeUser = async () => {
-      
+
       // Use userId instead of id
       const userId = user.id || user.userId;
-      
+
       try {
         const hasSeenTutorial = await getUserData(userId, 'has_seen_add_options_tutorial');
-        
+
         // Fix: explicitly check if hasSeenTutorial is null, undefined, or not equal to 'true'
-        const shouldShowOnboarding = hasSeenTutorial !== 'true' && ["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole);
-        
+        const shouldShowOnboarding = hasSeenTutorial !== 'true' && ["driver", "delivery_company", "admin", "manager", "entery", "warehouse_admin", "warehouse_staff"].includes(userRole);
+
         if (shouldShowOnboarding) {
           setShowOnboarding(true);
-          
+
           // Use a short timeout to ensure state is updated before animation
           setTimeout(() => {
             animateOnboarding();
@@ -101,17 +101,17 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
       } catch (error) {
       }
     };
-    
+
     if (visible) {
       checkFirstTimeUser();
     }
   }, [visible, user, userRole]);
-  
+
   const animateOnboarding = () => {
     // Make sure we're starting from the correct values
     fadeAnim.setValue(0);
     scaleAnim.setValue(0.9);
-    
+
     // Use a short timeout to ensure the component is ready
     setTimeout(() => {
       Animated.parallel([
@@ -130,26 +130,26 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
       });
     }, 50);
   };
-  
+
   const handleNextStep = () => {
     if (currentStep < 1) {
       // Reset animations
       fadeAnim.setValue(0);
       scaleAnim.setValue(0.9);
-      
+
       // Move to next step
       setCurrentStep(currentStep + 1);
-      
+
       // Start animations again
       animateOnboarding();
     } else {
       handleFinishOnboarding();
     }
   };
-  
+
   const handleFinishOnboarding = async () => {
     if (!user) return;
-    
+
     // Fix: use userId instead of id
     const userId = user.id || user.userId;
     if (userId) {
@@ -157,10 +157,10 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
     }
     setShowOnboarding(false);
   };
-  
+
   const handleSkipTutorial = async () => {
     if (!user) return;
-    
+
     // Fix: use userId instead of id
     const userId = user.id || user.userId;
     if (userId) {
@@ -181,16 +181,16 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
       animationType="fade"
       onRequestClose={onClose}
     >
-      <BlurView 
-        intensity={isDark ? 60 : 80} 
+      <BlurView
+        intensity={isDark ? 60 : 80}
         tint={isDark ? "dark" : "light"}
         style={styles.modalOverlay}
       >
         {showOnboarding ? (
-          <Animated.View 
+          <Animated.View
             style={[
               styles.onboardingContainer,
-              { 
+              {
                 backgroundColor: colors.card,
                 opacity: fadeAnim,
                 transform: [{ scale: scaleAnim }]
@@ -207,31 +207,31 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                 {onboardingContent[currentStep].icon}
               </LinearGradient>
             </View>
-            
+
             <Text style={[styles.onboardingTitle, { color: colors.text }]}>
               {onboardingContent[currentStep].title}
             </Text>
-            
+
             <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
               {onboardingContent[currentStep].message}
             </Text>
-            
+
             <View style={styles.onboardingStepIndicator}>
               {onboardingContent.map((_, index) => (
-                <View 
+                <View
                   key={index}
                   style={[
                     styles.stepDot,
-                    index === currentStep ? 
-                      { backgroundColor: colors.primary, width: 10, height: 10 } : 
+                    index === currentStep ?
+                      { backgroundColor: colors.primary, width: 10, height: 10 } :
                       { backgroundColor: colors.border }
-                  ]} 
+                  ]}
                 />
               ))}
             </View>
-            
+
             <View style={styles.onboardingButtonsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.skipButton}
                 onPress={handleSkipTutorial}
               >
@@ -239,14 +239,14 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                   {translations[language]?.common?.skip}
                 </Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.nextButton, { backgroundColor: colors.primary }]}
                 onPress={handleNextStep}
               >
                 <Text style={styles.nextButtonText}>
-                  {currentStep < onboardingContent.length - 1 ? 
-                    (translations[language]?.common?.next) : 
+                  {currentStep < onboardingContent.length - 1 ?
+                    (translations[language]?.common?.next) :
                     (translations[language]?.common?.gotIt)}
                 </Text>
               </TouchableOpacity>
@@ -272,7 +272,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
             </View>
 
             <View style={styles.optionsContainer}>
-              {["driver", "delivery_company","admin","manager","entery","warehouse_admin","warehouse_staff"].includes(userRole) ? (
+              {["driver", "delivery_company", "admin", "manager", "entery", "warehouse_admin", "warehouse_staff"].includes(userRole) ? (
                 <>
                   <TouchableOpacity
                     style={[
@@ -297,7 +297,7 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                     </Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
+                 {!["driver","delivery_company"].includes(userRole) && <TouchableOpacity
                     style={[
                       styles.optionButton,
                       { backgroundColor: colors.surface }
@@ -320,11 +320,37 @@ export default function AddOptionsModal({ visible, onClose, userRole }) {
                       styles.optionText,
                       { color: colors.text }
                     ]}>
-                      {["driver", "delivery_company"].includes(userRole) 
+                      {["driver", "delivery_company"].includes(userRole)
                         ? (translations[language]?.routes?.title || "Routes")
                         : (translations[language]?.common?.createNew || "Create New")}
                     </Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity>}
+
+                  {/* Ready Orders for Drivers */}
+                  {["driver", "delivery_company"].includes(userRole) && (
+                    <TouchableOpacity
+                      style={[
+                        styles.optionButton,
+                        { backgroundColor: colors.surface }
+                      ]}
+                      onPress={() => handleOptionPress("/(orders)/readyOrders")}
+                    >
+                      <LinearGradient
+                        colors={[colors.gradientStart, colors.gradientEnd]}
+                        style={styles.optionGradient}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Feather name="package" size={24} color="#FFFFFF" />
+                      </LinearGradient>
+                      <Text style={[
+                        styles.optionText,
+                        { color: colors.text }
+                      ]}>
+                        {translations[language]?.common?.readyOrders || "Ready Orders"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : (
                 <TouchableOpacity

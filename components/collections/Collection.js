@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert,Pressable, ActivityIndicator, Share, Clipboard } from 'react-native';
+import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert,Pressable, ActivityIndicator, Clipboard } from 'react-native';
 import Feather from '@expo/vector-icons/Feather';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
@@ -17,7 +17,9 @@ import { Colors } from '../../constants/Colors';
 import React from 'react';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import tayarLogo from '../../assets/images/tayar_logo_dark.png';
+import * as FileSystem from 'expo-file-system';
+import * as LegacyFileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
 import axios from 'axios';
 
 function Collection({ type, collection }) {
@@ -30,7 +32,11 @@ function Collection({ type, collection }) {
     const [currentPhone, setCurrentPhone] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isPdfLoading, setIsPdfLoading] = useState(false);
+    const [isPdfDownloading, setIsPdfDownloading] = useState(false);
+    const [lastPdfUri, setLastPdfUri] = useState(null);
     const isRTL = language === 'ar' || language === 'he';
+
+    
 
     // Handle phone call
     const handlePhoneCall = (phoneNumber) => {
@@ -53,34 +59,6 @@ function Collection({ type, collection }) {
             phoneNumber.substring(1) : phoneNumber;
         Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
     };
-
-    // const handleCollectNotification = async (type, action) => {
-    //     setIsLoading(true);
-    //     try {
-    //         // const token = await getToken("userToken");
-    //         const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections/collect/request?requestType=${type}`, {
-    //             method: "POST",
-    //             headers: {
-    //                 'Accept': 'application/json',
-    //                 'Content-Type': 'application/json',
-    //                 'Accept-Language': language,
-    //                 // "Cookie": token ? `token=${token}` : ""
-    //             },
-    //             credentials: "include",
-    //             body: JSON.stringify({
-    //                 action,
-    //                 collection_id: collection.collection_id
-    //             })
-    //         });
-    //         const data = await res.json();
-    //         Alert.alert(data.message);
-    //     } catch (err) {
-    //         Alert.alert(err.message);
-    //     } finally {
-    //         setIsLoading(false);
-    //         setShowModal(false);
-    //     }
-    // };
 
     const renderCollectionUser = () => {
         if ((type === "business_money" || type === "business_returned") && user.role !== "business") {
@@ -437,8 +415,59 @@ function Collection({ type, collection }) {
         `;
     };
  
-    // Generate PDF using expo-print
-    const generatePDF = async () => {
+    const openPdf = async (uri) => {
+        try {
+            if (Platform.OS === 'android') {
+                const contentUri = await LegacyFileSystem.getContentUriAsync(uri);
+                await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+                    data: contentUri,
+                    flags: 1,
+                    type: 'application/pdf'
+                });
+            } else {
+                await Print.printAsync({ uri });
+            }
+        } catch (e) {
+            Alert.alert(
+                translations[language]?.collections?.collection?.openPdfError || 'Unable to open PDF',
+                translations[language]?.collections?.collection?.openPdfErrorMessage || 'Install a PDF viewer app and try again.'
+            );
+        }
+    };
+
+    const savePdfToDevice = async (uri, filename) => {
+        try {
+            if (Platform.OS === 'android') {
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permissions.granted) {
+                    Alert.alert(
+                        translations[language]?.collections?.collection?.storagePermissionRequired || 'Permission required',
+                        translations[language]?.collections?.collection?.storagePermissionMessage || 'Please grant storage access to save the file.'
+                    );
+                    return;
+                }
+                const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                    permissions.directoryUri,
+                    filename,
+                    'application/pdf'
+                );
+                await FileSystem.copyAsync({ from: uri, to: fileUri });
+                Alert.alert(
+                    translations[language]?.collections?.collection?.saved || 'Saved',
+                    translations[language]?.collections?.collection?.savedMessage || 'PDF saved successfully.'
+                );
+            } else {
+                await Sharing.shareAsync(uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
+            }
+        } catch (e) {
+            Alert.alert(
+                translations[language]?.collections?.collection?.saveError || 'Save failed',
+                e.message || 'Unable to save PDF.'
+            );
+        }
+    };
+
+    const generatePdfFile = async () => {
         try {
             setIsPdfLoading(true);
             
@@ -471,7 +500,7 @@ function Collection({ type, collection }) {
             }
             
             // Generate HTML content
-                const htmlContent = generateCollectionHTML(collection, ordersData, type, language);
+            const htmlContent = generateCollectionHTML(collection, ordersData, type, language);
             
             // Generate PDF from HTML
             const { uri } = await Print.printToFileAsync({
@@ -485,30 +514,26 @@ function Collection({ type, collection }) {
                     right: 20,
                     bottom: 20,
                 },
-                fileName: `Tayar_Collection_${collection.collection_id}_${new Date().toISOString().split('T')[0]}.pdf`
+                fileName: `JSk_Collection_${collection.collection_id}_${new Date().toISOString().split('T')[0]}.pdf`
             });
-            
-            // Share the PDF file
-            if (await Sharing.isAvailableAsync()) {
-                await Sharing.shareAsync(uri, {
-                    mimeType: 'application/pdf',
-                    dialogTitle: `Collection #${collection.collection_id} PDF`,
-                    UTI: 'com.adobe.pdf'
-                });
-            } else {
-                Alert.alert(
-                    translations[language]?.collections?.collection?.sharingNotAvailable || "Sharing Not Available",
-                    translations[language]?.collections?.collection?.sharingNotAvailableMessage || "Sharing is not available on this device"
-                );
-            }
+            setLastPdfUri(uri);
+            return uri;
         } catch (error) {
             console.error("Error generating PDF:", error);
             Alert.alert(
                 translations[language]?.collections?.collection?.pdfError || "PDF Generation Error",
                 translations[language]?.collections?.collection?.pdfErrorMessage || "There was an error generating the PDF"
             );
+            return null;
         } finally {
             setIsPdfLoading(false);
+        }
+    };
+
+    const generatePDF = async () => {
+        const uri = await generatePdfFile();
+        if (uri) {
+            await openPdf(uri);
         }
     };
     
@@ -1046,7 +1071,6 @@ function Collection({ type, collection }) {
                     )}
                 </TouchableOpacity>
                 
-
                 
                 {/* WhatsApp Options Modal */}
                 <ModalPresentation

@@ -41,7 +41,7 @@ export default function CameraScanner() {
   const [showBranchField, setShowBranchField] = useState(false);
   const [showStatusReason, setShowStatusReason] = useState(false);
   const [selectedReason, setSelectedReason] = useState(null);
-  
+
   const [selectedValue, setSelectedValue] = useState({
     toBranch: null,
     toDriver: null,
@@ -51,7 +51,7 @@ export default function CameraScanner() {
   const [scannedBarcodes, setScannedBarcodes] = useState(new Set());
   const [lastScanTime, setLastScanTime] = useState(0);
   const SCAN_COOLDOWN = 2000; // 2 seconds between scans
-  
+
   // Use refs for immediate tracking to prevent race conditions
   const processingRef = useRef(false);
   const lastScanTimeRef = useRef(0);
@@ -61,38 +61,38 @@ export default function CameraScanner() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
   const scanLineAnim = useRef(new Animated.Value(0)).current;
-  
+
   // Helper function to normalize barcode data
   const normalizeBarcode = (data) => {
     return String(data).trim().toLowerCase();
   };
-  
+
   // Helper function to check if barcode was already scanned
   const isBarcodeAlreadyScanned = (barcode) => {
     const normalized = normalizeBarcode(barcode);
     const inState = scannedBarcodes.has(normalized);
     const inRef = scannedBarcodesRef.current.has(normalized);
-    
+
     return inState || inRef;
   };
-  
+
   // Helper function to check if order is already in scanned items
   const isOrderAlreadyScanned = (orderDetails) => {
     if (!orderDetails) return false;
-    
+
     const isDuplicate = scannedItems.some(item => {
       // Only check fields that actually exist and have values
       const orderIdMatch = orderDetails.order_id && item.order_id && item.order_id === orderDetails.order_id;
       const referenceIdMatch = orderDetails.reference_id && item.reference_id && item.reference_id === orderDetails.reference_id;
       const idMatch = orderDetails.id && item.id && item.id === orderDetails.id;
       const qrIdMatch = orderDetails.qr_id && item.qr_id && item.qr_id === orderDetails.qr_id;
-      
+
       return orderIdMatch || referenceIdMatch || idMatch || qrIdMatch;
     });
-    
+
     return isDuplicate;
   };
-  
+
   // Helper function to add barcode to scanned list
   const addScannedBarcode = (barcode) => {
     const normalized = normalizeBarcode(barcode);
@@ -100,7 +100,7 @@ export default function CameraScanner() {
     scannedBarcodesRef.current.add(normalized);
     setScannedBarcodes(prev => new Set([...prev, normalized]));
   };
-  
+
   // Helper function to clear all scan history (for debugging)
   const clearAllScanHistory = () => {
     setScannedItems([]);
@@ -113,28 +113,28 @@ export default function CameraScanner() {
     setScanned(false);
     setError(null);
   };
-  
+
   // Helper function to validate single order response
   const validateSingleOrderResponse = (orderDetails, scannedBarcode) => {
-    
+
     // Ensure we got exactly one order
     if (!orderDetails) {
-      return { isValid: false, error: 'Order not found' };
+      return { isValid: false, error: 'طرد غير صحيح' };
     }
-    
+
     // If orderDetails is an array, reject it
     if (Array.isArray(orderDetails)) {
       return { isValid: false, error: `Multiple orders found (${orderDetails.length}) for this barcode. Please scan individual order barcodes.` };
     }
-    
+
     // Ensure the order has required fields
     if (!orderDetails.order_id && !orderDetails.reference_id && !orderDetails.id) {
       return { isValid: false, error: 'Invalid order data received' };
     }
-    
+
     return { isValid: true, error: null };
   };
-  
+
   // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
@@ -143,7 +143,7 @@ export default function CameraScanner() {
       }
     };
   }, []);
-  
+
   // Define status options
   const suspendReasons = useMemo(() => [
     { value: 'closed', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.closed || 'Closed' },
@@ -167,7 +167,7 @@ export default function CameraScanner() {
     { value: 'receive_request_issue', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.receive_request_issue || 'Receive Request Issue' },
     { value: 'other', label: translations[language]?.tabs?.orders?.order?.states?.suspendReasons?.other || 'Other' }
   ], [language]);
-  
+
   // Define status options - adding name property for compatibility with PickerModal
   const statusOptions = useMemo(() => [
     { label: translations[language]?.tabs?.orders?.order?.states?.waiting || 'Waiting', value: 'waiting', name: translations[language]?.tabs?.orders?.order?.states?.waiting || 'Waiting' },
@@ -183,7 +183,7 @@ export default function CameraScanner() {
     { label: translations[language]?.tabs?.orders?.order?.states?.delivered || 'Delivered', value: 'delivered', name: translations[language]?.tabs?.orders?.order?.states?.delivered || 'Delivered' },
     { label: translations[language]?.tabs?.orders?.order?.states?.received || 'Received', value: 'received', name: translations[language]?.tabs?.orders?.order?.states?.received || 'Received' }
   ], [language]);
-  
+
   // Add name property to suspendReasons for compatibility with PickerModal
   const suspendReasonsWithName = useMemo(() => {
     return suspendReasons.map(reason => ({
@@ -191,7 +191,7 @@ export default function CameraScanner() {
       name: reason.label
     }));
   }, [suspendReasons]);
-  
+
   // Start animations
   useEffect(() => {
     // Check if user is admin, manager, entry, warehouse_admin, or warehouse_staff
@@ -200,21 +200,21 @@ export default function CameraScanner() {
     if (user && adminRoles.includes(user.role) && user.role !== 'driver' && user.role !== 'delivery_company') {
       setShowStatusSelection(true);
     }
-    
+
     // Fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    
+
     // Slide up animation
     Animated.timing(slideAnim, {
       toValue: 0,
       duration: 300,
       useNativeDriver: true,
     }).start();
-    
+
     // Scan line animation
     Animated.loop(
       Animated.sequence([
@@ -258,11 +258,11 @@ export default function CameraScanner() {
   const playSound = async (type) => {
     try {
       // First attempt to play sound
-      const soundFile = type === 'success' 
-        ? require('../../assets/sound/success.mp3') 
+      const soundFile = type === 'success'
+        ? require('../../assets/sound/success.mp3')
         : require('../../assets/sound/failure.mp3');
-      
-      const { sound } = await Audio.Sound.createAsync(soundFile, 
+
+      const { sound } = await Audio.Sound.createAsync(soundFile,
         { shouldPlay: true },
         (status) => {
           if (status.didJustFinish) {
@@ -270,7 +270,7 @@ export default function CameraScanner() {
           }
         }
       );
-      
+
       // If sound creation was successful but we can't play it, use vibration as fallback
       sound.playAsync().catch(() => {
         vibrate(type);
@@ -282,123 +282,13 @@ export default function CameraScanner() {
   };
 
   const playSuccessSound = async () => {
-    vibrate('success'); // Just use vibration directly to avoid audio issues
+    await playSound('success');
   };
 
   const playErrorSound = async () => {
-    vibrate('error'); // Just use vibration directly to avoid audio issues
+    await playSound('error');
   };
 
-  const createDispatchedCollection = async () => {
-    // Create a timeout promise that rejects after 30 seconds
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timed out')), 30000);
-    });
-
-    try {
-      setFormSpinner({ status: true });
-      
-      const ids = scannedItems || [];
-      if (ids.length === 0) {
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language].camera.noItemsScanned
-        );
-        setFormSpinner({ status: false });
-        return;
-      }
-      
-      // Check if driver selection is required but no driver is selected
-      if (showDriverSelection && !selectedValue.fromDriver) {
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language]?.camera?.driverSelectionRequired || "Please select a driver"
-        );
-        setFormSpinner({ status: false });
-        return;
-      }
-
-      // Format orders array based on collection type
-      const formattedOrders = ids.map(id => {
-        const orderId = typeof id === 'object' ? id.order_id : id;
-        return { order_id: orderId };
-      });
-      
-      // Create the fetch promise
-      const fetchPromise = fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          'Accept-Language': language
-        },
-        body: JSON.stringify({
-          type_id: 3,
-          orders: formattedOrders,
-          driver_id: showDriverSelection && selectedValue.fromDriver ? selectedValue.fromDriver.user_id : user?.userId,
-          to_branch_id: selectedValue.toBranch?.branch_id ? selectedValue.toBranch?.branch_id : null,
-          to_driver_id: selectedValue.toDriver?.user_id ? selectedValue.toDriver?.user_id : null
-        })
-      });
-      
-      // Race between the fetch and the timeout
-      const res = await Promise.race([fetchPromise, timeoutPromise]);
-      
-      // Try to parse the response, with error handling
-      let responseData;
-      try {
-        responseData = await res.json();
-      } catch (parseError) {
-        setFormSpinner({ status: false });
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language].errors.failedToParse
-        );
-        return;
-      }
-      
-      if (!res.ok) {
-        setFormSpinner({ status: false });
-        Alert.alert(
-          translations[language].errors.error,
-          responseData.message || 'An unknown error occurred'
-        );
-        return;
-      } 
-      
-      // Success case
-      setSuccess(true);
-      setFormSpinner({ status: false });
-      
-      // Small delay before navigation to ensure UI updates
-      setTimeout(() => {
-        router.back();
-      }, 100);
-      
-    } catch (err) {
-      setFormSpinner({ status: false });
-      
-      // Show appropriate error message based on error type
-      if (err.message === 'Request timed out') {
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language].errors.requestTimedOut
-        );
-      } else if (err.name === 'AbortError') {
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language].errors.requestAborted
-        );
-      } else {
-        Alert.alert(
-          translations[language].errors.error,
-          translations[language].errors.unexpectedError
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchBranches = async () => {
     setLoading(true)
@@ -461,13 +351,13 @@ export default function CameraScanner() {
   };
 
   const clearSelection = (fieldType) => {
-    setSelectedValue(prev => ({...prev, [fieldType]: null}));
+    setSelectedValue(prev => ({ ...prev, [fieldType]: null }));
   };
 
   const fetchOrderDetails = async (orderId) => {
     try {
       setLoading(true);
-      
+
       // const token = await getToken("userToken");
       const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}/basic_info?language_code=${language}`, {
         method: "GET",
@@ -478,7 +368,7 @@ export default function CameraScanner() {
           // "Cookie": token ? `token=${token}` : ""
         }
       });
-            
+
       // Check for non-JSON responses first
       const contentType = res.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -486,7 +376,7 @@ export default function CameraScanner() {
         setTimeout(() => setError(null), 2000);
         return null;
       }
-      
+
       let data;
       try {
         data = await res.json();
@@ -495,13 +385,13 @@ export default function CameraScanner() {
         setTimeout(() => setError(null), 2000);
         return null;
       }
-      
+
       if (!res.ok) {
         setError(data.message || translations[language].camera.orderNotFoundError);
         setTimeout(() => setError(null), 2000);
         return null;
       }
-      
+
       return data.data;
     } catch (err) {
       setError(translations[language].camera.orderLookupError);
@@ -516,7 +406,7 @@ export default function CameraScanner() {
     if (!manualOrderId.trim()) return;
 
     const stringifiedItem = String(manualOrderId).trim();
-    
+
     // Check if this exact input was already processed
     if (isBarcodeAlreadyScanned(stringifiedItem)) {
       setError(translations[language].camera.scanDuplicateTextError || "This barcode has already been scanned");
@@ -527,11 +417,11 @@ export default function CameraScanner() {
 
     // Set processing flag to show loading state
     setProcessingBarcode(true);
-    
+
     try {
       // Fetch order details
       const orderDetails = await fetchOrderDetails(stringifiedItem);
-      
+
       // Validate single order response
       const validation = validateSingleOrderResponse(orderDetails, stringifiedItem);
       if (!validation.isValid) {
@@ -540,7 +430,7 @@ export default function CameraScanner() {
         setTimeout(() => setError(null), 5000);
         return;
       }
-      
+
       // Check if this order is already scanned
       if (isOrderAlreadyScanned(orderDetails)) {
         setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
@@ -548,7 +438,7 @@ export default function CameraScanner() {
         setTimeout(() => setError(null), 5000);
         return;
       }
-      
+
       // Add single order to scanned items (last inserted first)
       setScannedItems(prev => {
         const newItems = [orderDetails, ...prev];
@@ -557,7 +447,7 @@ export default function CameraScanner() {
       addScannedBarcode(stringifiedItem);
       setManualOrderId(""); // Clear input after adding
       playSuccessSound();
-      
+
     } catch (error) {
       setError(translations[language].camera.orderLookupError || "Error looking up order");
       playErrorSound();
@@ -567,14 +457,14 @@ export default function CameraScanner() {
       setProcessingBarcode(false);
     }
   };
-  
+
   // Handle status change
   const handleStatusChange = (status) => {
     setSelectedStatus(status);
-    
+
     // Check if the selected status requires a driver or branch
     const statusOption = statusOptions.find(option => option.value === status);
-    
+
     if (statusOption) {
       // Handle reason requirement
       if (statusOption.requiresReason) {
@@ -583,24 +473,30 @@ export default function CameraScanner() {
         setShowStatusReason(false);
         setSelectedReason(null);
       }
-      
+
       // Handle driver field visibility
       const shouldShowDriver = status === 'on_the_way' || status === 'dispatched_to_branch';
       setShowDriverField(shouldShowDriver);
-      
+
       // Handle branch field visibility
       const shouldShowBranch = status === 'dispatched_to_branch' || status === 'in_branch';
       setShowBranchField(shouldShowBranch);
     }
   };
-  
+
   // Update order status
   const updateOrderStatus = async () => {
-    // For driver or delivery_company roles, use the selected status or default to with_driver
+    // For driver or delivery_company roles, use the selected status
     if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
-      // Use selectedStatus if available, otherwise default to with_driver
-      const driverStatus = selectedStatus || 'with_driver';
-      
+      // Validate status selection
+      if (!selectedStatus) {
+        Alert.alert(
+          translations[language].errors.error,
+          translations[language].errors.pleaseSelectStatus
+        );
+        return;
+      }
+
       // Check if we have any orders to update
       if (scannedItems.length === 0) {
         Alert.alert(
@@ -609,53 +505,21 @@ export default function CameraScanner() {
         );
         return;
       }
-      
+
       setFormSpinner({ status: true });
-      
-      // Process orders with driver assignment
+
+      // Update order status - backend will handle driver assignment
       try {
-        // First create a collection to assign the driver_id
-        // Format orders array
-        const formattedOrders = scannedItems.map(item => {
-          const orderId = typeof item === 'object' ? item.order_id : item;
-          return { order_id: orderId };
-        });
-        
-        // Prepare the collection request body
-        const collectionRequestBody = {
-          type_id: 3, // For dispatched collection
-          orders: formattedOrders,
-          driver_id: user.userId
-        };
-        
-        // Send the collection request to assign driver_id
-        const collectionRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            'Accept-Language': language
-          },
-          body: JSON.stringify(collectionRequestBody)
-        });
-        
-        const collectionData = await collectionRes.json();
-        
-        if (!collectionRes.ok) {
-          throw new Error(collectionData.message || 'Failed to assign driver');
-        }
-        
-        // After successful driver assignment, update the status
         const updates = scannedItems.map(item => {
           const orderId = typeof item === 'object' ? item.order_id : item;
-          
+
           return {
             order_id: orderId,
-            status: driverStatus,
+            status: selectedStatus,
             note_content: note
           };
         });
-        
+
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
           method: "PUT",
           headers: {
@@ -666,18 +530,26 @@ export default function CameraScanner() {
           credentials: "include",
           body: JSON.stringify({ updates })
         });
-        
+
         const data = await response.json();
-        
-        if (data.error) {
-          throw new Error(data.details || 'Failed to update status');
+
+        // Check for HTTP errors
+        if (!response.ok) {
+          throw new Error(data.error || data.details || 'Failed to update status');
         }
-        
+
+        // Check for failed orders in the response
+        if (data.failure_details && data.failure_details.length > 0) {
+          // Show the first error message
+          const firstError = data.failure_details[0];
+          throw new Error(firstError.reason || 'Failed to update status');
+        }
+
         setSuccess(true);
         setTimeout(() => {
           router.back();
         }, 100);
-        
+
         return; // Exit early since we've handled the special case
       } catch (error) {
         setFormSpinner({ status: false });
@@ -688,7 +560,7 @@ export default function CameraScanner() {
         return;
       }
     }
-    
+
     // Regular flow for other user roles
     if (!selectedStatus) {
       Alert.alert(
@@ -697,7 +569,7 @@ export default function CameraScanner() {
       );
       return;
     }
-    
+
     // Check if we need a reason but don't have one
     const statusOption = statusOptions.find(option => option.value === selectedStatus);
     if (statusOption?.requiresReason && !selectedReason) {
@@ -707,7 +579,7 @@ export default function CameraScanner() {
       );
       return;
     }
-    
+
     // Validate driver selection for on_the_way status
     if (selectedStatus === 'on_the_way' && !selectedValue.fromDriver) {
       Alert.alert(
@@ -716,7 +588,7 @@ export default function CameraScanner() {
       );
       return;
     }
-    
+
     // Validate branch selection for dispatched_to_branch or in_branch status
     if ((selectedStatus === 'dispatched_to_branch' || selectedStatus === 'in_branch') && !selectedValue.toBranch) {
       Alert.alert(
@@ -725,7 +597,7 @@ export default function CameraScanner() {
       );
       return;
     }
-    
+
     // Check if we have any orders to update
     if (scannedItems.length === 0) {
       Alert.alert(
@@ -734,9 +606,9 @@ export default function CameraScanner() {
       );
       return;
     }
-    
+
     setFormSpinner({ status: true });
-    
+
     try {
       // For on_the_way or dispatched_to_branch, use collection endpoint
       if (selectedStatus === 'on_the_way' || selectedStatus === 'dispatched_to_branch') {
@@ -745,24 +617,24 @@ export default function CameraScanner() {
           const orderId = typeof item === 'object' ? item.order_id : item;
           return { order_id: orderId };
         });
-        
+
         // Prepare the request body
         const requestBody = {
           type_id: 3, // For dispatched collection
           orders: formattedOrders,
           driver_id: selectedValue.fromDriver ? selectedValue.fromDriver.user_id : user?.userId
         };
-        
+
         // Add branch if needed
         if (selectedStatus === 'dispatched_to_branch' && selectedValue.toBranch) {
           requestBody.to_branch_id = selectedValue.toBranch.branch_id;
         }
-        
+
         // Add driver if needed
         if (selectedValue.toDriver) {
           requestBody.to_driver_id = selectedValue.toDriver.user_id;
         }
-        
+
         // Send the request
         const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/collections`, {
           method: "POST",
@@ -773,13 +645,13 @@ export default function CameraScanner() {
           },
           body: JSON.stringify(requestBody)
         });
-        
+
         const responseData = await res.json();
-        
+
         if (!res.ok) {
           throw new Error(responseData.message || 'Failed to update status');
         }
-        
+
         setSuccess(true);
         setTimeout(() => {
           router.back();
@@ -788,18 +660,18 @@ export default function CameraScanner() {
         // For other statuses, use the orders/status endpoint
         const updates = scannedItems.map(item => {
           const orderId = typeof item === 'object' ? item.order_id : item;
-          
+
           return {
             order_id: orderId,
             status: selectedStatus,
             note_content: note,
             ...(selectedReason && { reason: selectedReason }),
-            ...(selectedStatus === 'in_branch' && selectedValue.toBranch && { 
-              current_branch: selectedValue.toBranch.branch_id 
+            ...(selectedStatus === 'in_branch' && selectedValue.toBranch && {
+              current_branch: selectedValue.toBranch.branch_id
             })
           };
         });
-        
+
         const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/status`, {
           method: "PUT",
           headers: {
@@ -810,13 +682,13 @@ export default function CameraScanner() {
           credentials: "include",
           body: JSON.stringify({ updates })
         });
-        
+
         const data = await response.json();
-        
+
         if (data.error) {
           throw new Error(data.details || 'Failed to update status');
         }
-        
+
         setSuccess(true);
         setTimeout(() => {
           router.back();
@@ -834,21 +706,21 @@ export default function CameraScanner() {
 
   const handleBarCodeScanned = async ({ type, data }) => {
     const currentTime = Date.now();
-    
+
     // Use refs for immediate checking to prevent race conditions
     if (processingRef.current || (currentTime - lastScanTimeRef.current) < SCAN_COOLDOWN) {
       return;
     }
-    
+
     // Set processing flags immediately in both state and ref
     processingRef.current = true;
     lastScanTimeRef.current = currentTime;
     setProcessingBarcode(true);
     setLastScanTime(currentTime);
-    
+
     try {
       let itemToAdd = data;
-      
+
       if (type === 'qr') {
         try {
           // Try parsing as JSON first
@@ -862,7 +734,7 @@ export default function CameraScanner() {
 
       // Convert to string for comparison
       const stringifiedItem = String(itemToAdd).trim();
-      
+
       // Check if this exact barcode was already scanned
       if (isBarcodeAlreadyScanned(stringifiedItem)) {
         setError(translations[language].camera.scanDuplicateTextError || "This barcode has already been scanned");
@@ -873,10 +745,10 @@ export default function CameraScanner() {
 
       // Set scanned to true to disable camera and show rescan button
       setScanned(true);
-      
+
       // Fetch order details with strict validation
       const orderDetails = await fetchOrderDetails(stringifiedItem);
-      
+
       // Validate single order response
       const validation = validateSingleOrderResponse(orderDetails, stringifiedItem);
       if (!validation.isValid) {
@@ -886,7 +758,7 @@ export default function CameraScanner() {
         setScanned(false);
         return;
       }
-      
+
       // Check if this order is already in our scanned items
       if (isOrderAlreadyScanned(orderDetails)) {
         setError(translations[language].camera.scanDuplicateTextError || "This order has already been scanned");
@@ -895,17 +767,17 @@ export default function CameraScanner() {
         setScanned(false);
         return;
       }
-      
+
       // Success: Add exactly one order to scanned items (last inserted first)
-      
+
       setScannedItems(prev => {
         const newItems = [orderDetails, ...prev];
         return newItems;
       });
-      
+
       addScannedBarcode(stringifiedItem);
       playSuccessSound();
-      
+
     } catch (err) {
       setError(translations[language].camera.scanInvalidTextError || "Invalid barcode format");
       playErrorSound();
@@ -940,7 +812,7 @@ export default function CameraScanner() {
           <Text style={[styles.permissionText, { color: colors.text }]}>
             {translations[language].camera.permission.request}
           </Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.permissionButton, { backgroundColor: colors.primary }]}
             onPress={requestPermission}
           >
@@ -977,29 +849,29 @@ export default function CameraScanner() {
           }}
         >
           <View style={styles.overlay}>
-             {/* Back button */}
-              <TouchableOpacity 
-                style={[
-                  styles.backButtonContainer,
-                  isRTL ? { left: 20 } : { left: 20 }
-                ]}
-                onPress={() => router.back()}
-              >
-                <View style={[styles.backButtonCircle, {
-                  shadowColor: '#000',
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 4,
-                  elevation: 4,
-                }]}>
-                  <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
-                </View>
-              </TouchableOpacity>
-            
+            {/* Back button */}
+            <TouchableOpacity
+              style={[
+                styles.backButtonContainer,
+                isRTL ? { left: 20 } : { left: 20 }
+              ]}
+              onPress={() => router.back()}
+            >
+              <View style={[styles.backButtonCircle, {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 4,
+              }]}>
+                <MaterialCommunityIcons name="window-close" size={24} color="#ffffff" />
+              </View>
+            </TouchableOpacity>
+
             {/* Scanner focus area - using a more neutral design */}
             <View style={[
               styles.scannerFocusArea,
-              { 
+              {
                 borderColor: colors.primary,
                 shadowColor: colors.primary,
                 shadowOffset: { width: 0, height: 0 },
@@ -1008,7 +880,7 @@ export default function CameraScanner() {
                 elevation: 5,
               }
             ]}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.scanLine,
                   {
@@ -1023,15 +895,15 @@ export default function CameraScanner() {
                       }
                     ]
                   }
-                ]} 
+                ]}
               />
             </View>
-          
+
             {/* Instructions text */}
             <View style={styles.instructionsContainer}>
-              <Animated.Text 
+              <Animated.Text
                 style={[
-                  styles.scanText, 
+                  styles.scanText,
                   {
                     backgroundColor: 'rgba(0, 0, 0, 0.7)',
                     borderRadius: 30,
@@ -1046,11 +918,11 @@ export default function CameraScanner() {
               >
                 {!scanned && translations[language].camera.scanText}
               </Animated.Text>
-              
+
               {error && (
-                <Animated.View 
+                <Animated.View
                   style={[
-                    styles.errorBanner, 
+                    styles.errorBanner,
                     {
                       backgroundColor: 'rgba(239, 68, 68, 0.9)',
                       flexDirection: 'row',
@@ -1075,16 +947,16 @@ export default function CameraScanner() {
                   </Text>
                 </Animated.View>
               )}
-              
+
               {(scanned && !showCreateDispatchedCollectionModal) && (
-                <Animated.View 
+                <Animated.View
                   style={{
                     opacity: fadeAnim,
                     transform: [{ translateY: slideAnim }]
                   }}
                 >
                   <TouchableOpacity
-                    style={[styles.rescanButton, { 
+                    style={[styles.rescanButton, {
                       backgroundColor: colors.primary,
                       paddingVertical: 14,
                       paddingHorizontal: 24,
@@ -1117,8 +989,8 @@ export default function CameraScanner() {
                       }
                     }}
                   >
-                    <Feather name="refresh-cw" size={18} color={colors.buttonText} style={{marginRight: 10}} />
-                    <Text style={[styles.rescanButtonText, { 
+                    <Feather name="refresh-cw" size={18} color={colors.buttonText} style={{ marginRight: 10 }} />
+                    <Text style={[styles.rescanButtonText, {
                       color: colors.buttonText,
                       fontSize: 16,
                       fontWeight: '600'
@@ -1131,12 +1003,12 @@ export default function CameraScanner() {
             </View>
           </View>
         </CameraView>
-      
+
         {showCreateDispatchedCollectionModal ? (
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.modalContainer, 
-              { 
+              styles.modalContainer,
+              {
                 backgroundColor: colors.card,
                 opacity: fadeAnim,
                 transform: [{ translateY: slideAnim }]
@@ -1145,85 +1017,34 @@ export default function CameraScanner() {
           >
             <View style={[styles.modalHeader, { borderBottomColor: colors.divider }]}>
               <Text style={[styles.modalTitle, { color: colors.text }]}>
-                {user && (user.role === 'driver' || user.role === 'delivery_company') 
+                {user && (user.role === 'driver' || user.role === 'delivery_company')
                   ? (translations[language]?.tabs?.orders?.order?.selectStatus || 'Select Status')
-                  : (selectedStatus 
-                      ? `${translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}: ${statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus}` 
-                      : translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status')}
+                  : (selectedStatus
+                    ? `${translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status'}: ${statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus}`
+                    : translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status')}
               </Text>
-              <TouchableOpacity 
-                style={[styles.backButton, isRTL && { left: 16 }]} 
+              <TouchableOpacity
+                style={[styles.backButton, isRTL && { left: 16 }]}
                 onPress={() => setShowCreateDispatchedCollectionModal(false)}
               >
-                <Feather 
-                  name={isRTL ? "chevron-right" : "chevron-left"} 
-                  size={24} 
-                  color={colors.primary} 
+                <Feather
+                  name={isRTL ? "chevron-right" : "chevron-left"}
+                  size={24}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
             </View>
-            
+
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.modalContent}>
                 {/* Special options for driver or delivery_company roles */}
                 {user && (user.role === 'driver' || user.role === 'delivery_company') ? (
                   <View style={styles.driverOptionsContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.driverOptionButton,
-                        { 
-                          backgroundColor: selectedStatus === 'with_driver' ? colors.primary : colors.inputBg,
-                          borderColor: selectedStatus === 'with_driver' ? colors.primary : colors.inputBorder,
-                        }
-                      ]}
-                      onPress={() => setSelectedStatus('with_driver')}
-                    >
-                      <View style={styles.driverOptionContent}>
-                        <View style={[
-                          styles.driverOptionIconContainer,
-                          { backgroundColor: selectedStatus === 'with_driver' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(67, 97, 238, 0.1)' }
-                        ]}>
-                          <MaterialIcons 
-                            name="person" 
-                            size={24} 
-                            color={selectedStatus === 'with_driver' ? colors.buttonText : colors.primary} 
-                          />
-                        </View>
-                        <View style={styles.driverOptionTextContainer}>
-                          <Text style={[
-                            styles.driverOptionTitle,
-                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.text },
-                            {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign: isRTL ? "left" : "right"
-                                    }
-                                }),
-                            }
-                          ]}>
-                            {translations[language]?.tabs?.orders?.order?.states?.with_driver || 'With Driver'}
-                          </Text>
-                          <Text style={[
-                            styles.driverOptionDescription,
-                            { color: selectedStatus === 'with_driver' ? colors.buttonText : colors.textSecondary },
-                            {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign: isRTL ? "left" : "right"
-                                    }
-                                }),
-                            }
-                          ]}>
-                            {translations[language]?.tabs?.orders?.order?.states?.withDriverDescription || 'Assign orders to yourself'}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
 
                     <TouchableOpacity
                       style={[
                         styles.driverOptionButton,
-                        { 
+                        {
                           backgroundColor: selectedStatus === 'on_the_way' ? colors.primary : colors.inputBg,
                           borderColor: selectedStatus === 'on_the_way' ? colors.primary : colors.inputBorder,
                         }
@@ -1235,10 +1056,10 @@ export default function CameraScanner() {
                           styles.driverOptionIconContainer,
                           { backgroundColor: selectedStatus === 'on_the_way' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(67, 97, 238, 0.1)' }
                         ]}>
-                          <MaterialIcons 
-                            name="local-shipping" 
-                            size={24} 
-                            color={selectedStatus === 'on_the_way' ? colors.buttonText : colors.primary} 
+                          <MaterialIcons
+                            name="local-shipping"
+                            size={24}
+                            color={selectedStatus === 'on_the_way' ? colors.buttonText : colors.primary}
                           />
                         </View>
                         <View style={styles.driverOptionTextContainer}>
@@ -1246,11 +1067,11 @@ export default function CameraScanner() {
                             styles.driverOptionTitle,
                             { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.text },
                             {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign: isRTL ? "left" : "right"
-                                    }
-                                }),
+                              ...Platform.select({
+                                ios: {
+                                  textAlign: isRTL ? "left" : "right"
+                                }
+                              }),
                             }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.on_the_way_assign_driver || 'On The Way'}
@@ -1259,14 +1080,66 @@ export default function CameraScanner() {
                             styles.driverOptionDescription,
                             { color: selectedStatus === 'on_the_way' ? colors.buttonText : colors.textSecondary },
                             {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign: isRTL ? "left" : "right"
-                                    }
-                                }),
+                              ...Platform.select({
+                                ios: {
+                                  textAlign: isRTL ? "left" : "right"
+                                }
+                              }),
                             }
                           ]}>
                             {translations[language]?.tabs?.orders?.order?.states?.onTheWayDescription || 'Orders are out for delivery'}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.driverOptionButton,
+                        {
+                          backgroundColor: selectedStatus === 'received_from_business' ? colors.primary : colors.inputBg,
+                          borderColor: selectedStatus === 'received_from_business' ? colors.primary : colors.inputBorder,
+                        }
+                      ]}
+                      onPress={() => setSelectedStatus('received_from_business')}
+                    >
+                      <View style={styles.driverOptionContent}>
+                        <View style={[
+                          styles.driverOptionIconContainer,
+                          { backgroundColor: selectedStatus === 'received_from_business' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}>
+                          <MaterialIcons
+                            name="person"
+                            size={24}
+                            color={selectedStatus === 'received_from_business' ? colors.buttonText : colors.primary}
+                          />
+                        </View>
+                        <View style={styles.driverOptionTextContainer}>
+                          <Text style={[
+                            styles.driverOptionTitle,
+                            { color: selectedStatus === 'received_from_business' ? colors.buttonText : colors.text },
+                            {
+                              ...Platform.select({
+                                ios: {
+                                  textAlign: isRTL ? "left" : "right"
+                                }
+                              }),
+                            }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.received_from_business || 'Received from Business'}
+                          </Text>
+                          <Text style={[
+                            styles.driverOptionDescription,
+                            { color: selectedStatus === 'received_from_business' ? colors.buttonText : colors.textSecondary },
+                            {
+                              ...Platform.select({
+                                ios: {
+                                  textAlign: isRTL ? "left" : "right"
+                                }
+                              }),
+                            }
+                          ]}>
+                            {translations[language]?.tabs?.orders?.order?.states?.withDriverDescription || 'Assign orders to yourself'}
                           </Text>
                         </View>
                       </View>
@@ -1290,26 +1163,26 @@ export default function CameraScanner() {
                         {translations[language]?.tabs?.orders?.order?.status || "Status"}
                       </Text>
                       <View style={styles.pickerWithClearButton}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                           style={[
-                            styles.pickerButton, 
-                            { 
+                            styles.pickerButton,
+                            {
                               borderColor: selectedStatus ? colors.primary : colors.inputBorder,
                               backgroundColor: colors.inputBg,
                               flex: 1,
                               height: 50,
                               borderRadius: 12
                             }
-                          ]} 
+                          ]}
                           onPress={() => {
                             setShowPickerModal(true);
                             setCurrentField("status");
                           }}
                         >
                           <Text style={[
-                            styles.pickerButtonText, 
-                            selectedStatus 
-                              ? [styles.pickerSelectedText, { color: colors.text }] 
+                            styles.pickerButtonText,
+                            selectedStatus
+                              ? [styles.pickerSelectedText, { color: colors.text }]
                               : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
                           ]}>
                             {selectedStatus ? statusOptions.find(opt => opt.value === selectedStatus)?.label || selectedStatus : translations[language]?.tabs?.orders?.order?.selectStatus || "Select Status"}
@@ -1332,7 +1205,7 @@ export default function CameraScanner() {
                         )}
                       </View>
                     </View>
-                    
+
                     {/* Reason selection for statuses that require it */}
                     {showStatusReason && (
                       <View style={styles.fieldContainer}>
@@ -1350,26 +1223,26 @@ export default function CameraScanner() {
                           {translations[language]?.tabs?.orders?.order?.reason || "Reason"}
                         </Text>
                         <View style={styles.pickerWithClearButton}>
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={[
-                              styles.pickerButton, 
-                              { 
+                              styles.pickerButton,
+                              {
                                 borderColor: selectedReason ? colors.primary : colors.inputBorder,
                                 backgroundColor: colors.inputBg,
                                 flex: 1,
                                 height: 50,
                                 borderRadius: 12
                               }
-                            ]} 
+                            ]}
                             onPress={() => {
                               setShowPickerModal(true);
                               setCurrentField("reason");
                             }}
                           >
                             <Text style={[
-                              styles.pickerButtonText, 
-                              selectedReason 
-                                ? [styles.pickerSelectedText, { color: colors.text }] 
+                              styles.pickerButtonText,
+                              selectedReason
+                                ? [styles.pickerSelectedText, { color: colors.text }]
                                 : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
                             ]}>
                               {selectedReason ? suspendReasons.find(r => r.value === selectedReason)?.label || selectedReason : translations[language]?.tabs?.orders?.order?.selectReason || "Select Reason"}
@@ -1387,7 +1260,7 @@ export default function CameraScanner() {
                         </View>
                       </View>
                     )}
-                    
+
                     {/* Note field */}
                     <View style={styles.fieldContainer}>
                       {/* Note field is currently disabled */}
@@ -1412,17 +1285,17 @@ export default function CameraScanner() {
                       {translations[language]?.camera?.selectDriverFrom || "Select Driver"}
                     </Text>
                     <View style={styles.pickerWithClearButton}>
-                      <TouchableOpacity 
+                      <TouchableOpacity
                         style={[
-                          styles.pickerButton, 
-                          { 
+                          styles.pickerButton,
+                          {
                             borderColor: selectedValue.fromDriver ? colors.primary : colors.inputBorder,
                             backgroundColor: colors.inputBg,
                             flex: 1,
                             height: 50,
                             borderRadius: 12
                           }
-                        ]} 
+                        ]}
                         onPress={() => {
                           setShowPickerModal(true);
                           fetchDrivers();
@@ -1430,9 +1303,9 @@ export default function CameraScanner() {
                         }}
                       >
                         <Text style={[
-                          styles.pickerButtonText, 
-                          selectedValue.fromDriver?.name 
-                            ? [styles.pickerSelectedText, { color: colors.text }] 
+                          styles.pickerButtonText,
+                          selectedValue.fromDriver?.name
+                            ? [styles.pickerSelectedText, { color: colors.text }]
                             : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
                         ]}>
                           {selectedValue.fromDriver?.name || translations[language]?.camera?.selectDriver || "Select Driver"}
@@ -1450,7 +1323,7 @@ export default function CameraScanner() {
                     </View>
                   </View>
                 )}
-                
+
                 {/* <View style={styles.fieldContainer}>
                   <Text style={[
                     styles.fieldLabel,
@@ -1487,57 +1360,57 @@ export default function CameraScanner() {
                     textAlignVertical="top"
                   />
                 </View> */}
-                
+
                 {/* Branch selection - show only for in_branch or dispatched_to_branch status */}
                 {(showBranchField) && (
-                <View style={styles.fieldContainer}>
-                  <Text style={[
-                    styles.fieldLabel,
-                    { color: colors.textSecondary },
-                    {
-                      ...Platform.select({
-                        ios: {
-                          textAlign: isRTL ? "left" : "right"
-                        }
-                      }),
-                    }
-                  ]}>
-                    {translations[language].camera.branch}
-                  </Text>
-                  <View style={styles.pickerWithClearButton}>
-                    <TouchableOpacity 
-                      style={[
-                        styles.pickerButton, 
-                        { 
-                          borderColor: selectedValue.toBranch ? colors.primary : colors.inputBorder,
-                          backgroundColor: colors.inputBg,
-                          flex: 1,
-                          height: 50,
-                          borderRadius: 12
-                        }
-                      ]} 
-                      onPress={() => branchHandler('toBranch')}
-                    >
-                      <Text style={[
-                        styles.pickerButtonText, 
-                        selectedValue.toBranch?.name 
-                          ? [styles.pickerSelectedText, { color: colors.text }] 
-                          : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
-                      ]}>
-                        {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
-                      </Text>
-                      <Feather name="chevron-down" size={18} color={selectedValue.toBranch ? colors.primary : colors.textSecondary} />
-                    </TouchableOpacity>
-                    {selectedValue.toBranch && (
+                  <View style={styles.fieldContainer}>
+                    <Text style={[
+                      styles.fieldLabel,
+                      { color: colors.textSecondary },
+                      {
+                        ...Platform.select({
+                          ios: {
+                            textAlign: isRTL ? "left" : "right"
+                          }
+                        }),
+                      }
+                    ]}>
+                      {translations[language].camera.branch}
+                    </Text>
+                    <View style={styles.pickerWithClearButton}>
                       <TouchableOpacity
-                        style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
-                        onPress={() => clearSelection('toBranch')}
+                        style={[
+                          styles.pickerButton,
+                          {
+                            borderColor: selectedValue.toBranch ? colors.primary : colors.inputBorder,
+                            backgroundColor: colors.inputBg,
+                            flex: 1,
+                            height: 50,
+                            borderRadius: 12
+                          }
+                        ]}
+                        onPress={() => branchHandler('toBranch')}
                       >
-                        <Feather name="x" size={18} color={colors.error} />
+                        <Text style={[
+                          styles.pickerButtonText,
+                          selectedValue.toBranch?.name
+                            ? [styles.pickerSelectedText, { color: colors.text }]
+                            : [styles.pickerPlaceholderText, { color: colors.textTertiary }],
+                        ]}>
+                          {selectedValue.toBranch?.name || translations[language].camera.selectBranch}
+                        </Text>
+                        <Feather name="chevron-down" size={18} color={selectedValue.toBranch ? colors.primary : colors.textSecondary} />
                       </TouchableOpacity>
-                    )}
+                      {selectedValue.toBranch && (
+                        <TouchableOpacity
+                          style={[styles.clearFieldButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)' }]}
+                          onPress={() => clearSelection('toBranch')}
+                        >
+                          <Feather name="x" size={18} color={colors.error} />
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
-                </View>
                 )}
 
                 {/* To Driver selection - show only for dispatched_to_branch status
@@ -1594,26 +1467,26 @@ export default function CameraScanner() {
                 
                 {/* Action buttons - shown for all user types */}
                 <View style={styles.actionButtons}>
-                  <TouchableOpacity 
-                    style={[styles.cancelButton, { borderColor: colors.border }]} 
+                  <TouchableOpacity
+                    style={[styles.cancelButton, { borderColor: colors.border }]}
                     onPress={() => setShowCreateDispatchedCollectionModal(false)}
                   >
                     <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>
                       {translations[language].camera.cancel}
                     </Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={[
-                      styles.confirmButton, 
+                      styles.confirmButton,
                       { backgroundColor: colors.primary },
                       formSpinner.status && { opacity: 0.7 },
                       // For driver/delivery_company, disable if no status is selected
                       (user && (user.role === 'driver' || user.role === 'delivery_company') && !selectedStatus) && { opacity: 0.5 }
-                    ]} 
+                    ]}
                     onPress={updateOrderStatus}
                     disabled={
-                      formSpinner.status || 
+                      formSpinner.status ||
                       (showStatusSelection && !selectedStatus) ||
                       (user && (user.role === 'driver' || user.role === 'delivery_company') && !selectedStatus)
                     }
@@ -1631,10 +1504,10 @@ export default function CameraScanner() {
             </ScrollView>
           </Animated.View>
         ) : (
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.scannedItemsContainer, 
-              { 
+              styles.scannedItemsContainer,
+              {
                 backgroundColor: colors.card,
                 opacity: fadeAnim,
                 transform: [{ translateY: slideAnim }]
@@ -1653,10 +1526,10 @@ export default function CameraScanner() {
                     <Text style={styles.totalValue}>{scannedItems.length}</Text>
                   </View>
                 </View>
-                
+
                 {scannedItems.length > 0 && (
-                  <TouchableOpacity 
-                    style={[styles.nextButton, { backgroundColor: colors.primary }]} 
+                  <TouchableOpacity
+                    style={[styles.nextButton, { backgroundColor: colors.primary }]}
                     onPress={() => {
                       // For driver or delivery_company roles, show options modal instead of confirmation
                       if (user && (user.role === 'driver' || user.role === 'delivery_company')) {
@@ -1669,19 +1542,19 @@ export default function CameraScanner() {
                     <Text style={[styles.nextButtonText, { color: colors.buttonText }]}>
                       {showStatusSelection ? translations[language]?.tabs?.orders?.order?.changeStatus || 'Change Status' : translations[language].camera.next}
                     </Text>
-                    <Feather 
-                      name={isRTL ? "chevron-left" : "chevron-right"} 
-                      size={16} 
-                      color={colors.buttonText} 
+                    <Feather
+                      name={isRTL ? "chevron-left" : "chevron-right"}
+                      size={16}
+                      color={colors.buttonText}
                     />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
-            
+
             {/* Add manual input section */}
-            <View style={[styles.manualInputContainer, { 
-              borderBottomColor: colors.border, 
+            <View style={[styles.manualInputContainer, {
+              borderBottomColor: colors.border,
               borderBottomWidth: 1,
               paddingVertical: 16,
               paddingHorizontal: 16
@@ -1707,15 +1580,15 @@ export default function CameraScanner() {
                 ]}>
                   <TextInput
                     style={[
-                      styles.manualInput, 
+                      styles.manualInput,
                       {
                         ...Platform.select({
                           ios: {
-                            textAlign:isRTL ? "right" : ""
+                            textAlign: isRTL ? "right" : ""
                           }
                         }),
                       },
-                      { 
+                      {
                         color: colors.text,
                         fontSize: 16,
                         flex: 1,
@@ -1728,10 +1601,10 @@ export default function CameraScanner() {
                     onChangeText={setManualOrderId}
                     placeholderTextColor={colors.textTertiary}
                   />
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[
-                      styles.inlineAddButton, 
-                      { 
+                      styles.inlineAddButton,
+                      {
                         backgroundColor: colors.primary,
                         height: 40,
                         width: 40,
@@ -1754,20 +1627,20 @@ export default function CameraScanner() {
                 </View>
               </View>
             </View>
-            
+
             {/* Scanned items list */}
             {scannedItems.length > 0 ? (
-              <ScrollView 
+              <ScrollView
                 style={styles.itemsScrollView}
                 contentContainerStyle={styles.itemsList}
                 showsVerticalScrollIndicator={false}
               >
                 {scannedItems.map((item, index) => (
-                  <Animated.View 
-                    key={index} 
+                  <Animated.View
+                    key={index}
                     style={[
                       styles.itemContainer,
-                      { 
+                      {
                         backgroundColor: isDark ? colors.surface : '#F9FAFB',
                         shadowColor: colors.cardShadow,
                         shadowOffset: { width: 0, height: 2 },
@@ -1779,11 +1652,11 @@ export default function CameraScanner() {
                         borderLeftWidth: 3,
                         borderLeftColor: colors.primary,
                         opacity: fadeAnim,
-                        transform: [{ 
+                        transform: [{
                           translateY: fadeAnim.interpolate({
                             inputRange: [0, 1],
                             outputRange: [20, 0]
-                          }) 
+                          })
                         }]
                       }
                     ]}
@@ -1793,7 +1666,7 @@ export default function CameraScanner() {
                     ]}>
                       <View style={[
                         styles.itemIconContainer,
-                        { 
+                        {
                           backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)',
                           width: 40,
                           height: 40,
@@ -1812,44 +1685,44 @@ export default function CameraScanner() {
                           }),
                         }
                       ]}>
-                        <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' },{
-                      ...Platform.select({
-                        ios: {
-                          textAlign:isRTL ? "left" : ""
-                        }
-                      }),
-                    }]}>
+                        <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' }, {
+                          ...Platform.select({
+                            ios: {
+                              textAlign: isRTL ? "left" : ""
+                            }
+                          }),
+                        }]}>
                           {typeof item === 'object' ? item.order_id : item}
                         </Text>
                         {typeof item === 'object' && (
                           <>
-                            <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 },{
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 }, {
                               ...Platform.select({
                                 ios: {
-                                  textAlign:isRTL ? "left" : ""
+                                  textAlign: isRTL ? "left" : ""
                                 }
                               }),
                             }]}>
                               {item.receiver_name}
                             </Text>
-                            <Text style={[styles.itemDetailText, { color: colors.textSecondary },{
-                                ...Platform.select({
-                                  ios: {
-                                    textAlign:isRTL ? "left" : ""
-                                  }
-                                }),
-                              }]}>
+                            <Text style={[styles.itemDetailText, { color: colors.textSecondary }, {
+                              ...Platform.select({
+                                ios: {
+                                  textAlign: isRTL ? "left" : ""
+                                }
+                              }),
+                            }]}>
                               {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
                             </Text>
                           </>
                         )}
                       </View>
                     </View>
-                    
-                    <TouchableOpacity 
+
+                    <TouchableOpacity
                       style={[
                         styles.deleteButton,
-                        { 
+                        {
                           backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
                           width: 40,
                           height: 40,
@@ -1857,8 +1730,23 @@ export default function CameraScanner() {
                         }
                       ]}
                       onPress={() => {
+                        const itemToDelete = scannedItems[index];
                         const updatedItems = scannedItems.filter((_, i) => i !== index);
                         setScannedItems(updatedItems);
+
+                        // Remove from scan history so it can be rescanned
+                        if (itemToDelete) {
+                          const orderId = typeof itemToDelete === 'object' ? itemToDelete.order_id : itemToDelete;
+                          const normalized = normalizeBarcode(orderId);
+
+                          // Remove from both state and ref
+                          setScannedBarcodes(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(normalized);
+                            return newSet;
+                          });
+                          scannedBarcodesRef.current.delete(normalized);
+                        }
                       }}
                     >
                       <Feather name="trash-2" size={18} color={colors.error} />
@@ -1867,7 +1755,7 @@ export default function CameraScanner() {
                 ))}
               </ScrollView>
             ) : (
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.emptyContainer,
                   {
@@ -1876,7 +1764,7 @@ export default function CameraScanner() {
                   }
                 ]}
               >
-                <Feather name="inbox" size={48} color={colors.textTertiary} style={{marginBottom: 12}} />
+                <Feather name="inbox" size={48} color={colors.textTertiary} style={{ marginBottom: 12 }} />
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                   {translations[language].camera.noItemsYet}
                 </Text>
@@ -1891,21 +1779,21 @@ export default function CameraScanner() {
 
       {showPickerModal && (
         <PickerModal
-          list={currentField === "toBranch" ? branches : 
-                currentField === "status" ? statusOptions : 
-                currentField === "reason" ? suspendReasonsWithName : 
+          list={currentField === "toBranch" ? branches :
+            currentField === "status" ? statusOptions :
+              currentField === "reason" ? suspendReasonsWithName :
                 drivers}
           setSelectedValue={(value) => {
             // IMPORTANT: PickerModal internally calls setSelectedValue with a function
             // that updates the state. We need to handle both cases.
             if (typeof value === 'function') {
               // Execute the function to get the actual value
-              const prevValue = {...selectedValue};
+              const prevValue = { ...selectedValue };
               const newValueObj = value(prevValue);
-              
+
               // Get the selected item from the newValueObj
               const selectedItem = newValueObj[currentField];
-              
+
               if (selectedItem) {
                 // Handle different field types
                 if (currentField === "status") {
@@ -1920,7 +1808,7 @@ export default function CameraScanner() {
               }
             } else {
               // Direct item selection (this is the case we were handling before)
-              
+
               if (currentField === "status" && value) {
                 setSelectedStatus(value.value);
                 handleStatusChange(value.value);
@@ -1928,7 +1816,7 @@ export default function CameraScanner() {
                 setSelectedReason(value.value);
               } else {
                 // For branch and driver selections
-                const newValues = {...selectedValue};
+                const newValues = { ...selectedValue };
                 newValues[currentField] = value;
                 setSelectedValue(newValues);
               }
@@ -1939,12 +1827,12 @@ export default function CameraScanner() {
           loading={loading}
           field={{
             name: currentField,
-            label: currentField === 'toBranch' ? translations[language].camera.toBranch : 
-                  currentField === 'fromDriver' ? translations[language]?.camera?.selectDriverFrom || "Select Driver" : 
-                  currentField === 'status' ? translations[language]?.tabs?.orders?.order?.status || "Status" : 
-                  currentField === 'reason' ? translations[language]?.tabs?.orders?.order?.reason || "Reason" : 
+            label: currentField === 'toBranch' ? translations[language].camera.toBranch :
+              currentField === 'fromDriver' ? translations[language]?.camera?.selectDriverFrom || "Select Driver" :
+                currentField === 'status' ? translations[language]?.tabs?.orders?.order?.status || "Status" :
+                  currentField === 'reason' ? translations[language]?.tabs?.orders?.order?.reason || "Reason" :
 
-                  translations[language].camera.toDriver,
+                    translations[language].camera.toDriver,
             showSearchBar: true
           }}
           colors={colors}
@@ -2335,7 +2223,7 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 'auto',
     paddingBottom: 20,
-    position:"fixed"
+    position: "fixed"
   },
   cancelButton: {
     paddingVertical: 14,
