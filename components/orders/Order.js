@@ -184,7 +184,8 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
         requiresReason: true,
         reasons: [...reasonsStuck, ...defaultOther]
     },{
-        label: translations[language].tabs.orders.order.states.on_the_way_back, value: "on_the_way"
+        label: translations[language].tabs.orders.order.states.on_the_way_back, value: "on_the_way",
+        requiresDriver: false
     }, {
         label: translations[language].tabs?.orders?.order?.states?.return_before_delivered_initiated, value: "return_before_delivered_initiated",
         requiresReason: true,
@@ -877,7 +878,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
             if (isOnline) {
                 // We're online, send the update directly
                 try {
-                    if (selectedValue?.status?.value === 'on_the_way') {
+                    if (selectedValue?.status?.value === 'on_the_way' && statusOption?.requiresDriver) {
                         if (!selectedDriver) {
                             setErrorMessage(translations[language]?.tabs?.orders?.order?.selectDriver || 'Select driver');
                             setShowErrorModal(true);

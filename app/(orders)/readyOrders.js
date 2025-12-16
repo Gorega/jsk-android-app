@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, Image, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, RefreshControl, Image, ScrollView, Platform, TextInput } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { useLanguage, translations } from '../../utils/languageContext';
 import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
-import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as SecureStore from 'expo-secure-store';
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 
 export default function ReadyOrders() {
     const { language } = useLanguage();
@@ -19,6 +17,13 @@ export default function ReadyOrders() {
     const [actionLoading, setActionLoading] = useState(false);
     const [expandedSenders, setExpandedSenders] = useState({});
     const [selectedOrders, setSelectedOrders] = useState({});
+
+    // Search states
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const searchTimeoutRef = useRef(null);
 
     useEffect(() => {
         fetchTasks();
@@ -131,6 +136,89 @@ export default function ReadyOrders() {
         }
     };
 
+    const handleSearch = (text) => {
+        setSearchQuery(text);
+
+        // Clear previous timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        if (!text.trim()) {
+            setSearchResults([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        // Debounce search
+        searchTimeoutRef.current = setTimeout(async () => {
+            setIsSearching(true);
+            try {
+                const url = `${process.env.EXPO_PUBLIC_API_URL}/api/orders/driver-collection-tasks?search=${encodeURIComponent(text)}`;
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept-Language': language
+                    },
+                    credentials: 'include'
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.isSearchResult) {
+                    if (data.data && Array.isArray(data.data)) {
+                        setSearchResults(data.data);
+                        setShowSuggestions(true);
+                    }
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                console.error('Error stack:', error.stack);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+    };
+
+    const handleSelectSender = async (sender) => {
+        setSearchQuery(sender.sender_name);
+        setShowSuggestions(false);
+        setLoading(true);
+
+        try {
+            const response = await fetch(
+                `${process.env.EXPO_PUBLIC_API_URL}/api/orders/driver-collection-tasks?sender_id=${sender.sender_id}`,
+                {
+                    headers: {
+                        'Accept-Language': language
+                    },
+                    credentials: 'include'
+                }
+            );
+            const data = await response.json();
+
+            if (data.success) {
+                setTasks(data.data);
+                // Auto-expand the selected sender
+                if (data.data.length > 0) {
+                    setExpandedSenders({ [sender.sender_id]: true });
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching sender tasks:', error);
+            Alert.alert(translations[language].errors.error, 'Failed to fetch sender tasks');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
+        setSearchResults([]);
+        setShowSuggestions(false);
+        setExpandedSenders({});
+        fetchTasks();
+    };
+
     const renderSenderGroup = ({ item }) => {
         const isExpanded = expandedSenders[item.sender_id];
         const orderIds = item.orders.map(o => o.order_id);
@@ -189,35 +277,35 @@ export default function ReadyOrders() {
                 {isExpanded && (
                     <View style={[styles.ordersList, { borderTopColor: colors.border }]}>
                         {item.orders.map(order => (
-                          <TouchableOpacity
-                            key={order.order_id}
-                            style={[styles.orderItem, { borderColor: colors.border }]}
-                            onPress={() => toggleOrderSelection(order.order_id)}
-                          >
-                            <View style={styles.orderInfo}>
-                                <Text style={[styles.orderRef, { color: colors.text }]}>#{order.reference_id || order.order_id}</Text>
-                                <Text style={[styles.receiverName, { color: colors.textSecondary }]}>
-                                    {order.receiver_name}
-                                </Text>
-                                {(order.receiver_city || order.receiver_address) && (
-                                    <Text style={[styles.receiverAddress, { color: colors.textTertiary }]}>
-                                        {[order.receiver_city, order.receiver_address].filter(Boolean).join(', ')}
+                            <TouchableOpacity
+                                key={order.order_id}
+                                style={[styles.orderItem, { borderColor: colors.border }]}
+                                onPress={() => toggleOrderSelection(order.order_id)}
+                            >
+                                <View style={styles.orderInfo}>
+                                    <Text style={[styles.orderRef, { color: colors.text }]}>#{order.reference_id || order.order_id}</Text>
+                                    <Text style={[styles.receiverName, { color: colors.textSecondary }]}>
+                                        {order.receiver_name}
                                     </Text>
-                                )}
-                            </View>
-                            <View style={styles.orderActions}>
-                                {/* <View style={[styles.statusBadge, { backgroundColor: colors.warning + '20' }]}> 
+                                    {(order.receiver_city || order.receiver_address) && (
+                                        <Text style={[styles.receiverAddress, { color: colors.textTertiary }]}>
+                                            {[order.receiver_city, order.receiver_address].filter(Boolean).join(', ')}
+                                        </Text>
+                                    )}
+                                </View>
+                                <View style={styles.orderActions}>
+                                    {/* <View style={[styles.statusBadge, { backgroundColor: colors.warning + '20' }]}> 
                                     <Text style={[styles.statusText, { color: colors.warning }]}>
                                         {translations[language]?.status?.[order.status] || order.status}
                                     </Text>
                                 </View> */}
-                                <MaterialIcons
-                                    name={selectedOrders[order.order_id] ? "check-box" : "check-box-outline-blank"}
-                                    size={24}
-                                    color={selectedOrders[order.order_id] ? colors.primary : colors.textSecondary}
-                                />
-                            </View>
-                          </TouchableOpacity>
+                                    <MaterialIcons
+                                        name={selectedOrders[order.order_id] ? "check-box" : "check-box-outline-blank"}
+                                        size={24}
+                                        color={selectedOrders[order.order_id] ? colors.primary : colors.textSecondary}
+                                    />
+                                </View>
+                            </TouchableOpacity>
                         ))}
                     </View>
                 )}
@@ -243,6 +331,63 @@ export default function ReadyOrders() {
                 }}
             />
 
+            {/* Search Input */}
+            <View style={[styles.searchContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+                <View style={[styles.searchInputWrapper, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                    <Feather name="search" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+                    <TextInput
+                        style={[styles.searchInput, { color: colors.text }]}
+                        placeholder={translations[language]?.common?.search || "Search sender name..."}
+                        placeholderTextColor={colors.textSecondary}
+                        value={searchQuery}
+                        onChangeText={handleSearch}
+                    />
+                    {isSearching && <ActivityIndicator size="small" color={colors.primary} style={styles.searchLoader} />}
+                    {searchQuery.length > 0 && !isSearching && (
+                        <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
+                            <MaterialIcons name="close" size={20} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+            </View>
+
+            {/* Autocomplete Suggestions - MOVED OUTSIDE and ABSOLUTELY POSITIONED */}
+            {showSuggestions && searchResults.length > 0 && (
+                <View style={[styles.suggestionsOverlay, { backgroundColor: colors.card, borderColor: colors.border, shadowColor: '#000' }]}>
+                    <ScrollView
+                        style={styles.suggestionsList}
+                        keyboardShouldPersistTaps="handled"
+                        nestedScrollEnabled={true}
+                    >
+                        {searchResults.map((sender, index) => {
+                            return (
+                                <TouchableOpacity
+                                    key={sender.sender_id}
+                                    style={[styles.suggestionItem, { borderBottomColor: colors.border, backgroundColor: colors.card }]}
+                                    onPress={() => {
+                                        handleSelectSender(sender);
+                                    }}
+                                >
+                                    <View style={[styles.suggestionAvatar, { backgroundColor: colors.primary + '20' }]}>
+                                        <Text style={[styles.suggestionAvatarText, { color: colors.primary }]}>
+                                            {sender.sender_name.charAt(0).toUpperCase()}
+                                        </Text>
+                                    </View>
+                                    <View style={styles.suggestionInfo}>
+                                        <Text style={[styles.suggestionName, { color: colors.text }]}>{sender.sender_name}</Text>
+                                        <Text style={[styles.suggestionDetails, { color: colors.textSecondary }]}>
+                                            {sender.sender_phone}
+                                            {sender.sender_city && ` • ${sender.sender_city}`}
+                                        </Text>
+                                    </View>
+                                    <Feather name="chevron-right" size={20} color={colors.textSecondary} />
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </ScrollView>
+                </View>
+            )}
+
             {loading ? (
                 <View style={styles.loaderContainer}>
                     <ActivityIndicator size="large" color={colors.primary} />
@@ -260,7 +405,10 @@ export default function ReadyOrders() {
                         <View style={styles.emptyContainer}>
                             <Feather name="package" size={64} color={colors.textTertiary} />
                             <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                                {translations[language]?.camera?.noItemsScanned || "No pending collection tasks found."}
+                                {searchQuery ?
+                                    (translations[language]?.errors?.noResults || "No results found") :
+                                    (translations[language]?.errors?.noItemsScanned || "No pending collection tasks found.")
+                                }
                             </Text>
                         </View>
                     }
@@ -296,7 +444,89 @@ export default function ReadyOrders() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        paddingTop:25
+        paddingTop: 25
+    },
+    searchContainer: {
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
+        borderBottomWidth: 1,
+    },
+    searchInputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 8,
+        borderWidth: 1,
+        paddingHorizontal: 12,
+        height: 44,
+    },
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        paddingVertical: 8,
+    },
+    searchLoader: {
+        marginLeft: 8,
+    },
+    clearButton: {
+        padding: 4,
+        marginLeft: 4,
+    },
+    suggestionsOverlay: {
+        position: 'absolute',
+        top: 100, // Below header and search bar
+        left: 16,
+        right: 16,
+        maxHeight: 300,
+        borderRadius: 8,
+        borderWidth: 1,
+        zIndex: 9999,
+        elevation: 10,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    suggestionsContainer: {
+        marginTop: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        maxHeight: 250,
+        overflow: 'hidden',
+    },
+    suggestionsList: {
+        flex: 1,
+    },
+    suggestionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 12,
+        borderBottomWidth: 1,
+    },
+    suggestionAvatar: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 12,
+    },
+    suggestionAvatarText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    suggestionInfo: {
+        flex: 1,
+    },
+    suggestionName: {
+        fontSize: 15,
+        fontWeight: '600',
+        marginBottom: 2,
+    },
+    suggestionDetails: {
+        fontSize: 13,
     },
     loaderContainer: {
         flex: 1,

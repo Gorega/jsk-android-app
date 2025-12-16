@@ -235,6 +235,7 @@ export const translations = {
       pleaseSelectStatus: "Please select a status",
       pleaseSelectReason: "Please select a reason",
       pleaseSelectBranch: "Please select a branch",
+      noResults: "No results found",
       noItemsScanned: "No items scanned"
     },
 
@@ -1675,6 +1676,7 @@ export const translations = {
       pleaseSelectStatus: "يرجى اختيار حالة",
       pleaseSelectReason: "يرجى اختيار سبب",
       pleaseSelectBranch: "يرجى اختيار فرع",
+      noResults:"لا توجد نتائج",
       noItemsScanned: "لا توجد طلبات مسجلة",
     },
 
@@ -3137,6 +3139,7 @@ export const translations = {
       "pleaseSelectStatus": "אנא בחר סטטוס",
       "pleaseSelectReason": "אנא בחר סיבה",
       "pleaseSelectBranch": "אנא בחר סניף",
+      "noResults": "לא נמצאו תוצאות",
       "noItemsScanned": "לא נרשמו הזמנות"
     },
     "check": {
