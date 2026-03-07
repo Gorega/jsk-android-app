@@ -1,0 +1,936 @@
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
+  SafeAreaView,
+  StatusBar,
+  Platform,
+  Alert,
+  Dimensions,
+  Keyboard,
+  ActivityIndicator,
+  Animated,
+  KeyboardAvoidingView,
+  ScrollView,
+  TextInput,
+  InteractionManager,
+} from "react-native";
+import { Link, useRouter, Redirect, router } from "expo-router";
+import { Feather, MaterialIcons } from '@expo/vector-icons';
+import TayarLogo from "../../assets/images/tayar_logo.png";
+import TayarDarkLogo from "../../assets/images/tayar_logo_dark.png";
+import Field from "../../components/sign/Field";
+import { useAuth } from "../../RootLayout";
+import { saveToken, getToken, setDirectLogin, setMasterAccountId, addAccountToMaster, getMasterAccountId } from "../../utils/secureStore";
+import { useLanguage } from '../../utils/languageContext';
+import { translations } from '../../utils/languageContext';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
+import ModalPresentation from '../../components/ModalPresentation';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
+
+// Get screen dimensions
+const { height } = Dimensions.get('window');
+
+export default function SignIn() {
+  const [loading, setLoading] = useState(false);
+  const { language } = useLanguage();
+  const isRTL = language === 'ar' || language === 'he';
+  const [authCheckComplete, setAuthCheckComplete] = useState(false);
+  const [error, setError] = useState('');
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [biometricType, setBiometricType] = useState(null);
+  const [isBiometricAvailable, setIsBiometricAvailable] = useState(false);
+  const [previousLoginInfo, setPreviousLoginInfo] = useState(null);
+  const scrollViewRef = useRef(null);
+  const { isDark, colorScheme } = useTheme();
+  const colors = Colors[colorScheme];
+  const [showTrackModal, setShowTrackModal] = useState(false);
+  const [trackInput, setTrackInput] = useState('');
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackError, setTrackError] = useState('');
+
+  useEffect(() => {
+    const unsub = eventEmitter.on(EVENTS.REFERENCE_SCANNED, (value) => {
+      try {
+        setTrackInput(String(value || '').trim());
+        setShowTrackModal(true);
+      } catch (e) { }
+    });
+    return () => { try { unsub && unsub(); } catch (e) { } };
+  }, []);
+
+
+  const router = useRouter();
+  const { isAuthenticated, setIsAuthenticated, setUserId } = useAuth();
+
+  const getLocalizedAuthErrorMessage = useCallback((err) => {
+    const rawMessage = String(err?.message || '');
+    const normalized = rawMessage.trim().toLowerCase();
+    if (
+      normalized.includes('network request failed') ||
+      normalized.includes('failed to fetch') ||
+      normalized.includes('network error')
+    ) {
+      return (
+        translations[language]?.errors?.networkRequestFailed ||
+        translations[language]?.errors?.requestTimedOut ||
+        rawMessage
+      );
+    }
+    return rawMessage;
+  }, [language]);
+
+  const [loginForm, setLoginForm] = useState({
+    phone: "",
+    password: ""
+  });
+
+  const [formErrors, setFormErrors] = useState({
+    phone: "",
+    password: ""
+  });
+
+  // Simplified keyboard handling
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
+
+  // Check for biometric support and previous login info
+  // IMPORTANT: LocalAuthentication APIs must not be called during early launch
+  // or on background threads — doing so causes [LAContext canEvaluatePolicy:error:]
+  // to throw an NSException which crashes Hermes GC (crash logs: 14B92579, 6284B292, etc.)
+  // Fix: defer until after interactions settle + add delay on iOS
+  useEffect(() => {
+    let mounted = true;
+    let interactionHandle = null;
+
+    const checkBiometricSupport = async () => {
+      try {
+        // Each call is individually guarded so a failure in one doesn't cascade
+        let compatible = false;
+        try {
+          compatible = await LocalAuthentication.hasHardwareAsync();
+        } catch (e) {
+          // LAContext not available at this point — abort silently
+          return;
+        }
+
+        if (!mounted || !compatible) return;
+
+        let enrolled = false;
+        try {
+          enrolled = await LocalAuthentication.isEnrolledAsync();
+        } catch (e) {
+          return;
+        }
+
+        if (!mounted || !enrolled) return;
+
+        let types = [];
+        try {
+          types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+        } catch (e) {
+          return;
+        }
+
+        if (!mounted || types.length === 0) return;
+
+        // Determine which biometric is available
+        let biometricTypeLabel = '';
+        if (types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+          biometricTypeLabel = 'face';
+        } else if (types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+          biometricTypeLabel = 'fingerprint';
+        } else if (types.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+          biometricTypeLabel = 'iris';
+        }
+
+        if (!mounted) return;
+        setBiometricType(biometricTypeLabel);
+        setIsBiometricAvailable(true);
+
+        // Check for saved credentials
+        const savedPhone = await getToken("lastLoginPhone");
+        if (mounted && savedPhone) {
+          setPreviousLoginInfo({
+            phone: savedPhone
+          });
+        }
+      } catch (error) {
+        // Swallow any uncaught errors — biometric is optional
+      }
+    };
+
+    // Defer biometric check until after the initial render interactions settle.
+    // On iOS this prevents the crash caused by calling LAContext on the turbomodule
+    // background thread before the native UI is fully ready.
+    interactionHandle = InteractionManager.runAfterInteractions(() => {
+      if (!mounted) return;
+      // Additional safety delay on iOS to ensure LAContext is accessible
+      const delay = Platform.OS === 'ios' ? 800 : 0;
+      setTimeout(() => {
+        if (mounted) {
+          checkBiometricSupport();
+        }
+      }, delay);
+    });
+
+    return () => {
+      mounted = false;
+      if (interactionHandle && typeof interactionHandle.cancel === 'function') {
+        interactionHandle.cancel();
+      }
+    };
+  }, []);
+
+  const fields = [
+    {
+      name: "phone",
+      label: translations[language]?.auth.mobileNumber,
+      type: "input",
+      value: loginForm.phone,
+      error: formErrors.phone || "",
+      placeholder: translations[language]?.auth.phonePlaceholder,
+      keyboardType: "phone-pad",
+      onChange: (value) => {
+        setFormErrors(prev => ({ ...prev, phone: "" }));
+        setLoginForm(prev => ({ ...prev, phone: value }));
+      }
+    },
+    {
+      name: "password",
+      label: translations[language]?.auth.password,
+      type: "input",
+      value: loginForm.password,
+      error: formErrors.password || "",
+      placeholder: translations[language]?.auth.passwordPlaceholder,
+      secureTextEntry: true,
+      onChange: (value) => {
+        setFormErrors(prev => ({ ...prev, password: "" }));
+        setLoginForm(prev => ({ ...prev, password: value }));
+      }
+    }
+  ];
+
+  const biometricAuthHandler = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      // Only proceed if previous login info exists
+      if (!previousLoginInfo) {
+        Alert.alert(
+          translations[language]?.auth.biometricLoginFailed || "Biometric Login Failed",
+          translations[language]?.auth.noPreviousLogin || "Please login with your credentials first to enable biometric login"
+        );
+        setLoading(false);
+        return;
+      }
+
+      // First use local authentication
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: translations[language]?.auth.biometricPrompt || "Login with biometrics",
+        cancelLabel: translations[language]?.auth.cancel || "Cancel",
+        disableDeviceFallback: false,
+      });
+
+      if (!result.success) {
+        throw new Error(translations[language]?.auth.biometricFailed || "Authentication failed");
+      }
+
+      // Get stored credentials
+      const savedPhone = await getToken("lastLoginPhone");
+      const savedPassword = await getToken("lastLoginPassword");
+
+      if (!savedPhone || !savedPassword) {
+        throw new Error(translations[language]?.auth.credentialsNotFound || "Saved credentials not found");
+      }
+
+      // Make API call with saved credentials
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          phone: savedPhone,
+          password: savedPassword
+        }),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': language
+        },
+        credentials: "include"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      if (data.userId) {
+        await saveToken("userId", data.userId.toString());
+        setUserId(data.userId);
+      }
+
+      if (data.token) {
+        await saveToken("userToken", data.token);
+        // Set this as a direct login since user logged in directly
+        await setDirectLogin(true);
+
+        // Set up master account logic
+        const existingMasterId = await getMasterAccountId();
+        if (!existingMasterId) {
+          await setMasterAccountId(data.userId.toString());
+        }
+
+        // Add account to master's registry
+        const masterId = await getMasterAccountId();
+        if (masterId) {
+          await addAccountToMaster(masterId, {
+            userId: data.userId.toString(),
+            name: data.name || data.username || savedPhone || "",
+            phone: savedPhone || "",
+            role: data.role || "user",
+            token: data.token,
+            lastLoginPhone: savedPhone || "",
+            lastLoginPassword: savedPassword || ""
+          });
+        }
+
+        setIsAuthenticated(true);
+        router.replace("/(tabs)");
+      } else {
+        throw new Error('No token received');
+      }
+    } catch (err) {
+      Alert.alert(
+        translations[language]?.auth.biometricLoginFailed || "Biometric Login Failed",
+        getLocalizedAuthErrorMessage(err)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginHandler = async () => {
+    Keyboard.dismiss();
+
+    try {
+      setFormErrors({});
+      setError('');
+      setLoading(true);
+
+      // Basic validation
+      let hasError = false;
+      if (!loginForm.phone) {
+        setFormErrors(prev => ({ ...prev, phone: translations[language]?.auth.phoneRequired }));
+        hasError = true;
+      }
+      if (!loginForm.password) {
+        setFormErrors(prev => ({ ...prev, password: translations[language]?.auth.passwordRequired }));
+        hasError = true;
+      }
+
+      if (hasError) {
+        setLoading(false);
+        return;
+      }
+
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/login`, {
+        method: "POST",
+        body: JSON.stringify({
+          phone: loginForm.phone,
+          password: loginForm.password
+        }),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Accept-Language': language
+        },
+        credentials: "include"
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (data.type === 'VALIDATION_ERROR') {
+          const errors = {};
+          data.details.forEach(error => {
+            errors[error.field] = error.message;
+          });
+          setFormErrors(errors);
+        }
+        throw new Error(data.message);
+      }
+
+      // Save credentials for biometric login if login is successful
+      if (isBiometricAvailable) {
+        await saveToken("lastLoginPhone", loginForm.phone);
+        await saveToken("lastLoginPassword", loginForm.password);
+      }
+
+      if (data.userId) {
+        await saveToken("userId", data.userId.toString());
+        setUserId(data.userId);
+      }
+
+      if (data.token) {
+        await saveToken("userToken", data.token);
+        // Set this as a direct login since user logged in directly
+        await setDirectLogin(true);
+
+        // Set up master account logic
+        const existingMasterId = await getMasterAccountId();
+        if (!existingMasterId) {
+          await setMasterAccountId(data.userId.toString());
+        }
+
+        // Add account to master's registry
+        const masterId = await getMasterAccountId();
+        if (masterId) {
+          await addAccountToMaster(masterId, {
+            userId: data.userId.toString(),
+            name: data.name || data.username || loginForm.phone || "",
+            phone: loginForm.phone || "",
+            role: data.role || "user",
+            token: data.token,
+            lastLoginPhone: loginForm.phone || "",
+            lastLoginPassword: loginForm.password || ""
+          });
+        }
+
+        setIsAuthenticated(true);
+        router.replace("/(tabs)");
+      } else {
+        throw new Error('No token received');
+      }
+    } catch (err) {
+      Alert.alert(
+        translations[language].auth.loginFailed,
+        getLocalizedAuthErrorMessage(err)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await getToken("userToken");
+        if (token) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+      } finally {
+        setAuthCheckComplete(true);
+      }
+    };
+
+    checkAuth();
+  }, [setIsAuthenticated]);
+
+  if (!authCheckComplete) {
+    return null;
+  }
+
+  if (isAuthenticated) {
+    return <Redirect href="/(tabs)" />;
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.card }]}>
+      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} backgroundColor={colors.statusBarBg} />
+
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colors.card }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        enabled={true}
+      >
+        {/* Fixed Header - Make it smaller when keyboard is shown */}
+        <View style={[
+          styles.header,
+          keyboardVisible && styles.headerSmall,
+          { backgroundColor: colors.card, borderBottomColor: colors.border }
+        ]}>
+          {isDark ? (
+            <Image
+              style={[styles.logo, keyboardVisible && styles.logoSmall]}
+              source={TayarDarkLogo}
+              resizeMode="contain"
+            />
+          ) : (
+            <Image
+              style={[styles.logo, keyboardVisible && styles.logoSmall]}
+              source={TayarLogo}
+              resizeMode="contain"
+            />
+          )}
+
+          {/* Hide welcome text when keyboard is visible */}
+          {!keyboardVisible && (
+            <View>
+              <Text style={[styles.title, { color: colors.text }]}>
+                {translations[language]?.auth.welcome}
+              </Text>
+              <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+                {translations[language]?.auth.signMessage}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Main content area */}
+        <View style={[styles.mainContent, { backgroundColor: colors.background }]}>
+          <ScrollView
+            ref={scrollViewRef}
+            style={[styles.contentContainer, { backgroundColor: colors.background }]}
+            contentContainerStyle={[
+              styles.scrollContent,
+              // Add extra padding when keyboard is visible to ensure content is scrollable
+              { paddingBottom: keyboardVisible ? 150 : 20 }
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Biometric Login Button - Only show if available */}
+            {isBiometricAvailable && previousLoginInfo && (
+              <View style={styles.biometricContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.biometricButton,
+                    {
+                      backgroundColor: isDark ? 'rgba(67, 97, 238, 0.15)' : 'rgba(67, 97, 238, 0.08)',
+                      borderColor: isDark ? 'rgba(67, 97, 238, 0.3)' : 'rgba(67, 97, 238, 0.2)'
+                    }
+                  ]}
+                  onPress={biometricAuthHandler}
+                  disabled={loading}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="fingerprint" size={28} color={colors.primary} />
+                  <Text style={[styles.biometricText, { color: colors.primary }]}>
+                    {translations[language]?.auth?.loginWithBiometric ||
+                      `Login with ${biometricType === 'face' ? 'Face ID' : 'Fingerprint'}`}
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.dividerContainer}>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.dividerText, { color: colors.textSecondary }]}>
+                    {translations[language]?.auth?.or || 'OR'}
+                  </Text>
+                  <View style={[styles.divider, { backgroundColor: colors.border }]} />
+                </View>
+              </View>
+            )}
+
+            {/* Error alert */}
+            {error ? (
+              <View style={styles.errorAlert}>
+                <Feather name="alert-circle" size={20} color="#EF4444" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Fields */}
+            <View style={styles.formFields}>
+              {fields.map((field, index) => (
+                <View key={index} style={styles.fieldContainer}>
+                  <Field
+                    field={field}
+                    multiline={false}
+                  />
+                </View>
+              ))}
+            </View>
+
+            {/* Forgot password */}
+            <TouchableOpacity
+              style={[styles.forgotPassword]}
+              activeOpacity={0.7}
+              onPress={() => router.push("https://wa.me/972543569848")}
+            >
+              <Text style={[styles.forgotPasswordText, { color: colors.primary }]}>
+                {translations[language]?.auth?.forgotPassword || 'Forgot Password?'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+        {/* Footer - Always at bottom */}
+        <View style={[
+          styles.footer,
+          { backgroundColor: colors.card, borderTopColor: colors.border },
+          // Add extra spacing when keyboard is visible to push button higher
+          keyboardVisible && styles.footerWithKeyboard
+        ]}>
+          {/* Login button */}
+          <TouchableOpacity
+            style={[
+              styles.loginButton,
+              { backgroundColor: colors.primary },
+              loading && [
+                styles.loginButtonDisabled,
+                { backgroundColor: isDark ? '#6B7280' : '#A5B4FC' }
+              ]
+            ]}
+            onPress={loginHandler}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color="#FFFFFF" size="small" />
+            ) : (
+              <Text style={styles.loginButtonText}>
+                {translations[language]?.auth.login}
+              </Text>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.trackButton, { borderColor: colors.primary }]}
+            onPress={() => setShowTrackModal(true)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.trackButtonText, { color: colors.primary }]}>
+              {translations[language]?.tabs?.orders?.track?.orderTrack || 'Track Order Details'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Register link */}
+          <View style={styles.registerLinkContainer}>
+            <Text style={[styles.registerText, { color: colors.textSecondary }]}>
+              {translations[language]?.auth.dontHaveAccount}
+            </Text>
+            <Link href="/sign-up" asChild>
+              <TouchableOpacity style={styles.registerLink}>
+                <Text style={[styles.registerLinkText, { color: colors.primary }]}>
+                  {translations[language]?.auth.register}
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+      {showTrackModal && (
+        <ModalPresentation
+          showModal={showTrackModal}
+          setShowModal={setShowTrackModal}
+          customStyles={{ bottom: 15 }}
+          position="bottom"
+        >
+          <View style={{ padding: 16, gap: 12 }}>
+            <Text style={{
+              fontSize: 16, fontWeight: '700', color: colors.text, ...Platform.select({
+                ios: {
+                  textAlign: isRTL ? "left" : ""
+                }
+              })
+            }}>
+              {translations[language]?.tabs?.orders?.track?.orderTrack || 'Track Order Details'}
+            </Text>
+            {trackError ? (
+              <Text style={{
+                color: '#EF4444', fontSize: 14, ...Platform.select({
+                  ios: {
+                    textAlign: isRTL ? "left" : ""
+                  }
+                })
+              }}>
+                {trackError}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: colors.surface }}>
+                <TextInput
+                  style={{
+                    fontSize: 15, color: colors.text, ...Platform.select({
+                      ios: {
+                        textAlign: isRTL ? "right" : ""
+                      }
+                    })
+                  }}
+                  placeholder={translations[language]?.tabs?.orders?.track?.enterOrderId || 'Enter Order ID or Reference ID'}
+                  placeholderTextColor={colors.textSecondary}
+                  value={trackInput}
+                  onChangeText={(v) => { setTrackError(''); setTrackInput(v); }}
+                  autoFocus
+                />
+              </View>
+              <TouchableOpacity
+                style={{ paddingVertical: 10, paddingHorizontal: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 12 }}
+                onPress={() => { setShowTrackModal(false); router.push('/(camera)/lookupOrder?for=public_track'); }}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="qr-code-scanner" size={22} color={colors.primary} />
+              </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={{
+                paddingVertical: 10, paddingHorizontal: 18, backgroundColor: colors.primary, borderRadius: 10, alignItems: 'center', ...Platform.select({
+                  ios: {
+                    textAlign: isRTL ? "left" : ""
+                  }
+                })
+              }}
+              onPress={() => {
+                if (!trackInput.trim()) { setTrackError(translations[language]?.common?.required || 'Required'); return; }
+                setShowTrackModal(false);
+                router.push({ pathname: "(track)", params: { orderId: trackInput.trim(), public: '1' } });
+              }}
+              disabled={trackLoading}
+              activeOpacity={0.8}
+            >
+              {trackLoading ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <Text style={{
+                  color: '#FFFFFF', fontWeight: '700'
+                }}>
+                  {translations[language]?.tabs?.orders?.track?.track || 'Track'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ModalPresentation>
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  header: {
+    alignItems: 'center',
+    paddingBottom: 15,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    zIndex: 1,
+  },
+  headerSmall: {
+    paddingTop: 10,
+    paddingBottom: 10,
+  },
+  logo: {
+    width: 80,
+    height: 80,
+  },
+  logoSmall: {
+    width: 50,
+    height: 50,
+    marginBottom: 5,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#64748B',
+    textAlign: 'center',
+  },
+  mainContent: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  contentContainer: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  errorAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(254, 226, 226, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#EF4444',
+  },
+  errorText: {
+    marginLeft: 10,
+    color: '#B91C1C',
+    fontSize: 14,
+    flex: 1,
+  },
+  fieldContainer: {
+    marginBottom: 10,
+  },
+  forgotPassword: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: 4,
+  },
+  forgotPasswordText: {
+    color: '#4361EE',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  footer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  footerWithKeyboard: {
+    // Add extra padding when keyboard is visible to push button higher
+    paddingBottom: Platform.OS === 'ios' ? 70 : 30,
+    // Add margin to push the footer higher
+    marginBottom: Platform.OS === 'ios' ? 0 : -10,
+  },
+  loginButton: {
+    backgroundColor: '#4361EE',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#4361EE',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#A5B4FC',
+  },
+  loginButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  registerLinkContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10
+  },
+  trackButton: {
+    marginTop: 7,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  trackButtonText: {
+    fontWeight: '700'
+  },
+  registerText: {
+    color: '#64748B',
+    fontSize: 14,
+  },
+  registerLink: {
+    marginLeft: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  registerLinkText: {
+    color: '#4361EE',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  biometricContainer: {
+    marginBottom: 20,
+  },
+  biometricButton: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(67, 97, 238, 0.08)',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(67, 97, 238, 0.2)',
+  },
+  biometricText: {
+    color: '#4361EE',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
+  },
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  dividerText: {
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: '#64748B',
+  },
+  formFields: {
+    marginBottom: 20,
+  },
+});

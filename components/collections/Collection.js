@@ -1,0 +1,1989 @@
+import { View, StyleSheet, Text, TouchableOpacity, Platform, Linking, Alert, Pressable, ActivityIndicator, Clipboard, Modal, Image } from 'react-native';
+import Feather from '@expo/vector-icons/Feather';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { useAuth } from "../../RootLayout";
+import { router } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import UserBox from "../orders/userBox/UserBox";
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
+import ModalPresentation from "../ModalPresentation";
+import { useState } from 'react';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
+import React from 'react';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
+import * as LegacyFileSystem from 'expo-file-system/legacy';
+import * as IntentLauncher from 'expo-intent-launcher';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import axios from 'axios';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+function Collection({ type, collection, highlight }) {
+    const { language } = useLanguage();
+    const { user } = useAuth();
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    const [showModal, setShowModal] = useState(false);
+    const [showPhoneOptions, setShowPhoneOptions] = useState(false);
+    const [currentPhone, setCurrentPhone] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
+    const [isPdfDownloading, setIsPdfDownloading] = useState(false);
+    const [lastPdfUri, setLastPdfUri] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [showProofCamera, setShowProofCamera] = useState(false);
+    const [proofScannedCollectionId, setProofScannedCollectionId] = useState(null);
+    const [proofScanPaused, setProofScanPaused] = useState(false);
+    const proofCameraRef = React.useRef(null);
+    const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+    const [lastMatchedScanAt, setLastMatchedScanAt] = useState(0);
+    const isRTL = language === 'ar' || language === 'he';
+    const [localStatusKey, setLocalStatusKey] = useState(collection.status_key);
+    const [localStatus, setLocalStatus] = useState(collection.status);
+
+    const proofCameraT = (key, fallback) => {
+        return translations[language]?.collections?.collection?.proofCamera?.[key] || fallback;
+    };
+
+    const formatTemplate = (template, values) => {
+        return String(template || '').replace(/\{(\w+)\}/g, (_, k) => {
+            const v = values?.[k];
+            return v === undefined || v === null ? '' : String(v);
+        });
+    };
+
+    const extractCollectionIdFromScan = (raw) => {
+        const str = String(raw || '').trim();
+        if (!str) return null;
+
+        try {
+            const parsed = JSON.parse(str);
+            const candidate = parsed?.collection_id ?? parsed?.collectionId ?? parsed?.id;
+            if (candidate !== undefined && candidate !== null) return String(candidate).trim();
+        } catch (_) { }
+
+        const match = str.match(/\b\d{1,12}\b/);
+        return match ? match[0] : null;
+    };
+
+    const isRecentMatch = () => {
+        return Date.now() - lastMatchedScanAt < 2000;
+    };
+
+    const pickImage = async () => {
+        const permission = cameraPermission?.granted
+            ? cameraPermission
+            : await requestCameraPermission();
+
+        if (!permission?.granted) {
+            Alert.alert(
+                translations[language]?.common?.error || 'Error',
+                proofCameraT('permissionRequired', 'Camera permission is required')
+            );
+            return;
+        }
+
+        setProofScannedCollectionId(null);
+        setLastMatchedScanAt(0);
+        setProofScanPaused(false);
+        setShowProofCamera(true);
+    };
+
+
+
+    // Handle phone call
+    const handlePhoneCall = (phoneNumber) => {
+        if (!phoneNumber) return;
+        Linking.openURL(`tel:${phoneNumber}`);
+    };
+
+    // Handle WhatsApp with 972 prefix
+    const handleWhatsApp972 = (phoneNumber) => {
+        if (!phoneNumber) return;
+        const whatsappNumber = phoneNumber.startsWith('0') ?
+            phoneNumber.substring(1) : phoneNumber;
+        Linking.openURL(`whatsapp://send?phone=972${whatsappNumber}`);
+    };
+
+    // Handle WhatsApp with 970 prefix
+    const handleWhatsApp970 = (phoneNumber) => {
+        if (!phoneNumber) return;
+        const whatsappNumber = phoneNumber.startsWith('0') ?
+            phoneNumber.substring(1) : phoneNumber;
+        Linking.openURL(`whatsapp://send?phone=970${whatsappNumber}`);
+    };
+
+    const renderCollectionUser = () => {
+        if ((type === "business_money" || type === "business_returned") && user.role !== "business") {
+            return <UserBox
+                box={{
+                    label: translations[language].tabs.orders.order.userSenderBoxLabel,
+                    userName: collection.from_user_name,
+                    phone: collection.from_user_phone
+                }}
+            />
+        }
+        if ((type === "sent" || type === "dispatched" || type === "driver_money" || type === "driver_returned") && !["driver", "delivery_company"].includes(user.role)) {
+            return <UserBox
+                box={{
+                    label: translations[language].tabs.orders.order.userDriverBoxLabel,
+                    userName: type === "sent" ? collection.driver_name : collection.driver_name,
+                    phone: collection.driver_phone
+                }}
+            />
+        }
+    }
+
+    // Get status color
+    const getStatusColor = (statusKey) => {
+        const statusColors = {
+            "returned_in_branch": colors.primary,
+            "money_in_branch": colors.primary,
+            "deleted": colors.error,
+            "returned_out": colors.info,
+            "money_out": colors.info,
+            "returned_delivered": colors.info,
+            "paid": colors.info,
+            "completed": colors.success,
+            "handed_over": colors.success,
+            "pending": "#8B5CF6",
+            "in_dispatched_to_branch": "#8B5CF6",
+            "partial": "#8B5CF6"
+        };
+
+        return statusColors[statusKey] || colors.textSecondary;
+    };
+
+    // Format financials helper
+    const formatFinancials = (fieldKey) => {
+        try {
+            if (collection?.financials && Array.isArray(collection.financials) && collection.financials.length > 0) {
+                return collection.financials
+                    .map((f, index) => `${f.currency_code}: ${f[fieldKey] || '0.00'}${index < collection.financials.length - 1 ? ' | ' : ''}`)
+                    .join('');
+            }
+        } catch (_) { /* noop */ }
+        return '-';
+    };
+
+    const formatCollectionDate = (value) => {
+        try {
+            if (!value) return '-';
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return String(value);
+            return date.toLocaleString('en-US');
+        } catch (_) {
+            return value ? String(value) : '-';
+        }
+    };
+
+    // Helper function to generate HTML template for PDF
+    const generateCollectionHTML = (collection, ordersData, type, language) => {
+        const isRTL = language === 'ar' || language === 'he';
+        const direction = isRTL ? 'rtl' : 'ltr';
+        const textAlign = isRTL ? 'right' : 'left';
+
+        // Ensure ordersData is an array
+        const safeOrdersData = Array.isArray(ordersData) ? ordersData : [];
+
+        // Calculate totals
+        const totalValue = type === "sent"
+            ? collection.total_net_value
+            : type === "business_money"
+                ? formatFinancials('final_amount')
+                : formatFinancials('total_cod_value');
+
+        return `
+        <!DOCTYPE html>
+        <html dir="${direction}">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Collection #${collection.collection_id}</title>
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&family=Roboto:wght@400;500;700&display=swap');
+                
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                
+                body {
+                    font-family: ${isRTL ? "'Noto Sans Arabic', Arial, sans-serif" : "'Roboto', Arial, sans-serif"};
+                    direction: ${direction};
+                    text-align: ${textAlign};
+                    line-height: 1.6;
+                    color: #333;
+                    padding: 20px;
+                    background: white;
+                }
+                
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                    border-bottom: 3px solid #4361EE;
+                    padding-bottom: 20px;
+                }
+                
+                .header h1 {
+                    color: #4361EE;
+                    font-size: 28px;
+                    font-weight: 700;
+                    margin-bottom: 10px;
+                }
+                
+                .header .meta {
+                    color: #64748B;
+                    font-size: 14px;
+                }
+                
+                .section {
+                    margin-bottom: 25px;
+                    background: #f8fafc;
+                    padding: 15px;
+                    border-radius: 8px;
+                    border-left: 4px solid #4361EE;
+                }
+                
+                .section-title {
+                    color: #4361EE;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 15px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                
+                .info-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                    gap: 15px;
+                }
+                
+                .info-item {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #e2e8f0;
+                }
+                
+                .info-label {
+                    font-weight: 500;
+                    color: #64748B;
+                    min-width: 120px;
+                }
+                
+                .info-value {
+                    font-weight: 600;
+                    color: #1f2937;
+                    text-align: ${isRTL ? 'left' : 'right'};
+                }
+                
+                .status-badge {
+                    display: inline-block;
+                    padding: 4px 12px;
+                    border-radius: 20px;
+                    background: #4361EE;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: 600;
+                }
+                
+                .orders-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-top: 15px;
+                    background: white;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                
+                .orders-table th {
+                    background: #4361EE;
+                    color: white;
+                    padding: 8px 4px;
+                    font-weight: 600;
+                    text-align: ${textAlign};
+                    font-size: 11px;
+                    word-wrap: break-word;
+                    max-width: 100px;
+                }
+                
+                .orders-table td {
+                    padding: 6px 4px;
+                    border-bottom: 1px solid #e2e8f0;
+                    text-align: ${textAlign};
+                    font-size: 10px;
+                    word-wrap: break-word;
+                    max-width: 100px;
+                }
+                
+                .orders-table tr:nth-child(even) {
+                    background: #f8fafc;
+                }
+                
+                .orders-table tr:hover {
+                    background: #e2e8f0;
+                }
+                
+                .total-row {
+                    background: #4361EE !important;
+                    color: white;
+                    font-weight: 700;
+                }
+                
+                .footer {
+                    margin-top: 40px;
+                    text-align: center;
+                    color: #64748B;
+                    font-size: 12px;
+                    border-top: 1px solid #e2e8f0;
+                    padding-top: 20px;
+                }
+                
+                @media print {
+                    body { padding: 0; }
+                    .section { break-inside: avoid; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div style="flex: 1;">
+                       <h1 style="margin: 0; color: #4361EE; font-size:15px">JSK للخدمات اللوجستية والبريد السريع</h1>
+                        <h1 style="margin: 0; color: #4361EE;">كشف #${collection.collection_id}</h1>
+                    </div>
+                    <div class="meta" style="text-align: right;">
+                        <br><br>
+                        تاريخ الإنشاء: ${new Date().toLocaleDateString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">تفاصيل المجموعة</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">عدد الطلبات:</span>
+                        <span class="info-value">${type === "sent" ? collection.collections_count : collection.order_count}</span>
+                    </div>
+                    ${type !== "returned" ? `
+                    <div class="info-item">
+                        <span class="info-label">${type === "sent"
+                    ? "المبلغ المطلوب توصيله"
+                    : type === "business_money"
+                        ? "المبلغ المطلوب تحصيله"
+                        : "المبلغ المطلوب تحصيله"}:</span>
+                        <span class="info-value">${totalValue}</span>
+                    </div>
+                    ` : ''}
+                    ${type === "driver_money" ? `
+                    <div class="info-item">
+                        <span class="info-label">إجمالي الخصومات:</span>
+                        <span class="info-value">${formatFinancials('total_deductions')}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">المبلغ النهائي:</span>
+                        <span class="info-value">${formatFinancials('final_amount')}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            ${collection.sub_orders && collection.sub_orders.length > 0 ? `
+            <div class="section">
+                <div class="section-title">تفاصيل التاجر</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">اسم التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_name}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">هاتف التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_phone}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">موقع التاجر:</span>
+                        <span class="info-value">${collection.sub_orders[0].business_city} | ${collection.sub_orders[0].business_address}</span>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
+
+            ${(type === "returned" || type === "dispatched") ? `
+            <div class="section">
+                <div class="section-title">تفاصيل الفرع</div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">الفرع الحالي:</span>
+                        <span class="info-value">${collection.current_branch_name}</span>
+                    </div>
+                    ${type === "dispatched" ? `
+                    <div class="info-item">
+                        <span class="info-label">إلى الفرع:</span>
+                        <span class="info-value">${collection.to_branch_name}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            ` : ''}
+
+            ${safeOrdersData.length > 0 ? `
+            <div class="section">
+                <div class="section-title">قائمة الطلبات</div>
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>الباركود</th>
+                            <th>رقم الطلب</th>
+                            <th>اسم المستلم</th>
+                            <th>هاتف المستلم</th>
+                            <th>عنوان المستلم</th>
+                            <th>ملاحظة</th>
+                            <th>قيمة الدفع عند الاستلام</th>
+                            <th>القيمة الصافية</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${safeOrdersData.map(order => `
+                        <tr>
+                            <td style="text-align: center; padding: 8px;">
+                                ${order.order_id ? `<img src="${API_URL}/api/orders/${order.order_id}/barcode" alt="Barcode" style="max-width: 80px; height: auto;" />` : 'N/A'}
+                            </td>
+                            <td>${order.order_id || 'N/A'}</td>
+                            <td>${order.receiver_name || 'N/A'}</td>
+                            <td>${order.receiver_mobile || order.receiver_phone || 'N/A'}</td>
+                            <td>${order.receiver_address || 'N/A'}</td>
+                            <td>${order.note || 'لا توجد ملاحظات'}</td>
+                            <td>${order.total_cod_value || 'N/A'}</td>
+                            <td>${order.total_net_value || 'N/A'}</td>
+                        </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td colspan="7"><strong>الإجمالي:</strong></td>
+                            <td><strong>${totalValue}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            ` : ''}
+
+            <div class="footer">
+                <p>تم الإنشاء في: ${new Date().toLocaleString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-US')}</p>
+                <p>خدمة توصيل JSK</p>
+            </div>
+        </body>
+        </html>
+        `;
+    };
+
+    const openPdf = async (uri) => {
+        try {
+            if (Platform.OS === 'android') {
+                const contentUri = await LegacyFileSystem.getContentUriAsync(uri);
+                await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+                    data: contentUri,
+                    flags: 1,
+                    type: 'application/pdf'
+                });
+            } else {
+                await Print.printAsync({ uri });
+            }
+        } catch (e) {
+            Alert.alert(
+                translations[language]?.collections?.collection?.openPdfError || 'Unable to open PDF',
+                translations[language]?.collections?.collection?.openPdfErrorMessage || 'Install a PDF viewer app and try again.'
+            );
+        }
+    };
+
+    const savePdfToDevice = async (uri, filename) => {
+        try {
+            if (Platform.OS === 'android') {
+                const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                if (!permissions.granted) {
+                    Alert.alert(
+                        translations[language]?.collections?.collection?.storagePermissionRequired || 'Permission required',
+                        translations[language]?.collections?.collection?.storagePermissionMessage || 'Please grant storage access to save the file.'
+                    );
+                    return;
+                }
+                const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                    permissions.directoryUri,
+                    filename,
+                    'application/pdf'
+                );
+                await FileSystem.copyAsync({ from: uri, to: fileUri });
+                Alert.alert(
+                    translations[language]?.collections?.collection?.saved || 'Saved',
+                    translations[language]?.collections?.collection?.savedMessage || 'PDF saved successfully.'
+                );
+            } else {
+                await Sharing.shareAsync(uri, { UTI: 'com.adobe.pdf', mimeType: 'application/pdf' });
+            }
+        } catch (e) {
+            Alert.alert(
+                translations[language]?.collections?.collection?.saveError || 'Save failed',
+                e.message || 'Unable to save PDF.'
+            );
+        }
+    };
+
+    const generatePdfFile = async () => {
+        try {
+            setIsPdfLoading(true);
+
+            // Fetch collection details with orders if needed
+            let ordersData = [];
+
+            if (collection.order_ids) {
+                try {
+                    const response = await axios.get(
+                        `${process.env.EXPO_PUBLIC_API_URL}/api/orders`,
+                        {
+                            params: { order_ids: collection.order_ids },
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                            },
+                            withCredentials: true
+                        }
+                    );
+
+                    if (response.data?.data && Array.isArray(response.data.data)) {
+                        ordersData = response.data.data;
+                    } else {
+                        ordersData = [];
+                    }
+                } catch (error) {
+                    console.error('❌ [Collection.js] generatePDF - Error fetching orders:', error.message);
+                    ordersData = [];
+                }
+            }
+
+            // Generate HTML content
+            const htmlContent = generateCollectionHTML(collection, ordersData, type, language);
+
+            // Generate PDF from HTML
+            const { uri } = await Print.printToFileAsync({
+                html: htmlContent,
+                base64: false,
+                width: 612,
+                height: 792,
+                margins: {
+                    left: 20,
+                    top: 20,
+                    right: 20,
+                    bottom: 20,
+                },
+                fileName: `Tayar_Collection_${collection.collection_id}_${new Date().toISOString().split('T')[0]}.pdf`
+            });
+            setLastPdfUri(uri);
+            return uri;
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            Alert.alert(
+                translations[language]?.collections?.collection?.pdfError || "PDF Generation Error",
+                translations[language]?.collections?.collection?.pdfErrorMessage || "There was an error generating the PDF"
+            );
+            return null;
+        } finally {
+            setIsPdfLoading(false);
+        }
+    };
+
+    const generatePDF = async () => {
+        const uri = await generatePdfFile();
+        if (uri) {
+            await openPdf(uri);
+        }
+    };
+
+
+    return (
+        <View style={[
+            styles.collectionCard,
+            highlight ? {
+                borderWidth: 2,
+                borderColor: colors.primary,
+                shadowOpacity: 0.2,
+                elevation: 10
+            } : null,
+            {
+                backgroundColor: colors.card,
+                shadowColor: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.1)'
+            }
+        ]}>
+            {/* Header section with ID and status */}
+            <View style={[
+                styles.header,
+                {
+                    borderBottomColor: colors.border,
+                    backgroundColor: isDark ? colors.surface : 'rgba(67, 97, 238, 0.05)'
+                }
+            ]}>
+                <View style={styles.idSection}>
+                    <View style={[styles.idContainer]}>
+                        <Pressable onPress={() => Clipboard.setString(collection.collection_id.toString())}>
+                            <Text style={[
+                                styles.idText,
+                                { color: colors.primary }
+                            ]}>#{collection.collection_id}</Text>
+                        </Pressable>
+
+                        {/* Status badge for business_money collections */}
+                        {type === "business_money" && (localStatus || collection.status) && (
+                            <View style={[
+                                styles.statusBadge,
+                                { backgroundColor: getStatusColor(localStatusKey) }
+                            ]}>
+                                <Text style={styles.statusText}>
+                                    {localStatus}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
+                </View>
+
+            </View>
+
+            <View style={styles.contentContainer}>
+                {/* User information */}
+                <View style={styles.userInfoSection}>
+                    {renderCollectionUser()}
+                </View>
+
+                {/* Order count section */}
+                <View style={[
+                    styles.infoSection,
+                    { backgroundColor: colors.surface }
+                ]}>
+                    <View style={[styles.sectionRow]}>
+                        <View style={[
+                            styles.iconWrapper,
+                            { backgroundColor: colors.primary }
+                        ]}>
+                            <Feather name="package" size={20} color="#ffffff" />
+                        </View>
+                        <View style={[
+                            styles.sectionContent,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : ""
+                                    }
+                                }),
+                            }
+                        ]}>
+                            <Text style={[
+                                styles.sectionTitle,
+                                { color: colors.textSecondary, textAlign: isRTL ? "left" : "" }
+                            ]}>
+                                {type === "sent"
+                                    ? translations[language].collections.collection.numberOfCollections
+                                    : translations[language].collections.collection.numberOfOrders}
+                            </Text>
+                            <Text style={[
+                                styles.sectionValue,
+                                { color: colors.text }
+                            ]}>
+                                {type === "sent" ? collection.collections_count : collection.order_count}
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* Money section */}
+                {type !== "returned" && (
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper,
+                                { backgroundColor: '#F72585' }
+                            ]}>
+                                <MaterialIcons name="attach-money" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {type === "sent"
+                                        ? translations[language].collections.collection.moneyToDeliver
+                                        : translations[language].collections.collection.moneyToCollect}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text, textAlign: isRTL ? "left" : "" }
+                                ]}>
+                                    {type === "sent" ? collection.total_net_value : (type === "business_money" || Number(collection?.type_id) === 4) ? formatFinancials('final_amount') : formatFinancials('total_cod_value')}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Driver money extra financials */}
+                {(type === "driver_money") && (
+                    <>
+                        <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[styles.iconWrapper, { backgroundColor: '#F59E0B' }]}>
+                                    <MaterialIcons name="remove-circle-outline" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[styles.sectionContent, {
+                                    ...Platform.select({
+                                        ios: { alignItems: isRTL ? "flex-start" : "" }
+                                    }),
+                                }]}>
+                                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                                        {translations[language]?.collections?.collection?.totalDeductions}
+                                    </Text>
+                                    <Text style={[styles.sectionValue, { color: colors.text, textAlign: isRTL ? "left" : "" }]}>
+                                        {formatFinancials('total_deductions')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[styles.infoSection, { backgroundColor: colors.surface }]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[styles.iconWrapper, { backgroundColor: '#10B981' }]}>
+                                    <MaterialIcons name="payments" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[styles.sectionContent, {
+                                    ...Platform.select({
+                                        ios: { alignItems: isRTL ? "flex-start" : "" }
+                                    }),
+                                }]}>
+                                    <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+                                        {translations[language]?.collections?.collection?.finalAmount}
+                                    </Text>
+                                    <Text style={[styles.sectionValue, { color: colors.text, textAlign: isRTL ? "left" : "" }]}>
+                                        {formatFinancials('final_amount')}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </>
+                )}
+
+                {/* Checks section for driver */}
+                {(type === "sent" && collection.total_checks > 0) && (
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper,
+                                { backgroundColor: '#3A0CA3' }
+                            ]}>
+                                <MaterialIcons name="attach-money" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {translations[language].collections.collection.checksToDeliver}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text, textAlign: isRTL ? "left" : "" }
+                                ]}>
+                                    {collection.financials && collection.financials.length > 0
+                                        ? collection.financials.map((f, index) => (
+                                            `${f.currency_code}: ${f.checks_value || 0}${index < collection.financials.length - 1 ? ' | ' : ''}`
+                                        )).join('')
+                                        : '-'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Order IDs */}
+                {/* <View style={[
+                    styles.infoSection,
+                    { backgroundColor: colors.surface }
+                ]}>
+                    <View style={[styles.sectionRow]}>
+                        <View style={[
+                            styles.iconWrapper,
+                            { backgroundColor: '#3A0CA3' }
+                        ]}>
+                            <MaterialCommunityIcons name="identifier" size={20} color="#ffffff" />
+                        </View>
+                        <View style={[
+                            styles.sectionContent,
+                            {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : ""
+                                    }
+                                }),
+                            }
+                        ]}>
+                            <Text style={[
+                                styles.sectionTitle,
+                                { color: colors.textSecondary }
+                            ]}>
+                                {translations[language]?.collections?.collection?.orderIds || "Order IDs"}
+                            </Text>
+                            <Text style={[
+                                styles.sectionValue,
+                                { color: colors.text }
+                            ]}>
+                                {collection.order_ids}
+                            </Text>
+                        </View>
+                    </View>
+                </View> */}
+
+                {/* Business Information */}
+                {collection.sub_orders && collection.sub_orders.length > 0 && (
+                    <>
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: '#4361EE' }
+                                ]}>
+                                    <MaterialCommunityIcons name="office-building" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessName || "Business Name"}
+                                    </Text>
+                                    <Text style={[
+                                        styles.sectionValue,
+                                        { color: colors.text }
+                                    ]}>
+                                        {collection.sub_orders[0].business_name}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: colors.primary }
+                                ]}>
+                                    <Feather name="phone" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessPhone || "Business Phone"}
+                                    </Text>
+                                    <View style={styles.phoneContainer}>
+                                        <Text style={[
+                                            styles.sectionValue,
+                                            { color: colors.text, flex: 1 }
+                                        ]}>
+                                            {collection.sub_orders[0].business_phone}
+                                        </Text>
+                                        <View style={styles.contactButtonsContainer}>
+                                            <TouchableOpacity
+                                                style={[styles.contactButton, styles.callButton]}
+                                                onPress={() => handlePhoneCall(collection.sub_orders[0].business_phone)}
+                                            >
+                                                <FontAwesome name="phone" size={16} color="#ffffff" />
+                                            </TouchableOpacity>
+
+                                            <TouchableOpacity
+                                                style={[styles.contactButton, styles.whatsappButton]}
+                                                onPress={() => {
+                                                    setCurrentPhone(collection.sub_orders[0].business_phone);
+                                                    setShowPhoneOptions(true);
+                                                }}
+                                            >
+                                                <FontAwesome name="whatsapp" size={16} color="#ffffff" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+                            </View>
+                        </View>
+
+                        <View style={[
+                            styles.infoSection,
+                            { backgroundColor: colors.surface }
+                        ]}>
+                            <View style={[styles.sectionRow]}>
+                                <View style={[
+                                    styles.iconWrapper,
+                                    { backgroundColor: '#10B981' }
+                                ]}>
+                                    <Ionicons name="location-outline" size={20} color="#ffffff" />
+                                </View>
+                                <View style={[
+                                    styles.sectionContent,
+                                    {
+                                        ...Platform.select({
+                                            ios: {
+                                                alignItems: isRTL ? "flex-start" : ""
+                                            }
+                                        }),
+                                    }
+                                ]}>
+                                    <Text style={[
+                                        styles.sectionTitle,
+                                        { color: colors.textSecondary }
+                                    ]}>
+                                        {translations[language]?.collections?.collection?.businessLocation || "Business Location"}
+                                    </Text>
+                                    <Text style={[
+                                        styles.sectionValue,
+                                        { color: colors.text }
+                                    ]}>
+                                        {collection.sub_orders[0].business_city} | {collection.sub_orders[0].business_address}
+                                    </Text>
+                                </View>
+                            </View>
+                        </View>
+                    </>
+                )}
+
+                {/* Branch section */}
+                {(type === "returned" || type === "dispatched") && (
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper,
+                                { backgroundColor: '#4CC9F0' }
+                            ]}>
+                                <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {translations[language].collections.collection.currentBranch}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
+                                    {collection.current_branch_name}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* Created By (hidden for business users) */}
+                {user.role !== "business" && (collection.created_by_name || collection.created_by) && (
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper,
+                                { backgroundColor: '#7C3AED' }
+                            ]}>
+                                <Feather name="user-check" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {translations[language]?.tabs?.orders?.track?.createdBy || "Created By"}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
+                                    {collection.created_by_name || collection.created_by || "-"}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+
+                {/* To branch section */}
+                {type === "dispatched" && (
+                    <View style={[
+                        styles.infoSection,
+                        { backgroundColor: colors.surface }
+                    ]}>
+                        <View style={[styles.sectionRow]}>
+                            <View style={[
+                                styles.iconWrapper,
+                                { backgroundColor: '#7209B7' }
+                            ]}>
+                                <Ionicons name="git-branch-outline" size={20} color="#ffffff" />
+                            </View>
+                            <View style={[
+                                styles.sectionContent,
+                                {
+                                    ...Platform.select({
+                                        ios: {
+                                            alignItems: isRTL ? "flex-start" : ""
+                                        }
+                                    }),
+                                }
+                            ]}>
+                                <Text style={[
+                                    styles.sectionTitle,
+                                    { color: colors.textSecondary }
+                                ]}>
+                                    {translations[language].collections.collection.toBranch}
+                                </Text>
+                                <Text style={[
+                                    styles.sectionValue,
+                                    { color: colors.text }
+                                ]}>
+                                    {collection.to_branch_name}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+                )}
+            </View>
+
+            {collection.created_at && (
+                <View style={styles.dateTimeContainer}>
+                    <Text style={[styles.dateTimeText, { color: colors.textSecondary }]}>
+                        {formatCollectionDate(collection.created_at)}
+                    </Text>
+                </View>
+            )}
+
+            {/* Action buttons */}
+            <View style={styles.actionsContainer}>
+                {type !== "sent" && (
+                    <TouchableOpacity
+                        style={[
+                            styles.actionButton,
+                            { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                        ]}
+                        onPress={() => router.push({
+                            pathname: "/(tabs)/orders",
+                            params: { orderIds: collection.order_ids, reset: "true" }
+                        })}
+                        activeOpacity={0.7}
+                    >
+                        <View style={[
+                            styles.actionIconContainer,
+                            { backgroundColor: colors.primary }
+                        ]}>
+                            <MaterialCommunityIcons name="package-variant" size={18} color="#ffffff" />
+                        </View>
+                        <Text style={[
+                            styles.actionText,
+                            { color: colors.primary }
+                        ]}>
+                            {translations[language].collections.collection.orders}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+
+                {/* PDF Export Button */}
+                <TouchableOpacity
+                    style={[
+                        styles.actionButton,
+                        { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.1)' }
+                    ]}
+                    onPress={generatePDF}
+                    activeOpacity={0.7}
+                    disabled={isPdfLoading}
+                >
+                    {isPdfLoading ? (
+                        <ActivityIndicator size="small" color="#EF4444" />
+                    ) : (
+                        <>
+                            <View style={[
+                                styles.actionIconContainer,
+                                { backgroundColor: '#EF4444' }
+                            ]}>
+                                <FontAwesome5 name="file-pdf" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[
+                                styles.actionText,
+                                { color: '#EF4444' }
+                            ]}>
+                                {translations[language]?.collections?.collection?.exportPdf || "Export PDF"}
+                            </Text>
+                        </>
+                    )}
+                </TouchableOpacity>
+
+
+                {/* WhatsApp Options Modal */}
+                <ModalPresentation
+                    showModal={showPhoneOptions}
+                    setShowModal={setShowPhoneOptions}
+                    customStyles={{ bottom: 15 }}
+                    position="bottom"
+                >
+                    <View style={[
+                        styles.modalHeader,
+                        { borderBottomColor: colors.border }
+                    ]}>
+                        <Text style={[
+                            styles.modalHeaderText,
+                            { color: colors.text }
+                        ]}>
+                            {translations[language]?.collections?.collection?.whatsappOptions || "WhatsApp Options"}
+                        </Text>
+                    </View>
+                    <View style={styles.modalContent}>
+                        <TouchableOpacity
+                            style={[
+                                styles.modalOption,
+                                { borderBottomColor: colors.border }
+                            ]}
+                            onPress={() => {
+                                handleWhatsApp972(currentPhone);
+                                setShowPhoneOptions(false);
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
+                                <FontAwesome name="whatsapp" size={20} color="#ffffff" />
+                            </View>
+                            <Text style={[
+                                styles.modalOptionText,
+                                { color: colors.text }
+                            ]}>
+                                {translations[language]?.collections?.collection?.whatsapp || "WhatsApp"} (972)
+                            </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[
+                                styles.modalOption,
+                                styles.noBorder
+                            ]}
+                            onPress={() => {
+                                handleWhatsApp970(currentPhone);
+                                setShowPhoneOptions(false);
+                            }}
+                        >
+                            <View style={[styles.modalIconContainer, styles.whatsappIcon]}>
+                                <FontAwesome name="whatsapp" size={20} color="#ffffff" />
+                            </View>
+                            <Text style={[
+                                styles.modalOptionText,
+                                { color: colors.text }
+                            ]}>
+                                {translations[language]?.collections?.collection?.whatsapp || "WhatsApp"} (970)
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </ModalPresentation>
+
+                {/* Business package request */}
+                {/* {(user.role === "business" && collection.status_key === "returned_in_branch") && (
+                    <>
+                        <TouchableOpacity 
+                            style={[
+                                styles.actionButton,
+                                { backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)' }
+                            ]}
+                            onPress={() => setShowModal(true)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.actionIconContainer,
+                                { backgroundColor: '#F72585' }
+                            ]}>
+                                <FontAwesome6 name="money-bill-trend-up" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={[
+                                styles.actionText,
+                                { color: colors.primary }
+                            ]}>
+                                {translations[language].collections.collection.request_package}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <ModalPresentation 
+                            customStyles={{bottom: 15}} 
+                            showModal={showModal} 
+                            setShowModal={setShowModal}
+                        >
+                            <View style={styles.modalHeader}>
+                                <Text style={[styles.modalHeaderText]}>
+                                    {translations[language]?.collections?.collection?.actions}
+                                </Text>
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[styles.modalOption]}
+                                onPress={() => handleCollectNotification("package", "prepare")}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator color="#4361EE" size="small" />
+                                ) : (
+                                    <>
+                                        <View style={[
+                                            styles.modalIconContainer,
+                                            { backgroundColor: '#4361EE' }
+                                        ]}>
+                                            <MaterialIcons name="inventory" size={18} color="#ffffff" />
+                                        </View>
+                                        <Text style={[styles.modalOptionText]}>
+                                            {translations[language].collections.collection.prepare_package}
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={[styles.modalOption, styles.noBorder]}
+                                onPress={() => handleCollectNotification("package", "send")}
+                                disabled={isLoading}
+                            >
+                                <View style={[
+                                    styles.modalIconContainer,
+                                    { backgroundColor: '#F72585' }
+                                ]}>
+                                    <Feather name="send" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.modalOptionText]}>
+                                    {translations[language].collections.collection.send_package}
+                                </Text>
+                            </TouchableOpacity>
+                        </ModalPresentation>
+                    </>
+                )} */}
+
+                {/* Business money request */}
+                {/* {(user.role === "business" && collection.status_key === "money_in_branch") && (
+                    <>
+                        <TouchableOpacity 
+                            style={[styles.actionButton]}
+                            onPress={() => setShowModal(true)}
+                            activeOpacity={0.7}
+                        >
+                            <View style={[
+                                styles.actionIconContainer,
+                                { backgroundColor: '#F72585' }
+                            ]}>
+                                <FontAwesome6 name="money-bill-trend-up" size={18} color="#ffffff" />
+                            </View>
+                            <Text style={styles.actionText}>
+                                {translations[language].collections.collection.request_money}
+                            </Text>
+                        </TouchableOpacity>
+                        
+                        <ModalPresentation 
+                            customStyles={{bottom: 15}} 
+                            showModal={showModal} 
+                            setShowModal={setShowModal}
+                        >
+                            <View style={styles.modalHeader}>
+                                <Text style={[styles.modalHeaderText]}>
+                                    {translations[language]?.collections?.collection?.actions}
+                                </Text>
+                            </View>
+                            
+                            <TouchableOpacity
+                                style={[styles.modalOption]}
+                                onPress={() => handleCollectNotification("money", "prepare")}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator color="#4361EE" size="small" />
+                                ) : (
+                                    <>
+                                        <View style={[
+                                            styles.modalIconContainer,
+                                            { backgroundColor: '#4361EE' }
+                                        ]}>
+                                            <MaterialIcons name="payments" size={18} color="#ffffff" />
+                                        </View>
+                                        <Text style={[styles.modalOptionText]}>
+                                            {translations[language].collections.collection.prepare_money}
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                            
+                            <TouchableOpacity
+                                style={[styles.modalOption, styles.noBorder]}
+                                onPress={() => handleCollectNotification("money", "send")}
+                                disabled={isLoading}
+                            >
+                                <View style={[
+                                    styles.modalIconContainer,
+                                    { backgroundColor: '#F72585' }
+                                ]}>
+                                    <Feather name="send" size={18} color="#ffffff" />
+                                </View>
+                                <Text style={[styles.modalOptionText]}>
+                                    {translations[language].collections.collection.send_money}
+                                </Text>
+                            </TouchableOpacity>
+                        </ModalPresentation>
+                )} */}
+                {(localStatusKey === 'money_out' && (user.role === 'driver' || user.role === 'delivery_company')) && (
+                    <TouchableOpacity
+                        style={[styles.actionButton, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}
+                        onPress={pickImage}
+                        disabled={isLoading}
+                    >
+                        <View style={[styles.actionIconContainer, { backgroundColor: '#10B981' }]}>
+                            <Feather name="check" size={18} color="#ffffff" />
+                        </View>
+                        <Text style={[styles.actionText, { color: '#10B981' }]}>
+                            {translations[language]?.collections?.collection?.handed_over || 'Handed Over'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Image Preview Modal */}
+            {/* Image Preview and Confirmation Modal */}
+            <Modal
+                visible={!!selectedImage}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setSelectedImage(null)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.proofModalContainer}>
+                        <View style={styles.modalHeader}>
+                            <Text style={[styles.modalTitle, { color: colors.text }]}>
+                                {translations[language]?.collections?.collection?.submit_proof || 'Submit Proof'}
+                            </Text>
+                            <TouchableOpacity onPress={() => setSelectedImage(null)}>
+                                <Ionicons name="close" size={24} color={colors.text} />
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedImage && (
+                            <Image
+                                source={{ uri: selectedImage.uri }}
+                                style={styles.previewImage}
+                                resizeMode="contain"
+                            />
+                        )}
+
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.cancelButton]}
+                                onPress={() => setSelectedImage(null)}
+                                disabled={isLoading}
+                            >
+                                <Text style={styles.cancelButtonText}>
+                                    {translations[language]?.common?.cancel || 'Cancel'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[styles.modalButton, styles.confirmButton]}
+                                onPress={async () => {
+                                    if (!selectedImage) return;
+                                    if (proofScannedCollectionId && String(proofScannedCollectionId) !== String(collection.collection_id)) {
+                                        Alert.alert(
+                                            translations[language]?.common?.error || 'Error',
+                                            proofCameraT('wrongCollectionForThis', 'Wrong collection QR/Barcode for this collection')
+                                        );
+                                        return;
+                                    }
+
+                                    setIsLoading(true);
+                                    try {
+                                        const prevKey = localStatusKey;
+                                        const prevLabel = localStatus;
+                                        // Optimistic UI update
+                                        setLocalStatusKey('handed_over');
+                                        setLocalStatus(translations[language]?.collections?.collection?.handed_over || 'Handed Over');
+                                        const formData = new FormData();
+
+                                        // Append standard fields
+                                        formData.append('status', 'handed_over');
+                                        if (proofScannedCollectionId) {
+                                            formData.append('scanned_collection_id', String(proofScannedCollectionId));
+                                        }
+
+                                        // Append files - use standard React Native FormData behavior
+                                        const fileData = {
+                                            uri: selectedImage.uri,
+                                            type: 'image/jpeg',
+                                            name: selectedImage.fileName || `proof_${Date.now()}.jpg`
+                                        };
+                                        formData.append('attachments', fileData);
+
+                                        // Use fetch instead of axios for better FormData handling
+                                        const response = await fetch(
+                                            `${process.env.EXPO_PUBLIC_API_URL}/api/collections/${collection.collection_id}/status`,
+                                            {
+                                                method: 'PUT',
+                                                body: formData,
+                                                credentials: 'include',
+                                                headers: {
+                                                    'Accept': 'application/json',
+                                                    'Accept-Language': language,
+                                                    // Don't set Content-Type - let browser set it with boundary
+                                                }
+                                            }
+                                        );
+
+                                        const data = await response.json();
+
+                                        if (response.ok && data.success) {
+                                            Alert.alert(translations[language]?.common?.success, translations[language]?.common?.successMessage);
+                                            setSelectedImage(null);
+                                        } else {
+                                            throw new Error(data.message || 'Update failed');
+                                        }
+                                    } catch (error) {
+                                        console.error('Handover Error:', error);
+                                        Alert.alert('Error', error.message || 'Failed to update status');
+                                        // Revert optimistic UI on failure
+                                        setLocalStatusKey(prevKey);
+                                        setLocalStatus(prevLabel);
+                                    } finally {
+                                        setIsLoading(false);
+                                    }
+                                }}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <ActivityIndicator color="white" size="small" />
+                                ) : (
+                                    <Text style={styles.confirmButtonText}>
+                                        {translations[language]?.common?.save || 'Hand Over'}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            <Modal
+                visible={showProofCamera}
+                transparent={false}
+                animationType="slide"
+                onRequestClose={() => {
+                    setProofScanPaused(false);
+                    setShowProofCamera(false);
+                }}
+            >
+                <View style={[styles.cameraModalContainer, { backgroundColor: '#000' }]}>
+                    <CameraView
+                        ref={proofCameraRef}
+                        style={StyleSheet.absoluteFillObject}
+                        onBarcodeScanned={proofScanPaused ? undefined : ({ data }) => {
+                            const scannedId = extractCollectionIdFromScan(data);
+                            if (!scannedId) return;
+
+                            if (String(scannedId) === String(collection.collection_id)) {
+                                setProofScannedCollectionId(scannedId);
+                                setLastMatchedScanAt(Date.now());
+                            } else {
+                                setProofScanPaused(true);
+                                Alert.alert(
+                                    translations[language]?.common?.error || 'Error',
+                                    formatTemplate(
+                                        proofCameraT('mismatch', 'Scanned ID {scannedId} does not match Collection #{collectionId}'),
+                                        { scannedId, collectionId: collection.collection_id }
+                                    ),
+                                    [
+                                        {
+                                            text: translations[language]?.common?.ok || 'OK',
+                                            onPress: () => setProofScanPaused(false)
+                                        }
+                                    ]
+                                );
+                            }
+                        }}
+                    />
+
+                    <View style={styles.cameraTopBar}>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setProofScanPaused(false);
+                                setShowProofCamera(false);
+                            }}
+                            style={styles.cameraCloseButton}
+                        >
+                            <Ionicons name="close" size={28} color="#ffffff" />
+                        </TouchableOpacity>
+
+                        <View style={styles.cameraTopTextContainer}>
+                            <Text style={styles.cameraTopTitle}>
+                                Collection #{collection.collection_id}
+                            </Text>
+                            <Text style={styles.cameraTopSubtitle}>
+                                {proofScannedCollectionId && isRecentMatch()
+                                    ? proofCameraT('matched', 'Matched')
+                                    : proofCameraT('scanHint', 'Scan the QR/Barcode on the collection paper')}
+                            </Text>
+                        </View>
+                    </View>
+
+                    <View style={styles.cameraBottomBar}>
+                        <TouchableOpacity
+                            style={[
+                                styles.captureButton,
+                                !(proofScannedCollectionId && isRecentMatch()) && styles.captureButtonDisabled
+                            ]}
+                            onPress={async () => {
+                                if (!(proofScannedCollectionId && isRecentMatch())) {
+                                    Alert.alert(
+                                        translations[language]?.common?.error || 'Error',
+                                        proofCameraT('scanFirst', 'Scan the collection QR/Barcode first')
+                                    );
+                                    return;
+                                }
+
+                                try {
+                                    const photo = await proofCameraRef.current?.takePictureAsync?.({ quality: 1 });
+                                    if (!photo?.uri) {
+                                        Alert.alert(
+                                            translations[language]?.common?.error || 'Error',
+                                            proofCameraT('captureFailed', 'Failed to capture photo')
+                                        );
+                                        return;
+                                    }
+                                    setShowProofCamera(false);
+                                    setSelectedImage({ uri: photo.uri, fileName: `proof_${Date.now()}.jpg` });
+                                } catch (e) {
+                                    Alert.alert(
+                                        translations[language]?.common?.error || 'Error',
+                                        e?.message || proofCameraT('captureFailed', 'Failed to capture photo')
+                                    );
+                                }
+                            }}
+                        >
+                            <View style={styles.captureButtonInner} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+        </View>
+    );
+}
+
+export default React.memo(Collection, (prevProps, nextProps) => {
+    // Only re-render if collection ID, status, or type changes
+    return (
+        prevProps.collection.collection_id === nextProps.collection.collection_id &&
+        prevProps.collection.status_key === nextProps.collection.status_key &&
+        prevProps.type === nextProps.type &&
+        prevProps.highlight === nextProps.highlight
+    );
+});
+
+const styles = StyleSheet.create({
+    collectionCard: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        marginBottom: 16,
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+        overflow: 'hidden',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.06)',
+        backgroundColor: 'rgba(67, 97, 238, 0.05)',
+    },
+    idSection: {
+        flex: 1,
+    },
+    idContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: 12
+    },
+    idLabel: {
+        fontSize: 14,
+        color: '#64748B'
+    },
+    idText: {
+        fontWeight: '700',
+        fontSize: 16,
+        color: '#4361EE',
+    },
+    statusBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 30,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        minWidth: 100,
+    },
+    statusText: {
+        color: 'white',
+        fontWeight: '600',
+        fontSize: 13,
+        textAlign: 'center',
+        flex: 1,
+    },
+    contentContainer: {
+        padding: 16,
+    },
+    userInfoSection: {
+        marginBottom: 8,
+    },
+    infoSection: {
+        backgroundColor: 'rgba(249, 250, 251, 1)',
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 12,
+    },
+    sectionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12
+    },
+    iconWrapper: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    sectionContent: {
+        flex: 1,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#64748B',
+        marginBottom: 4,
+    },
+    sectionValue: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+    },
+    dateTimeContainer: {
+        padding: 16,
+        paddingTop: 0,
+        alignItems: 'flex-end',
+    },
+    dateTimeText: {
+        fontSize: 12,
+        color: '#94A3B8',
+    },
+    actionsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        padding: 16,
+        paddingTop: 0,
+        gap: 12,
+    },
+    actionButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(67, 97, 238, 0.1)',
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 20,
+        gap: 12
+    },
+    actionIconContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    actionText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#4361EE',
+    },
+    confirmButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#10B981',
+        margin: 16,
+        marginTop: 0,
+        padding: 12,
+        borderRadius: 12,
+        shadowColor: "#10B981",
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    confirmButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: 'white',
+    },
+    modalHeader: {
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.06)',
+    },
+    modalHeaderText: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#333',
+    },
+    modalContent: {
+        padding: 16,
+    },
+    modalOption: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.06)',
+    },
+    modalIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    modalOptionText: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#333',
+    },
+    noBorder: {
+        borderBottomWidth: 0,
+    },
+
+    // Contact button styles
+    contactButtonsContainer: {
+        flexDirection: 'row',
+        gap: 8,
+    },
+    contactButton: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    callButton: {
+        backgroundColor: '#4361EE',
+    },
+    whatsappButton: {
+        backgroundColor: '#25D366',
+    },
+    whatsappIcon: {
+        backgroundColor: '#25D366',
+    },
+    phoneContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        padding: 20,
+    },
+    proofModalContainer: {
+        backgroundColor: 'white',
+        borderRadius: 16,
+        overflow: 'hidden',
+        width: '100%',
+        maxHeight: '80%',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+    },
+    previewImage: {
+        width: '100%',
+        height: 250,
+        backgroundColor: '#f5f5f5',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        padding: 16,
+        gap: 12,
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#F3F4F6',
+    },
+    cancelButtonText: {
+        fontSize: 15,
+        fontWeight: '600',
+        color: '#4B5563',
+    },
+    cameraModalContainer: {
+        flex: 1,
+    },
+    cameraTopBar: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingTop: Platform.OS === 'android' ? 48 : 58,
+        paddingBottom: 14,
+        paddingHorizontal: 14,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    cameraCloseButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cameraTopTextContainer: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    cameraTopTitle: {
+        color: '#ffffff',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    cameraTopSubtitle: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 13,
+        marginTop: 3,
+        fontWeight: '600',
+    },
+    cameraBottomBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingBottom: Platform.OS === 'android' ? 26 : 34,
+        paddingTop: 18,
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    captureButton: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        borderWidth: 5,
+        borderColor: '#ffffff',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.08)',
+    },
+    captureButtonDisabled: {
+        opacity: 0.55,
+    },
+    captureButtonInner: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#ffffff',
+    },
+});

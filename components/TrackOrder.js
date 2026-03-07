@@ -1,0 +1,127 @@
+import { View,Text,TextInput,TouchableOpacity,StyleSheet,Platform  } from "react-native"
+import Feather from '@expo/vector-icons/Feather';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from "expo-router";
+import { useState } from "react";
+import { useCameraPermissions } from 'expo-camera';
+import { translations } from '../utils/languageContext';
+import { useLanguage } from '../utils/languageContext';
+import { RTLWrapper } from '@/utils/RTLWrapper';
+import { useTheme } from '@/utils/themeContext';
+import { Colors } from '@/constants/Colors';
+
+export default function TrackOrder(){
+    const [value,setValue] = useState("");
+    const [permission,requestPermission] = useCameraPermissions();
+    const { language } = useLanguage();
+    const isRTL = language === 'ar' || language === 'he';
+    const { isDark, colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+
+
+    return <RTLWrapper>
+        <View style={[styles.track, {
+            ...Platform.select({
+                ios: {
+                    flexDirection:"column",
+                    alignItems:isRTL ? "flex-start" : ""
+                }
+            }),
+            backgroundColor: isDark ? colors.surface : undefined,
+        }]}>
+        <Text style={[styles.h2, { color: colors.text }]}>{translations[language].track.title}</Text>
+        <Text style={[styles.onPress, { color: colors.textSecondary }]}>{translations[language].track.desc}</Text>
+        <View style={[styles.flex]}>
+            <View style={[styles.inputBox, { 
+                backgroundColor: colors.card,
+                borderColor: colors.border 
+            }]}>
+                <Feather name="package" size={24} color={colors.iconDefault} />
+                <TextInput
+                    style={[styles.input, {
+                        ...Platform.select({
+                            ios: {
+                                textAlign:isRTL ? "right" : ""
+                            }
+                        }),
+                        color: colors.text
+                    }]}
+                    placeholder={translations[language].track.placeholder}
+                    placeholderTextColor={colors.textTertiary} 
+                    value={value}
+                    onChangeText={(input)=> setValue(input)}
+                    returnKeyType="done"
+                    onSubmitEditing={()=> {
+                        router.push({pathname:"/(track)",params:{orderId:value}})
+                        setValue("")
+                    }}
+                />
+            </View>
+            <TouchableOpacity style={[styles.button, {
+                backgroundColor: colors.buttonPrimary
+            }]} onPress={()=> {
+              if(permission){
+                router.push("(camera)/lookupOrder")
+              }else{
+                requestPermission()
+              }
+            }}>
+                <Ionicons name="scan" size={24} color={colors.buttonText} />
+            </TouchableOpacity>
+        </View>
+    </View>
+    </RTLWrapper>
+}
+
+const styles = StyleSheet.create({
+    h2:{
+        fontSize:17,
+        fontWeight:"500"
+    },
+    p:{
+        fontSize:13,
+        marginTop:5,
+    },
+    flex:{
+        flexDirection:"row",
+        justifyContent:"center",
+        flexWrap:"nowrap",
+        alignItems:"center",
+        gap:15,
+        marginTop:10,
+    },
+    inputBox:{
+        flexDirection:"row",
+        alignItems:"center",
+        gap:7,
+        backgroundColor:"white",
+        width:"80%",
+        height:45,
+        paddingHorizontal:7,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: "rgba(203, 213, 225, 0.8)",
+    },
+    input:{
+        width:"85%",
+        color: "#1F2937",
+    },
+    button:{
+        backgroundColor: "#4361EE",
+        padding: 10,
+        borderRadius: 8,
+    },
+    ...Platform.select({
+        ios: {
+            shadowColor: '#4361EE',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 3,
+        },
+        android: {
+            elevation: 2,
+        },
+    }),
+    
+})

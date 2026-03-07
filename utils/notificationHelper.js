@@ -1,0 +1,399 @@
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { Platform, Alert } from 'react-native';
+import { getToken } from './secureStore';
+import * as TaskManager from 'expo-task-manager';
+import { router } from 'expo-router';
+
+// Define the background notification task name
+export const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATION_TASK';
+
+// Configure notification handler for when app is in foreground
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
+// Register the background task handler for notifications
+export async function registerBackgroundNotificationTask() {
+  // Skip for iOS as it's handled by the native side
+  if (Platform.OS === 'ios') {
+    return;
+  }
+
+  // Check if task is already registered
+  const isTaskRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_NOTIFICATION_TASK);
+
+  if (!isTaskRegistered) {
+    await TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, ({ data, error }) => {
+      if (error) {
+        console.error(`Error in background task ${BACKGROUND_NOTIFICATION_TASK}:`, error);
+        return;
+      }
+
+      if (data) {
+        const { notification } = data;
+
+        // Process the notification data
+        if (notification && notification.request && notification.request.content) {
+          const notificationData = notification.request.content.data;
+          const title = notification.request.content.title;
+          const body = notification.request.content.body;
+
+          // Schedule a local notification to ensure it's visible
+          // This is needed because some Android devices might suppress background notifications
+          Notifications.scheduleNotificationAsync({
+            content: {
+              title: title || "New Notification",
+              body: body || "You have a new notification",
+              data: notificationData,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.MAX,
+              channelId: 'high_priority',
+            },
+            trigger: null, // Show immediately
+          }).catch(err => console.error("Failed to schedule notification:", err));
+        }
+
+        return true;
+      }
+    });
+
+    // Register the task with notifications
+    await Notifications.registerTaskAsync(BACKGROUND_NOTIFICATION_TASK);
+  }
+}
+
+// Register for push notifications
+export async function registerForPushNotificationsAsync() {
+  let token;
+
+  // Check if running in Expo Go vs development build
+  const isExpoGo = Constants.appOwnership === 'expo';
+  const isDevelopmentBuild = !isExpoGo;
+
+  if (isExpoGo && Platform.OS === 'android') {
+    console.warn('Push notifications are not supported in Expo Go on Android with SDK 53+. Use a development build instead.');
+    return null;
+  }
+
+  if (Platform.OS === 'android') {
+    // Create a channel for Android notifications with higher importance
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Default',
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+      sound: true,
+      enableVibrate: true,
+      showBadge: true,
+    });
+
+    // Create a high priority channel for critical notifications
+    await Notifications.setNotificationChannelAsync('high_priority', {
+      name: 'High Priority',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF231F7C',
+      sound: true,
+      enableVibrate: true,
+      showBadge: true,
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+          providesAppNotificationSettings: true,
+          allowProvisional: true, // Allow provisional delivery for iOS
+        },
+      });
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.warn('Push notification permission not granted. Tokens will not be generated.');
+      return;
+    }
+
+    try {
+      // Get the push token
+      if (Platform.OS === 'android') {
+        // Use device push token for Android
+        token = (await Notifications.getDevicePushTokenAsync()).data;
+      } else {
+        // For iOS, use getDevicePushTokenAsync() instead of getExpoPushTokenAsync()
+        // This is critical for background notifications to work in production
+        token = (await Notifications.getDevicePushTokenAsync()).data;
+
+        // Log the token type for debugging
+        console.log('iOS push token type:', typeof token);
+      }
+
+      // Register background task for handling notifications when app is closed
+      await registerBackgroundNotificationTask();
+
+      // Send token to backend
+      if (token) {
+        // Check if user is authenticated before sending token to server
+        const userToken = await getToken('userToken');
+        const userId = await getToken('userId');
+        if (userToken && userId) {
+          await sendPushTokenToServer(token);
+        } else {
+          console.log('User not authenticated, skipping token registration with server');
+        }
+      }
+    } catch (error) {
+      console.error('Error getting push token:', error);
+    }
+  } else {
+    console.log('Must use physical device for push notifications');
+  }
+
+  return token;
+}
+
+// Send push token to server
+async function sendPushTokenToServer(pushToken) {
+  try {
+    const token = await getToken('userToken');
+    if (!token) return false;
+
+    const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+
+    // Format the token if it's a native iOS token (Data object)
+    let formattedToken = pushToken;
+    let tokenType = 'native';
+
+    // Check if it's an Expo token
+    if (typeof pushToken === 'string' && pushToken.startsWith('ExponentPushToken[')) {
+      tokenType = 'expo';
+    }
+    // Check if it's a native iOS token that needs formatting
+    else if (Platform.OS === 'ios' && typeof pushToken === 'string' && pushToken.includes(' ')) {
+      // Format the token by removing spaces
+      formattedToken = pushToken.replace(/\s/g, '');
+    }
+
+    const response = await fetch(`${apiUrl}/api/notifications/token`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        pushToken: formattedToken,
+        platform: Platform.OS,
+        tokenType: tokenType
+      })
+    });
+
+    // Check if response is ok before parsing JSON
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Error response from server:", text);
+      return false;
+    }
+
+    const result = await response.json();
+    return result.success;
+  } catch (error) {
+    return false;
+  }
+}
+
+// Set up notification listeners
+export function setupNotificationListeners(onNotification, onNotificationResponse) {
+  // When a notification is received while the app is in the foreground
+  const notificationListener = Notifications.addNotificationReceivedListener(
+    notification => {
+      if (onNotification) {
+        onNotification(notification);
+      }
+    }
+  );
+
+  // When the user taps on a notification (works in foreground, background, or killed states)
+  const responseListener = Notifications.addNotificationResponseReceivedListener(
+    response => {
+      if (onNotificationResponse) {
+        onNotificationResponse(response);
+      }
+    }
+  );
+
+  return {
+    remove: () => {
+      notificationListener.remove();
+      responseListener.remove();
+    }
+  };
+}
+
+// Get the last notification response (useful for handling deep linking when app opens from a notification)
+export async function getLastNotificationResponse() {
+  return await Notifications.getLastNotificationResponseAsync();
+}
+
+// Clear all notifications
+export async function dismissAllNotifications() {
+  return await Notifications.dismissAllNotificationsAsync();
+}
+
+// Set badge count
+export async function setBadgeCount(count) {
+  try {
+    await Notifications.setBadgeCountAsync(count);
+  } catch (error) {
+  }
+}
+
+// Schedule a local notification
+export async function scheduleLocalNotification(title, body, data = {}) {
+  try {
+    // Check if notification has user_id and if it matches current user
+    if (data && data.user_id) {
+      const currentUserId = await getToken('userId');
+      if (!currentUserId || Number(currentUserId) !== Number(data.user_id)) {
+        return;
+      }
+    }
+
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: title,
+        body: body,
+        data: data,
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.MAX,
+        channelId: 'high_priority',
+      },
+      trigger: null, // Show immediately
+    });
+  } catch (error) {
+    console.error("Error scheduling local notification:", error);
+  }
+}
+
+// This function should be called in the App.js or index.js file to ensure notifications work when app is closed
+export async function initializeNotifications() {
+  // Register for push notifications
+  await registerForPushNotificationsAsync();
+
+  // Register background task (this will skip for iOS)
+  await registerBackgroundNotificationTask();
+
+  // For iOS, we need to request notification permissions again to ensure they're properly set
+  if (Platform.OS === 'ios') {
+    const { status } = await Notifications.getPermissionsAsync();
+    if (status !== 'granted') {
+      await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+          providesAppNotificationSettings: true,
+          allowProvisional: true,
+        },
+      });
+    }
+  }
+
+  const getCollectionTypeParam = (typeId) => {
+    switch (Number(typeId)) {
+      case 4:
+        return 'business_money';
+      case 5:
+        return 'business_returned';
+      case 1:
+        return 'driver_money';
+      case 2:
+        return 'driver_returned';
+      case 3:
+        return 'dispatched';
+      default:
+        return 'business_money';
+    }
+  };
+
+  const navigateFromNotificationData = (data) => {
+    if (!data) return;
+
+    const type = data.type;
+    const normalizedType = typeof type === 'string' ? type.toLowerCase() : '';
+
+    if (normalizedType === 'complaint') {
+      const complaintId = data.complaint_id || data.complaintId;
+      if (complaintId) {
+        router.push({
+          pathname: '/(complaints)/complaint',
+          params: { complaintId: String(complaintId) }
+        });
+      }
+      return;
+    }
+
+    if (normalizedType === 'collection' || normalizedType === 'collection_closed') {
+      const collectionId = data.collection_id || data.collectionId;
+      if (collectionId) {
+        const collectionType = getCollectionTypeParam(data.collection_type_id || data.collectionTypeId);
+        router.push({
+          pathname: '/(collection)',
+          params: {
+            type: collectionType,
+            focusCollectionId: String(collectionId)
+          }
+        });
+      }
+      return;
+    }
+
+    const orderId = data.orderId || data.order_id;
+    if (
+      orderId &&
+      (normalizedType === 'order' ||
+        normalizedType === 'status_change' ||
+        normalizedType === 'status_updated' ||
+        normalizedType === 'order_status_change' ||
+        normalizedType === 'order_status_set')
+    ) {
+      router.push({
+        pathname: '/(track)',
+        params: { orderId: String(orderId) }
+      });
+    }
+  };
+
+  const lastNotificationResponse = await getLastNotificationResponse();
+  if (lastNotificationResponse?.notification?.request?.content?.data) {
+    navigateFromNotificationData(lastNotificationResponse.notification.request.content.data);
+  }
+
+  // Set up notification listeners
+  return setupNotificationListeners(
+    (notification) => {
+    },
+    (response) => {
+      // Handle notification response (e.g., navigate to a specific screen)
+      const data = response?.notification?.request?.content?.data;
+      navigateFromNotificationData(data);
+    }
+  );
+}

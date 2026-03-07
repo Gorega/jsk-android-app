@@ -1,0 +1,143 @@
+{
+  "expo": {
+    "name": "JSK",
+    "slug": "jsk",
+    "version": "3.7.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/tayar_logo.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/7cd8b12e-2b06-47bf-b819-a41c16408900",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "ios": {
+      "workflow": "managed",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "JSK needs access to your camera to scan order barcodes for quick tracking and to take photos to send in chat conversations.",
+        "NSMicrophoneUsageDescription": "JSK needs access to your microphone to record and send voice messages in chat conversations.",
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      },
+      "bundleIdentifier": "com.expressjsk.jsk",
+      "userInterfaceStyle": "automatic",
+      "config": {
+        "isRTL": true
+      },
+      "supportsRTL": true
+    },
+    "android": {
+      "package": "com.expressjsk.jsk",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/tayar_logo.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RESTART_PACKAGES",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "NOTIFICATIONS"
+      ],
+      "userInterfaceStyle": "automatic",
+      "allowBackup": false,
+      "config": {
+        "isRTL": true
+      },
+      "supportsRTL": true,
+      "jsEngine": "jsc",
+      "useNextNotificationsApi": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/tayar_logo.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/tayar_logo.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "JSK needs access to your camera to scan order barcodes for quick tracking and to take photos to send in chat conversations."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "JSK uses Face ID to securely verify your identity when logging in, so only you can access your account."
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/tayar_logo.png",
+          "color": "#ffffff",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "Updates from JSK",
+          "iosDisplayInForeground": true,
+          "enableBackgroundRemoteNotifications": true
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "buildToolsVersion": "35.0.0",
+            "kotlinVersion": "1.9.25",
+            "enableProguardInReleaseBuilds": true,
+            "enableSeparateBuildPerCPUArchitecture": true,
+            "largeHeap": true,
+            "memoryOptimizations": true,
+            "webpEnabled": false,
+            "webpAnimatedEnabled": false
+          }
+        }
+      ],
+      "./app.plugin.js"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "7cd8b12e-2b06-47bf-b819-a41c16408900"
+      }
+    },
+    "owner": "expressjsk",
+    "notification": {
+      "icon": "./assets/images/tayar_logo.png",
+      "color": "#ffffff",
+      "androidMode": "default",
+      "androidCollapsedTitle": "Updates from JSK",
+      "iosDisplayInForeground": true
+    }
+  }
+}

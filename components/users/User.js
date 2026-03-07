@@ -1,0 +1,1033 @@
+import { View, StyleSheet, Text, TouchableOpacity, Pressable, Animated, Platform, ActivityIndicator } from 'react-native';
+import { translations } from '../../utils/languageContext';
+import { useLanguage } from '../../utils/languageContext';
+import Feather from '@expo/vector-icons/Feather';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import ModalPresentation from '../ModalPresentation';
+import { router } from 'expo-router';
+import UserBox from "../orders/userBox/UserBox";
+import { useSocket } from '../../utils/socketContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../utils/themeContext';
+import { Colors } from '../../constants/Colors';
+import { useAuth } from '../../RootLayout';
+import React from 'react';
+
+function User({ user }) {
+    const { language } = useLanguage();
+    const { colorScheme } = useTheme();
+    const colors = Colors[colorScheme];
+    const { user: authUser } = useAuth();
+    
+    const [showControl, setShowControl] = useState(false);
+    const [updatingStatus, setUpdatingStatus] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [orderStats, setOrderStats] = useState(null);
+    const [orderStatsLoading, setOrderStatsLoading] = useState(false);
+    const socket = useSocket();
+    const [isOnline, setIsOnline] = useState(false);
+    const [lastSeen, setLastSeen] = useState(null);
+    const pulseAnim = useRef(new Animated.Value(1)).current;
+    const isRTL = language === 'ar' || language === 'he';
+    const isDriverMode = useMemo(() => {
+        const id = Number(user?.role_id);
+        return [4, 9].includes(id);
+    }, [user?.role_id]);
+    
+    const isActiveAccount = (
+        typeof user?.active_status_key !== 'undefined' ? (user.active_status_key === 1) :
+        typeof user?.activeStatus !== 'undefined' ? (user.activeStatus === 1 || user.activeStatus === true) :
+        typeof user?.active_status !== 'undefined' ? (user.active_status === 1 || user.active_status === translations[language]?.users?.user?.active) :
+        false
+    );
+    const [localActive, setLocalActive] = useState(isActiveAccount);
+    useEffect(() => {
+        setLocalActive(isActiveAccount);
+    }, [user?.active_status_key, user?.activeStatus, user?.active_status, isActiveAccount]);
+
+    // Pulse animation for online status
+    useEffect(() => {
+        if (isOnline) {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(pulseAnim, {
+                        toValue: 1.3,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(pulseAnim, {
+                        toValue: 1,
+                        duration: 1000,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        } else {
+            pulseAnim.setValue(1);
+        }
+    }, [isOnline]);
+
+    // Listen for online user updates from socket
+    useEffect(() => {
+        if (!socket) return;
+
+        // Initialize as offline
+        setIsOnline(false);
+
+        // Handle userUpdate events with type USER_ONLINE_STATUS
+        const handleUserUpdate = (notification) => {
+            if (notification.userId === user.user_id || notification.userId === Number(user.user_id)) {
+                if (notification.type === 'USER_ONLINE_STATUS') {
+                    setIsOnline(notification.isOnline);
+                    
+                    if (!notification.isOnline && notification.timestamp) {
+                        try {
+                            const timestamp = new Date(notification.timestamp);
+                            if (!isNaN(timestamp.getTime())) {
+                                setLastSeen(timestamp);
+                            }
+                        } catch (e) {
+                            console.error("Invalid timestamp format:", notification.timestamp);
+                        }
+                    }
+                }
+            }
+        };
+
+        // Handle individual user online status
+        const handleUserOnline = (userId) => {
+            if (userId === user.user_id || userId === Number(user.user_id)) {
+                setIsOnline(true);
+            }
+        };
+
+        // Handle individual user offline status
+        const handleUserOffline = (userId) => {
+            if (userId === user.user_id || userId === Number(user.user_id)) {
+                setIsOnline(false);
+                const now = new Date();
+                setLastSeen(now);
+            }
+        };
+        
+        // Check if user is already online
+        const checkOnlineStatus = () => {
+            socket.emit('getOnlineUsers', (onlineUsers) => {
+                if (Array.isArray(onlineUsers)) {
+                    const userIsOnline = onlineUsers.some(id => 
+                        id === user.user_id || id === Number(user.user_id)
+                    );
+                    setIsOnline(userIsOnline);
+                }
+            });
+        };
+
+        // Listen for events
+        socket.on('userUpdate', handleUserUpdate);
+        socket.on('userOnline', handleUserOnline);
+        socket.on('userOffline', handleUserOffline);
+        
+        // Check initial status
+        checkOnlineStatus();
+
+        return () => {
+            socket.off('userUpdate', handleUserUpdate);
+            socket.off('userOnline', handleUserOnline);
+            socket.off('userOffline', handleUserOffline);
+        };
+    }, [socket, user.user_id]);
+
+    // Format time since last seen
+    const formatLastSeen = useCallback(() => {
+        if (!lastSeen || !(lastSeen instanceof Date) || isNaN(lastSeen.getTime())) {
+            return translations[language].users.user.offline;
+        }
+        
+        const now = new Date();
+        const diffMs = now - lastSeen;
+        const diffMins = Math.floor(diffMs / 60000);
+        
+        if (diffMins < 1) {
+            return translations[language].users.user.justNow;
+        } else if (diffMins < 60) {
+            return `${diffMins} ${translations[language].users.user.minutesAgo}`;
+        } else {
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) {
+                return `${diffHours} ${translations[language].users.user.hoursAgo}`;
+            } else {
+                const diffDays = Math.floor(diffHours / 24);
+                return `${diffDays} ${translations[language].users.user.daysAgo}`;
+            }
+        }
+    }, [lastSeen, language]);
+
+    // Memoize the status text to prevent recalculation
+    const statusText = useMemo(() => {
+        return isOnline ? 
+            translations[language].users.user.online : 
+            localActive ? 
+                (lastSeen ? formatLastSeen() : translations[language].users.user.active) : 
+                translations[language].users.user.inactive;
+    }, [isOnline, localActive, lastSeen, formatLastSeen, language]);
+
+    // Memoize the handleEditPress function
+    const handleEditPress = useCallback(() => {
+        setShowControl(false);
+        router.push({
+            pathname: "(create_user)",
+            params: { userId: user.user_id }
+        });
+    }, [user.user_id]);
+
+    const canChangePassword = useMemo(() => {
+        const authRoleId = Number(authUser?.role_id);
+        const authRoleKey = String(authUser?.role || '').toLowerCase();
+        const isAuthAdmin = authRoleId === 1 || authRoleKey === 'admin';
+        const authUserId = authUser?.userId ?? authUser?.user_id ?? authUser?.id;
+        const isSelf = Number(authUserId) === Number(user?.user_id);
+        const targetRoleId = Number(user?.role_id);
+        const isBusinessTarget = targetRoleId === 2;
+        const isAuthBusiness = authRoleId === 2 || authRoleKey === 'business';
+
+        return isAuthAdmin || isSelf || (isBusinessTarget && !isAuthBusiness);
+    }, [authUser?.id, authUser?.role, authUser?.role_id, authUser?.userId, authUser?.user_id, user?.role_id, user?.user_id]);
+
+    const handleChangePassword = useCallback(() => {
+        setShowControl(false);
+        router.push({
+            pathname: "(change_password)",
+            params: { userId: String(user?.user_id), userName: user?.name || "" }
+        });
+    }, [user?.name, user?.user_id]);
+
+    const handleToggleActive = useCallback(async () => {
+        if (updatingStatus) return;
+        setUpdatingStatus(true);
+        const targetStatus = !localActive;
+        try {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/status/update`, {
+                method: 'PUT',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language,
+                },
+                body: JSON.stringify({
+                    updates: [{ userIds: String(user.user_id), active_status: targetStatus }]
+                })
+            });
+            const body = await res.json();
+            if (res.ok) {
+                setLocalActive(targetStatus);
+                try {
+                    const verifyRes = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.user_id}?language_code=${language}`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const verifyBody = await verifyRes.json();
+                    const resolved = typeof verifyBody?.activeStatus !== 'undefined' ? verifyBody.activeStatus : verifyBody?.active_status_key;
+                    if (typeof resolved !== 'undefined') {
+                        setLocalActive(resolved === 1 || resolved === true);
+                    }
+                } catch (ve) {
+                }
+            }
+        } catch (e) {
+        } finally {
+            setUpdatingStatus(false);
+            setShowControl(false);
+        }
+    }, [language, user.user_id, localActive, updatingStatus]);
+
+    const toggleLabel = useMemo(() => {
+        const t = translations[language];
+        const inactiveText = t?.users?.user?.inactive || 'Inactive';
+        const activeText = t?.users?.user?.active || 'Active';
+        return localActive ? inactiveText : activeText;
+    }, [language, localActive]);
+
+    const fetchOrderStats = useCallback(async () => {
+        if (!user?.user_id) return;
+        if (orderStatsLoading) return;
+        setOrderStatsLoading(true);
+        try {
+            const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/users/${user.user_id}/order-stats`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Accept-Language': language,
+                },
+            });
+            const body = await res.json();
+            if (res.ok && body?.status === 'success' && Array.isArray(body?.data)) {
+                setOrderStats(body.data);
+            } else {
+                setOrderStats([]);
+            }
+        } catch (e) {
+            setOrderStats([]);
+        } finally {
+            setOrderStatsLoading(false);
+        }
+    }, [language, orderStatsLoading, user?.user_id]);
+
+    useEffect(() => {
+        if (!isExpanded) return;
+        if (orderStats !== null) return;
+        fetchOrderStats();
+    }, [isExpanded, orderStats, fetchOrderStats]);
+
+    const statsByStatus = useMemo(() => {
+        const map = new Map();
+        if (!Array.isArray(orderStats)) return map;
+        orderStats.forEach((row) => {
+            const status = String(row?.status || '');
+            if (!status) return;
+            map.set(status, {
+                count: Number(row?.count) || 0,
+                net_value_ils: Number(row?.net_value_ils) || 0
+            });
+        });
+        return map;
+    }, [orderStats]);
+
+    const totals = useMemo(() => {
+        if (!Array.isArray(orderStats) || orderStats.length === 0) {
+            return { total_orders: 0, success_orders: 0, failed_orders: 0 };
+        }
+        const successStatuses = new Set(["delivered", "completed", "business_paid"]);
+        const failedStatuses = new Set(["cancelled", "rejected", "stuck"]);
+
+        const total_orders = orderStats.reduce((sum, item) => sum + (Number(item?.count) || 0), 0);
+        const success_orders = orderStats.reduce((sum, item) => {
+            const status = String(item?.status || "");
+            return sum + (successStatuses.has(status) ? (Number(item?.count) || 0) : 0);
+        }, 0);
+        const failed_orders = orderStats.reduce((sum, item) => {
+            const status = String(item?.status || "");
+            const isFailed = failedStatuses.has(status) || status.startsWith("return");
+            return sum + (isFailed ? (Number(item?.count) || 0) : 0);
+        }, 0);
+
+        return { total_orders, success_orders, failed_orders };
+    }, [orderStats]);
+
+    const totalsFromUser = useMemo(() => {
+        if (isDriverMode) return null;
+        const totalOrders = Number(user?.total_orders);
+        const successOrders = Number(user?.success_orders);
+        const failedOrders = Number(user?.failed_orders);
+        const hasTotals = Number.isFinite(totalOrders) || Number.isFinite(successOrders) || Number.isFinite(failedOrders);
+        if (!hasTotals) return null;
+        return {
+            total_orders: Number.isFinite(totalOrders) ? totalOrders : 0,
+            success_orders: Number.isFinite(successOrders) ? successOrders : 0,
+            failed_orders: Number.isFinite(failedOrders) ? failedOrders : 0
+        };
+    }, [isDriverMode, user?.failed_orders, user?.success_orders, user?.total_orders]);
+
+    const totalsToShow = totalsFromUser || totals;
+
+    const getStatusLabel = useCallback((statusKey) => {
+        const t = translations[language];
+        const labels = {
+            waiting: t?.tabs?.orders?.filters?.waiting || "Waiting",
+            in_branch: t?.tabs?.orders?.filters?.inBranch || "In Branch",
+            in_the_way: t?.tabs?.orders?.filters?.onTheWay || "On The Way",
+            dispatched_to_branch: t?.tabs?.orders?.filters?.dispatchedToBranch || "Dispatched To Branch",
+            driver_responsibility: t?.tabs?.orders?.filters?.driverResponsibilityOrders || "With Driver",
+            delivered: t?.tabs?.orders?.filters?.delivered || "Delivered",
+            returned_in_branch: t?.tabs?.orders?.filters?.returnedInBranch || "Returned In Branch",
+            stuck_in_branch: t?.tabs?.orders?.filters?.stuckInBranch || "Stuck In Branch",
+            rejected_in_branch: t?.tabs?.orders?.filters?.rejectedInBranch || "Rejected In Branch",
+            reschedule_in_branch: t?.tabs?.orders?.filters?.rescheduledInBranch || "Reschedule In Branch",
+            received_order_in_branch: t?.tabs?.orders?.filters?.receivedOrderInBranch || "Received Order In Branch",
+            replaced_order_in_branch: t?.tabs?.orders?.filters?.replacedOrderInBranch || "Replaced Order In Branch",
+            stuck: t?.tabs?.orders?.filters?.stuck || "Stuck",
+            rejected: t?.tabs?.orders?.filters?.rejected || "Rejected",
+            returned: t?.tabs?.orders?.filters?.returned || "Returned",
+            returned_out: t?.tabs?.orders?.filters?.returnedOut || "Returned Out",
+            reschedule: t?.tabs?.orders?.filters?.rescheduled || "Rescheduled",
+            money_in_branch: t?.tabs?.orders?.filters?.moneyInBranch || "Money In Branch",
+            money_out: t?.tabs?.orders?.filters?.moneyOut || "Money Out",
+            business_paid: t?.tabs?.orders?.filters?.businessPaid || "Business Paid",
+            completed: t?.tabs?.orders?.filters?.completed || "Completed"
+        };
+        return labels[statusKey] || statusKey;
+    }, [language]);
+
+    const mapStatsStatusToOrdersFilter = useCallback((statusKey) => {
+        switch (statusKey) {
+            case 'in_the_way':
+                return 'on_the_way';
+            case 'driver_responsibility':
+                return 'with_driver';
+            case 'returned_in_branch':
+                return 'returned_in_branch,returned_received_in_branch';
+            case 'stuck_in_branch':
+                return 'stuck_in_branch';
+            case 'rejected_in_branch':
+                return 'rejected_in_branch';
+            case 'reschedule_in_branch':
+                return 'reschedule_in_branch';
+            case 'received_order_in_branch':
+                return 'received_order_in_branch';
+            case 'replaced_order_in_branch':
+                return 'replaced_order_in_branch';
+            case 'delivered':
+                return 'delivered,received';
+            default:
+                return statusKey;
+        }
+    }, []);
+
+    const openOrders = useCallback((statusKey) => {
+        const params = { sender_id: String(user?.user_id || '') };
+        if (statusKey) {
+            params.status_key = mapStatsStatusToOrdersFilter(statusKey);
+        }
+        setShowControl(false);
+        router.push({
+            pathname: "/(tabs)/orders",
+            params
+        });
+    }, [mapStatsStatusToOrdersFilter, user?.user_id]);
+
+    const orderedStatusKeys = useMemo(() => ([
+        'waiting',
+        'in_branch',
+        'in_the_way',
+        'dispatched_to_branch',
+        'driver_responsibility',
+        'delivered',
+        'returned_in_branch',
+        'stuck_in_branch',
+        'rejected_in_branch',
+        'reschedule_in_branch',
+        'received_order_in_branch',
+        'replaced_order_in_branch',
+        'stuck',
+        'rejected',
+        'returned_out',
+        'business_paid',
+        'completed'
+    ]), []);
+
+    return (
+        <>
+            <Pressable
+                onPress={() => setIsExpanded(v => !v)}
+                onLongPress={() => setShowControl(true)}
+                style={({ pressed }) => [
+                    { opacity: pressed ? 0.9 : 1 },
+                    styles.userPressable
+                ]}
+            >
+                <View style={[
+                    styles.user,
+                    { backgroundColor: colors.card },
+                    isOnline && styles.onlineUserHighlight
+                ]}>
+                    {/* Header with ID & Status */}
+                    <View style={[styles.header]}>
+                        <View style={[
+                            styles.idContainer,
+                            { 
+                                borderColor: colors.primary,
+                                backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF'
+                            }
+                        ]}>
+                            <Text style={[styles.idText, { color: colors.primary }]}>#{user?.user_id}</Text>
+                            {localActive && (
+                                <View style={styles.activeStatusIndicator} />
+                            )}
+                            <TouchableOpacity
+                                style={[styles.controlButton, { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#FFFFFF' }]}
+                                onPress={(e) => {
+                                    e?.stopPropagation?.();
+                                    setShowControl(true);
+                                }}
+                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="ellipsis-vertical" size={16} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                        
+                        <LinearGradient
+                            colors={isOnline ? 
+                                ['#10B981', '#059669'] : 
+                                localActive ? ['#4F7DFF', '#3B66F0'] : ['#64748B', '#475569']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={styles.statusBadge}
+                        >
+                            <View style={styles.statusIndicator}>
+                                <Animated.View style={[
+                                    styles.statusDot,
+                                    isOnline ? styles.onlineDot : 
+                                    localActive ? styles.activeDot : styles.inactiveDot,
+                                    { transform: [{ scale: isOnline ? pulseAnim : 1 }] }
+                                ]} />
+                                <Text style={styles.statusText}>
+                                    {statusText}
+                                </Text>
+                            </View>
+                        </LinearGradient>
+                    </View>
+
+                    {/* User Info Section */}
+                    <View style={[
+                        styles.userInfoSection,
+                        { backgroundColor: colorScheme === 'dark' ? colors.surface : '#F8FAFC' }
+                    ]}>
+                        <UserBox 
+                            styles={styles} 
+                            box={{
+                                label: translations[language].users.user.name,
+                                userName: user?.name,
+                                phone: user?.phone
+                            }}
+                        />
+                    </View>
+
+                    {/* Location Section */}
+                    <View style={[
+                        styles.section,
+                        { borderBottomColor: colors.border }
+                    ]}>
+                        <View style={[styles.sectionContent]}>
+                            <Ionicons 
+                                name="location-outline" 
+                                size={22} 
+                                color={colors.primary} 
+                                style={[styles.sectionIcon]}
+                            />
+                            <View style={[styles.textContainer, {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : "flex-end"
+                                    }
+                                }),
+                            }]}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                                    {translations[language].users.user.location}
+                                </Text>
+                                <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                                    {user?.city} {user.address ? `, ${user.address}` : ""}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Role Section */}
+                    <View style={[
+                        styles.section,
+                        { borderBottomColor: colors.border }
+                    ]}>
+                        <View style={[styles.sectionContent]}>
+                            <MaterialIcons 
+                                name="admin-panel-settings" 
+                                size={22} 
+                                color={colors.primary} 
+                                style={[styles.sectionIcon]}
+                            />
+                            <View style={[styles.textContainer, {
+                                ...Platform.select({
+                                    ios: {
+                                        alignItems: isRTL ? "flex-start" : "flex-end"
+                                    }
+                                }),
+                            }]}>
+                                <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                                    {translations[language].users.user.role}
+                                </Text>
+                                <Text style={[styles.sectionText, { color: colors.textSecondary }]}>
+                                    {user?.role}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    <View style={[styles.ordersHeaderRow, { borderTopColor: colors.border }]}>
+                        <View style={styles.ordersHeaderLeft}>
+                            <View style={[styles.ordersIconContainer, { backgroundColor: colors.primary + '20' }]}>
+                                <MaterialIcons name="receipt-long" size={18} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.ordersHeaderTitle, { color: colors.text }]}>
+                                {translations[language]?.tabs?.orders?.title || "Orders"}
+                            </Text>
+                        </View>
+                        <View style={styles.ordersHeaderRight}>
+                            <TouchableOpacity
+                                onPress={() => openOrders("")}
+                                style={[styles.ordersActionButton, { backgroundColor: colors.primary }]}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.ordersActionButtonText}>
+                                    {translations[language]?.common?.open || "Open"}
+                                </Text>
+                            </TouchableOpacity>
+                            <MaterialIcons
+                                name={isExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                size={24}
+                                color={colors.textSecondary}
+                            />
+                        </View>
+                    </View>
+
+                    {isExpanded && (
+                        <View style={[
+                            styles.ordersExpanded,
+                            { backgroundColor: colorScheme === 'dark' ? colors.surface : '#F8FAFC' }
+                        ]}>
+                            {orderStatsLoading && (
+                                <View style={styles.ordersLoadingRow}>
+                                    <ActivityIndicator size="small" color={colors.primary} />
+                                    <Text style={[styles.ordersLoadingText, { color: colors.textSecondary }]}>
+                                        {translations[language]?.common?.loading || "Loading"}
+                                    </Text>
+                                </View>
+                            )}
+
+                            {!orderStatsLoading && totalsToShow && !isDriverMode && (
+                                <View style={styles.totalsRow}>
+                                    <View style={[styles.totalCard, { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.12)' : '#EEF2FF' }]}>
+                                        <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+                                            {translations[language]?.users?.user?.totalOrders || "Total"}
+                                        </Text>
+                                        <Text style={[styles.totalValue, { color: colors.text }]}>
+                                            {totalsToShow.total_orders}
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.totalCard, { backgroundColor: colorScheme === 'dark' ? 'rgba(16, 185, 129, 0.12)' : '#ECFDF5' }]}>
+                                        <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+                                            {translations[language]?.users?.user?.successOrders || "Success"}
+                                        </Text>
+                                        <Text style={[styles.totalValue, { color: colors.text }]}>
+                                            {totalsToShow.success_orders}
+                                        </Text>
+                                    </View>
+                                    <View style={[styles.totalCard, { backgroundColor: colorScheme === 'dark' ? 'rgba(239, 68, 68, 0.10)' : '#FEF2F2' }]}>
+                                        <Text style={[styles.totalLabel, { color: colors.textSecondary }]}>
+                                            {translations[language]?.users?.user?.failedOrders || "Failed"}
+                                        </Text>
+                                        <Text style={[styles.totalValue, { color: colors.text }]}>
+                                            {totalsToShow.failed_orders}
+                                        </Text>
+                                    </View>
+                                </View>
+                            )}
+
+                            {!orderStatsLoading && orderStats !== null && (
+                                <>
+                                    <View style={styles.statesGrid}>
+                                        {orderedStatusKeys.map((statusKey) => {
+                                            const row = statsByStatus.get(statusKey) || { count: 0, net_value_ils: 0 };
+                                            if (!row.count) return null;
+                                            return (
+                                                <TouchableOpacity
+                                                    key={statusKey}
+                                                    style={[
+                                                        styles.stateChip,
+                                                        {
+                                                            borderColor: colors.border,
+                                                            backgroundColor: colorScheme === 'dark' ? colors.card : '#FFFFFF'
+                                                        }
+                                                    ]}
+                                                    activeOpacity={0.8}
+                                                    onPress={() => openOrders(statusKey)}
+                                                >
+                                                    <Text style={[styles.stateChipLabel, { color: colors.text }]}>
+                                                        {getStatusLabel(statusKey)}
+                                                    </Text>
+                                                    <View style={[styles.stateChipCountPill, { backgroundColor: colors.primary }]}>
+                                                        <Text style={styles.stateChipCountText}>
+                                                            {row.count}
+                                                        </Text>
+                                                    </View>
+                                                </TouchableOpacity>
+                                            );
+                                        })}
+                                    </View>
+
+                                    {Array.isArray(orderStats) && orderStats.length === 0 && (
+                                        <Text style={[styles.ordersEmptyText, { color: colors.textSecondary }]}>
+                                            {translations[language]?.users?.user?.noOrdersFound || "No orders found"}
+                                        </Text>
+                                    )}
+                                </>
+                            )}
+                        </View>
+                    )}
+                </View>
+            </Pressable>
+            
+            {/* Edit Modal */}
+            {showControl && (
+                <ModalPresentation
+                    showModal={showControl}
+                    setShowModal={setShowControl}
+                    customStyles={{ bottom: 15 }}
+                >
+                    <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
+                            {translations[language].users.user.options}
+                        </Text>
+                    </View>
+
+                    <TouchableOpacity 
+                        style={[styles.modalItem, { borderBottomColor: colors.border }]} 
+                        onPress={handleEditPress}
+                    >
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF' }
+                        ]}>
+                            <Feather name="edit" size={20} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.modalItemText, { color: colors.text }]}>
+                            {translations[language].users.user.edit}
+                        </Text>
+                    </TouchableOpacity>
+
+                    {canChangePassword && (
+                        <TouchableOpacity
+                            style={[styles.modalItem, { borderBottomColor: colors.border }]}
+                            onPress={handleChangePassword}
+                        >
+                            <View style={[
+                                styles.modalItemIconContainer,
+                                { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF' }
+                            ]}>
+                                <Feather name="lock" size={20} color={colors.primary} />
+                            </View>
+                            <Text style={[styles.modalItemText, { color: colors.text }]}>
+                                {translations[language]?.tabs?.settings?.options?.changePassword || translations[language]?.chnagePassword?.title || "Change Password"}
+                            </Text>
+                        </TouchableOpacity>
+                    )}
+
+                    <TouchableOpacity 
+                        style={[styles.modalItem, { borderBottomColor: colors.border }]} 
+                        onPress={handleToggleActive}
+                        disabled={updatingStatus}
+                    >
+                        <View style={[
+                            styles.modalItemIconContainer,
+                            { backgroundColor: colorScheme === 'dark' ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF' }
+                        ]}>
+                            <MaterialIcons name={localActive ? "toggle-off" : "toggle-on"} size={22} color={colors.primary} />
+                        </View>
+                        <Text style={[styles.modalItemText, { color: colors.text }]}> 
+                            {toggleLabel}
+                        </Text>
+                    </TouchableOpacity>
+                </ModalPresentation>
+            )}
+        </>
+    );
+}
+
+// Wrap the component with React.memo to prevent unnecessary re-renders
+export default React.memo(User, (prevProps, nextProps) => {
+    // Only re-render if essential properties change
+    return (
+        prevProps.user.user_id === nextProps.user.user_id &&
+        prevProps.user.name === nextProps.user.name &&
+        prevProps.user.active_status === nextProps.user.active_status &&
+        prevProps.user.role === nextProps.user.role &&
+        prevProps.user.city === nextProps.user.city &&
+        prevProps.user.address === nextProps.user.address
+    );
+});
+
+const styles = StyleSheet.create({
+    userPressable: {
+        marginBottom: 12,
+        borderRadius: 12,
+        overflow: 'hidden',
+    },
+    user: {
+        borderRadius: 12,
+        padding: 16,
+        shadowColor: "#64748B",
+        shadowOffset: {
+            width: 0,
+            height: 1,
+        },
+        shadowOpacity: 0.08,
+        shadowRadius: 2.65,
+        elevation: 2,
+    },
+    onlineUserHighlight: {
+        borderLeftWidth: 4,
+        borderLeftColor: "#10B981",
+    },
+    header: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 12,
+    },
+    idContainer: {
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderWidth: 1,
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    idText: {
+        fontSize: 14,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    controlButton: {
+        marginLeft: 10,
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    activeStatusIndicator: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: "#10B981",
+        marginLeft: 6,
+    },
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 8,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.15,
+        shadowRadius: 2,
+        elevation: 3,
+    },
+    statusText: {
+        color: "white",
+        fontSize: 12,
+        fontWeight: "600",
+        textTransform: "uppercase",
+        letterSpacing: 0.5,
+        marginLeft: 6,
+    },
+    statusIndicator: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    statusDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+    },
+    onlineDot: {
+        backgroundColor: "#ffffff",
+        shadowColor: "#ffffff",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 3,
+    },
+    activeDot: {
+        backgroundColor: "#ffffff",
+        opacity: 0.8,
+    },
+    inactiveDot: {
+        backgroundColor: "#ffffff",
+        opacity: 0.6,
+    },
+    userInfoSection: {
+        marginBottom: 12,
+        padding: 12,
+        borderRadius: 8,
+    },
+    section: {
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+    },
+    sectionContent: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12
+    },
+    sectionIcon: {
+        width: 22,
+        height: 22,
+    },
+    textContainer: {
+        flex: 1,
+    },
+    sectionTitle: {
+        fontSize: 14,
+        fontWeight: "600",
+        marginBottom: 2,
+    },
+    sectionText: {
+        fontSize: 14,
+    },
+    onlineNowText: {
+        fontSize: 12,
+        color: "#10B981",
+        fontWeight: "500",
+        marginTop: 4,
+    },
+    modalHeader: {
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        borderBottomWidth: 1,
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: "600",
+        textAlign: "center",
+    },
+    modalItem: {
+        padding: 16,
+        flexDirection: "row",
+        alignItems: "center",
+        borderBottomWidth: 1,
+        gap: 12,
+    },
+    modalItemIconContainer: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalItemText: {
+        fontSize: 16,
+        fontWeight: "500",
+    },
+    ordersHeaderRow: {
+        paddingTop: 12,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderTopWidth: 1,
+    },
+    ordersHeaderLeft: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    ordersHeaderRight: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+    },
+    ordersIconContainer: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    ordersHeaderTitle: {
+        fontSize: 14,
+        fontWeight: "700",
+    },
+    ordersActionButton: {
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 10,
+    },
+    ordersActionButtonText: {
+        color: "#ffffff",
+        fontSize: 12,
+        fontWeight: "700",
+    },
+    ordersExpanded: {
+        marginTop: 10,
+        padding: 12,
+        borderRadius: 12,
+    },
+    ordersLoadingRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 10,
+        paddingVertical: 6,
+    },
+    ordersLoadingText: {
+        fontSize: 13,
+        fontWeight: "500",
+    },
+    totalsRow: {
+        flexDirection: "row",
+        gap: 10,
+    },
+    totalCard: {
+        flex: 1,
+        borderRadius: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+    },
+    totalLabel: {
+        fontSize: 12,
+        fontWeight: "600",
+    },
+    totalValue: {
+        marginTop: 6,
+        fontSize: 20,
+        fontWeight: "800",
+    },
+    statesGrid: {
+        marginTop: 12,
+        flexDirection: "row",
+        flexWrap: "wrap",
+        gap: 10,
+    },
+    stateChip: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        borderWidth: 1,
+    },
+    stateChipLabel: {
+        fontSize: 13,
+        fontWeight: "600",
+    },
+    stateChipCountPill: {
+        minWidth: 28,
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    stateChipCountText: {
+        color: "#ffffff",
+        fontSize: 12,
+        fontWeight: "800",
+    },
+    ordersEmptyText: {
+        marginTop: 10,
+        fontSize: 13,
+        fontWeight: "500",
+        textAlign: "center",
+    },
+    // Support styles for UserBox if needed
+    box: {
+        borderRadius: 8,
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+    },
+});
