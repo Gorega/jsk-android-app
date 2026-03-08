@@ -1167,15 +1167,8 @@ export default function CameraScanner() {
           barCodeScannerSettings={{
             barCodeTypes: [
               'qr',
-              'ean-13',
-              'ean-8',
-              'code-128',
-              'code-39',
-              'upc-e',
-              'codabar'
-            ],
-            // Adjust settings to improve scan accuracy for a single code
-            interval: 1000, // milliseconds between scan attempts (higher = less frequent)
+              'code-128'
+            ]
           }}
         >
           <View style={styles.overlay}>

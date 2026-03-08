@@ -2651,7 +2651,7 @@ function Order({ user, order, globalOfflineMode, pendingUpdates, hideSyncUI = tr
                                         {translations[language].tabs.orders.order.codValue || 'COD Value'}
                                     </Text>
                                     <Text style={[styles.minimizedValue, { color: colors.text }]} >
-                                        {["business"].includes(authUserRole) ? order.total_net_value : order.total_cod_value} {order.currency}
+                                        {order.total_cod_value} {order.currency}
                                     </Text>
                                 </View>
                             </View>

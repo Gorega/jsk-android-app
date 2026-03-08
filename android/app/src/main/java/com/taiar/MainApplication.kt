@@ -1,4 +1,4 @@
-package com.expressjsk
+package com.taiar
 
 import android.app.Application
 import android.content.res.Configuration

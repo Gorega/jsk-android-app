@@ -5,7 +5,7 @@ import { useEffect, useState, useRef, React, useCallback } from "react";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import Feather from '@expo/vector-icons/Feather';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { FontAwesome,FontAwesome5,Octicons } from "@expo/vector-icons";
+import { FontAwesome, FontAwesome5, Octicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "../../RootLayout";
 import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
@@ -24,18 +24,18 @@ import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 export default function HomeScreen() {
     const { language } = useLanguage();
     const [success, setSuccess] = useState(false);
-    
+
     // Function to convert Arabic/Persian numerals to English
     const convertToEnglishNumerals = (input) => {
         if (!input) return input;
         const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
         const persianNumerals = '۰۱۲۳۴۵۶۷۸۹';
         const englishNumerals = '0123456789';
-        
+
         return input.replace(/[٠-٩۰-۹]/g, (char) => {
             const arabicIndex = arabicNumerals.indexOf(char);
             const persianIndex = persianNumerals.indexOf(char);
-            
+
             if (arabicIndex !== -1) {
                 return englishNumerals[arabicIndex];
             } else if (persianIndex !== -1) {
@@ -67,7 +67,7 @@ export default function HomeScreen() {
     const [loadingMore, setLoadingMore] = useState(false);
     const { user } = useAuth()
     const [cities, setCities] = useState([]);
-    
+
     // Enhanced cities state management for pagination and search
     const [citiesState, setCitiesState] = useState({
         data: [],
@@ -79,58 +79,58 @@ export default function HomeScreen() {
         searchTerm: '',
         searchLoading: false
     });
-    
+
     // Debounced search term for cities
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-    
+
     // Direct search for senders - no debouncing needed
-    
+
     // Cache for cities data to avoid unnecessary API calls
     const [citiesCache, setCitiesCache] = useState(new Map());
-    
+
     // Debounce effect for search
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearchTerm(citiesState.searchTerm);
         }, 300);
-        
+
         return () => clearTimeout(timer);
     }, [citiesState.searchTerm]);
 
     // Direct search - no debouncing needed since we handle it directly in setPickerSearchValue
-    
+
     const { isDark, colorScheme } = useTheme();
     const colors = Colors[colorScheme];
-    
+
     // Onboarding system
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(100)).current;
     const { width, height } = Dimensions.get('window');
-    
+
     // Onboarding setup
-    
+
     // Swipe gesture handling
     const panResponder = useRef(
-      Platform.OS === 'web' 
-        ? {} 
-        : require('react-native').PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onPanResponderMove: (evt, gestureState) => {
-              if (gestureState.dx < -50) {
-                // Swiped left - next step
-                if (currentStep < onboardingSteps.length - 1) {
-                  goToNextStep();
-                }
-              } else if (gestureState.dx > 50) {
-                // Swiped right - previous step
-                if (currentStep > 0) {
-                  goToPrevStep();
-                }
-              }
-            },
-          })
+        Platform.OS === 'web'
+            ? {}
+            : require('react-native').PanResponder.create({
+                onStartShouldSetPanResponder: () => true,
+                onPanResponderMove: (evt, gestureState) => {
+                    if (gestureState.dx < -50) {
+                        // Swiped left - next step
+                        if (currentStep < onboardingSteps.length - 1) {
+                            goToNextStep();
+                        }
+                    } else if (gestureState.dx > 50) {
+                        // Swiped right - previous step
+                        if (currentStep > 0) {
+                            goToPrevStep();
+                        }
+                    }
+                },
+            })
     ).current;
     const [orderTypes, setOrderTypes] = useState([{
         name: translations[language].tabs.orders.create.sections.orderTypes.delivery,
@@ -261,7 +261,7 @@ export default function HomeScreen() {
         if (fieldName === 'sender' || fieldName === 'city') {
             setShouldUpdateDeliveryFee(true);
         }
-        
+
         setSelectedValue(prev => ({
             ...prev,
             [fieldName]: value
@@ -346,6 +346,9 @@ export default function HomeScreen() {
                         }
                     }
                 }
+                if (fieldKey === 'delivery_fee') {
+                    next.delivery_fee = Number.isFinite(Number(trimmed)) ? Number(trimmed) : 0;
+                }
                 if (fieldKey === 'order_type') next.order_type = trimmed;
                 if (fieldKey === 'notes') {
                     const parts = typeof trimmed === 'string'
@@ -409,7 +412,7 @@ export default function HomeScreen() {
         ]
     } : null, !isBulkMode && !isDuplicate && {
         label: translations[language].tabs.orders.create.sections?.referenceId?.title,
-        icon: <AntDesign name="qrcode" size={22} color= '#8B5CF6' />,
+        icon: <AntDesign name="qrcode" size={22} color='#8B5CF6' />,
         fields: [{
             label: translations[language].tabs.orders.create.sections?.referenceId?.explain,
             type: "input",
@@ -418,7 +421,7 @@ export default function HomeScreen() {
             onChange: (input) => setForm((form) => ({ ...form, qrId: input })),
             showScanButton: true
         }]
-    },user.role !== "business" ? {
+    }, user.role !== "business" ? {
         label: translations[language].tabs.orders.create.sections.sender.title,
         icon: <SimpleLineIcons name="user-follow" size={22} color="#4361EE" />,
         fields: [{
@@ -453,9 +456,9 @@ export default function HomeScreen() {
                 setShouldUpdateDeliveryFee(true);
             }
         }]
-    } : { visibility: "hidden" },isBulkMode ? { visibility: "hidden" } : {
+    } : { visibility: "hidden" }, isBulkMode ? { visibility: "hidden" } : {
         label: translations[language].tabs.orders.create.sections.client.title,
-        icon: <Ionicons name="person-outline" size={22} color= '#EC4899' />,
+        icon: <Ionicons name="person-outline" size={22} color='#EC4899' />,
         fields: [returnedOrdersMessage ? {
             label: translations[language].tabs.orders.create.sections.client.fields.found,
             type: "message",
@@ -526,14 +529,14 @@ export default function HomeScreen() {
                 fetchCities(1, citiesState.searchTerm, false);
             },
             onSelect: (city) => {
-                
+
                 // Update the selectedValue.city with the selected city
                 setSelectedValue(prev => {
                     const newValue = {
                         ...prev,
                         city: city
                     };
-                    
+
                     // Force delivery fee calculation immediately, but only if not in edit mode
                     // or if in edit mode and the city has changed from the original
                     setTimeout(() => {
@@ -542,11 +545,11 @@ export default function HomeScreen() {
                         } else {
                         }
                     }, 0);
-                    
+
                     return newValue;
                 });
             }
-        },{
+        }, {
             label: translations[language].tabs.orders.create.sections.client.fields.address,
             type: "input",
             name: "receiver_address",
@@ -558,57 +561,57 @@ export default function HomeScreen() {
         icon: <FontAwesome name="money" size={24} color='#10B981' />,
         fields: [
             (selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
-            (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
-            (selectedValue.paymentType?.value || form.paymentTypeId) === "check" ||
-            (orderId && !selectedValue.paymentType?.value && !form.paymentTypeId)
-            ? [
-                // Only show COD amount fields and Add Currency button for cash or cash/check
-                ...((selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
                 (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
+                (selectedValue.paymentType?.value || form.paymentTypeId) === "check" ||
                 (orderId && !selectedValue.paymentType?.value && !form.paymentTypeId)
                 ? [
-                    ...codAmounts.map((item, index) => ({
-                        label: selectedValue.orderType?.value !== "payment" 
-                            ? selectedValue.orderType?.value === "receive" ? 
-                            translations[language].tabs.orders.create.sections.cost.fields.packageCost
-                            :translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
-                            : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
-                        type: "currencyInput",
-                        name: "cod_value",
-                        value: item.value,
-                        currency: item.currency,
-                        index: index,
-                        error: index === 0 ? fieldErrors.cod_value : null,
-                        onChange: (value) => {
-                            const newAmounts = [...codAmounts];
-                            let processedValue = convertToEnglishNumerals(value);
-                            
-                            // For payment type orders, ensure the value has a minus sign
-                            if (selectedValue.orderType?.value === "payment") {
-                                // Remove any existing minus signs first to avoid double negatives
-                                processedValue = processedValue.replace(/^-+/, '');
-                                // Add minus sign if the value is not empty and not zero
-                                if (processedValue && processedValue !== '0' && processedValue !== '0.00') {
-                                    processedValue = '-' + processedValue;
+                    // Only show COD amount fields and Add Currency button for cash or cash/check
+                    ...((selectedValue.paymentType?.value || form.paymentTypeId) === "cash" ||
+                        (selectedValue.paymentType?.value || form.paymentTypeId) === "cash/check" ||
+                        (orderId && !selectedValue.paymentType?.value && !form.paymentTypeId)
+                        ? [
+                            ...codAmounts.map((item, index) => ({
+                                label: selectedValue.orderType?.value !== "payment"
+                                    ? selectedValue.orderType?.value === "receive" ?
+                                        translations[language].tabs.orders.create.sections.cost.fields.packageCost
+                                        : translations[language].tabs.orders.create.sections.cost.fields.totalPackageCost
+                                    : `${translations[language].tabs.orders.create.sections.cost.fields.amount}`,
+                                type: "currencyInput",
+                                name: "cod_value",
+                                value: item.value,
+                                currency: item.currency,
+                                index: index,
+                                error: index === 0 ? fieldErrors.cod_value : null,
+                                onChange: (value) => {
+                                    const newAmounts = [...codAmounts];
+                                    let processedValue = convertToEnglishNumerals(value);
+
+                                    // For payment type orders, ensure the value has a minus sign
+                                    if (selectedValue.orderType?.value === "payment") {
+                                        // Remove any existing minus signs first to avoid double negatives
+                                        processedValue = processedValue.replace(/^-+/, '');
+                                        // Add minus sign if the value is not empty and not zero
+                                        if (processedValue && processedValue !== '0' && processedValue !== '0.00') {
+                                            processedValue = '-' + processedValue;
+                                        }
+                                    }
+
+                                    newAmounts[index].value = processedValue;
+                                    setCodAmounts(newAmounts);
                                 }
-                            }
-                            
-                            newAmounts[index].value = processedValue;
-                            setCodAmounts(newAmounts);
-                        }
-                    }))
-                ] : []),
-                
-                // Show checks input for check or cash/check
-                (selectedValue.paymentType?.value === "check" || selectedValue.paymentType?.value === "cash/check") ? {
-                    type: "checksInput",
-                    name: "checks",
-                    label: translations[language].tabs.orders.create.sections.cost.fields.checks || "Checks",
-                    value: checks,
-                    onChange: (updatedChecks) => setChecks(updatedChecks)
-                } : null
-            ].filter(Boolean)
-            : { visibility: "hidden" },
+                            }))
+                        ] : []),
+
+                    // Show checks input for check or cash/check
+                    (selectedValue.paymentType?.value === "check" || selectedValue.paymentType?.value === "cash/check") ? {
+                        type: "checksInput",
+                        name: "checks",
+                        label: translations[language].tabs.orders.create.sections.cost.fields.checks || "Checks",
+                        value: checks,
+                        onChange: (updatedChecks) => setChecks(updatedChecks)
+                    } : null
+                ].filter(Boolean)
+                : { visibility: "hidden" },
             {
                 label: translations[language].tabs.orders.create.sections.cost.fields.deliveryFee,
                 type: "input",
@@ -629,40 +632,40 @@ export default function HomeScreen() {
                 keyboardType: "numeric"
             },
             {
-            label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
-            type: "input",
-            name: "net_value",
-            value: (() => {
-                // Get COD values (only ILS matters now)
-                let ilsCodTotal = 0;
-                codAmounts.forEach(cod => {
-                    const value = parseFloat(cod.value || 0);
-                    const currency = cod.currency || "ILS";
-                    if (currency === "ILS" && !isNaN(value)) {
-                        ilsCodTotal += value;
-                    }
-                });
+                label: translations[language].tabs.orders.create.sections.cost.fields.netValue || "Net Value",
+                type: "input",
+                name: "net_value",
+                value: (() => {
+                    // Get COD values (only ILS matters now)
+                    let ilsCodTotal = 0;
+                    codAmounts.forEach(cod => {
+                        const value = parseFloat(cod.value || 0);
+                        const currency = cod.currency || "ILS";
+                        if (currency === "ILS" && !isNaN(value)) {
+                            ilsCodTotal += value;
+                        }
+                    });
 
-                // Get delivery fee, commission, and discount (all in ILS only)
-                const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
-                const commissionValue = parseFloat(form.commission || 0);
-                const discountValue = parseFloat(form.discount || 0);
+                    // Get delivery fee, commission, and discount (all in ILS only)
+                    const deliveryFeeValue = parseFloat(deliveryFee || form.delivery_fee || 0);
+                    const commissionValue = parseFloat(form.commission || 0);
+                    const discountValue = parseFloat(form.discount || 0);
 
-                // Calculate ILS fees
-                const ilsFees = deliveryFeeValue + commissionValue - discountValue;
+                    // Calculate ILS fees
+                    const ilsFees = deliveryFeeValue + commissionValue - discountValue;
 
-                // Final net value in ILS
-                const ilsNetValue = ilsCodTotal - ilsFees;
+                    // Final net value in ILS
+                    const ilsNetValue = ilsCodTotal - ilsFees;
 
-                // Return only ILS result
-                return `ILS: ${ilsNetValue.toFixed(2)}`;
-            })(),
-            readOnly: true,
-            editable: false,
-            style: { fontWeight: "bold", color: "#2e7d32", backgroundColor: "rgba(46, 125, 50, 0.05)" }
-        }
+                    // Return only ILS result
+                    return `ILS: ${ilsNetValue.toFixed(2)}`;
+                })(),
+                readOnly: true,
+                editable: false,
+                style: { fontWeight: "bold", color: "#2e7d32", backgroundColor: "rgba(46, 125, 50, 0.05)" }
+            }
         ].filter(Boolean)
-    },!["payment"].includes(selectedValue.orderType?.value) ? {
+    }, !["payment"].includes(selectedValue.orderType?.value) ? {
         label: translations[language].tabs.orders.create.sections.details.title,
         icon: <Feather name="box" size={22} color='#EF4444' />,
         fields: [{
@@ -691,7 +694,7 @@ export default function HomeScreen() {
             onChange: (input) => setForm((form) => ({ ...form, orderWeight: convertToEnglishNumerals(input) }))
         },
         (selectedValue.orderType?.value || form.orderTypeId) === "receive" ||
-        (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
+            (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
             label: translations[language].tabs.orders.create.sections.orderTypes.receivedItems,
             type: "input",
             name: "received_items",
@@ -699,7 +702,7 @@ export default function HomeScreen() {
             onChange: (input) => setForm((form) => ({ ...form, receivedItems: input }))
         } : { visibility: "hidden" },
         (selectedValue.orderType?.value || form.orderTypeId) === "receive" ||
-        (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
+            (selectedValue.orderType?.value || form.orderTypeId) === "delivery/receive" ? {
             label: translations[language].tabs.orders.create.sections.orderTypes.receivedQuantity,
             type: "input",
             name: "received_quantity",
@@ -739,7 +742,7 @@ export default function HomeScreen() {
     ).filter(Boolean);
 
     // Handle selecting a receiver from search results
-    const handleReceiverSelect = (receiver) => {        
+    const handleReceiverSelect = (receiver) => {
         // Fill the form with the selected receiver's information
         setForm(prev => ({
             ...prev,
@@ -764,11 +767,11 @@ export default function HomeScreen() {
         } else {
             setReturnedOrdersMessage("");
         }
-        
+
         // Clear any existing field errors
         if (setFieldErrors) {
             setFieldErrors(prev => {
-                const updated = {...prev};
+                const updated = { ...prev };
                 delete updated.receiver_mobile;
                 return updated;
             });
@@ -778,7 +781,7 @@ export default function HomeScreen() {
     const clearFieldError = (fieldName) => {
         if (fieldErrors[fieldName]) {
             setFieldErrors(prev => {
-                const updated = {...prev};
+                const updated = { ...prev };
                 delete updated[fieldName];
                 return updated;
             });
@@ -786,15 +789,15 @@ export default function HomeScreen() {
     };
 
     const handleDuplicateOrder = async (orderId) => {
-        setFormSpinner({status: true});
-        setError({status: false, msg: ""});
+        setFormSpinner({ status: true });
+        setError({ status: false, msg: "" });
         setSuccess(false);
         setFieldErrors({});
-        
+
         try {
             // Get current branch info for the duplicate request
             const currentBranchId = user.branch_id || user.current_branch_id;
-            
+
             // Prepare receiver info from form data
             const receiverInfo = {
                 name: form.receiverName || "",
@@ -803,7 +806,7 @@ export default function HomeScreen() {
                 address: form.receiverAddress || "",
                 city_id: selectedValue.city?.city_id || form.senderCityId || ""
             };
-            
+
             const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/duplicate`, {
                 method: 'POST',
                 headers: {
@@ -817,12 +820,12 @@ export default function HomeScreen() {
                     current_branch_id: currentBranchId
                 })
             });
-            
-            const data = await response.json();            
+
+            const data = await response.json();
             if (response.ok && data.success) {
                 setSuccess(true);
-                setFormSpinner({status: false});
-                
+                setFormSpinner({ status: false });
+
                 // Show success message
                 setShowAlert({
                     visible: true,
@@ -834,18 +837,18 @@ export default function HomeScreen() {
             } else {
                 throw new Error(data.message || translations[language].tabs.orders.create.error || "Error");
             }
-            
+
         } catch (err) {
-            setFormSpinner({status: false});
+            setFormSpinner({ status: false });
             console.error('Duplicate order error:', err);
-            
+
             // Show error message in alert instead of just setting error state
             setShowAlert({
                 visible: true,
                 type: 'error',
                 title: translations[language].tabs.orders.create.error || "Error",
                 message: err.message || translations[language].tabs.orders.create.error || "An unexpected error occurred",
-                onClose: () => {}
+                onClose: () => { }
             });
         }
     };
@@ -857,13 +860,13 @@ export default function HomeScreen() {
         setSuccess(false);
         setError({ status: false, msg: "" });
         Keyboard.dismiss();
-        
+
         // Calculate total COD value from all currency inputs
         const totalCodValue = codAmounts.reduce((sum, item) => {
             const value = parseFloat(item.value) || 0;
             return sum + value;
         }, 0);
-        
+
         // Format checks properly - only include checks if payment type supports it
         const formattedChecks = ["check", "cash/check"].includes(selectedValue.paymentType.value) && checks && checks.length > 0
             ? checks.map(check => ({
@@ -913,7 +916,7 @@ export default function HomeScreen() {
             if (isDuplicate === 'true') {
                 return await handleDuplicateOrder(orderId);
             }
-            
+
             const rawPackageItems = Array.isArray(form.packageItems) ? form.packageItems : [];
             const normalizedPackageItems = rawPackageItems
                 .map(item => (item === null || item === undefined ? "" : String(item).trim()))
@@ -955,7 +958,7 @@ export default function HomeScreen() {
                 checks: formattedChecks,
                 follow_up_qr_ids: normalizedPackageItems
             };
-            
+
             // Only add current_branch_id for POST requests
             if (method === "POST" && !["business"].includes(user.role)) {
                 requestBody.current_branch_id = user.branch_id;
@@ -985,7 +988,7 @@ export default function HomeScreen() {
             //     // Add check to prevent duplicate deductions on edit
             //     const shouldDeduct = method === "POST" || 
             //                         (method === "PUT" && !form.originalFromBusinessBalance);
-                
+
             //     if (shouldDeduct) {
             //         try {
             //             await processDeduction(data.data.order_id, user.role === "business" ? user.userId : selectedValue.sender.user_id);
@@ -1012,11 +1015,11 @@ export default function HomeScreen() {
 
         } catch (err) {
             setFormSpinner({ status: false });
-            
+
             if (err.type === 'VALIDATION_ERROR' && err.details) {
                 // Handle validation errors
                 const errors = {};
-                
+
                 err.details.forEach(error => {
                     let fieldKey = error.field;
                     const msg = error.message || '';
@@ -1031,7 +1034,7 @@ export default function HomeScreen() {
                     const fieldName = mapServerFieldToFormField(fieldKey);
                     errors[fieldName] = error.message;
                 });
-                
+
                 setFieldErrors(errors);
 
                 // Set general error message
@@ -1039,7 +1042,7 @@ export default function HomeScreen() {
                     status: true,
                     msg: translations[language].tabs.orders.create.errorValidationMsg
                 });
-                
+
                 // Add this code to show alert for validation errors
                 setShowAlert({
                     visible: true,
@@ -1047,42 +1050,42 @@ export default function HomeScreen() {
                     title: translations[language].tabs.orders.create.error || "Validation Error",
                     message: translations[language].tabs.orders.create.errorValidationMsg || "Please check the form for errors"
                 });
-                
+
                 // Find section with first error and scroll to it
                 if (Object.keys(errors).length > 0 && scrollViewRef.current) {
                     const firstErrorField = Object.keys(errors)[0];
-                    
+
                     // Find section index containing the error field
                     let sectionWithErrorIndex = -1;
-                    
+
                     // Search all sections for the field with error
                     for (let i = 0; i < sections.length; i++) {
                         const section = sections[i];
                         if (!section.fields) continue;
-                        
+
                         // Handle array of fields or single field
                         const fields = Array.isArray(section.fields) ? section.fields : [section.fields];
-                        
+
                         // Flatten nested arrays (for conditional rendering)
                         const flatFields = fields.flat().filter(f => f && typeof f === 'object');
-                        
+
                         // Check if this section contains the error field
-                        const hasErrorField = flatFields.some(field => 
-                            field.name === firstErrorField || 
+                        const hasErrorField = flatFields.some(field =>
+                            field.name === firstErrorField ||
                             (field.name === 'cod_value' && firstErrorField === 'cod_value')
                         );
-                        
+
                         if (hasErrorField) {
                             sectionWithErrorIndex = i;
                             break;
                         }
                     }
-                    
+
                     // If found section with error, scroll to it
                     if (sectionWithErrorIndex >= 0) {
                         // Calculate position based on section index
                         const approximatePosition = sectionWithErrorIndex * 280;
-                        
+
                         // Scroll with offset
                         scrollViewRef.current.scrollTo({
                             y: Math.max(0, approximatePosition - 60),
@@ -1092,19 +1095,19 @@ export default function HomeScreen() {
                 }
             } else if (err.type === 'INSUFFICIENT_BALANCE') {
                 // Handle insufficient balance error specifically
-                    setError({
-                        status: true,
+                setError({
+                    status: true,
                     msg: err.details || err.message || translations[language].tabs.orders.create.insufficientBalanceMsg
-                    });
+                });
 
                 // Show alert for insufficient balance
-                    setShowAlert({
-                        visible: true,
-                        type: 'error',
+                setShowAlert({
+                    visible: true,
+                    type: 'error',
                     title: translations[language].tabs.orders.create.insufficientBalance || "Insufficient Balance",
                     message: err.details || err.message || translations[language].tabs.orders.create.balanceTooLow
                 });
-                
+
                 // Reset business balance checkbox since the operation failed
                 setFromBusinessBalance(false);
                 setForm(prev => ({
@@ -1112,7 +1115,7 @@ export default function HomeScreen() {
                     fromBusinessBalance: false,
                     balanceDeduction: null
                 }));
-                
+
             } else if (err.type === 'FORBIDDEN_STATUS') {
                 // Handle forbidden status error
                 setError({
@@ -1130,10 +1133,10 @@ export default function HomeScreen() {
                 // Handle any other error types
                 setError({
                     status: true,
-                    msg: err.type === "FORBIDDEN" ? err.message : 
+                    msg: err.type === "FORBIDDEN" ? err.message :
                         (err.message || translations[language].tabs.orders.create.errorMsg)
                 });
-                
+
                 setShowAlert({
                     visible: true,
                     type: 'error',
@@ -1189,6 +1192,10 @@ export default function HomeScreen() {
                 throw new Error(data.message || translations[language].tabs.orders.create.error || "Error");
             }
             setBulkResult(data.data);
+            // Automatically fetch delivery fees for all parsed items
+            if (data.data && Array.isArray(data.data.items)) {
+                fetchBulkDeliveryFees(data.data.items);
+            }
         } catch (err) {
             setShowAlert({
                 visible: true,
@@ -1199,6 +1206,54 @@ export default function HomeScreen() {
         } finally {
             setBulkLoading(false);
         }
+    };
+
+    const fetchBulkDeliveryFees = async (items) => {
+        if (!items || items.length === 0) return;
+        const senderId = user.role === "business" ? user.userId : (selectedValue.sender?.user_id || null);
+        const senderCityId = user.role === "business" ? user.city_id : (selectedValue.sender?.city_id || null);
+        if (!senderCityId) return;
+
+        // Collect unique city IDs with valid receiver_city_id
+        const uniqueCityIds = [...new Set(
+            items
+                .filter(item => item.receiver_city_id)
+                .map(item => item.receiver_city_id)
+        )];
+        if (uniqueCityIds.length === 0) return;
+
+        // Fetch delivery fee for each unique city in parallel
+        const feeMap = {};
+        await Promise.all(uniqueCityIds.map(async (cityId) => {
+            try {
+                const res = await fetch(
+                    `${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${senderCityId}&receiverCityId=${cityId}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${senderId}`,
+                    {
+                        method: "GET",
+                        credentials: "include",
+                        headers: { 'Accept': 'application/json', "Content-Type": "application/json" }
+                    }
+                );
+                const data = await res.json();
+                if (data.data !== undefined && data.data !== null) {
+                    feeMap[cityId] = parseFloat(data.data) || 0;
+                }
+            } catch (err) {
+                // Silently skip fee fetch errors for individual cities
+            }
+        }));
+
+        // Apply fetched fees back to each bulk item
+        setBulkResult(prev => {
+            if (!prev || !Array.isArray(prev.items)) return prev;
+            const updatedItems = prev.items.map(item => {
+                if (item.receiver_city_id && feeMap[item.receiver_city_id] !== undefined) {
+                    return { ...item, delivery_fee: feeMap[item.receiver_city_id] };
+                }
+                return item;
+            });
+            return { ...prev, items: updatedItems };
+        });
     };
 
     const handleCreateBulkOrders = async () => {
@@ -1268,7 +1323,7 @@ export default function HomeScreen() {
                     business_branch_id: selectedValue.sender?.branch_id || user.branch_id,
                     order_type: item.order_type || "delivery",
                     payment_type: selectedValue.paymentType.value,
-                    delivery_fee: parseFloat(deliveryFee) || parseFloat(form.deliveryFee) || 0,
+                    delivery_fee: Number.isFinite(parseFloat(item.delivery_fee)) ? parseFloat(item.delivery_fee) : (parseFloat(deliveryFee) || parseFloat(form.deliveryFee) || 0),
                     commission: 0,
                     discount: 0,
                     cod_values: [{
@@ -1396,16 +1451,16 @@ export default function HomeScreen() {
         if (serverField.includes('cod_values') && serverField.includes('value')) {
             return 'cod_value'; // Map to the first COD value field in the UI
         }
-        
+
         // Handle checks array fields
         if (serverField.includes('checks') && serverField.includes('number')) {
             return 'checks'; // Map to the checks field in the UI
         }
-        
+
         if (serverField.includes('checks') && serverField.includes('value')) {
             return 'checks'; // Map all check value errors to the main checks field
         }
-        
+
         const fieldMapping = {
             'qr_id': 'qr_id',
             'delivery_fee': 'delivery_fee',
@@ -1440,13 +1495,13 @@ export default function HomeScreen() {
             'checks': 'checks',
             // Add any other field mappings as needed
         };
-        
+
         return fieldMapping[serverField] || serverField;
     };
 
     const fetchOrderData = async () => {
         try {
-            
+
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/${orderId}?language_code=${language}`, {
                 method: "GET",
                 credentials: "include",
@@ -1456,38 +1511,38 @@ export default function HomeScreen() {
                 }
             });
             const orderData = await res.json();
-                        
+
             // Update selectedValue state with the order data
             setSelectedValue((selectedValue) => ({
                 ...selectedValue,
-                sender: { 
-                    name: orderData.sender, 
+                sender: {
+                    name: orderData.sender,
                     value: orderData.sender_id,
                     user_id: orderData.sender_id,
                     city_id: orderData.sender_city_id
                 },
-                city: { 
-                    name: orderData.receiver_city, 
-                    city_id: orderData.receiver_city_id 
+                city: {
+                    name: orderData.receiver_city,
+                    city_id: orderData.receiver_city_id
                 },
-                orderType: { 
-                    name: orderData.order_type, 
-                    value: orderData.order_type_id 
+                orderType: {
+                    name: orderData.order_type,
+                    value: orderData.order_type_id
                 },
-                paymentType: { 
-                    name: orderData.payment_type, 
-                    value: orderData.payment_type_id 
+                paymentType: {
+                    name: orderData.payment_type,
+                    value: orderData.payment_type_id
                 },
-                currency: { 
-                    name: orderData.cod_values?.[0]?.currency || "ILS", 
-                    value: orderData.cod_values?.[0]?.currency || "ILS" 
+                currency: {
+                    name: orderData.cod_values?.[0]?.currency || "ILS",
+                    value: orderData.cod_values?.[0]?.currency || "ILS"
                 },
-                itemsType: { 
-                    name: orderData.items_type, 
-                    value: orderData.items_type 
+                itemsType: {
+                    name: orderData.items_type,
+                    value: orderData.items_type
                 }
             }));
-            
+
             // Handle delivery fee - parse from format like "20.00 ILS"
             let extractedDeliveryFee;
             if (typeof orderData.delivery_fee === 'string') {
@@ -1498,10 +1553,10 @@ export default function HomeScreen() {
             } else {
                 extractedDeliveryFee = "0";
             }
-            
+
             // Set delivery fee from the order data
             setDeliveryFee(extractedDeliveryFee);
-            
+
             // Handle COD values
             if (orderData.cod_values && Array.isArray(orderData.cod_values) && orderData.cod_values.length > 0) {
                 setCodAmounts(orderData.cod_values.map(item => ({
@@ -1509,7 +1564,7 @@ export default function HomeScreen() {
                     currency: item.currency
                 })));
             }
-            
+
             // Set form data - store original values for comparison
             const parsedPackageItems = normalizePackageItems(orderData.package_items)
                 .slice()
@@ -1545,14 +1600,14 @@ export default function HomeScreen() {
                 qrId: orderData.qr_id,
                 itemsType: orderData.items_type // Store original items type for comparison
             });
-            
+
             // Set checks
             if (orderData.checks && Array.isArray(orderData.checks) && orderData.checks.length > 0) {
                 setChecks(orderData.checks);
             } else {
                 setChecks([]);
             }
-                        
+
         } catch (err) {
             console.error("Error fetching order data:", err);
         }
@@ -1591,7 +1646,7 @@ export default function HomeScreen() {
                 page: page.toString(),
                 limit: '20',
             });
-            
+
             if (searchTerm && searchTerm.trim()) {
                 params.append('np', searchTerm.trim());
             }
@@ -1618,7 +1673,7 @@ export default function HomeScreen() {
             }
 
             const responseText = await res.text();
-            
+
             let data;
             try {
                 data = JSON.parse(responseText);
@@ -1627,10 +1682,10 @@ export default function HomeScreen() {
             }
 
             // Determine pagination info
-            const hasNextPage = data.pagination ? data.pagination.has_next_page : 
-                               (data.metadata ? data.metadata.page < data.metadata.total_pages : false);
-            const currentPageFromResponse = data.pagination ? data.pagination.current_page : 
-                                          (data.metadata ? data.metadata.page : page);
+            const hasNextPage = data.pagination ? data.pagination.has_next_page :
+                (data.metadata ? data.metadata.page < data.metadata.total_pages : false);
+            const currentPageFromResponse = data.pagination ? data.pagination.current_page :
+                (data.metadata ? data.metadata.page : page);
 
             // Update senders state
             setSenders(prev => {
@@ -1666,7 +1721,7 @@ export default function HomeScreen() {
         try {
             // Create cache key
             const cacheKey = `${searchTerm || 'all'}_page_${page}`;
-            
+
             // Check cache first
             if (citiesCache.has(cacheKey)) {
                 const cachedData = citiesCache.get(cacheKey);
@@ -1680,7 +1735,7 @@ export default function HomeScreen() {
                     totalRecords: cachedData.totalRecords,
                     error: null
                 }));
-                
+
                 // Also update legacy cities state for backward compatibility
                 if (!loadMore) {
                     setCities(cachedData.data);
@@ -1689,7 +1744,7 @@ export default function HomeScreen() {
                 }
                 return;
             }
-            
+
             // Set loading state
             setCitiesState(prev => ({
                 ...prev,
@@ -1725,7 +1780,7 @@ export default function HomeScreen() {
             }
 
             const data = await res.json();
-            
+
             // Cache the fetched data
             const cacheData = {
                 data: data.data,
@@ -1733,20 +1788,20 @@ export default function HomeScreen() {
                 page: data.pagination ? data.pagination.current_page : 1,
                 totalRecords: data.metadata ? data.metadata.total_records : data.data.length
             };
-            
+
             setCitiesCache(prev => {
                 const newCache = new Map(prev);
                 newCache.set(cacheKey, cacheData);
-                
+
                 // Limit cache size to prevent memory issues (keep last 50 entries)
                 if (newCache.size > 50) {
                     const firstKey = newCache.keys().next().value;
                     newCache.delete(firstKey);
                 }
-                
+
                 return newCache;
             });
-            
+
             // Update cities state with pagination support
             setCitiesState(prev => ({
                 ...prev,
@@ -1780,7 +1835,7 @@ export default function HomeScreen() {
     // Function to load more cities (for infinite scroll)
     const loadMoreCities = async () => {
         if (citiesState.loading || !citiesState.hasMore) return;
-        
+
         await fetchCities(citiesState.page + 1, debouncedSearchTerm, true);
     };
 
@@ -1810,25 +1865,25 @@ export default function HomeScreen() {
     };
 
     const fetchDeliveryFee = async () => {
-        
+
         // If we're in edit mode and the original data is loaded, don't recalculate
-        if (orderId && form.deliveryFee && 
+        if (orderId && form.deliveryFee &&
             selectedValue.city?.city_id === form.receiverCityId &&
             selectedValue.itemsType?.value === form.itemsType) {
             return;
         }
-        
+
         try {
             // For business users, use their ID directly if sender is not set
             const senderId = user.role === "business" ? user.userId : (selectedValue.sender?.user_id || form.senderId);
             const senderCityId = user.role === "business" ? user.city_id : (selectedValue.sender?.city_id || form.senderCityId);
-            
+
             // Only attempt to fetch if we have both sender city and receiver city
             if (!senderCityId || !selectedValue.city?.city_id) {
                 return;
             }
-            
-            
+
+
             const res = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/api/orders/delivery_fee?senderCityId=${senderCityId}&receiverCityId=${selectedValue.city.city_id}&orderType=${selectedValue?.itemsType?.value || "normal"}&senderId=${senderId}`, {
                 method: "GET",
                 credentials: "include",
@@ -1838,8 +1893,8 @@ export default function HomeScreen() {
                 }
             });
             const data = await res.json();
-            
-            
+
+
             if (data.data) {
                 setDeliveryFee(data.data.toString());
                 // Also update the form state to ensure consistency
@@ -1852,14 +1907,14 @@ export default function HomeScreen() {
             console.error("Error fetching delivery fee:", err);
         }
     }
-    
+
     // Update the useEffect hooks for delivery fee
     useEffect(() => {
         if (orderId) {
             fetchOrderData();
         }
     }, [orderId]);
-    
+
     // Initial cities fetch
     useEffect(() => {
         fetchCities(1, '', false);
@@ -1880,10 +1935,10 @@ export default function HomeScreen() {
 
     // Direct search approach - no complex useEffect needed
     // Search is triggered directly from setPickerSearchValue
-    
+
     // This effect handles delivery fee updates when sender or city changes
     useEffect(() => {
-        
+
         // Only fetch if we have both sender and city
         if (selectedValue.sender && selectedValue.city) {
             fetchDeliveryFee();
@@ -1899,7 +1954,7 @@ export default function HomeScreen() {
 
     // This effect handles delivery fee updates when order type changes (only for new orders)
     useEffect(() => {
-        
+
         // Only update delivery fee if:
         // 1. Not in edit mode (no orderId), or
         // 2. In edit mode but order type has changed from original
@@ -1909,7 +1964,7 @@ export default function HomeScreen() {
             }
         }
     }, [selectedValue.orderType]);
-    
+
     const applyScannedValue = (scannedValue) => {
         if (!scannedValue) return;
         const target = global?.scanTargetField;
@@ -1940,16 +1995,16 @@ export default function HomeScreen() {
         const checkScannedData = () => {
             if (global.scannedReferenceId) {
                 const scannedValue = global.scannedReferenceId;
-                
+
                 if (scannedValue) {
                     applyScannedValue(scannedValue);
                 }
             }
         };
-        
+
         checkScannedData();
     }, []);
-    
+
     // Add event listener for scanned reference ID from the camera
     useEffect(() => {
         // Create event listener for REFERENCE_SCANNED event
@@ -1958,10 +2013,10 @@ export default function HomeScreen() {
                 applyScannedValue(scannedValue);
             }
         };
-        
+
         // Add the event listener
         const unsubscribe = eventEmitter.on(EVENTS.REFERENCE_SCANNED, handleReferenceScanned);
-        
+
         // Clean up the event listener when component unmounts
         return () => {
             if (typeof unsubscribe === 'function') {
@@ -1969,12 +2024,12 @@ export default function HomeScreen() {
             }
         };
     }, []);
-    
+
     // Add keyboard event listeners to handle keyboard appearance
     useEffect(() => {
         // Track currently focused input position
         let currentlyFocusedInput = null;
-        
+
         // Create listeners for keyboard show/hide events
         const keyboardDidShowListener = Keyboard.addListener(
             Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
@@ -1983,16 +2038,16 @@ export default function HomeScreen() {
                 if (scrollViewRef.current && currentlyFocusedInput) {
                     // Get keyboard height
                     const keyboardHeight = e.endCoordinates.height;
-                    
+
                     // Add a slight delay to ensure the input is properly focused
                     setTimeout(() => {
                         // Calculate position to scroll to (with extra padding)
                         const scrollToPosition = currentlyFocusedInput - (keyboardHeight / 2);
-                        
+
                         // Scroll to the position
-                        scrollViewRef.current.scrollTo({ 
-                            y: Math.max(0, scrollToPosition), 
-                            animated: true 
+                        scrollViewRef.current.scrollTo({
+                            y: Math.max(0, scrollToPosition),
+                            animated: true
                         });
                     }, 150);
                 }
@@ -2006,7 +2061,7 @@ export default function HomeScreen() {
                 currentlyFocusedInput = null;
             }
         );
-        
+
         // Listen for text input focus events
         const handleTextInputFocus = (e) => {
             if (e.target) {
@@ -2016,12 +2071,12 @@ export default function HomeScreen() {
                 });
             }
         };
-        
+
         // Set up a listener for text input focus events
         if (Platform.OS === 'ios') {
             // For iOS, we can use the notification center
             const textInputFocusListener = Keyboard.addListener('keyboardWillShow', handleTextInputFocus);
-            
+
             return () => {
                 keyboardDidShowListener.remove();
                 keyboardDidHideListener.remove();
@@ -2035,7 +2090,7 @@ export default function HomeScreen() {
             };
         }
     }, []);
-    
+
     useFocusEffect(
         useCallback(() => {
             // Check if we have a scanned reference ID when the screen is focused
@@ -2044,19 +2099,19 @@ export default function HomeScreen() {
             }
         }, [])
     );
-    
-    
+
+
     const CustomAlert = ({ visible, type, title, message, onClose }) => {
         if (!visible) return null;
-        
+
         return (
             <View style={styles.alertOverlay}>
                 <View style={[
                     styles.alertContainer,
                     { backgroundColor: colors.card },
-                    type === 'error' ? styles.errorAlert : 
-                    type === 'success' ? styles.successAlert : 
-                    styles.warningAlert,
+                    type === 'error' ? styles.errorAlert :
+                        type === 'success' ? styles.successAlert :
+                            styles.warningAlert,
                 ]}>
                     <View style={[styles.alertHeader]}>
                         <Text style={[styles.alertTitle, { color: colors.text }]}>{title}</Text>
@@ -2066,12 +2121,12 @@ export default function HomeScreen() {
                     </View>
                     <Text style={[styles.alertMessage, { color: colors.textSecondary }]}>{message}</Text>
                     {type !== 'loading' ? (
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[
-                                styles.alertButton, 
-                                type === 'error' ? styles.errorButton : 
-                                type === 'success' ? styles.successButton : 
-                                styles.warningButton
+                                styles.alertButton,
+                                type === 'error' ? styles.errorButton :
+                                    type === 'success' ? styles.successButton :
+                                        styles.warningButton
                             ]}
                             onPress={onClose}
                         >
@@ -2088,7 +2143,7 @@ export default function HomeScreen() {
     };
 
     // Removed duplicate useEffect - senders fetching is now handled by the consolidated useEffect above
-    
+
     // Initialize sender for business users
     useEffect(() => {
         if (user.role === "business" && !orderId) {
@@ -2107,7 +2162,7 @@ export default function HomeScreen() {
 
     // Add a separate effect for item type changes
     useEffect(() => {
-        
+
         // Only update delivery fee if:
         // 1. Not in edit mode (no orderId), or
         // 2. In edit mode but item type has changed from original
@@ -2135,7 +2190,7 @@ export default function HomeScreen() {
             StatusBar.setTranslucent(true);
         }
     }, [isDark]);
-    
+
     // Check if user has seen onboarding
     useEffect(() => {
         const checkOnboardingStatus = async () => {
@@ -2148,7 +2203,7 @@ export default function HomeScreen() {
                 //     animateOnboarding(true);
                 //     return;
                 // }
-                
+
                 const hasSeenOnboarding = await SecureStore.getItemAsync(`create_onboarding_${user.userId}`);
                 if (!hasSeenOnboarding && user?.userId && !orderId) {
                     // Show onboarding for new users creating orders
@@ -2158,10 +2213,10 @@ export default function HomeScreen() {
             } catch (error) {
             }
         };
-        
+
         checkOnboardingStatus();
     }, [user]);
-    
+
     // Animation functions
     const animateOnboarding = (show) => {
         Animated.parallel([
@@ -2177,7 +2232,7 @@ export default function HomeScreen() {
             }),
         ]).start();
     };
-    
+
     const goToNextStep = () => {
         if (currentStep < onboardingSteps.length - 1) {
             Animated.sequence([
@@ -2209,7 +2264,7 @@ export default function HomeScreen() {
             });
         }
     };
-    
+
     const goToPrevStep = () => {
         if (currentStep > 0) {
             Animated.sequence([
@@ -2241,7 +2296,7 @@ export default function HomeScreen() {
             });
         }
     };
-    
+
     const completeOnboarding = async () => {
         try {
             await SecureStore.setItemAsync(`create_onboarding_${user.userId}`, 'completed');
@@ -2251,7 +2306,7 @@ export default function HomeScreen() {
             setShowOnboarding(false);
         }
     };
-    
+
     // Onboarding steps content with icons matching section icons
     const onboardingSteps = [
         {
@@ -2280,21 +2335,21 @@ export default function HomeScreen() {
             key: 'client',
             title: translations[language]?.createOnboarding?.client?.title,
             message: translations[language]?.createOnboarding?.client?.message,
-            icon:<AntDesign name="user" size={24} color="#ffffff"/>,
+            icon: <AntDesign name="user" size={24} color="#ffffff" />,
             color: '#EC4899'
         },
         {
             key: 'cost',
-            title: translations[language]?.createOnboarding?.cost?.title ,
+            title: translations[language]?.createOnboarding?.cost?.title,
             message: translations[language]?.createOnboarding?.cost?.message,
             icon: <FontAwesome name="money" size={24} color="#ffffff" />,
             color: '#10B981'
         },
         {
             key: 'details',
-            title: translations[language]?.createOnboarding?.details?.title ,
+            title: translations[language]?.createOnboarding?.details?.title,
             message: translations[language]?.createOnboarding?.details?.message,
-            icon:<Octicons name="package" size={24} color="#ffffff" />,
+            icon: <Octicons name="package" size={24} color="#ffffff" />,
             color: '#EF4444'
         },
         {
@@ -2306,7 +2361,7 @@ export default function HomeScreen() {
         },
         {
             key: 'ready',
-            title: translations[language]?.createOnboarding?.ready?.title ,
+            title: translations[language]?.createOnboarding?.ready?.title,
             message: translations[language]?.createOnboarding?.ready?.message,
             icon: <MaterialIcons name="done" size={24} color="#ffffff" />,
             color: '#059669'
@@ -2315,7 +2370,7 @@ export default function HomeScreen() {
 
 
     return (
-        <SafeAreaView 
+        <SafeAreaView
             style={[styles.safeArea, { backgroundColor: colors.background }]}
             edges={['right', 'left']}
         >
@@ -2324,68 +2379,68 @@ export default function HomeScreen() {
                 backgroundColor="transparent"
                 translucent={true}
             />
-            
-            <KeyboardAvoidingView 
+
+            <KeyboardAvoidingView
                 style={[styles.pageContainer, { backgroundColor: colors.background }]}
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
                 enabled
             >
                 {!isBulkMode && (
-                <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
-                    <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
-                    <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
-                        {orderTypes.map((type, index) => (
-                            <Field
-                                key={index}
-                                field={{
-                                    type: "orderTypeButton",
-                                    label: type.name,
-                                    isSelected: selectedValue.orderType?.value === type.value,
-                                    icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={colors.text} /> :
-                                          type.value === "receive" ? <MaterialIcons name="store" size={18} color={colors.text} /> :
-                                          type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={colors.text} /> :
-                                          <MaterialIcons name="payments" size={18} color={colors.text} />,
-                                    onPress: () => {
-                                        // Reset toggle states when switching order types
-                                        setFromBusinessBalance(false);
-                                        setWithMoneyReceive(false);
-                                        setForm(prevForm => ({
-                                            ...prevForm,
-                                            fromBusinessBalance: false,
-                                            withMoneyReceive: false,
-                                            balanceDeduction: null
-                                        }));
-                                        
-                                        setSelectedValue(prev => ({
-                                            ...prev,
-                                            orderType: type
-                                        }));
-                                    
-                                        // Show alert for business users when selecting receive or payment order types
-                                        if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
-                                            Alert.alert(
-                                                translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
-                                                type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
+                    <View style={[styles.headerContainer, { backgroundColor: colors.card }]}>
+                        <Text style={[styles.orderTypeHeaderText, { color: colors.text }]}>{translations[language].tabs.orders.create.sections.orderTypes.titlePlaceholder}</Text>
+                        <View style={[styles.orderTypeButtonsContainer, { backgroundColor: colors.card }]}>
+                            {orderTypes.map((type, index) => (
+                                <Field
+                                    key={index}
+                                    field={{
+                                        type: "orderTypeButton",
+                                        label: type.name,
+                                        isSelected: selectedValue.orderType?.value === type.value,
+                                        icon: type.value === "delivery" ? <MaterialIcons name="local-shipping" size={18} color={colors.text} /> :
+                                            type.value === "receive" ? <MaterialIcons name="store" size={18} color={colors.text} /> :
+                                                type.value === "delivery/receive" ? <MaterialIcons name="sync" size={18} color={colors.text} /> :
+                                                    <MaterialIcons name="payments" size={18} color={colors.text} />,
+                                        onPress: () => {
+                                            // Reset toggle states when switching order types
+                                            setFromBusinessBalance(false);
+                                            setWithMoneyReceive(false);
+                                            setForm(prevForm => ({
+                                                ...prevForm,
+                                                fromBusinessBalance: false,
+                                                withMoneyReceive: false,
+                                                balanceDeduction: null
+                                            }));
 
-                                                [{ 
-                                                    text: translations[language].ok || "OK",
-                                                    style: "default"
-                                                }],
-                                                { 
-                                                    cancelable: false,
-                                                    icon: type.value === "receive" ? <MaterialIcons name="store" size={24} color="#4361EE" /> : 
-                                                          <MaterialIcons name="payments" size={24} color="#4361EE" />
-                                                }
-                                            );
+                                            setSelectedValue(prev => ({
+                                                ...prev,
+                                                orderType: type
+                                            }));
+
+                                            // Show alert for business users when selecting receive or payment order types
+                                            if (user.role === "business" && (type.value === "receive" || type.value === "payment")) {
+                                                Alert.alert(
+                                                    translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_notice,
+                                                    type.value === "receive" ? translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message : translations[language].tabs.orders.create.sections.sender.fields.auto_deduction_message_payment,
+
+                                                    [{
+                                                        text: translations[language].ok || "OK",
+                                                        style: "default"
+                                                    }],
+                                                    {
+                                                        cancelable: false,
+                                                        icon: type.value === "receive" ? <MaterialIcons name="store" size={24} color="#4361EE" /> :
+                                                            <MaterialIcons name="payments" size={24} color="#4361EE" />
+                                                    }
+                                                );
+                                            }
                                         }
-                                    }
-                                }}
-                            />
-                        ))}
-                    </View>
-                    
-                    {/* Add with_money_receive toggle directly in the header
+                                    }}
+                                />
+                            ))}
+                        </View>
+
+                        {/* Add with_money_receive toggle directly in the header
                     {selectedValue.orderType?.value === "receive" && (
                         <View style={styles.businessBalanceToggleContainer}>
                             <Field
@@ -2414,9 +2469,9 @@ export default function HomeScreen() {
                             />
                         </View>
                     )} */}
-                </View>
+                    </View>
                 )}
-                <ScrollView 
+                <ScrollView
                     ref={scrollViewRef}
                     style={[styles.container]}
                     contentContainerStyle={styles.contentContainer}
@@ -2424,51 +2479,51 @@ export default function HomeScreen() {
                     showsVerticalScrollIndicator={true}
                 >
                     <View style={styles.main}>
-                    {renderSections.map((section, index) => (
-                        <Section
-                            key={index}
-                            section={section}
-                            setSelectedValue={setSelectedValue}
-                            prickerSearchValue={prickerSearchValue}
-                            setPickerSearchValue={setPickerSearchValue}
-                            fieldErrors={fieldErrors}
-                            setFieldErrors={setFieldErrors}
-                        />
-                    ))}
-                    
-                    {/* Submit Button moved inside ScrollView */}
-                    <View style={styles.submitButtonContainer}>
-                        <TouchableOpacity 
-                            style={[styles.submitButton, {
-                                marginHorizontal: 40,
-                                marginVertical: Platform.OS === 'ios' ? 20 : 10,
-                            }]}
-                            onPress={() => isBulkMode 
-                                ? handleCreateBulkOrders()
-                                : orderId 
-                                    ? handleCreateOrder(`/api/orders/${orderId}`, "PUT") 
-                                    : handleCreateOrder('/api/orders', "POST")
-                            }
-                            disabled={isBulkMode ? bulkCreateLoading : formSpinner.status}
-                            activeOpacity={0.8}
-                        >
-                            {(isBulkMode ? bulkCreateLoading : formSpinner.status) ? (
-                                <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                                <Text style={[styles.submitButtonText]}>
-                                    {isBulkMode 
-                                        ? bulkSubmitLabel
-                                        : isDuplicate === 'true' 
-                                            ? (translations[language].tabs.orders.order.resend || "Re send")
-                                            : translations[language].tabs.orders.create.submit
+                        {renderSections.map((section, index) => (
+                            <Section
+                                key={index}
+                                section={section}
+                                setSelectedValue={setSelectedValue}
+                                prickerSearchValue={prickerSearchValue}
+                                setPickerSearchValue={setPickerSearchValue}
+                                fieldErrors={fieldErrors}
+                                setFieldErrors={setFieldErrors}
+                            />
+                        ))}
+
+                        {/* Submit Button moved inside ScrollView */}
+                        <View style={styles.submitButtonContainer}>
+                            <TouchableOpacity
+                                style={[styles.submitButton, {
+                                    marginHorizontal: 40,
+                                    marginVertical: Platform.OS === 'ios' ? 20 : 10,
+                                }]}
+                                onPress={() => isBulkMode
+                                    ? handleCreateBulkOrders()
+                                    : orderId
+                                        ? handleCreateOrder(`/api/orders/${orderId}`, "PUT")
+                                        : handleCreateOrder('/api/orders', "POST")
+                                }
+                                disabled={isBulkMode ? bulkCreateLoading : formSpinner.status}
+                                activeOpacity={0.8}
+                            >
+                                {(isBulkMode ? bulkCreateLoading : formSpinner.status) ? (
+                                    <ActivityIndicator size="small" color="#FFFFFF" />
+                                ) : (
+                                    <Text style={[styles.submitButtonText]}>
+                                        {isBulkMode
+                                            ? bulkSubmitLabel
+                                            : isDuplicate === 'true'
+                                                ? (translations[language].tabs.orders.order.resend || "Re send")
+                                                : translations[language].tabs.orders.create.submit
                                         }
-                                </Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </ScrollView>
-            
+
                 {/* Loading Spinner */}
                 {formSpinner.status && (
                     <View style={styles.overlay}>
@@ -2480,7 +2535,7 @@ export default function HomeScreen() {
                         </View>
                     </View>
                 )}
-            
+
                 {/* Success Message */}
                 {success && (
                     <View style={styles.successOverlay}>
@@ -2492,7 +2547,7 @@ export default function HomeScreen() {
                         </View>
                     </View>
                 )}
-            
+
                 {/* Custom Alert */}
                 {showAlert.visible && (
                     <CustomAlert
@@ -2518,9 +2573,9 @@ export default function HomeScreen() {
                             </Text>
                             <View style={styles.currencyList}>
                                 {currencyList
-                                    .filter(c => 
+                                    .filter(c =>
                                         // Show only currencies not used in other inputs
-                                        !codAmounts.some((item, i) => 
+                                        !codAmounts.some((item, i) =>
                                             i !== activeCurrencyPicker && item.currency === c.value
                                         )
                                     )
@@ -2529,8 +2584,8 @@ export default function HomeScreen() {
                                             key={index}
                                             style={[
                                                 styles.currencyOption,
-                                                codAmounts[activeCurrencyPicker]?.currency === currency.value && 
-                                                    styles.selectedCurrencyOption
+                                                codAmounts[activeCurrencyPicker]?.currency === currency.value &&
+                                                styles.selectedCurrencyOption
                                             ]}
                                             onPress={() => {
                                                 const newAmounts = [...codAmounts];
@@ -2542,8 +2597,8 @@ export default function HomeScreen() {
                                             <Text style={[
                                                 styles.currencyOptionText,
                                                 { color: colors.text },
-                                                codAmounts[activeCurrencyPicker]?.currency === currency.value && 
-                                                    styles.selectedCurrencyOptionText
+                                                codAmounts[activeCurrencyPicker]?.currency === currency.value &&
+                                                styles.selectedCurrencyOptionText
                                             ]}>
                                                 {currency.name}
                                             </Text>
@@ -2579,7 +2634,7 @@ export default function HomeScreen() {
                         setShowReceiverModal(false);
                     }}
                 />
-                
+
                 {/* Onboarding Modal */}
                 {showOnboarding && (
                     <Modal
@@ -2604,15 +2659,15 @@ export default function HomeScreen() {
                                     <View style={[styles.onboardingIconContainer, { backgroundColor: onboardingSteps[currentStep].color }]}>
                                         {onboardingSteps[currentStep].icon}
                                     </View>
-                                    
+
                                     <Text style={[styles.onboardingTitle, { color: colors.text }]}>
                                         {onboardingSteps[currentStep].title}
                                     </Text>
-                                    
+
                                     <Text style={[styles.onboardingMessage, { color: colors.textSecondary }]}>
                                         {onboardingSteps[currentStep].message}
                                     </Text>
-                                    
+
                                     {/* Progress Indicators */}
                                     <View style={styles.progressIndicators}>
                                         {onboardingSteps.map((_, index) => (
@@ -2628,7 +2683,7 @@ export default function HomeScreen() {
                                             />
                                         ))}
                                     </View>
-                                    
+
                                     {/* Navigation Buttons */}
                                     <View style={styles.onboardingNavigation}>
                                         {currentStep > 0 ? (
@@ -2643,23 +2698,23 @@ export default function HomeScreen() {
                                         ) : (
                                             <View style={{ flex: 1 }} />
                                         )}
-                                        
+
                                         <TouchableOpacity
                                             style={[
-                                                styles.onboardingButton, 
+                                                styles.onboardingButton,
                                                 styles.onboardingNextButton,
                                                 { backgroundColor: onboardingSteps[currentStep].color }
                                             ]}
                                             onPress={currentStep < onboardingSteps.length - 1 ? goToNextStep : completeOnboarding}
                                         >
                                             <Text style={styles.onboardingNextButtonText}>
-                                                {currentStep < onboardingSteps.length - 1 ? 
-                                                    (translations[language]?.createOnboarding?.next || 'Next') : 
+                                                {currentStep < onboardingSteps.length - 1 ?
+                                                    (translations[language]?.createOnboarding?.next || 'Next') :
                                                     (translations[language]?.createOnboarding?.finish || 'Get Started')}
                                             </Text>
                                         </TouchableOpacity>
                                     </View>
-                                    
+
                                     {/* Skip Button */}
                                     {currentStep < onboardingSteps.length - 1 && (
                                         <TouchableOpacity
@@ -2680,7 +2735,7 @@ export default function HomeScreen() {
         </SafeAreaView>
     );
 }
-    
+
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
@@ -3088,7 +3143,7 @@ const styles = StyleSheet.create({
     messageContent: {
         flexDirection: 'row',
         padding: 16,
-        gap:10,
+        gap: 10,
     },
     messageTextContainer: {
         flex: 1,

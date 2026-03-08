@@ -1,4 +1,4 @@
-package com.expressjsk
+package com.taiar
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

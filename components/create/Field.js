@@ -19,11 +19,11 @@ const convertToEnglishNumerals = (input) => {
     const arabicNumerals = '٠١٢٣٤٥٦٧٨٩';
     const persianNumerals = '۰۱۲۳۴۵۶۷۸۹';
     const englishNumerals = '0123456789';
-    
+
     return input.replace(/[٠-٩۰-۹]/g, (char) => {
         const arabicIndex = arabicNumerals.indexOf(char);
         const persianIndex = persianNumerals.indexOf(char);
-        
+
         if (arabicIndex !== -1) {
             return englishNumerals[arabicIndex];
         } else if (persianIndex !== -1) {
@@ -33,13 +33,13 @@ const convertToEnglishNumerals = (input) => {
     });
 };
 
-export default function Field({field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true}) {
+export default function Field({ field, error, setSelectedValue, loadMoreData, loadingMore, prickerSearchValue, setPickerSearchValue, setFieldErrors, editable = true }) {
     // Add safety check for undefined field
     if (!field) {
         console.warn("Field component received undefined field");
         return null;
     }
-    
+
     const [showPickerModal, setShowPickerModal] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const [selectedDate, setSelectedDate] = useState("");
@@ -57,11 +57,11 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
     const bulkLabels = language === 'ar' ? {
         summary: 'ملخص',
         total: 'الإجمالي',
-        valid: 'صالح',
-        invalid: 'غير صالح',
+        valid: 'بيانات الطرد',
+        invalid: 'بيانات غير صحيحة',
         row: 'طلب',
-        statusValid: 'صالح',
-        statusInvalid: 'غير صالح',
+        statusValid: 'بيانات الطرد',
+        statusInvalid: 'بيانات غير صحيحة',
         name: 'الاسم',
         phone: 'الهاتف',
         phone2: 'الهاتف الثاني',
@@ -69,6 +69,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         address: 'العنوان',
         cod: 'المبلغ',
         totalCod: 'المجموع',
+        deliveryFee: 'رسوم التوصيل',
         notes: 'ملاحظات',
         orderType: 'نوع الطلب',
         receivedItems: 'مستلم',
@@ -90,6 +91,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         address: 'כתובת',
         cod: 'סכום',
         totalCod: 'סה״כ',
+        deliveryFee: 'דמי משלוח',
         notes: 'הערות',
         orderType: 'סוג הזמנה',
         receivedItems: 'התקבל',
@@ -111,6 +113,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         address: 'Address',
         cod: 'COD',
         totalCod: 'Total COD',
+        deliveryFee: 'Delivery Fee',
         notes: 'Notes',
         orderType: 'Order Type',
         receivedItems: 'Received Items',
@@ -159,7 +162,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
     const handleDateSelect = (day) => {
         setSelectedDate(day.dateString);
-        if(field.onChange) field.onChange(day.dateString);
+        if (field.onChange) field.onChange(day.dateString);
         setShowCalendar(false);
     };
 
@@ -171,7 +174,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
 
     const getCurrencySymbol = (currency) => {
-        switch(currency) {
+        switch (currency) {
             case 'ILS': return '₪';
             case 'USD': return '$';
             case 'JOD': return 'JD';
@@ -184,18 +187,18 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
         // Store current field name to identify where to return data
         if (!global) global = {};
         global.scanTargetField = field.name;
-        
+
         router.push("/(camera)/scanReference");
     };
 
     // Search receivers by phone - modified to show only exact matches
     const searchReceiversByPhone = async (searchTerm) => {
         if (!searchTerm || searchTerm.length < 3) return;
-        
+
         try {
             setSearchLoading(true);
             const token = await getToken("userToken");
-            
+
             // Use the correct endpoint for receiver search
             const response = await fetch(
                 `${process.env.EXPO_PUBLIC_API_URL}/api/receivers?phone=${encodeURIComponent(searchTerm)}&exact=true&language_code=${language}`,
@@ -211,7 +214,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
             );
 
             const responseText = await response.text();
-            
+
             let data;
             try {
                 data = JSON.parse(responseText);
@@ -225,23 +228,23 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                 setSearchResults([]);
                 return;
             }
-            
+
             let results = [];
-            
+
             if (data.data && Array.isArray(data.data)) {
                 // Filter for exact phone matches
-                results = data.data.filter(receiver => 
-                    receiver.phone === searchTerm || 
+                results = data.data.filter(receiver =>
+                    receiver.phone === searchTerm ||
                     receiver.phone_2 === searchTerm
                 );
             } else if (data.receivers && Array.isArray(data.receivers)) {
                 // Some APIs might return data in a 'receivers' field
-                results = data.receivers.filter(receiver => 
-                    receiver.phone === searchTerm || 
+                results = data.receivers.filter(receiver =>
+                    receiver.phone === searchTerm ||
                     receiver.phone_2 === searchTerm
                 );
             }
-            
+
             setSearchResults(results);
         } catch (error) {
             setSearchResults([]);
@@ -272,7 +275,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     {
                         textAlign: isRTL ? "left" : "left"
                     },
-                    { 
+                    {
                         backgroundColor: colors.card,
                         color: field.name === "net_value" ? colors.success : colors.textSecondary
                     }
@@ -293,12 +296,12 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         ]}>
                             {/* Check if it's receiver_mobile AND has onPress (for search) */}
                             {field.name === "receiver_mobile" && field.onPress ? (
-                                <TouchableOpacity 
+                                <TouchableOpacity
                                     style={styles.receiverInputWrapper}
                                     onPress={field.onPress}
                                     activeOpacity={0.7}
                                 >
-                                <TextInput
+                                    <TextInput
                                         style={[
                                             styles.input,
                                             {
@@ -307,7 +310,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             {
                                                 ...Platform.select({
                                                     ios: {
-                                                        textAlign:isRTL ? "right" : ""
+                                                        textAlign: isRTL ? "right" : ""
                                                     }
                                                 }),
                                                 color: colors.success
@@ -324,7 +327,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     />
                                 </TouchableOpacity>
                             ) : (
-                                <TextInput 
+                                <TextInput
                                     style={[
                                         styles.input,
                                         {
@@ -334,7 +337,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         {
                                             ...Platform.select({
                                                 ios: {
-                                                    textAlign:isRTL ? "right" : ""
+                                                    textAlign: isRTL ? "right" : ""
                                                 }
                                             }),
                                             color: colors.text
@@ -353,13 +356,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                         if (field.onChange === null) {
                                             return;
                                         }
-                                        
+
                                         // Convert to English numerals for numeric fields
                                         let processedText = text;
                                         if (field.keyboardType === 'numeric' || field.keyboardType === 'number-pad' || field.keyboardType === 'decimal-pad') {
                                             processedText = convertToEnglishNumerals(text);
                                         }
-                                        
+
                                         if (field.onChange) {
                                             field.onChange(processedText);
                                         }
@@ -382,7 +385,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     blurOnSubmit={field.blurOnSubmit !== undefined ? field.blurOnSubmit : !field.multiline}
                                 />
                             )}
-                            
+
                             {(field.name === "reference_id" || (field.name === "qr_id" && field.showScanButton)) && (
                                 <TouchableOpacity
                                     style={styles.scanButton}
@@ -403,11 +406,11 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </TouchableOpacity>
                             )}
                         </View>
-                        {error && <Text style={[styles.errorText,{
+                        {error && <Text style={[styles.errorText, {
                             textAlign: isRTL ? "left" : "left",
                             ...Platform.select({
                                 ios: {
-                                    textAlign:isRTL ? "right" : ""
+                                    textAlign: isRTL ? "right" : ""
                                 }
                             }),
                             color: '#EF4444'
@@ -420,7 +423,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                         styles.currencyInputContainer,
                         error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
                     ]}>
-                        <TextInput 
+                        <TextInput
                             multiline={true}
                             style={[
                                 styles.currencyInput,
@@ -431,7 +434,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "right" : ""
+                                            textAlign: isRTL ? "right" : ""
                                         }
                                     }),
                                     color: colors.text
@@ -443,7 +446,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             onChangeText={(text) => {
                                 // Convert to English numerals for currency input
                                 const processedText = convertToEnglishNumerals(text);
-                                
+
                                 if (field.onChange) {
                                     field.onChange(processedText);
                                 }
@@ -462,8 +465,8 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             placeholderTextColor="#94A3B8"
                             blurOnSubmit={true}
                         />
-                        
-                        <Pressable 
+
+                        <Pressable
                             style={[
                                 styles.currencySelector,
                                 { backgroundColor: isDark ? colors.inputBg : 'rgba(203, 213, 225, 0.2)' }
@@ -474,17 +477,17 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 }
                             }}
                         >
-                            <Text style={[styles.currencyText, { color: colors.primary },{
+                            <Text style={[styles.currencyText, { color: colors.primary }, {
                                 textAlign: isRTL ? "left" : ""
                             }]}>
                                 {getCurrencySymbol(field.currency)} {field.currency}
                             </Text>
                             {field.showCurrencyPicker && (
-                                <Feather 
-                                    name="chevron-down" 
-                                    size={16} 
-                                    color="#64748B" 
-                                    style={{marginLeft: 4}}
+                                <Feather
+                                    name="chevron-down"
+                                    size={16}
+                                    color="#64748B"
+                                    style={{ marginLeft: 4 }}
                                 />
                             )}
                         </Pressable>
@@ -508,11 +511,11 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                 )}
 
                 {field.type === "select" && (
-                    <Pressable 
+                    <Pressable
                         style={[
                             styles.selectField,
                             error && { borderColor: '#EF4444', borderWidth: 1, borderRadius: 8, padding: 4 }
-                        ]} 
+                        ]}
                         onPress={() => {
                             setIsFocused(true);
                             setShowPickerModal(true);
@@ -525,19 +528,19 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 styles.selectText,
                                 { color: colors.text, textAlign: isRTL ? "left" : "left" },
                                 {
-                                ...Platform.select({
-                                    ios: {
-                                        textAlign:isRTL ? "left" : ""
-                                    }
-                                }),
-                                color: colors.text
-                            }
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "left" : ""
+                                        }
+                                    }),
+                                    color: colors.text
+                                }
                             ]}>
                                 {field.value || field.placeholder}
                             </Text>
-                            <Feather 
-                                name="chevron-down" 
-                                size={18} 
+                            <Feather
+                                name="chevron-down"
+                                size={18}
                                 color="#64748B"
                             />
                         </View>
@@ -547,20 +550,20 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "orderTypeButton" && (
                     <TouchableOpacity
-                    style={[
-                        styles.orderTypeButton,
-                        { 
-                            backgroundColor: isDark ? colors.surface : '#F8FAFC',
-                            borderColor: isDark ? colors.border : '#E2E8F0' ,
-                        },
-                        field.isSelected && [
-                            { 
-                                backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF',
-                                borderColor: colors.primary,
-                                shadowColor: colors.primary
-                            }
-                        ]
-                    ]}
+                        style={[
+                            styles.orderTypeButton,
+                            {
+                                backgroundColor: isDark ? colors.surface : '#F8FAFC',
+                                borderColor: isDark ? colors.border : '#E2E8F0',
+                            },
+                            field.isSelected && [
+                                {
+                                    backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : '#EEF2FF',
+                                    borderColor: colors.primary,
+                                    shadowColor: colors.primary
+                                }
+                            ]
+                        ]}
                         onPress={field.onPress}
                         activeOpacity={0.7}
                     >
@@ -580,12 +583,12 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                 )}
 
                 {field.type === "button" && (
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[
                             styles.button,
                             field.value === "x" ? styles.deleteButton : styles.addButton,
                             field.style
-                        ]} 
+                        ]}
                         onPress={field.onPress}
                         activeOpacity={0.7}
                     >
@@ -596,13 +599,13 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 styles.buttonContent
                             ]}>
                                 <Feather name="plus" size={16} color="#FFFFFF" />
-                                <Text style={[styles.buttonText, { color: colors.text },{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        textAlign:isRTL ? "right" : ""
-                                                    }
-                                                }),
-                                            }]}>
+                                <Text style={[styles.buttonText, { color: colors.text }, {
+                                    ...Platform.select({
+                                        ios: {
+                                            textAlign: isRTL ? "right" : ""
+                                        }
+                                    }),
+                                }]}>
                                     {field.value}
                                 </Text>
                             </View>
@@ -622,7 +625,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
                                     color: colors.text
@@ -636,7 +639,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 {
                                     ...Platform.select({
                                         ios: {
-                                            textAlign:isRTL ? "left" : ""
+                                            textAlign: isRTL ? "left" : ""
                                         }
                                     }),
                                     color: colors.text
@@ -720,14 +723,14 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                     <View style={styles.bulkSummaryContainer}>
                         <View style={styles.bulkSummaryHeader}>
                             <Text style={[styles.bulkSummaryTitle, { color: colors.text }]}>{field.label || bulkLabels.summary}</Text>
-                        
+
                         </View>
                         <View style={styles.bulkSummaryList}>
                             {Array.isArray(field.value.items) && field.value.items.length > 0 ? field.value.items.map((item, index) => {
                                 const isValid = item.status === 'ok';
                                 const badgeColor = isValid ? '#10B981' : '#EF4444';
                                 const badgeBackground = isValid ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)';
-                                const codDisplay = item.cod_value !== null && item.cod_value !== undefined && item.cod_value !== '' 
+                                const codDisplay = item.cod_value !== null && item.cod_value !== undefined && item.cod_value !== ''
                                     ? `${item.cod_value} ${item.cod_currency || ''}`.trim()
                                     : '-';
                                 const orderTypeDisplay = item.order_type ? getOrderTypeLabel(item.order_type) : formatValue(item.order_type_raw || item.order_type);
@@ -738,7 +741,10 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     { key: 'receiver_city', label: bulkLabels.city, value: formatValue(item.receiver_city_line || item.receiver_city_raw || item.receiver_city_name) },
                                     { key: 'receiver_address', label: bulkLabels.address, value: formatValue(item.receiver_address) },
                                     { key: 'cod_value', label: bulkLabels.cod, value: codDisplay },
-                                    { key: 'order_type', label: bulkLabels.orderType, value: formatValue(orderTypeDisplay) }
+                                    { key: 'order_type', label: bulkLabels.orderType, value: formatValue(orderTypeDisplay) },
+                                    ...(item.delivery_fee !== undefined && item.delivery_fee !== null
+                                        ? [{ key: 'delivery_fee', label: bulkLabels.deliveryFee, value: `${item.delivery_fee} ILS` }]
+                                        : [])
                                 ];
                                 const notesList = Array.isArray(item.notes) && item.notes.length > 0
                                     ? item.notes
@@ -834,20 +840,20 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                             field.value.map((check, index) => (
                                 <View key={index} style={[
                                     styles.checkItem,
-                                    { 
+                                    {
                                         backgroundColor: isDark ? colors.surface : '#F8FAFC',
-                                        borderColor: colors.border 
+                                        borderColor: colors.border
                                     }
                                 ]}>
                                     <View style={styles.checkHeader}>
-                                        <Text style={[styles.checkTitle, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        textAlign:isRTL ? "right" : ""
-                                                    }
-                                                }),
-                                                color: colors.text
-                                            }]}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
+                                        <Text style={[styles.checkTitle, { color: colors.text, textAlign: isRTL ? "left" : "left" }, {
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "right" : ""
+                                                }
+                                            }),
+                                            color: colors.text
+                                        }]}>{translations[language].tabs.orders.order.orderChecks.check} #{index + 1}</Text>
                                         <TouchableOpacity
                                             style={styles.removeCheckButton}
                                             onPress={() => {
@@ -859,22 +865,22 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             <Feather name="x" size={18} color="#EF4444" />
                                         </TouchableOpacity>
                                     </View>
-                                    
+
                                     <View style={styles.checkField}>
-                                        <Text style={[styles.checkFieldLabel, { color: colors.text },{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        textAlign:isRTL ? "left" : ""
-                                                    }
-                                                }),
-                                                color: colors.text
-                                            }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
+                                        <Text style={[styles.checkFieldLabel, { color: colors.text }, {
+                                            ...Platform.select({
+                                                ios: {
+                                                    textAlign: isRTL ? "left" : ""
+                                                }
+                                            }),
+                                            color: colors.text
+                                        }]}>{translations[language].tabs.orders.order.orderChecks.number}</Text>
                                         <TextInput
                                             multiline={true}
-                                            style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
+                                            style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg, border: colors.border }, {
                                                 ...Platform.select({
                                                     ios: {
-                                                        textAlign:isRTL ? "right" : ""
+                                                        textAlign: isRTL ? "right" : ""
                                                     }
                                                 }),
                                                 color: colors.text
@@ -889,23 +895,23 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                             placeholderTextColor="#94A3B8"
                                         />
                                     </View>
-                                    
+
                                     <View style={styles.checkRow}>
                                         <View style={[styles.checkField, { flex: 1, marginRight: 8 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" }, {
                                                 ...Platform.select({
                                                     ios: {
-                                                        textAlign:isRTL ? "left" : ""
+                                                        textAlign: isRTL ? "left" : ""
                                                     }
                                                 }),
                                                 color: colors.text
                                             }]}>{translations[language].tabs.orders.order.orderChecks.value}</Text>
                                             <TextInput
                                                 multiline={true}
-                                                style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg,border:colors.border },{
+                                                style={[styles.checkInput, { color: colors.text, backgroundColor: colors.inputBg, border: colors.border }, {
                                                     ...Platform.select({
                                                         ios: {
-                                                            textAlign:isRTL ? "right" : ""
+                                                            textAlign: isRTL ? "right" : ""
                                                         }
                                                     }),
                                                     color: colors.text
@@ -921,17 +927,17 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                 placeholderTextColor="#94A3B8"
                                             />
                                         </View>
-                                        
+
                                         <View style={[styles.checkField, { flex: 1 }]}>
-                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
+                                            <Text style={[styles.checkFieldLabel, { color: colors.text, textAlign: isRTL ? "left" : "left" }, {
                                                 ...Platform.select({
                                                     ios: {
-                                                        textAlign:isRTL ? "left" : ""
+                                                        textAlign: isRTL ? "left" : ""
                                                     }
                                                 }),
                                                 color: colors.text
                                             }]}>{translations[language].tabs.orders.order.orderChecks.currency}</Text>
-                                            <View style={[styles.checkCurrencySelect,{ backgroundColor: colors.inputBg,border:colors.border }]}>
+                                            <View style={[styles.checkCurrencySelect, { backgroundColor: colors.inputBg, border: colors.border }]}>
                                                 <Pressable
                                                     style={[styles.currencySelector, { backgroundColor: isDark ? colors.inputBg : 'rgba(203, 213, 225, 0.2)' }]}
                                                     onPress={() => {
@@ -939,29 +945,29 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                                         const currencies = ['ILS', 'USD', 'JOD'];
                                                         const currentIndex = currencies.indexOf(check.currency || 'ILS');
                                                         const nextIndex = (currentIndex + 1) % currencies.length;
-                                                        
+
                                                         const updatedChecks = [...field.value];
-                                                        updatedChecks[index] = { 
-                                                            ...check, 
-                                                            currency: currencies[nextIndex] 
+                                                        updatedChecks[index] = {
+                                                            ...check,
+                                                            currency: currencies[nextIndex]
                                                         };
                                                         field.onChange(updatedChecks);
                                                     }}
                                                 >
-                                                    <Text style={[styles.currencyText, { color: colors.primary },{
-                                                ...Platform.select({
-                                                    ios: {
-                                                        textAlign:isRTL ? "right" : ""
-                                                    }
-                                                }),
-                                                color: colors.text
-                                            }]}>
+                                                    <Text style={[styles.currencyText, { color: colors.primary }, {
+                                                        ...Platform.select({
+                                                            ios: {
+                                                                textAlign: isRTL ? "right" : ""
+                                                            }
+                                                        }),
+                                                        color: colors.text
+                                                    }]}>
                                                         {getCurrencySymbol(check.currency || 'ILS')} {check.currency || 'ILS'}
                                                     </Text>
-                                                    <Feather 
-                                                        name="chevron-down" 
-                                                        size={16} 
-                                                        color="#64748B" 
+                                                    <Feather
+                                                        name="chevron-down"
+                                                        size={16}
+                                                        color="#64748B"
                                                         style={{ marginLeft: 4 }}
                                                     />
                                                 </Pressable>
@@ -971,16 +977,16 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 </View>
                             ))
                         ) : (
-                            <Text style={[styles.noChecksText, { color: colors.text, textAlign: isRTL ? "left" : "left" },{
+                            <Text style={[styles.noChecksText, { color: colors.text, textAlign: isRTL ? "left" : "left" }, {
                                 ...Platform.select({
                                     ios: {
-                                        textAlign:isRTL ? "right" : ""
+                                        textAlign: isRTL ? "right" : ""
                                     }
                                 }),
                                 color: colors.text
                             }]}>{translations[language].tabs.orders.order.orderChecks.noChecksMessage}</Text>
                         )}
-                        
+
                         <TouchableOpacity
                             style={styles.addCheckButton}
                             onPress={() => {
@@ -1049,7 +1055,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     <Feather name="x" size={22} color="#64748B" />
                                 </TouchableOpacity>
                             </View>
-                            
+
                             <View style={styles.phoneSearchInputContainer}>
                                 <TextInput
                                     multiline={true}
@@ -1074,21 +1080,21 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     onPress={() => searchReceiversByPhone(phoneSearchValue)}
                                     disabled={!phoneSearchValue || phoneSearchValue.length < 3}
                                 >
-                                    <Feather 
-                                        name="search" 
-                                        size={20} 
-                                        color="#FFFFFF" 
+                                    <Feather
+                                        name="search"
+                                        size={20}
+                                        color="#FFFFFF"
                                     />
                                 </TouchableOpacity>
                             </View>
-                            
+
                         </View>
                     </ModalPresentation>
                 )}
 
                 {field.type === "date" && (
                     <>
-                        <Pressable 
+                        <Pressable
                             style={styles.dateField}
                             onPress={() => {
                                 setIsFocused(true);
@@ -1104,9 +1110,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 ]}>
                                     {selectedDate || field.value || "Select Date"}
                                 </Text>
-                                <Feather 
-                                    name="calendar" 
-                                    size={18} 
+                                <Feather
+                                    name="calendar"
+                                    size={18}
                                     color="#64748B"
                                 />
                             </View>
@@ -1123,9 +1129,9 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                 <Calendar
                                     onDayPress={handleDateSelect}
                                     markedDates={{
-                                        [selectedDate]: { 
-                                            selected: true, 
-                                            selectedColor: '#4361EE' 
+                                        [selectedDate]: {
+                                            selected: true,
+                                            selectedColor: '#4361EE'
                                         },
                                     }}
                                     theme={{
@@ -1137,7 +1143,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
                                     }}
                                 />
                                 <View style={styles.calendarButtons}>
-                                    <TouchableOpacity 
+                                    <TouchableOpacity
                                         style={styles.calendarButton}
                                         onPress={() => {
                                             setShowCalendar(false);
@@ -1156,7 +1162,7 @@ export default function Field({field, error, setSelectedValue, loadMoreData, loa
 
                 {field.type === "toggle" && (
                     <View style={[styles.toggleWrapper]}>
-                        <Text style={{display: 'none'}}>{/* Empty text component to prevent warning */}</Text>
+                        <Text style={{ display: 'none' }}>{/* Empty text component to prevent warning */}</Text>
                         <Switch
                             value={field.value}
                             onValueChange={(value) => {

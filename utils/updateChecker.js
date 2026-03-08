@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 
 // Store URLs
 const APP_STORE_URL = 'https://apps.apple.com/us/app/jsk/id6752381240'; // Replace with your App Store ID
-const PLAY_STORE_URL = 'http://api.jsk-logistics.org/api/downloads/app.apk'; // Replace with your app's package name
+const PLAY_STORE_URL = 'https://api.jsk-logistics.org/api/downloads/app.apk'; // Replace with your app's package name
 
 // Check if the app needs to be updated by comparing versions
 export const checkForUpdates = async (language = 'ar') => {
