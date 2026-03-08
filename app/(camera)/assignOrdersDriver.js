@@ -14,92 +14,6 @@ import { useTheme } from '../../utils/themeContext';
 import { Colors } from '../../constants/Colors';
 import { useRTLStyles } from '../../utils/RTLWrapper';
 
-const TERRITORIES_48_KEYWORDS_AR = [
-  'تل السبع',
-  'اللقية',
-  'شقيب السلام',
-  'كسيفة',
-  'حورة',
-  'عرعرة النقب',
-  'ام بطين',
-  'ابو تلول',
-  'ابو قرينات',
-  'أبو كف',
-  'ام الحيران',
-  'العراقيب',
-  'وادي النعم',
-  'سعوة',
-  'الزرنوق',
-  'دريجات',
-  'يروحام',
-  'بير السبع',
-  'بئر السبع',
-  'شقب السلام',
-  'ديمونا',
-  'ابو قويدر',
-  'سروكا',
-  'اشكلون',
-  'رامات حوفاف',
-  'وادي النعيم',
-  'اشدود',
-  'يفني',
-  'سديروت',
-  'اوفاكيم',
-  'بير هداج',
-  'تل عراد',
-  'تل عواد',
-  'نتيفوت',
-  'كريات جات'
-];
-
-const normalizeTerritoryText = (input) => {
-  return String(input || '')
-    .toLowerCase()
-    .replace(/[\u064B-\u065F\u0670]/g, '')
-    .replace(/[إأآا]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ؤ/g, 'و')
-    .replace(/ئ/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/ـ/g, '')
-    .replace(/[^0-9a-z\u0590-\u05FF\u0600-\u06FF]+/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-};
-
-const TERRITORIES_48_KEYWORDS_AR_NORM = TERRITORIES_48_KEYWORDS_AR
-  .map(normalizeTerritoryText)
-  .filter(Boolean);
-
-const isTerritories48Match = (cityText, addressText) => {
-  const haystack = normalizeTerritoryText(`${cityText || ''} ${addressText || ''}`);
-  if (!haystack) return false;
-
-  for (const territory of TERRITORIES_48_KEYWORDS_AR_NORM) {
-    if (!territory) continue;
-    if (haystack.includes(territory)) return true;
-
-    const tokens = territory.split(' ').filter(Boolean);
-    if (tokens.length > 1 && tokens.every((t) => t.length >= 2 && haystack.includes(t))) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-const getOrderCategoryKey = (order) => {
-  const receiverCityCode = String(order?.receiver_city_code || '').trim().toUpperCase();
-  const isJerusalemReceiver = receiverCityCode === 'JERUSALEM';
-  const is48Receiver = receiverCityCode === '48 TERRITORIES';
-  const is48TerritoryFlagged = is48Receiver && isTerritories48Match(order?.receiver_city, order?.receiver_address);
-
-  if (is48TerritoryFlagged) return 'territories48_flagged';
-  if (is48Receiver) return 'territories48';
-  if (isJerusalemReceiver) return 'jerusalem';
-  return 'other';
-};
-
 export default function CameraScanner() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || Number(user?.role_id) === 1;
@@ -140,7 +54,6 @@ export default function CameraScanner() {
   const [processingBarcode, setProcessingBarcode] = useState(false);
   const [scannedBarcodes, setScannedBarcodes] = useState(new Set());
   const [lastScanTime, setLastScanTime] = useState(0);
-  const [expandedCategories, setExpandedCategories] = useState({});
   // Pagination state for drivers
   const [driverPage, setDriverPage] = useState(1);
   const [driverLoadingMore, setDriverLoadingMore] = useState(false);
@@ -215,53 +128,9 @@ export default function CameraScanner() {
     scannedBarcodesRef.current.delete(normalized);
   };
 
-  const categorizedScannedItems = useMemo(() => {
-    const groups = {
-      territories48_flagged: [],
-      territories48: [],
-      jerusalem: [],
-      other: []
-    };
-
-    for (const item of scannedItems) {
-      if (typeof item === 'object') {
-        groups[getOrderCategoryKey(item)].push(item);
-      } else {
-        groups.other.push(item);
-      }
-    }
-
-    const orderedKeys = ['territories48_flagged', 'territories48', 'jerusalem', 'other'];
-    const labelByKey = {
-      territories48_flagged: 'اراضي 48 - الجنوب',
-      territories48: 'اراضي 48',
-      jerusalem: 'القدس',
-      other: 'الضفة الغربية'
-    };
-    const accentByKey = {
-      territories48_flagged: '#EF4444',
-      territories48: '#FACC15',
-      jerusalem: '#3B82F6',
-      other: colors.primary
-    };
-
-    const headerBgByKey = {
-      territories48_flagged: isDark ? 'rgba(239, 68, 68, 0.18)' : 'rgba(239, 68, 68, 0.12)',
-      territories48: isDark ? 'rgba(250, 204, 21, 0.16)' : 'rgba(250, 204, 21, 0.18)',
-      jerusalem: isDark ? 'rgba(59, 130, 246, 0.18)' : 'rgba(59, 130, 246, 0.10)',
-      other: isDark ? 'rgba(67, 97, 238, 0.12)' : 'rgba(67, 97, 238, 0.08)'
-    };
-
-    return orderedKeys
-      .map((key) => ({
-        key,
-        label: labelByKey[key],
-        accentColor: accentByKey[key],
-        headerBackgroundColor: headerBgByKey[key],
-        items: groups[key]
-      }))
-      .filter((c) => c.items.length > 0);
-  }, [colors.primary, isDark, language, scannedItems]);
+  const orderedScannedItems = useMemo(() => {
+    return scannedItems;
+  }, [scannedItems]);
 
   // Helper function to clear all scan history (for debugging)
   const clearAllScanHistory = () => {
@@ -2181,155 +2050,110 @@ export default function CameraScanner() {
                 contentContainerStyle={styles.itemsList}
                 showsVerticalScrollIndicator={false}
               >
-                {categorizedScannedItems.map((category) => {
-                  const isExpanded = !!expandedCategories[category.key];
+                {orderedScannedItems.map((item, index) => {
+                  const stableKey = typeof item === 'object'
+                    ? (item.order_id || item.reference_id || item.id || `order-${index}`)
+                    : `order-${String(item)}-${index}`;
+
                   return (
-                    <View key={category.key} style={{ marginBottom: 14 }}>
+                    <Animated.View
+                      key={stableKey}
+                      style={[
+                        styles.itemContainer,
+                        {
+                          backgroundColor: isDark ? colors.surface : '#F9FAFB',
+                          shadowColor: colors.cardShadow,
+                          shadowOffset: { width: 0, height: 2 },
+                          shadowOpacity: isDark ? 0.2 : 0.08,
+                          shadowRadius: 4,
+                          elevation: 2,
+                          marginBottom: 12,
+                          borderRadius: 12,
+                          borderLeftWidth: 3,
+                          borderLeftColor: colors.primary,
+                          opacity: fadeAnim,
+                          transform: [{
+                            translateY: fadeAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: [20, 0]
+                            })
+                          }]
+                        }
+                      ]}
+                    >
+                      <View style={[
+                        styles.itemContent
+                      ]}>
+                        <View style={[
+                          styles.itemIconContainer,
+                          {
+                            backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)',
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12
+                          }
+                        ]}>
+                          <Feather name="package" size={18} color={colors.primary} />
+                        </View>
+                        <View style={[
+                          styles.itemTextContainer,
+                          {
+                            ...Platform.select({
+                              ios: {
+                                alignItems: isRTL ? "flex-start" : "flex-end"
+                              }
+                            }),
+                          }
+                        ]}>
+                          <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' }, {
+                            ...Platform.select({
+                              ios: {
+                                textAlign: isRTL ? "left" : ""
+                              }
+                            }),
+                          }]}>
+                            {typeof item === 'object' ? item.order_id : item}
+                          </Text>
+                          {typeof item === 'object' && (
+                            <>
+                              <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 }, {
+                                ...Platform.select({
+                                  ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                  }
+                                }),
+                              }]}>
+                                {item.receiver_name}
+                              </Text>
+                              <Text style={[styles.itemDetailText, { color: colors.textSecondary }, {
+                                ...Platform.select({
+                                  ios: {
+                                    textAlign: isRTL ? "left" : ""
+                                  }
+                                }),
+                              }]}>
+                                {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
+                              </Text>
+                            </>
+                          )}
+                        </View>
+                      </View>
+
                       <TouchableOpacity
                         style={[
-                          styles.categoryHeader,
+                          styles.deleteButton,
                           {
-                            backgroundColor: category.headerBackgroundColor,
-                            borderColor: isDark ? 'rgba(148, 163, 184, 0.18)' : 'rgba(15, 23, 42, 0.08)'
+                            backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
+                            width: 40,
+                            height: 40,
+                            borderRadius: 12
                           }
                         ]}
-                        onPress={() => {
-                          setExpandedCategories(prev => ({
-                            ...prev,
-                            [category.key]: !prev[category.key]
-                          }));
-                        }}
-                        activeOpacity={0.85}
+                        onPress={() => deleteScannedItem(item)}
                       >
-                        <View style={styles.categoryHeaderLeft}>
-                          <View style={[styles.categoryAccent, { backgroundColor: category.accentColor }]} />
-                          <Text style={[styles.categoryTitle, { color: colors.text }]}>
-                            {category.label}
-                          </Text>
-                          <View style={[styles.categoryCountBadge, { backgroundColor: category.accentColor }]}>
-                            <Text style={[styles.categoryCountText, { color: category.key === 'territories48' && !isDark ? '#111827' : '#ffffff' }]}>
-                              {category.items.length}
-                            </Text>
-                          </View>
-                        </View>
-                        <MaterialIcons
-                          name={isExpanded ? 'expand-less' : 'expand-more'}
-                          size={22}
-                          color={colors.text}
-                        />
+                        <Feather name="trash-2" size={18} color={colors.error} />
                       </TouchableOpacity>
-
-                      {isExpanded && (
-                        <View style={{ marginTop: 10 }}>
-                          {category.items.map((item, index) => {
-                            const stableKey = typeof item === 'object'
-                              ? (item.order_id || item.reference_id || item.id || `${category.key}-${index}`)
-                              : `${category.key}-${String(item)}-${index}`;
-
-                            return (
-                              <Animated.View
-                                key={stableKey}
-                                style={[
-                                  styles.itemContainer,
-                                  {
-                                    backgroundColor: isDark ? colors.surface : '#F9FAFB',
-                                    shadowColor: colors.cardShadow,
-                                    shadowOffset: { width: 0, height: 2 },
-                                    shadowOpacity: isDark ? 0.2 : 0.08,
-                                    shadowRadius: 4,
-                                    elevation: 2,
-                                    marginBottom: 12,
-                                    borderRadius: 12,
-                                    borderLeftWidth: 3,
-                                    borderLeftColor: category.accentColor,
-                                    opacity: fadeAnim,
-                                    transform: [{
-                                      translateY: fadeAnim.interpolate({
-                                        inputRange: [0, 1],
-                                        outputRange: [20, 0]
-                                      })
-                                    }]
-                                  }
-                                ]}
-                              >
-                                <View style={[
-                                  styles.itemContent
-                                ]}>
-                                  <View style={[
-                                    styles.itemIconContainer,
-                                    {
-                                      backgroundColor: isDark ? 'rgba(108, 142, 255, 0.15)' : 'rgba(67, 97, 238, 0.1)',
-                                      width: 40,
-                                      height: 40,
-                                      borderRadius: 12
-                                    }
-                                  ]}>
-                                    <Feather name="package" size={18} color={category.accentColor} />
-                                  </View>
-                                  <View style={[
-                                    styles.itemTextContainer,
-                                    {
-                                      ...Platform.select({
-                                        ios: {
-                                          alignItems: isRTL ? "flex-start" : "flex-end"
-                                        }
-                                      }),
-                                    }
-                                  ]}>
-                                    <Text style={[styles.itemText, { color: colors.text, fontWeight: '600' }, {
-                                      ...Platform.select({
-                                        ios: {
-                                          textAlign: isRTL ? "left" : ""
-                                        }
-                                      }),
-                                    }]}>
-                                      {typeof item === 'object' ? item.order_id : item}
-                                    </Text>
-                                    {typeof item === 'object' && (
-                                      <>
-                                        <Text style={[styles.itemDetailText, { color: colors.textSecondary, marginTop: 4 }, {
-                                          ...Platform.select({
-                                            ios: {
-                                              textAlign: isRTL ? "left" : ""
-                                            }
-                                          }),
-                                        }]}>
-                                          {item.receiver_name}
-                                        </Text>
-                                        <Text style={[styles.itemDetailText, { color: colors.textSecondary }, {
-                                          ...Platform.select({
-                                            ios: {
-                                              textAlign: isRTL ? "left" : ""
-                                            }
-                                          }),
-                                        }]}>
-                                          {item.receiver_city}{item.receiver_area ? ` - ${item.receiver_area}` : ''}{item.receiver_address ? ` - ${item.receiver_address}` : ''}
-                                        </Text>
-                                      </>
-                                    )}
-                                  </View>
-                                </View>
-
-                                <TouchableOpacity
-                                  style={[
-                                    styles.deleteButton,
-                                    {
-                                      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.1)',
-                                      width: 40,
-                                      height: 40,
-                                      borderRadius: 12
-                                    }
-                                  ]}
-                                  onPress={() => deleteScannedItem(item)}
-                                >
-                                  <Feather name="trash-2" size={18} color={colors.error} />
-                                </TouchableOpacity>
-                              </Animated.View>
-                            );
-                          })}
-                        </View>
-                      )}
-                    </View>
+                    </Animated.View>
                   );
                 })}
               </ScrollView>

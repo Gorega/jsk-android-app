@@ -3,8 +3,8 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 
 // Store URLs
-const APP_STORE_URL = 'https://apps.apple.com/us/app/taiar/id6746768193'; // Replace with your App Store ID
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.taiar&pli=1'; // Replace with your app's package name
+const APP_STORE_URL = 'https://apps.apple.com/us/app/jsk/id6752381240'; // Replace with your App Store ID
+const PLAY_STORE_URL = 'http://api.jsk-logistics.org/api/downloads/app.apk'; // Replace with your app's package name
 
 // Check if the app needs to be updated by comparing versions
 export const checkForUpdates = async (language = 'ar') => {
